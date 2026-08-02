@@ -1,28 +1,51 @@
-import type { DashboardStats } from '../types';
-import styles from './StatsCards.module.css';
+import type { DashboardStats } from "../types";
 
 interface StatsCardsProps {
-  stats: DashboardStats;
+   stats: DashboardStats;
 }
 
-export function StatsCards({ stats }: StatsCardsProps) {
-  const cards = [
-    { icon: '🏠', value: stats.occupiedRooms, label: 'OCCUPIED ROOMS' },
-    { icon: '🛎️', value: stats.availableRooms, label: 'AVAILABLE ROOMS' },
-    { icon: '🏨', value: stats.totalRooms, label: 'TOTAL ROOMS' },
-    { icon: '⏰', value: stats.pendingRequests, label: 'PENDING REQUESTS' },
-    { icon: '🍽️', value: stats.activeFoodOrders, label: 'ACTIVE FOOD ORDERS' },
-  ];
+const CARDS: { icon: string; key: keyof DashboardStats; label: string }[] = [
+   { icon: "🏠", key: "occupiedRooms", label: "OCCUPIED ROOMS" },
+   { icon: "🛎️", key: "availableRooms", label: "AVAILABLE ROOMS" },
+   { icon: "🏨", key: "totalRooms", label: "TOTAL ROOMS" },
+   { icon: "⏰", key: "pendingRequests", label: "PENDING REQUESTS" },
+   { icon: "🍽️", key: "activeFoodOrders", label: "ACTIVE FOOD ORDERS" },
+];
 
-  return (
-    <div className={styles.grid}>
-      {cards.map((card) => (
-        <div key={card.label} className={styles.card}>
-          <div className={styles.icon}>{card.icon}</div>
-          <div className={styles.value}>{card.value}</div>
-          <div className={styles.label}>{card.label}</div>
-        </div>
-      ))}
-    </div>
-  );
+export function StatsCards({ stats }: StatsCardsProps) {
+   return (
+      <div className="stats-grid">
+         {CARDS.map((card) => (
+            <div
+               key={card.label}
+               className="card"
+               style={{ padding: "24px 20px" }}
+            >
+               <div
+                  className="flex items-center justify-center rounded-lg mb-4"
+                  style={{
+                     width: 40,
+                     height: 40,
+                     background: "#1a2744",
+                     fontSize: 18,
+                  }}
+               >
+                  {card.icon}
+               </div>
+               <div
+                  style={{
+                     fontSize: 38,
+                     fontWeight: 800,
+                     color: "#1a2744",
+                     lineHeight: 1,
+                     marginBottom: 8,
+                  }}
+               >
+                  {stats[card.key]}
+               </div>
+               <div className="label-sm">{card.label}</div>
+            </div>
+         ))}
+      </div>
+   );
 }

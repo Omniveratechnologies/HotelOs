@@ -1,58 +1,103 @@
-import type { FoodOrder, OrderStatus } from '../types';
-import styles from './FoodOrders.module.css';
+import type { FoodOrder, OrderStatus } from "../types";
 
 interface FoodOrdersProps {
-  orders: FoodOrder[];
+   orders: FoodOrder[];
 }
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
-  new: { label: 'NEW', className: styles.statusNew },
-  preparing: { label: 'PREPARING', className: styles.statusPreparing },
-  ready: { label: 'READY', className: styles.statusReady },
-  out_for_delivery: { label: 'OUT FOR DELIVERY', className: styles.statusDelivery },
-  delivered: { label: 'DELIVERED', className: styles.statusDelivered },
+const STATUS_LABEL: Record<OrderStatus, string> = {
+   new: "NEW",
+   preparing: "PREPARING",
+   ready: "READY",
+   out_for_delivery: "OUT FOR DELIVERY",
+   delivered: "DELIVERED",
 };
 
 export function FoodOrders({ orders }: FoodOrdersProps) {
-  return (
-    <div className={styles.wrapper}>
-      <div className={styles.header}>
-        <span className={styles.accent} />
-        <span className={styles.title}>LIVE FOOD ORDERS</span>
-      </div>
+   return (
+      <div className="card" style={{ padding: 20 }}>
+         <div className="section-title">
+            <span className="section-title-bar" />
+            <span className="section-title-text">LIVE FOOD ORDERS</span>
+         </div>
 
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th className={styles.th}>ROOM</th>
-            <th className={styles.th}>ITEMS</th>
-            <th className={styles.th}>PAYMENT</th>
-            <th className={styles.th}>STATUS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.length === 0 && (
-            <tr>
-              <td colSpan={4} className={styles.empty}>No active food orders.</td>
-            </tr>
-          )}
-          {orders.map((order) => {
-            const sc = STATUS_CONFIG[order.status];
-            return (
-              <tr key={order.id} className={styles.row}>
-                <td className={styles.td}>{order.roomNumber}</td>
-                <td className={styles.td}>{order.items.join(', ')}</td>
-                <td className={styles.td}>{order.payment}</td>
-                <td className={styles.td}>
-                  <span className={`${styles.badge} ${sc.className}`}>
-                    ● {sc.label}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+         <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+               <tr style={{ borderBottom: "1px solid #e5e0d8" }}>
+                  {["ROOM", "ITEMS", "PAYMENT", "STATUS"].map((h) => (
+                     <th
+                        key={h}
+                        className="label-sm"
+                        style={{
+                           textAlign: "left",
+                           paddingBottom: 10,
+                           paddingRight: 12,
+                        }}
+                     >
+                        {h}
+                     </th>
+                  ))}
+               </tr>
+            </thead>
+            <tbody>
+               {orders.length === 0 && (
+                  <tr>
+                     <td
+                        colSpan={4}
+                        style={{
+                           textAlign: "center",
+                           padding: "24px 0",
+                           fontSize: 13,
+                           color: "#9ca3af",
+                        }}
+                     >
+                        No active food orders.
+                     </td>
+                  </tr>
+               )}
+               {orders.map((order, i) => (
+                  <tr
+                     key={order.id}
+                     style={{
+                        borderBottom:
+                           i < orders.length - 1 ? "1px solid #f0ebe3" : "none",
+                     }}
+                  >
+                     <td
+                        style={{
+                           padding: "12px 12px 12px 0",
+                           fontSize: 13.5,
+                           color: "#1a2744",
+                        }}
+                     >
+                        {order.roomNumber}
+                     </td>
+                     <td
+                        style={{
+                           padding: "12px 12px 12px 0",
+                           fontSize: 13.5,
+                           color: "#1a2744",
+                        }}
+                     >
+                        {order.items.join(", ")}
+                     </td>
+                     <td
+                        style={{
+                           padding: "12px 12px 12px 0",
+                           fontSize: 13.5,
+                           color: "#1a2744",
+                        }}
+                     >
+                        {order.payment}
+                     </td>
+                     <td style={{ padding: "12px 0" }}>
+                        <span className={`order-pill ${order.status}`}>
+                           ● {STATUS_LABEL[order.status]}
+                        </span>
+                     </td>
+                  </tr>
+               ))}
+            </tbody>
+         </table>
+      </div>
+   );
 }
