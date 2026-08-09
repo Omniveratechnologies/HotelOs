@@ -1,1 +1,1 @@
-# HotelOs
+# Guest Dashboard - Frontend
