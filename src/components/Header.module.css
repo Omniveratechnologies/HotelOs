@@ -1,0 +1,97 @@
+.header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  min-height: 64px;
+  box-shadow: var(--shadow-sm);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 36px;
+  height: 36px;
+  background: var(--navy);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandName {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.brandSub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.nav {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.navItem {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 24px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: border-color 0.15s;
+  gap: 2px;
+}
+
+.navItem:hover {
+  border-bottom-color: var(--border);
+}
+
+.navLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.navSub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-label);
+  text-transform: uppercase;
+}
+
+.navActive {
+  border-bottom-color: var(--gold) !important;
+}
+
+.navActive .navLabel {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.navActive .navSub {
+  color: var(--gold);
+}
