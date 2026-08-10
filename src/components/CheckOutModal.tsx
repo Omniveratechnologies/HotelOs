@@ -25,7 +25,7 @@ export function CheckOutModal({
 
             <div
                className="flex items-center justify-between"
-               style={{ padding: "20px 24px 16px" }}
+               style={{ padding: "18px 18px 16px" }}
             >
                <h2
                   className="italic font-bold"
@@ -40,7 +40,7 @@ export function CheckOutModal({
 
             <div
                className="flex flex-col gap-3"
-               style={{ padding: "0 24px 20px" }}
+               style={{ padding: "0 18px 16px" }}
             >
                <div className="flex justify-between items-center">
                   <span style={{ fontSize: 14, color: "#6b7280" }}>
@@ -72,7 +72,7 @@ export function CheckOutModal({
                </div>
             </div>
 
-            <div className="flex gap-3" style={{ padding: "0 24px 24px" }}>
+            <div className="flex gap-3" style={{ padding: "0 18px 20px" }}>
                <button className="btn-outline" onClick={onClose}>
                   CLOSE
                </button>

@@ -38,12 +38,12 @@ export function CheckInModal({
 
             <div
                className="flex items-start justify-between"
-               style={{ padding: "20px 24px 0" }}
+               style={{ padding: "18px 18px 0" }}
             >
                <div>
                   <h2
                      className="italic font-bold"
-                     style={{ fontSize: 20, color: "#1a2744" }}
+                     style={{ fontSize: 18, color: "#1a2744" }}
                   >
                      Check in — Room {roomNumber}
                   </h2>
@@ -59,15 +59,9 @@ export function CheckInModal({
             <form
                onSubmit={handleSubmit}
                className="flex flex-col gap-4"
-               style={{ padding: "20px 24px 24px" }}
+               style={{ padding: "16px 18px 20px" }}
             >
-               <div
-                  style={{
-                     display: "grid",
-                     gridTemplateColumns: "1fr 1fr",
-                     gap: 14,
-                  }}
-               >
+               <div className="modal-form-grid">
                   <div className="flex flex-col gap-1.5">
                      <label className="label-sm">GUEST NAME</label>
                      <input
@@ -95,13 +89,7 @@ export function CheckInModal({
                   </div>
                </div>
 
-               <div
-                  style={{
-                     display: "grid",
-                     gridTemplateColumns: "1fr 1fr",
-                     gap: 14,
-                  }}
-               >
+               <div className="modal-form-grid">
                   <div className="flex flex-col gap-1.5">
                      <label className="label-sm">GUESTS</label>
                      <input

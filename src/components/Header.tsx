@@ -1,9 +1,5 @@
 export function Header() {
-   const tabs = [
-      { label: "Room 204", sub: "GUEST TABLET", active: false },
-      { label: "Kitchen", sub: "KITCHEN DISPLAY", active: false },
-      { label: "Reception", sub: "FRONT DESK", active: true },
-   ];
+   const tabs = [{ label: "Reception", sub: "FRONT DESK", active: true }];
 
    return (
       <header className="site-header">

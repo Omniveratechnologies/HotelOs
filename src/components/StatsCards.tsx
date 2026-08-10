@@ -16,29 +16,27 @@ export function StatsCards({ stats }: StatsCardsProps) {
    return (
       <div className="stats-grid">
          {CARDS.map((card) => (
-            <div
-               key={card.label}
-               className="card"
-               style={{ padding: "24px 20px" }}
-            >
+            <div key={card.label} className="card stats-card">
                <div
-                  className="flex items-center justify-center rounded-lg mb-4"
+                  className="flex items-center justify-center rounded-lg"
                   style={{
-                     width: 40,
-                     height: 40,
+                     width: 36,
+                     height: 36,
                      background: "#1a2744",
-                     fontSize: 18,
+                     fontSize: 16,
+                     marginBottom: 10,
+                     flexShrink: 0,
                   }}
                >
                   {card.icon}
                </div>
                <div
                   style={{
-                     fontSize: 38,
+                     fontSize: 32,
                      fontWeight: 800,
                      color: "#1a2744",
                      lineHeight: 1,
-                     marginBottom: 8,
+                     marginBottom: 6,
                   }}
                >
                   {stats[card.key]}

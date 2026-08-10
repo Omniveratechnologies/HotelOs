@@ -20,84 +20,148 @@ export function FoodOrders({ orders }: FoodOrdersProps) {
             <span className="section-title-text">LIVE FOOD ORDERS</span>
          </div>
 
-         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-               <tr style={{ borderBottom: "1px solid #e5e0d8" }}>
-                  {["ROOM", "ITEMS", "PAYMENT", "STATUS"].map((h) => (
-                     <th
-                        key={h}
-                        className="label-sm"
-                        style={{
-                           textAlign: "left",
-                           paddingBottom: 10,
-                           paddingRight: 12,
-                        }}
-                     >
-                        {h}
-                     </th>
-                  ))}
-               </tr>
-            </thead>
-            <tbody>
-               {orders.length === 0 && (
-                  <tr>
-                     <td
-                        colSpan={4}
-                        style={{
-                           textAlign: "center",
-                           padding: "24px 0",
-                           fontSize: 13,
-                           color: "#9ca3af",
-                        }}
-                     >
-                        No active food orders.
-                     </td>
+         {/* Desktop table */}
+         <div className="food-table-wrap">
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+               <thead>
+                  <tr style={{ borderBottom: "1px solid #e5e0d8" }}>
+                     {["ROOM", "ITEMS", "PAYMENT", "STATUS"].map((h) => (
+                        <th
+                           key={h}
+                           className="label-sm"
+                           style={{
+                              textAlign: "left",
+                              paddingBottom: 10,
+                              paddingRight: 12,
+                              whiteSpace: "nowrap",
+                           }}
+                        >
+                           {h}
+                        </th>
+                     ))}
                   </tr>
-               )}
-               {orders.map((order, i) => (
-                  <tr
-                     key={order.id}
+               </thead>
+               <tbody>
+                  {orders.length === 0 && (
+                     <tr>
+                        <td
+                           colSpan={4}
+                           style={{
+                              textAlign: "center",
+                              padding: "24px 0",
+                              fontSize: 13,
+                              color: "#9ca3af",
+                           }}
+                        >
+                           No active food orders.
+                        </td>
+                     </tr>
+                  )}
+                  {orders.map((order, i) => (
+                     <tr
+                        key={order.id}
+                        style={{
+                           borderBottom:
+                              i < orders.length - 1
+                                 ? "1px solid #f0ebe3"
+                                 : "none",
+                        }}
+                     >
+                        <td
+                           style={{
+                              padding: "12px 12px 12px 0",
+                              fontSize: 13.5,
+                              color: "#1a2744",
+                              whiteSpace: "nowrap",
+                           }}
+                        >
+                           {order.roomNumber}
+                        </td>
+                        <td
+                           style={{
+                              padding: "12px 12px 12px 0",
+                              fontSize: 13.5,
+                              color: "#1a2744",
+                           }}
+                        >
+                           {order.items.join(", ")}
+                        </td>
+                        <td
+                           style={{
+                              padding: "12px 12px 12px 0",
+                              fontSize: 13.5,
+                              color: "#1a2744",
+                              whiteSpace: "nowrap",
+                           }}
+                        >
+                           {order.payment}
+                        </td>
+                        <td style={{ padding: "12px 0", whiteSpace: "nowrap" }}>
+                           <span className={`order-pill ${order.status}`}>
+                              ● {STATUS_LABEL[order.status]}
+                           </span>
+                        </td>
+                     </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
+
+         {/* Mobile card list */}
+         <div className="food-card-list">
+            {orders.length === 0 && (
+               <p
+                  style={{
+                     textAlign: "center",
+                     padding: "24px 0",
+                     fontSize: 13,
+                     color: "#9ca3af",
+                  }}
+               >
+                  No active food orders.
+               </p>
+            )}
+            {orders.map((order, i) => (
+               <div
+                  key={order.id}
+                  style={{
+                     padding: "12px 0",
+                     borderBottom:
+                        i < orders.length - 1 ? "1px solid #f0ebe3" : "none",
+                     display: "flex",
+                     flexDirection: "column",
+                     gap: 6,
+                  }}
+               >
+                  <div
                      style={{
-                        borderBottom:
-                           i < orders.length - 1 ? "1px solid #f0ebe3" : "none",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                      }}
                   >
-                     <td
+                     <span
                         style={{
-                           padding: "12px 12px 12px 0",
                            fontSize: 13.5,
+                           fontWeight: 700,
                            color: "#1a2744",
                         }}
                      >
-                        {order.roomNumber}
-                     </td>
-                     <td
-                        style={{
-                           padding: "12px 12px 12px 0",
-                           fontSize: 13.5,
-                           color: "#1a2744",
-                        }}
-                     >
-                        {order.items.join(", ")}
-                     </td>
-                     <td
-                        style={{
-                           padding: "12px 12px 12px 0",
-                           fontSize: 13.5,
-                           color: "#1a2744",
-                        }}
-                     >
-                        {order.payment}
-                     </td>
-                     <td style={{ padding: "12px 0" }}>
-                        <span className={`order-pill ${order.status}`}>
-                           ● {STATUS_LABEL[order.status]}
-                        </span>
-                     </td>
-                  </tr>
-               ))}
-            </tbody>
-         </table>
+                        Room {order.roomNumber}
+                     </span>
+                     <span className={`order-pill ${order.status}`}>
+                        ● {STATUS_LABEL[order.status]}
+                     </span>
+                  </div>
+                  <div style={{ fontSize: 13, color: "#374151" }}>
+                     {order.items.join(", ")}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                     {order.payment} · {order.timestamp}
+                  </div>
+               </div>
+            ))}
+         </div>
       </div>
    );
 }

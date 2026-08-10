@@ -126,7 +126,7 @@ export default function App() {
                maxWidth: 1400,
                width: "100%",
                margin: "0 auto",
-               padding: "28px 32px 48px",
+               padding: "16px 16px 48px",
             }}
          >
             <StatsCards stats={stats} />

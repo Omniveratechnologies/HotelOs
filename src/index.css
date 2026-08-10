@@ -63,14 +63,24 @@ textarea {
    display: flex;
    align-items: stretch;
    justify-content: space-between;
-   padding: 0 32px;
+   padding: 0 16px;
    min-height: 64px;
+   flex-wrap: wrap;
+   gap: 0;
+}
+
+@media (min-width: 640px) {
+   .site-header {
+      padding: 0 32px;
+      flex-wrap: nowrap;
+   }
 }
 
 .header-brand {
    display: flex;
    align-items: center;
    gap: 12px;
+   min-height: 56px;
 }
 
 .header-logo {
@@ -98,24 +108,55 @@ textarea {
 .header-brand-sub {
    font-size: 11.5px;
    color: #6b7280;
-   display: block;
+   display: none;
+}
+
+@media (min-width: 640px) {
+   .header-brand-sub {
+      display: block;
+   }
 }
 
 .header-nav {
    display: flex;
    align-items: stretch;
+   overflow-x: auto;
+   -webkit-overflow-scrolling: touch;
+   scrollbar-width: none;
+   width: 100%;
+   border-top: 1px solid #e5e0d8;
+}
+
+.header-nav::-webkit-scrollbar {
+   display: none;
+}
+
+@media (min-width: 640px) {
+   .header-nav {
+      width: auto;
+      border-top: none;
+      overflow-x: visible;
+   }
 }
 
 .nav-tab {
    display: flex;
    flex-direction: column;
    justify-content: center;
-   padding: 0 24px;
+   padding: 0 16px;
    gap: 3px;
    cursor: pointer;
    border-bottom: 3px solid transparent;
    transition: border-color 0.15s;
    text-decoration: none;
+   white-space: nowrap;
+   flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+   .nav-tab {
+      padding: 0 24px;
+   }
 }
 
 .nav-tab:hover {
@@ -269,17 +310,36 @@ textarea {
    background: rgba(10, 15, 35, 0.55);
    backdrop-filter: blur(4px);
    display: flex;
-   align-items: center;
+   align-items: flex-end;
    justify-content: center;
    z-index: 1000;
-   padding: 16px;
+   padding: 0;
 }
+
+@media (min-width: 640px) {
+   .modal-overlay {
+      align-items: center;
+      padding: 16px;
+   }
+}
+
 .modal-box {
    background: #fff;
-   border-radius: 14px;
+   border-radius: 14px 14px 0 0;
    width: 100%;
    overflow: hidden;
-   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15);
+   max-height: 92vh;
+   overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+   .modal-box {
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      max-height: none;
+      overflow-y: visible;
+   }
 }
 .modal-gold-bar {
    height: 4px;
@@ -394,23 +454,66 @@ textarea {
 
 .room-grid {
    display: grid;
-   grid-template-columns: repeat(6, 1fr);
-   gap: 10px;
+   grid-template-columns: repeat(3, 1fr);
+   gap: 8px;
    margin-bottom: 16px;
+}
+
+@media (min-width: 480px) {
+   .room-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+   }
+}
+
+@media (min-width: 768px) {
+   .room-grid {
+      grid-template-columns: repeat(6, 1fr);
+   }
 }
 
 .stats-grid {
    display: grid;
-   grid-template-columns: repeat(5, 1fr);
-   gap: 16px;
-   margin-bottom: 24px;
+   grid-template-columns: repeat(2, 1fr);
+   gap: 12px;
+   margin-bottom: 20px;
+}
+
+@media (min-width: 480px) {
+   .stats-grid {
+      grid-template-columns: repeat(3, 1fr);
+   }
+}
+
+@media (min-width: 768px) {
+   .stats-grid {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+   }
+}
+
+.stats-card {
+   padding: 16px 14px;
+}
+
+@media (min-width: 768px) {
+   .stats-card {
+      padding: 24px 20px;
+   }
 }
 
 .content-grid {
    display: grid;
-   grid-template-columns: 1fr 380px;
+   grid-template-columns: 1fr;
    gap: 20px;
    align-items: start;
+}
+
+@media (min-width: 1024px) {
+   .content-grid {
+      grid-template-columns: 1fr 380px;
+   }
 }
 
 .req-badge {
@@ -502,4 +605,51 @@ textarea {
 }
 .legend-dot.cleaning {
    background: #6b7280;
+}
+
+/* Modal form grid: stacked on mobile, 2-col on sm+ */
+.modal-form-grid {
+   display: grid;
+   grid-template-columns: 1fr;
+   gap: 14px;
+}
+
+@media (min-width: 400px) {
+   .modal-form-grid {
+      grid-template-columns: 1fr 1fr;
+   }
+}
+
+/* Food orders: table on md+, card list on mobile */
+.food-table-wrap {
+   display: none;
+   overflow-x: auto;
+   -webkit-overflow-scrolling: touch;
+}
+
+.food-card-list {
+   display: flex;
+   flex-direction: column;
+}
+
+@media (min-width: 640px) {
+   .food-table-wrap {
+      display: block;
+   }
+   .food-card-list {
+      display: none;
+   }
+}
+
+/* Main content padding responsive */
+@media (min-width: 640px) {
+   main {
+      padding: 28px 24px 48px !important;
+   }
+}
+
+@media (min-width: 1024px) {
+   main {
+      padding: 28px 32px 48px !important;
+   }
 }
