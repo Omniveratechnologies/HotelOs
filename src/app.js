@@ -4,7 +4,7 @@ import cors from "cors";
 import hotelRoutes from "./routes/hotel.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
-
+import orderRoutes from "./routes/orderRoutes.js"
 const app = express();
 
 app.use(
@@ -27,5 +27,6 @@ app.get("/api/v1/health", (req, res) => {
 app.use("/api/v1/hotels", hotelRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/orders", orderRoutes);
 
 export default app;
