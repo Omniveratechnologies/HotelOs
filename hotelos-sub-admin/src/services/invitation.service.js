@@ -6,9 +6,7 @@ const API_URL =
 // SEND RECEPTIONIST INVITATION
 // =====================================================
 
-export const sendReceptionistInvitation = async (
-  email
-) => {
+export const sendReceptionistInvitation = async ({ name, email, username }) => {
   const token =
     localStorage.getItem("hotelOS_token");
 
@@ -42,7 +40,9 @@ export const sendReceptionistInvitation = async (
       },
 
       body: JSON.stringify({
+        name: name?.trim(),
         email: normalizedEmail,
+        username: username?.trim().toLowerCase(),
         role: "RECEPTIONIST",
       }),
     }
