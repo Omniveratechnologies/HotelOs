@@ -1,5 +1,6 @@
 {
   "name": "hotel-os-dashboard",
+  "type": "module",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
@@ -15,7 +16,7 @@
     "vite": "^5.1.3"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5174",
     "build": "vite build",
     "preview": "vite preview"
   }
