@@ -1,23 +1,22 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import StatCard from "../../components/StatCard.jsx";
 import AddMembers from "../../components/AddMembers.jsx";
+import { getDashboardStats } from "../../services/dashboard.service.js";
 
-const stats = [
+const statDefinitions = [
   {
     label: "Total Rooms",
-    value: "180",
     icon: <path d="M3 21V9l9-6 9 6v12M9 21v-6h6v6" strokeLinejoin="round" />,
+    value: (data) => String(data.rooms?.total ?? 0),
   },
   {
     label: "Available Rooms",
-    value: "38",
     icon: <path d="M9 12l2 2 4-4M12 3l9 4.5v9L12 21l-9-4.5v-9L12 3z" strokeLinejoin="round" />,
+    value: (data) => String(data.rooms?.available ?? 0),
   },
   {
     label: "Occupied Rooms",
-    value: "142",
-    tone: "gold",
     icon: (
       <path
         d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z"
@@ -25,38 +24,36 @@ const stats = [
         strokeLinejoin="round"
       />
     ),
+    value: (data) => String(data.rooms?.occupied ?? 0),
   },
   {
     label: "Total Check-ins",
-    value: "24",
     sub: "Today",
     icon: <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />,
+    value: (data) => String(data.guests?.arrivalsToday ?? 0),
   },
   {
     label: "Today's Checkouts",
-    value: "17",
     icon: <path d="M19 12H5M11 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />,
+    value: (data) => String(data.guests?.departuresToday ?? 0),
   },
   {
     label: "Pending Reservations",
-    value: "9",
     icon: <path d="M12 8v4l2.5 2.5M12 3a9 9 0 100 18 9 9 0 000-18z" strokeLinecap="round" />,
+    value: (data) => String(data.pendingReservations ?? 0),
   },
   {
     label: "Today's Revenue",
-    value: "$18,420",
-    tone: "gold",
-    sub: "+12% vs yesterday",
     icon: <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" strokeLinecap="round" />,
+    value: (data) => `$${Number(data.revenueToday ?? 0).toLocaleString()}`,
   },
   {
     label: "Pending Service Requests",
-    value: "6",
     icon: <path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z" strokeLinejoin="round" />,
+    value: (data) => String(data.pendingServiceRequests ?? 0),
   },
   {
     label: "Active Staff",
-    value: "31",
     icon: (
       <path
         d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
@@ -64,46 +61,40 @@ const stats = [
         strokeLinejoin="round"
       />
     ),
+    value: (data) => String(data.activeStaff ?? 0),
   },
   {
     label: "Current Occupancy",
-    value: "79%",
     icon: <path d="M4 20V10M11 20V4M18 20v-7" strokeLinecap="round" />,
+    value: (data) => `${data.occupancyPercent ?? 0}%`,
   },
 ];
 
-const activities = [
-  {
-    text: "Room 302 checked in — Rohan Kapoor",
-    time: "5 min ago",
-    tone: "gold",
-  },
-  {
-    text: "Housekeeping completed Room 118",
-    time: "18 min ago",
-    tone: "default",
-  },
-  {
-    text: "New reservation #4821 for 3 nights",
-    time: "32 min ago",
-    tone: "gold",
-  },
-  {
-    text: "Room 214 requested late checkout",
-    time: "48 min ago",
-    tone: "default",
-  },
-  {
-    text: "Maintenance ticket closed — Room 305",
-    time: "1 hr ago",
-    tone: "default",
-  },
-  {
-    text: "Room 108 checked out — Ethan Cole",
-    time: "1 hr 20 min ago",
-    tone: "gold",
-  },
-];
+// =====================================================
+// RELATIVE TIME FORMATTER
+// =====================================================
+
+function formatRelativeTime(date) {
+  const diffMs = Date.now() - new Date(date).getTime();
+
+  const minutes = Math.floor(diffMs / 60000);
+
+  if (minutes < 1) return "Just now";
+
+  if (minutes < 60) return `${minutes} min ago`;
+
+  const hours = Math.floor(minutes / 60);
+
+  if (hours < 24) {
+    return hours === 1 ? "1 hr ago" : `${hours} hrs ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+
+  if (days === 1) return "Yesterday";
+
+  return `${days} days ago`;
+}
 
 export default function Dashboard() {
   const user = useMemo(() => {
@@ -114,8 +105,44 @@ export default function Dashboard() {
     }
   }, []);
 
-  const firstName =
-    user.name?.trim().split(" ")[0] || "Admin";
+  const firstName = user.name?.trim().split(" ")[0] || "Admin";
+
+  const [statsData, setStatsData] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStats() {
+      try {
+        const data = await getDashboardStats();
+
+        if (!cancelled) {
+          setStatsData(data);
+          setStatsError("");
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard stats:", err);
+
+        if (!cancelled) {
+          setStatsError(err.message || "Failed to load dashboard stats");
+        }
+      } finally {
+        if (!cancelled) {
+          setStatsLoading(false);
+        }
+      }
+    }
+
+    loadStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const hotelName = statsData?.hotelName || "your hotel";
 
   return (
     <div className="min-h-screen bg-ivory flex font-body">
@@ -147,7 +174,7 @@ export default function Dashboard() {
               </h1>
 
               <p className="text-sm text-muted hidden sm:block">
-                Here's what's happening at Test Hotel today.
+                Here's what's happening at {hotelName} today.
               </p>
             </div>
           </div>
@@ -175,7 +202,9 @@ export default function Dashboard() {
                 {(firstName || "A").charAt(0).toUpperCase()}
               </span>
 
-              <span className="hidden sm:block text-sm font-medium text-navy">{user.name || "Admin"}</span>
+              <span className="hidden sm:block text-sm font-medium text-navy">
+                {user.name || "Admin"}
+              </span>
             </div>
           </div>
         </header>
@@ -195,11 +224,25 @@ export default function Dashboard() {
               STATISTICS
           =================================================== */}
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
-            {stats.map((s) => (
-              <StatCard key={s.label} {...s} />
-            ))}
-          </div>
+          {statsError && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {statsError}
+            </div>
+          )}
+
+          {statsLoading ? (
+            <div className="bg-cream border border-beige-border rounded-2xl shadow-card p-10 mb-8 text-center text-muted">
+              Loading dashboard stats...
+            </div>
+          ) : statsData && !statsError ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
+              {statDefinitions.map((s) => {
+                const { value, ...rest } = s;
+
+                return <StatCard key={rest.label} {...rest} value={value(statsData)} />;
+              })}
+            </div>
+          ) : null}
 
           {/* ===================================================
               RECENT ACTIVITIES
@@ -214,26 +257,30 @@ export default function Dashboard() {
               </a>
             </div>
 
-            <div className="space-y-4">
-              {activities.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between gap-4 pb-4 border-b border-beige-border last:border-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span
-                      className={`w-2 h-2 rounded-full shrink-0 ${
-                        a.tone === "gold" ? "bg-gold" : "bg-beige-border"
-                      }`}
-                    />
+            {statsData?.recentActivities?.length > 0 ? (
+              <div className="space-y-4">
+                {statsData.recentActivities.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between gap-4 pb-4 border-b border-beige-border last:border-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-2 h-2 rounded-full shrink-0 bg-beige-border" />
 
-                    <p className="text-sm text-navy/80 truncate">{a.text}</p>
+                      <p className="text-sm text-navy/80 truncate">{a.text}</p>
+                    </div>
+
+                    <span className="text-xs text-muted shrink-0">
+                      {formatRelativeTime(a.createdAt)}
+                    </span>
                   </div>
-
-                  <span className="text-xs text-muted shrink-0">{a.time}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-sm text-muted">
+                No recent activity to show yet.
+              </div>
+            )}
           </div>
         </main>
       </div>

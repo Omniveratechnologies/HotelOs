@@ -5,6 +5,7 @@ import hotelRoutes from "./routes/hotel.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import inviteRoutes from "./routes/invite.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 
 const app = express();
 
@@ -29,5 +30,6 @@ app.use("/api/v1/hotels", hotelRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/invites", inviteRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 export default app;
