@@ -9,7 +9,7 @@ import {
 
 import {
   acceptInvitation,
-} from "../services/invitation.service.js";
+} from "../../../services/invitation.service.js";
 
 export default function CreateAccount({
   token,

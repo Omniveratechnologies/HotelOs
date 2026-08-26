@@ -1,4 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+
+import { useSubAdmin } from "../app/providers.jsx";
 
 const items = [
   {
@@ -103,7 +106,17 @@ const items = [
 ];
 
 export default function Sidebar({ open, onClose }) {
-  const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, user } = useSubAdmin();
+
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = () => {
+    setLoggingOut(true);
+    logout();
+    onClose?.();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <>
@@ -159,19 +172,18 @@ export default function Sidebar({ open, onClose }) {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {items.map((item) => {
-            const isActive =
-              location.pathname === item.path;
-
             return (
-              <Link
+              <NavLink
                 key={item.label}
                 to={item.path}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? "bg-gold/15 text-gold font-medium"
-                    : "text-cream/60 hover:bg-cream/5 hover:text-cream"
-                }`}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-colors ${
+                    isActive
+                      ? "bg-gold/15 text-gold font-medium"
+                      : "text-cream/60 hover:bg-cream/5 hover:text-cream"
+                  }`
+                }
               >
                 <svg
                   width="18"
@@ -185,21 +197,37 @@ export default function Sidebar({ open, onClose }) {
                 </svg>
 
                 {item.label}
-              </Link>
+              </NavLink>
             );
           })}
         </nav>
 
+        {/* Logged-in user */}
+        <div className="px-4 py-3 border-t border-cream/10">
+          <div className="flex items-center gap-2.5 px-3.5">
+            <span className="w-8 h-8 rounded-full bg-gold/20 text-gold flex items-center justify-center text-sm font-display font-semibold">
+              {(user?.name || "A").charAt(0).toUpperCase()}
+            </span>
+
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-cream truncate">
+                {user?.name || "Sub Admin"}
+              </p>
+
+              <p className="text-xs text-cream/50 capitalize truncate">
+                {(user?.role || "sub admin").toLowerCase()}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Logout */}
         <div className="px-4 py-5 border-t border-cream/10">
-          <Link
-            to="/login"
-            onClick={() => {
-              localStorage.removeItem("auth_token");
-              localStorage.removeItem("auth_user");
-              onClose?.();
-            }}
-            className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm text-cream/60 hover:bg-cream/5 hover:text-cream transition-colors"
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm text-cream/60 hover:bg-cream/5 hover:text-cream transition-colors disabled:opacity-60"
           >
             <svg
               width="18"
@@ -217,7 +245,7 @@ export default function Sidebar({ open, onClose }) {
             </svg>
 
             Log out
-          </Link>
+          </button>
         </div>
       </aside>
     </>

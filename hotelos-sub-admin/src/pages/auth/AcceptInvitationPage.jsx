@@ -7,12 +7,12 @@ import {
   useSearchParams,
 } from "react-router-dom";
 
-import CreateAccount from "./CreateAccount.jsx";
+import CreateAccount from "./_components/CreateAccount.jsx";
+import {
+  verifyInvitation,
+} from "../../services/invitation.service.js";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5001";
-
-export default function AcceptInvitation() {
+export default function AcceptInvitationPage() {
   const [searchParams] =
     useSearchParams();
 
@@ -29,13 +29,11 @@ export default function AcceptInvitation() {
     setInvitation,
   ] = useState(null);
 
-  const [
-    error,
-    setError,
-  ] = useState("");
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
-    async function verifyInvitation() {
+    async function verify() {
       if (!token) {
         setError(
           "Invitation token is missing."
@@ -47,52 +45,18 @@ export default function AcceptInvitation() {
       }
 
       try {
-        const response =
-          await fetch(
-            `${API_URL}/api/v1/invites/verify`,
-            {
-              method: "POST",
+        const data =
+          await verifyInvitation(token);
 
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body: JSON.stringify({
-                token,
-              }),
-            }
-          );
-
-        const result =
-          await response.json();
-
-        console.log(
-          "Invitation verification response:",
-          result
-        );
-
-        if (
-          !response.ok ||
-          !result.success
-        ) {
-          throw new Error(
-            result.message ||
-              "This invitation is not valid."
-          );
-        }
-
-        setInvitation(
-          result.data
-        );
-      } catch (error) {
+        setInvitation(data);
+      } catch (err) {
         console.error(
           "Invitation verification error:",
-          error
+          err
         );
 
         setError(
-          error.message ||
+          err.message ||
             "Unable to verify your invitation."
         );
       } finally {
@@ -100,7 +64,7 @@ export default function AcceptInvitation() {
       }
     }
 
-    verifyInvitation();
+    verify();
   }, [token]);
 
   if (loading) {

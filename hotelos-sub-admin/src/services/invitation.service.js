@@ -1,21 +1,10 @@
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5001";
+import { apiFetch } from "../utils/apiFetch.js";
 
 // =====================================================
 // SEND RECEPTIONIST INVITATION
 // =====================================================
 
 export const sendReceptionistInvitation = async ({ name, email, username }) => {
-  const token =
-    localStorage.getItem("auth_token");
-
-  if (!token) {
-    throw new Error(
-      "You are not logged in. Please login again."
-    );
-  }
-
   const normalizedEmail = email
     ?.trim()
     .toLowerCase();
@@ -26,48 +15,25 @@ export const sendReceptionistInvitation = async ({ name, email, username }) => {
     );
   }
 
-  const response = await fetch(
-    `${API_URL}/api/v1/invites`,
+  const result = await apiFetch(
+    "/api/v1/invites",
     {
       method: "POST",
 
-      headers: {
-        "Content-Type":
-          "application/json",
+      auth: true,
 
-        Authorization:
-          `Bearer ${token}`,
-      },
-
-      body: JSON.stringify({
+      body: {
         name: name?.trim(),
+
         email: normalizedEmail,
-        username: username?.trim().toLowerCase(),
+
+        username:
+          username?.trim().toLowerCase(),
+
         role: "RECEPTIONIST",
-      }),
+      },
     }
   );
-
-  let result;
-
-  try {
-    result =
-      await response.json();
-  } catch {
-    throw new Error(
-      "Invalid response from the server."
-    );
-  }
-
-  if (
-    !response.ok ||
-    !result.success
-  ) {
-    throw new Error(
-      result.message ||
-        "Failed to send receptionist invitation"
-    );
-  }
 
   return result.data;
 };
@@ -85,42 +51,16 @@ export const verifyInvitation = async (
     );
   }
 
-  const response = await fetch(
-    `${API_URL}/api/v1/invites/verify`,
+  const result = await apiFetch(
+    "/api/v1/invites/verify",
     {
       method: "POST",
 
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-
-      body: JSON.stringify({
+      body: {
         token,
-      }),
+      },
     }
   );
-
-  let result;
-
-  try {
-    result =
-      await response.json();
-  } catch {
-    throw new Error(
-      "Invalid response from the server."
-    );
-  }
-
-  if (
-    !response.ok ||
-    !result.success
-  ) {
-    throw new Error(
-      result.message ||
-        "Invalid or expired invitation"
-    );
-  }
 
   return result.data;
 };
@@ -151,17 +91,12 @@ export const acceptInvitation = async ({
     );
   }
 
-  const response = await fetch(
-    `${API_URL}/api/v1/invites/accept`,
+  const result = await apiFetch(
+    "/api/v1/invites/accept",
     {
       method: "POST",
 
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-
-      body: JSON.stringify({
+      body: {
         token,
 
         name:
@@ -173,30 +108,9 @@ export const acceptInvitation = async ({
             .toLowerCase(),
 
         password,
-      }),
+      },
     }
   );
-
-  let result;
-
-  try {
-    result =
-      await response.json();
-  } catch {
-    throw new Error(
-      "Invalid response from the server."
-    );
-  }
-
-  if (
-    !response.ok ||
-    !result.success
-  ) {
-    throw new Error(
-      result.message ||
-        "Failed to create account"
-    );
-  }
 
   return result.data;
 };

@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5001";
+import { resetPassword } from "../../services/auth.service.js";
 
-export default function ResetPassword() {
+export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -48,28 +47,7 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/v1/auth/reset-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            token,
-            password,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result.message ||
-            "Unable to reset password."
-        );
-      }
+      await resetPassword({ token, password });
 
       setSuccess(
         "Your password has been reset successfully. Redirecting to login..."
