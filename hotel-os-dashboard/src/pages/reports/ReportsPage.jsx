@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import { useHotelOS } from '../../app/providers.jsx'
 
-export default function ReportsPage({ rooms, guests, foodOrders, serviceRequests }) {
+export default function ReportsPage() {
+  const { rooms, guests, foodOrders, serviceRequests } = useHotelOS()
   const occupied = rooms.filter(r=>r.status==='occupied').length
   const available = rooms.filter(r=>r.status==='available').length
   const reserved = rooms.filter(r=>r.status==='reserved').length

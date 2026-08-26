@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useHotelOS } from '../../app/providers.jsx'
 
 const statusConfig = {
   'preparing': { color: 'bg-orange-100 text-orange-700', label: 'Preparing' },
@@ -20,7 +21,8 @@ const menu = [
   { name: 'Veg Sandwich', price: 120, category: 'Snacks' },
 ]
 
-export default function FoodOrdersPage({ foodOrders, setFoodOrders, updateOrderStatus, rooms }) {
+export default function FoodOrdersPage() {
+  const { foodOrders, setFoodOrders, updateOrderStatus, rooms } = useHotelOS()
   const [showNew, setShowNew] = useState(false)
   const [filter, setFilter] = useState('all')
   const [newOrder, setNewOrder] = useState({ room: '', items: [], payment: 'COD' })

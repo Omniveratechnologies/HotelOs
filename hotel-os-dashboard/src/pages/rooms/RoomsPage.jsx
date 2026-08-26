@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
-import RoomModal from './RoomModal.jsx'
+import RoomModal from '../../components/RoomModal.jsx'
+import { useHotelOS } from '../../app/providers.jsx'
 
-export default function RoomsPage({ rooms, updateRoomStatus, guests }) {
+export default function RoomsPage() {
+  const { rooms, updateRoomStatus, guests } = useHotelOS()
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')

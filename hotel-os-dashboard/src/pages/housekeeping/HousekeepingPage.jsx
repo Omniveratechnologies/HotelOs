@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import { useHotelOS } from '../../app/providers.jsx'
 
-export default function HousekeepingPage({ serviceRequests, setServiceRequests, rooms, acknowledgeRequest, completeRequest }) {
+export default function HousekeepingPage() {
+  const { serviceRequests, setServiceRequests, rooms, acknowledgeRequest, completeRequest } = useHotelOS()
   const [filter, setFilter] = useState('all')
   const [showNew, setShowNew] = useState(false)
   const [newReq, setNewReq] = useState({ room: '', type: 'Housekeeping request', detail: '', priority: 'normal' })

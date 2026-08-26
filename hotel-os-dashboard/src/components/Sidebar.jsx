@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { clearAuth } from '../services/auth.service.js'
 
 const icons = {
   dashboard: (
@@ -46,17 +48,24 @@ const icons = {
 }
 
 const navItems = [
-  { id: 'dashboard', label: 'Dashboard' },
-  { id: 'rooms', label: 'Rooms' },
-  { id: 'guests', label: 'Guests' },
-  { id: 'food', label: 'Food Orders' },
-  { id: 'housekeeping', label: 'Housekeeping' },
-  { id: 'reports', label: 'Reports' },
-  { id: 'settings', label: 'Settings' },
+  { id: 'dashboard', label: 'Dashboard', path: '/' },
+  { id: 'rooms', label: 'Rooms', path: '/rooms' },
+  { id: 'guests', label: 'Guests', path: '/guests' },
+  { id: 'food', label: 'Food Orders', path: '/food' },
+  { id: 'housekeeping', label: 'Housekeeping', path: '/housekeeping' },
+  { id: 'reports', label: 'Reports', path: '/reports' },
+  { id: 'settings', label: 'Settings', path: '/settings' },
 ]
 
-export default function Sidebar({ activePage, setActivePage, rooms, serviceRequests }) {
+export default function Sidebar({ rooms, serviceRequests }) {
   const [collapsed, setCollapsed] = useState(false)
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    clearAuth()
+    navigate('/login', { replace: true })
+  }
   const pendingRequests = serviceRequests.filter(r => r.status === 'requested').length
   const occupiedRooms = rooms.filter(r => r.status === 'occupied').length
 
@@ -108,11 +117,11 @@ export default function Sidebar({ activePage, setActivePage, rooms, serviceReque
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
         {navItems.map(item => (
-          <button
+          <Link
             key={item.id}
-            onClick={() => setActivePage(item.id)}
+            to={item.path}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 relative group
-              ${activePage === item.id
+              ${pathname === item.path
                 ? 'bg-[#c9a84c] text-[#0f1f3d]'
                 : 'text-white/60 hover:text-white hover:bg-white/8'
               }`}
@@ -120,7 +129,7 @@ export default function Sidebar({ activePage, setActivePage, rooms, serviceReque
             <span className="flex-shrink-0">{icons[item.id]}</span>
             {!collapsed && <span>{item.label}</span>}
             {item.id === 'housekeeping' && pendingRequests > 0 && (
-              <span className={`ml-auto text-xs font-bold px-1.5 py-0.5 rounded-full ${activePage === item.id ? 'bg-[#0f1f3d] text-[#c9a84c]' : 'bg-red-500 text-white'}`}>
+              <span className={`ml-auto text-xs font-bold px-1.5 py-0.5 rounded-full ${pathname === item.path ? 'bg-[#0f1f3d] text-[#c9a84c]' : 'bg-red-500 text-white'}`}>
                 {pendingRequests}
               </span>
             )}
@@ -129,7 +138,7 @@ export default function Sidebar({ activePage, setActivePage, rooms, serviceReque
                 {item.label}
               </span>
             )}
-          </button>
+          </Link>
         ))}
       </nav>
 
@@ -143,6 +152,16 @@ export default function Sidebar({ activePage, setActivePage, rooms, serviceReque
               <div className="text-white/40 text-[10px]">Front Desk</div>
             </div>
           )}
+          <button
+            onClick={handleLogout}
+            title="Log out"
+            className={`text-white/40 hover:text-white transition-colors ${collapsed ? 'mx-auto' : ''}`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+            </svg>
+            {!collapsed && <span className="sr-only">Log out</span>}
+          </button>
         </div>
       </div>
     </aside>

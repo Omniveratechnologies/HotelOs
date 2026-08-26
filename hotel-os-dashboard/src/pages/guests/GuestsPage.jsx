@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import { useHotelOS } from '../../app/providers.jsx'
 
-export default function GuestsPage({ guests, setGuests, rooms }) {
+export default function GuestsPage() {
+  const { guests, setGuests, rooms } = useHotelOS()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [showAdd, setShowAdd] = useState(false)

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import RoomModal from './RoomModal.jsx'
+import RoomModal from '../../components/RoomModal.jsx'
+import { useHotelOS } from '../../app/providers.jsx'
 
 const statusColor = {
   available: 'border-green-500 text-green-600',
@@ -32,7 +33,8 @@ const statCards = (rooms, serviceRequests, foodOrders) => {
   ]
 }
 
-export default function Dashboard({ rooms, serviceRequests, foodOrders, updateRoomStatus, acknowledgeRequest, completeRequest, updateOrderStatus, guests }) {
+export default function Dashboard() {
+  const { rooms, serviceRequests, foodOrders, updateRoomStatus, acknowledgeRequest, completeRequest, updateOrderStatus, guests } = useHotelOS()
   const [selectedRoom, setSelectedRoom] = useState(null)
   const floors = [1, 2, 3]
 
