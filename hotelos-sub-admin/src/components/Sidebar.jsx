@@ -195,8 +195,8 @@ export default function Sidebar({ open, onClose }) {
           <Link
             to="/login"
             onClick={() => {
-              localStorage.removeItem("hotelOS_token");
-              localStorage.removeItem("hotelOS_user");
+              localStorage.removeItem("auth_token");
+              localStorage.removeItem("auth_user");
               onClose?.();
             }}
             className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm text-cream/60 hover:bg-cream/5 hover:text-cream transition-colors"

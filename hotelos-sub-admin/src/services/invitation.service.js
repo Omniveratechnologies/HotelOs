@@ -8,7 +8,7 @@ const API_URL =
 
 export const sendReceptionistInvitation = async ({ name, email, username }) => {
   const token =
-    localStorage.getItem("hotelOS_token");
+    localStorage.getItem("auth_token");
 
   if (!token) {
     throw new Error(

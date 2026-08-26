@@ -78,7 +78,7 @@ export default function Members() {
       setSendingInvite(true);
 
       const token =
-        localStorage.getItem("hotelOS_token");
+        localStorage.getItem("auth_token");
 
       if (!token) {
         throw new Error(

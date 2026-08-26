@@ -9,7 +9,7 @@ const API_URL =
 
 export const fetchMembers = async () => {
   const token =
-    localStorage.getItem("hotelOS_token");
+    localStorage.getItem("auth_token");
 
   if (!token) {
     throw new Error("You are not logged in");
@@ -45,7 +45,7 @@ export const fetchMembers = async () => {
 
 export const deleteMember = async (memberId) => {
   const token =
-    localStorage.getItem("hotelOS_token");
+    localStorage.getItem("auth_token");
 
   if (!token) {
     throw new Error("You are not logged in");

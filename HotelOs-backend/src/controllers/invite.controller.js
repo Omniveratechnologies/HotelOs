@@ -781,7 +781,7 @@ export const acceptInvite = async (
     const authToken =
       jwt.sign(
         {
-          id:
+          userId:
             user._id,
 
           role:

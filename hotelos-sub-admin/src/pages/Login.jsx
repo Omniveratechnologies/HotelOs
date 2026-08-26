@@ -55,13 +55,13 @@ export default function Login() {
 
       // Save authentication token
       localStorage.setItem(
-        "hotelOS_token",
+        "auth_token",
         result.data.token
       );
 
       // Save logged-in user
       localStorage.setItem(
-        "hotelOS_user",
+        "auth_user",
         JSON.stringify(result.data.user)
       );
 

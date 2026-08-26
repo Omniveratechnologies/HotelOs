@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import StatCard from "../components/StatCard.jsx";
 import { sendReceptionistInvitation } from "../services/invitation.service.js";
@@ -107,6 +107,17 @@ const activities = [
 ];
 
 export default function Dashboard() {
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("auth_user")) || {};
+    } catch {
+      return {};
+    }
+  }, []);
+
+  const firstName =
+    user.name?.trim().split(" ")[0] || "Admin";
+
   const [showReceptionistForm, setShowReceptionistForm] = useState(false);
 
   const [receptionistData, setReceptionistData] = useState({
@@ -221,7 +232,7 @@ export default function Dashboard() {
 
             <div className="min-w-0">
               <h1 className="font-display text-2xl font-semibold text-navy truncate">
-                Welcome, Aria
+                Welcome, {firstName}
               </h1>
 
               <p className="text-sm text-muted hidden sm:block">
@@ -250,10 +261,10 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-2.5">
               <span className="w-10 h-10 rounded-full bg-navy text-cream flex items-center justify-center font-display font-semibold">
-                A
+                {(firstName || "A").charAt(0).toUpperCase()}
               </span>
 
-              <span className="hidden sm:block text-sm font-medium text-navy">Aria Whitfield</span>
+              <span className="hidden sm:block text-sm font-medium text-navy">{user.name || "Admin"}</span>
             </div>
           </div>
         </header>
