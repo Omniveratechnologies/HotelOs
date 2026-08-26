@@ -1,12 +1,12 @@
 import { apiFetch } from "../utils/apiFetch.js";
 
 // =====================================================
-// GET HOTEL MEMBERS
+// GET HOTEL MEMBERS (Receptionists of the Sub Admin's hotel)
 // =====================================================
 
 export const fetchMembers = async () => {
   const result = await apiFetch(
-    "/api/v1/members",
+    "/api/v1/users?role=RECEPTIONIST",
     {
       method: "GET",
 
@@ -18,7 +18,7 @@ export const fetchMembers = async () => {
 };
 
 // =====================================================
-// DELETE / DEACTIVATE MEMBER
+// DELETE MEMBER
 // =====================================================
 
 export const deleteMember = async (memberId) => {
@@ -29,7 +29,7 @@ export const deleteMember = async (memberId) => {
   }
 
   const result = await apiFetch(
-    `/api/v1/members/${memberId}`,
+    `/api/v1/users/${memberId}`,
     {
       method: "DELETE",
 

@@ -1,4 +1,7 @@
 import User from "../models/User.js";
+import UserInvite from "../models/UserInvite.js";
+
+import { ROLES } from "../constants/roles.js";
 
 import {
   generateUsername,
@@ -91,15 +94,28 @@ export const createUser = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    let users;
+    const { role } = req.query;
 
+    const filter = {};
+
+    // Sub Admins only see users of their own hotel
     if (req.user.role === "SUB_ADMIN") {
-      users = await User.find({
-        hotelId: req.user.hotelId
-      }).select("-password");
-    } else {
-      users = await User.find().select("-password");
+      filter.hotelId = req.user.hotelId;
     }
+
+    // Optional role filter (e.g. ?role=RECEPTIONIST)
+    if (role) {
+      if (!Object.values(ROLES).includes(role)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid role filter"
+        });
+      }
+
+      filter.role = role;
+    }
+
+    const users = await User.find(filter).select("-password");
 
     return res.status(200).json({
       success: true,
@@ -112,6 +128,75 @@ export const getUsers = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch users"
+    });
+  }
+};
+
+// =====================================================
+// DELETE USER
+// =====================================================
+
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User id is required"
+      });
+    }
+
+    const target = await User.findById(id);
+
+    if (!target) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Super Admin accounts cannot be deleted through this endpoint
+    if (target.role === "SUPER_ADMIN") {
+      return res.status(403).json({
+        success: false,
+        message: "Super Admin accounts cannot be deleted"
+      });
+    }
+
+    // Sub Admins can only delete staff of their own hotel
+    if (req.user.role === "SUB_ADMIN") {
+      if (!req.user.hotelId || String(target.hotelId) !== String(req.user.hotelId)) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only delete users belonging to your hotel"
+        });
+      }
+
+      if (!["RECEPTIONIST", "KITCHEN"].includes(target.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have permission to delete this user"
+        });
+      }
+    }
+
+    // Clean up any pending invites tied to this user
+    await UserInvite.deleteMany({ userId: target._id });
+
+    await target.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully"
+    });
+
+  } catch (error) {
+    console.error("Delete user error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete user"
     });
   }
 };
