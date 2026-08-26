@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Hotel from "../models/Hotel.js";
+import Room from "../models/Room.js";
 
 // =====================================================
 // DASHBOARD STATS (hotel-scoped)
@@ -36,16 +37,23 @@ export const getDashboardStats = async (req, res) => {
     });
 
     // =================================================
-    // ROOMS BY STATUS (populated in Phase B1)
+    // ROOMS BY STATUS
     // =================================================
 
-    // TODO(Phase B1): aggregate real Room counts per status
+    const roomStatusCounts = await Room.aggregate([
+      { $match: { hotelId: hotel._id } },
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+
+    const statusCount = (status) =>
+      roomStatusCounts.find((r) => r._id === status)?.count || 0;
+
     const rooms = {
-      total: 0,
-      available: 0,
-      occupied: 0,
-      reserved: 0,
-      cleaning: 0
+      total: roomStatusCounts.reduce((sum, r) => sum + r.count, 0),
+      available: statusCount("available"),
+      occupied: statusCount("occupied"),
+      reserved: statusCount("reserved"),
+      cleaning: statusCount("cleaning")
     };
 
     // =================================================

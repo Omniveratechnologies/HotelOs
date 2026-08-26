@@ -1,27 +1,26 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+
+import {
+  getRooms as fetchRoomsApi,
+  createRoom as createRoomApi,
+  updateRoom as updateRoomApi,
+  deleteRoom as deleteRoomApi,
+} from '../services/room.service.js'
 
 const HotelOSContext = createContext(null)
 
-const initialRooms = [
-  { id: '101', floor: 1, status: 'available', type: 'Standard', rate: 2500, guest: null, checkIn: null, checkOut: null },
-  { id: '102', floor: 1, status: 'available', type: 'Standard', rate: 2500, guest: null, checkIn: null, checkOut: null },
-  { id: '103', floor: 1, status: 'available', type: 'Standard', rate: 2500, guest: null, checkIn: null, checkOut: null },
-  { id: '104', floor: 1, status: 'available', type: 'Deluxe', rate: 3500, guest: null, checkIn: null, checkOut: null },
-  { id: '105', floor: 1, status: 'available', type: 'Deluxe', rate: 3500, guest: null, checkIn: null, checkOut: null },
-  { id: '106', floor: 1, status: 'occupied', type: 'Suite', rate: 6000, guest: 'Rahul Mehta', checkIn: '2026-08-10', checkOut: '2026-08-15' },
-  { id: '201', floor: 2, status: 'available', type: 'Standard', rate: 2500, guest: null, checkIn: null, checkOut: null },
-  { id: '202', floor: 2, status: 'reserved', type: 'Standard', rate: 2500, guest: 'Priya Sharma', checkIn: '2026-08-14', checkOut: '2026-08-16' },
-  { id: '203', floor: 2, status: 'available', type: 'Deluxe', rate: 3500, guest: null, checkIn: null, checkOut: null },
-  { id: '204', floor: 2, status: 'occupied', type: 'Deluxe', rate: 3500, guest: 'Ansh Gupta', checkIn: '2026-08-12', checkOut: '2026-08-14' },
-  { id: '205', floor: 2, status: 'occupied', type: 'Suite', rate: 6000, guest: 'Vikram Nair', checkIn: '2026-08-11', checkOut: '2026-08-16' },
-  { id: '206', floor: 2, status: 'available', type: 'Suite', rate: 6000, guest: null, checkIn: null, checkOut: null },
-  { id: '301', floor: 3, status: 'available', type: 'Standard', rate: 2500, guest: null, checkIn: null, checkOut: null },
-  { id: '302', floor: 3, status: 'available', type: 'Standard', rate: 2500, guest: null, checkIn: null, checkOut: null },
-  { id: '303', floor: 3, status: 'reserved', type: 'Deluxe', rate: 3500, guest: 'Meera Joshi', checkIn: '2026-08-15', checkOut: '2026-08-18' },
-  { id: '304', floor: 3, status: 'occupied', type: 'Deluxe', rate: 3500, guest: 'Arjun Kapoor', checkIn: '2026-08-13', checkOut: '2026-08-17' },
-  { id: '305', floor: 3, status: 'available', type: 'Suite', rate: 6000, guest: null, checkIn: null, checkOut: null },
-  { id: '306', floor: 3, status: 'available', type: 'Suite', rate: 6000, guest: null, checkIn: null, checkOut: null },
-]
+// Map a backend room DTO onto the shape the UI expects
+const normalizeRoom = (room) => ({
+  id: room.id,
+  roomNumber: room.roomNumber,
+  floor: room.floor,
+  type: room.type,
+  status: room.status,
+  rate: room.rate,
+  guest: room.currentGuest || null,
+  checkIn: room.checkIn ? String(room.checkIn).split('T')[0] : null,
+  checkOut: room.checkOut ? String(room.checkOut).split('T')[0] : null,
+})
 
 const initialServiceRequests = [
   { id: 1, room: '204', type: 'Amenity request', detail: '1× Extra towels, 1× Extra pillows, 1× Toiletries kit', status: 'requested', time: '09:15 AM', priority: 'normal' },
@@ -49,13 +48,62 @@ const initialGuests = [
 
 export function HotelOSProvider({ children }) {
   const [chatOpen, setChatOpen] = useState(false)
-  const [rooms, setRooms] = useState(initialRooms)
+  const [rooms, setRooms] = useState([])
+  const [roomsLoading, setRoomsLoading] = useState(true)
+  const [roomsError, setRoomsError] = useState('')
   const [serviceRequests, setServiceRequests] = useState(initialServiceRequests)
   const [foodOrders, setFoodOrders] = useState(initialFoodOrders)
   const [guests, setGuests] = useState(initialGuests)
 
-  const updateRoomStatus = (roomId, newStatus, guestData = {}) => {
-    setRooms(prev => prev.map(r => r.id === roomId ? { ...r, status: newStatus, ...guestData } : r))
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      try {
+        const data = await fetchRoomsApi()
+        if (!cancelled) {
+          setRooms(data.map(normalizeRoom))
+          setRoomsError('')
+        }
+      } catch (err) {
+        console.error('Failed to load rooms:', err)
+        if (!cancelled) setRoomsError(err.message || 'Failed to load rooms')
+      } finally {
+        if (!cancelled) setRoomsLoading(false)
+      }
+    }
+
+    load()
+
+    return () => { cancelled = true }
+  }, [])
+
+  // Persist a status (and any occupancy display fields) to the backend
+  const updateRoomStatus = async (roomId, newStatus, guestData = {}) => {
+    const body = { status: newStatus }
+
+    if ('guest' in guestData) body.currentGuest = guestData.guest || ''
+    if ('checkIn' in guestData) body.checkIn = guestData.checkIn || null
+    if ('checkOut' in guestData) body.checkOut = guestData.checkOut || null
+
+    try {
+      const updated = await updateRoomApi(roomId, body)
+      setRooms(prev => prev.map(r => (r.id === roomId ? normalizeRoom(updated) : r)))
+    } catch (err) {
+      console.error('Failed to update room:', err)
+      throw err
+    }
+  }
+
+  const addRoom = async ({ roomNumber, type, rate, floor }) => {
+    const created = await createRoomApi({ roomNumber, type, rate, floor })
+    setRooms(prev => [...prev, normalizeRoom(created)])
+    return normalizeRoom(created)
+  }
+
+  const removeRoom = async (roomId) => {
+    await deleteRoomApi(roomId)
+    setRooms(prev => prev.filter(r => r.id !== roomId))
   }
 
   const acknowledgeRequest = (id) => {
@@ -74,11 +122,12 @@ export function HotelOSProvider({ children }) {
     <HotelOSContext.Provider
       value={{
         chatOpen, setChatOpen,
-        rooms, setRooms,
+        rooms, setRooms, roomsLoading, roomsError,
         serviceRequests, setServiceRequests,
         foodOrders, setFoodOrders,
         guests, setGuests,
-        updateRoomStatus, acknowledgeRequest, completeRequest, updateOrderStatus,
+        updateRoomStatus, addRoom, removeRoom,
+        acknowledgeRequest, completeRequest, updateOrderStatus,
       }}
     >
       {children}

@@ -8,27 +8,51 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
   const [checkIn, setCheckIn] = useState(new Date().toISOString().split('T')[0])
   const [checkOut, setCheckOut] = useState('')
   const [idType, setIdType] = useState('Aadhaar')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const runUpdate = async (newStatus, guestData) => {
+    setError('')
+    setSaving(true)
+    try {
+      await updateRoomStatus(room.id, newStatus, guestData)
+      onClose()
+    } catch (err) {
+      console.error('Room update failed:', err)
+      setError(err.message || 'Failed to update the room.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleCheckIn = () => {
-    if (!guestName || !checkOut) return
-    updateRoomStatus(room.id, 'occupied', { guest: guestName, checkIn, checkOut })
-    onClose()
+    if (!guestName || !checkOut || saving) return
+    runUpdate('occupied', { guest: guestName, checkIn, checkOut })
   }
 
   const handleCheckOut = () => {
-    updateRoomStatus(room.id, 'cleaning', { guest: null, checkIn: null, checkOut: null })
-    onClose()
+    if (saving) return
+    runUpdate('cleaning', { guest: null, checkIn: null, checkOut: null })
   }
 
   const handleMarkClean = () => {
-    updateRoomStatus(room.id, 'available')
-    onClose()
+    if (saving) return
+    runUpdate('available', {})
+  }
+
+  const handleCancelReservation = () => {
+    if (saving) return
+    runUpdate('available', { guest: null })
+  }
+
+  const handleMarkCleaning = () => {
+    if (saving) return
+    runUpdate('cleaning', {})
   }
 
   const handleReserve = () => {
-    if (!guestName || !checkIn || !checkOut) return
-    updateRoomStatus(room.id, 'reserved', { guest: guestName, checkIn, checkOut })
-    onClose()
+    if (!guestName || !checkIn || !checkOut || saving) return
+    runUpdate('reserved', { guest: guestName, checkIn, checkOut })
   }
 
   return (
@@ -37,7 +61,7 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
         {/* Header */}
         <div className="bg-[#0f1f3d] rounded-t-2xl p-5 flex items-center justify-between">
           <div>
-            <div className="text-[#c9a84c] text-xs font-semibold uppercase tracking-widest">Room {room.id}</div>
+            <div className="text-[#c9a84c] text-xs font-semibold uppercase tracking-widest">Room {room.roomNumber}</div>
             <div className="text-white font-bold text-lg mt-0.5">{room.type} Room</div>
             <div className="text-white/60 text-sm">₹{room.rate}/night</div>
           </div>
@@ -60,6 +84,9 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
 
         {/* Content */}
         <div className="p-5">
+          {error && (
+            <div className="mb-4 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">{error}</div>
+          )}
           {view === 'info' && (
             <div>
               {room.guest && (
@@ -78,7 +105,7 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
                     <button onClick={() => setView('assign')} className="py-3 border-2 border-amber-400 text-amber-600 rounded-xl font-semibold hover:bg-amber-50 transition-colors text-sm">
                       📅 Reserve Room
                     </button>
-                    <button onClick={() => { updateRoomStatus(room.id, 'cleaning'); onClose() }} className="py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm">
+                    <button onClick={handleMarkCleaning} disabled={saving} className="py-3 border-2 border-gray-200 text-gray-600 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm">
                       🧹 Mark Cleaning
                     </button>
                   </>
@@ -101,7 +128,7 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
                     <button onClick={() => setView('checkin')} className="col-span-2 py-3 bg-[#0f1f3d] text-white rounded-xl font-semibold hover:bg-[#162847] transition-colors">
                       ✓ Check In Guest
                     </button>
-                    <button onClick={() => { updateRoomStatus(room.id, 'available', { guest: null }); onClose() }} className="col-span-2 py-3 border-2 border-red-200 text-red-500 rounded-xl font-semibold hover:bg-red-50 transition-colors text-sm">
+                    <button onClick={handleCancelReservation} disabled={saving} className="col-span-2 py-3 border-2 border-red-200 text-red-500 rounded-xl font-semibold hover:bg-red-50 transition-colors text-sm">
                       Cancel Reservation
                     </button>
                   </>

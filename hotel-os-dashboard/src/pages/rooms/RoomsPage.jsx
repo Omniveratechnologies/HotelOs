@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import RoomModal from '../../components/RoomModal.jsx'
+import AddRoomModal from './AddRoomModal.jsx'
 import { useHotelOS } from '../../app/providers.jsx'
 
 export default function RoomsPage() {
-  const { rooms, updateRoomStatus, guests } = useHotelOS()
+  const { rooms, updateRoomStatus, addRoom, roomsLoading, roomsError } = useHotelOS()
   const [selected, setSelected] = useState(null)
+  const [showAdd, setShowAdd] = useState(false)
   const [filter, setFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -12,7 +14,7 @@ export default function RoomsPage() {
   const filtered = rooms.filter(r => {
     if (filter !== 'all' && r.status !== filter) return false
     if (typeFilter !== 'all' && r.type !== typeFilter) return false
-    if (search && !r.id.includes(search) && !(r.guest && r.guest.toLowerCase().includes(search.toLowerCase()))) return false
+    if (search && !r.roomNumber.includes(search) && !(r.guest && r.guest.toLowerCase().includes(search.toLowerCase()))) return false
     return true
   })
 
@@ -25,7 +27,7 @@ export default function RoomsPage() {
           <h1 className="text-2xl font-bold text-[#0f1f3d] font-display">Room Management</h1>
           <p className="text-gray-500 text-sm">{rooms.length} total rooms · {rooms.filter(r=>r.status==='available').length} available</p>
         </div>
-        <button className="px-4 py-2 bg-[#0f1f3d] text-white text-sm rounded-xl font-medium hover:bg-[#162847] transition-colors">+ Add Room</button>
+        <button onClick={() => setShowAdd(true)} className="px-4 py-2 bg-[#0f1f3d] text-white text-sm rounded-xl font-medium hover:bg-[#162847] transition-colors">+ Add Room</button>
       </div>
 
       {/* Filters */}
@@ -42,12 +44,28 @@ export default function RoomsPage() {
         </select>
       </div>
 
+      {/* Loading / Error */}
+      {roomsLoading && (
+        <div className="py-16 text-center text-gray-400 text-sm">Loading rooms...</div>
+      )}
+      {!roomsLoading && roomsError && (
+        <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600 mb-4">{roomsError}</div>
+      )}
+
+      {/* Empty state */}
+      {!roomsLoading && !roomsError && filtered.length === 0 && (
+        <div className="py-16 text-center text-gray-400 text-sm">
+          No rooms found. Create your first room with “+ Add Room”.
+        </div>
+      )}
+
       {/* Room Cards */}
+      {!roomsLoading && filtered.length > 0 && (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {filtered.map(room => (
           <button key={room.id} onClick={() => setSelected(room)} className="bg-white rounded-2xl border border-gray-100 p-4 text-left hover:shadow-md hover:scale-105 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl font-bold text-[#0f1f3d]">{room.id}</span>
+              <span className="text-2xl font-bold text-[#0f1f3d]">{room.roomNumber}</span>
               <span className="text-xl">🛏</span>
             </div>
             <div className="text-xs text-gray-500 mb-2">{room.type}</div>
@@ -58,8 +76,10 @@ export default function RoomsPage() {
           </button>
         ))}
       </div>
+      )}
 
       {selected && <RoomModal room={selected} onClose={() => setSelected(null)} updateRoomStatus={updateRoomStatus} guests={guests} />}
+      {showAdd && <AddRoomModal onClose={() => setShowAdd(false)} onAdd={addRoom} />}
     </div>
   )
 }
