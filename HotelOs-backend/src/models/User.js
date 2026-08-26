@@ -68,6 +68,19 @@ const userSchema = new mongoose.Schema(
     mustChangePassword: {
       type: Boolean,
       default: true
+    },
+
+    // Password recovery
+    resetPasswordToken: {
+      type: String,
+      default: null,
+      select: false
+    },
+
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+      select: false
     }
   },
   {

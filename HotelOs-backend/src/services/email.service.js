@@ -86,3 +86,129 @@ export const sendInvitationEmail = async ({
     html,
   });
 };
+
+// =====================================================
+// FORGOT USERNAME EMAIL
+// =====================================================
+
+export const sendUsernameReminderEmail = async ({
+  email,
+  name,
+  username,
+}) => {
+  const subject =
+    "HotelOS - Your Username";
+
+  const html = `
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+      "
+    >
+      <h2>Your HotelOS Username</h2>
+
+      <p>Hello ${name},</p>
+
+      <p>
+        You recently requested your username for
+        your HotelOS account.
+      </p>
+
+      <p>
+        Your username is:
+        <strong>${username}</strong>
+      </p>
+
+      <p>
+        If you did not request this,
+        please ignore this email.
+      </p>
+
+      <br />
+
+      <p>HotelOS Team</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject,
+    html,
+  });
+};
+
+// =====================================================
+// PASSWORD RESET EMAIL
+// =====================================================
+
+export const sendPasswordResetEmail = async ({
+  email,
+  name,
+  resetUrl,
+}) => {
+  const subject =
+    "HotelOS - Reset Your Password";
+
+  const html = `
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+      "
+    >
+      <h2>Reset Your Password</h2>
+
+      <p>Hello ${name},</p>
+
+      <p>
+        We received a request to reset the password
+        for your HotelOS account.
+      </p>
+
+      <p>
+        Click the button below to choose a new password.
+      </p>
+
+      <p>
+        <a
+          href="${resetUrl}"
+          style="
+            display: inline-block;
+            padding: 12px 20px;
+            background: #111827;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+          "
+        >
+          Reset Password
+        </a>
+      </p>
+
+      <p>
+        This password reset link will expire in 1 hour.
+      </p>
+
+      <p>
+        If you did not request a password reset,
+        please ignore this email and your password
+        will remain unchanged.
+      </p>
+
+      <br />
+
+      <p>HotelOS Team</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject,
+    html,
+  });
+};
