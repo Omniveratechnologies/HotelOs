@@ -2,10 +2,17 @@ export const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://localhost:5001";
 
-export async function apiFetch(path, { method = "GET", body, auth = false } = {}) {
-  const headers = {
-    "Content-Type": "application/json",
-  };
+export async function apiFetch(path, { method = "GET", body, form, auth = false } = {}) {
+  const headers = {};
+
+  if (form) {
+    // FormData: let the browser set the multipart boundary
+    if (body !== undefined) {
+      throw new Error("Pass either body or form, not both.");
+    }
+  } else {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (auth) {
     const token =
@@ -31,9 +38,11 @@ export async function apiFetch(path, { method = "GET", body, auth = false } = {}
         headers,
 
         body:
-          body === undefined
-            ? undefined
-            : JSON.stringify(body),
+          form !== undefined
+            ? form
+            : body === undefined
+              ? undefined
+              : JSON.stringify(body),
       }
     );
   } catch {

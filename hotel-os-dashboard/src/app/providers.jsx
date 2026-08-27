@@ -6,6 +6,11 @@ import {
   updateRoom as updateRoomApi,
   deleteRoom as deleteRoomApi,
 } from '../services/room.service.js'
+import {
+  getGuests as fetchGuestsApi,
+  registerGuest as registerGuestApi,
+  deleteGuest as deleteGuestApi,
+} from '../services/guest.service.js'
 
 const HotelOSContext = createContext(null)
 
@@ -37,14 +42,23 @@ const initialFoodOrders = [
   { id: 4, room: '205', items: '1× Masala Chai, 1× Samosa', payment: 'Room Charge', status: 'delivered', time: '08:20 AM', amount: 95 },
 ]
 
-const initialGuests = [
-  { id: 1, name: 'Rahul Mehta', room: '106', phone: '+91 98765 43210', email: 'rahul@email.com', checkIn: '2026-08-10', checkOut: '2026-08-15', idType: 'Aadhaar', nights: 5, status: 'checked-in' },
-  { id: 2, name: 'Ansh Gupta', room: '204', phone: '+91 87654 32109', email: 'ansh@email.com', checkIn: '2026-08-12', checkOut: '2026-08-14', idType: 'PAN', nights: 2, status: 'checked-in' },
-  { id: 3, name: 'Vikram Nair', room: '205', phone: '+91 76543 21098', email: 'vikram@email.com', checkIn: '2026-08-11', checkOut: '2026-08-16', idType: 'Passport', nights: 5, status: 'checked-in' },
-  { id: 4, name: 'Arjun Kapoor', room: '304', phone: '+91 65432 10987', email: 'arjun@email.com', checkIn: '2026-08-13', checkOut: '2026-08-17', idType: 'Aadhaar', nights: 4, status: 'checked-in' },
-  { id: 5, name: 'Priya Sharma', room: '202', phone: '+91 54321 09876', email: 'priya@email.com', checkIn: '2026-08-14', checkOut: '2026-08-16', idType: 'Aadhaar', nights: 2, status: 'reserved' },
-  { id: 6, name: 'Meera Joshi', room: '303', phone: '+91 43210 98765', email: 'meera@email.com', checkIn: '2026-08-15', checkOut: '2026-08-18', idType: 'PAN', nights: 3, status: 'reserved' },
-]
+// Map a backend guest DTO onto the shape the UI expects
+const normalizeGuest = (g) => ({
+  id: g.id,
+  name: g.name,
+  email: g.email,
+  phone: g.phone,
+  address: g.address,
+  idType: g.idType,
+  idNumber: g.idNumber,
+  room: g.room ? String(g.room.roomNumber) : '',
+  roomId: g.roomId,
+  checkIn: g.checkIn ? String(g.checkIn).split('T')[0] : null,
+  checkOut: g.checkOut ? String(g.checkOut).split('T')[0] : null,
+  nights: g.nights ?? null,
+  status: g.status,
+  documents: g.documents || [],
+})
 
 export function HotelOSProvider({ children }) {
   const [chatOpen, setChatOpen] = useState(false)
@@ -53,7 +67,9 @@ export function HotelOSProvider({ children }) {
   const [roomsError, setRoomsError] = useState('')
   const [serviceRequests, setServiceRequests] = useState(initialServiceRequests)
   const [foodOrders, setFoodOrders] = useState(initialFoodOrders)
-  const [guests, setGuests] = useState(initialGuests)
+  const [guests, setGuests] = useState([])
+  const [guestsLoading, setGuestsLoading] = useState(true)
+  const [guestsError, setGuestsError] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -70,6 +86,29 @@ export function HotelOSProvider({ children }) {
         if (!cancelled) setRoomsError(err.message || 'Failed to load rooms')
       } finally {
         if (!cancelled) setRoomsLoading(false)
+      }
+    }
+
+    load()
+
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      try {
+        const data = await fetchGuestsApi()
+        if (!cancelled) {
+          setGuests(data.map(normalizeGuest))
+          setGuestsError('')
+        }
+      } catch (err) {
+        console.error('Failed to load guests:', err)
+        if (!cancelled) setGuestsError(err.message || 'Failed to load guests')
+      } finally {
+        if (!cancelled) setGuestsLoading(false)
       }
     }
 
@@ -106,6 +145,51 @@ export function HotelOSProvider({ children }) {
     setRooms(prev => prev.filter(r => r.id !== roomId))
   }
 
+  // Re-fetch rooms + guests from the backend
+  const refreshData = async () => {
+    try {
+      const [roomsData, guestsData] = await Promise.all([
+        fetchRoomsApi(),
+        fetchGuestsApi(),
+      ])
+      setRooms(roomsData.map(normalizeRoom))
+      setGuests(guestsData.map(normalizeGuest))
+    } catch (err) {
+      console.error('Failed to refresh data:', err)
+    }
+  }
+
+  // Register a real guest (creates login account, uploads documents, occupies room)
+  const addGuest = async (data) => {
+    const created = await registerGuestApi(data)
+
+    const normalized = normalizeGuest(created)
+
+    setGuests(prev => [normalized, ...prev])
+
+    // Room status/dates changed server-side - keep local state in sync
+    try {
+      const roomsData = await fetchRoomsApi()
+      setRooms(roomsData.map(normalizeRoom))
+    } catch {
+      // Non-fatal; next full load will sync
+    }
+
+    return created
+  }
+
+  // Delete a guest (cascades to their login account and frees the room)
+  const removeGuest = async (guestId) => {
+    await deleteGuestApi(guestId)
+    setGuests(prev => prev.filter(g => g.id !== guestId))
+    try {
+      const roomsData = await fetchRoomsApi()
+      setRooms(roomsData.map(normalizeRoom))
+    } catch {
+      // Non-fatal
+    }
+  }
+
   const acknowledgeRequest = (id) => {
     setServiceRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'acknowledged' } : r))
   }
@@ -125,8 +209,9 @@ export function HotelOSProvider({ children }) {
         rooms, setRooms, roomsLoading, roomsError,
         serviceRequests, setServiceRequests,
         foodOrders, setFoodOrders,
-        guests, setGuests,
+        guests, setGuests, guestsLoading, guestsError,
         updateRoomStatus, addRoom, removeRoom,
+        addGuest, removeGuest, refreshData,
         acknowledgeRequest, completeRequest, updateOrderStatus,
       }}
     >

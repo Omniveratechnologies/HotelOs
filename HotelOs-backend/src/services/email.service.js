@@ -141,6 +141,67 @@ export const sendUsernameReminderEmail = async ({
 };
 
 // =====================================================
+// GUEST CREDENTIALS EMAIL
+// =====================================================
+
+export const sendGuestCredentialsEmail = async ({
+  email,
+  name,
+  username,
+  password,
+  hotelName,
+}) => {
+  const subject =
+    `Your HotelOS Guest Account - ${hotelName}`;
+
+  const html = `
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+      "
+    >
+      <h2>Welcome to ${hotelName}</h2>
+
+      <p>Hello ${name},</p>
+
+      <p>
+        Your guest account has been created.
+        Use the credentials below to log in to your
+        HotelOS guest dashboard.
+      </p>
+
+      <p>
+        Username:
+        <strong>${username}</strong>
+      </p>
+
+      <p>
+        Password:
+        <strong>${password}</strong>
+      </p>
+
+      <p>
+        Please keep these credentials safe. You can
+        ask the reception desk to reset them if needed.
+      </p>
+
+      <br />
+
+      <p>HotelOS Team</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject,
+    html,
+  });
+};
+
+// =====================================================
 // PASSWORD RESET EMAIL
 // =====================================================
 

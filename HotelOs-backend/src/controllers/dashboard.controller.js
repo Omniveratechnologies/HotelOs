@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
+import Guest from "../models/Guest.js";
 
 // =====================================================
 // DASHBOARD STATS (hotel-scoped)
@@ -57,14 +58,34 @@ export const getDashboardStats = async (req, res) => {
     };
 
     // =================================================
-    // GUEST ACTIVITY (populated in Phase B2)
+    // GUEST ACTIVITY
     // =================================================
 
-    // TODO(Phase B2): compute from Guest model
+    const startOfToday = new Date();
+
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date(startOfToday);
+
+    endOfToday.setDate(endOfToday.getDate() + 1);
+
+    const [checkedIn, arrivalsToday, departuresToday] = await Promise.all([
+      Guest.countDocuments({ hotelId, status: "checked-in" }),
+      Guest.countDocuments({
+        hotelId,
+        checkIn: { $gte: startOfToday, $lt: endOfToday }
+      }),
+      Guest.countDocuments({
+        hotelId,
+        checkOut: { $gte: startOfToday, $lt: endOfToday },
+        status: { $ne: "checked-out" }
+      })
+    ]);
+
     const guests = {
-      checkedIn: 0,
-      arrivalsToday: 0,
-      departuresToday: 0
+      checkedIn,
+      arrivalsToday,
+      departuresToday
     };
 
     const occupancyPercent =
@@ -80,11 +101,36 @@ export const getDashboardStats = async (req, res) => {
     const revenueToday = 0;
 
     // =================================================
-    // RECENT ACTIVITY FEED (populated in Phase B2/B3)
+    // RECENT ACTIVITY FEED (latest guest events)
     // =================================================
 
-    // TODO(Phase B2/B3): merge latest guest + room events
-    const recentActivities = [];
+    const recentGuests = await Guest.find({ hotelId })
+      .sort({ updatedAt: -1 })
+      .limit(6)
+      .populate("roomId", "roomNumber");
+
+    const recentActivities = recentGuests.map((g) => {
+      let text;
+
+      if (g.status === "checked-out") {
+        text = `${g.name} checked out`;
+      } else if (g.status === "reserved") {
+        text = `Reservation for ${g.name}`;
+      } else {
+        text = `${g.name} checked in`;
+      }
+
+      if (g.roomId?.roomNumber) {
+        text += ` — Room ${g.roomId.roomNumber}`;
+      }
+
+      return {
+        id: g._id,
+        text,
+        tone: g.status === "checked-in" ? "gold" : "default",
+        createdAt: g.updatedAt
+      };
+    });
 
     return res.status(200).json({
       success: true,

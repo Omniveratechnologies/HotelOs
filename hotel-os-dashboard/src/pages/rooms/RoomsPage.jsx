@@ -78,7 +78,7 @@ export default function RoomsPage() {
       </div>
       )}
 
-      {selected && <RoomModal room={selected} onClose={() => setSelected(null)} updateRoomStatus={updateRoomStatus} guests={guests} />}
+      {selected && <RoomModal room={selected} onClose={() => setSelected(null)} updateRoomStatus={updateRoomStatus} />}
       {showAdd && <AddRoomModal onClose={() => setShowAdd(false)} onAdd={addRoom} />}
     </div>
   )
