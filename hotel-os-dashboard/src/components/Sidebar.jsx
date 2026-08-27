@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { clearAuth } from '../services/auth.service.js'
+import { clearAuth, getStoredUser } from '../services/auth.service.js'
+import { useHotelOS } from '../app/providers.jsx'
 
 const icons = {
   dashboard: (
@@ -61,6 +62,12 @@ export default function Sidebar({ rooms, serviceRequests }) {
   const [collapsed, setCollapsed] = useState(false)
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const { stats } = useHotelOS()
+
+  const user = useMemo(() => getStoredUser() || {}, [])
+  const hotelName = stats?.hotelName || 'Grand Residency'
+  const displayName = user.name || 'Receptionist'
+  const initials = displayName.trim()[0]?.toUpperCase() || 'R'
 
   const handleLogout = () => {
     clearAuth()
@@ -81,7 +88,7 @@ export default function Sidebar({ rooms, serviceRequests }) {
         {!collapsed && (
           <div>
             <div className="text-white font-bold text-sm font-display tracking-wide">HotelOS</div>
-            <div className="text-[#c9a84c] text-xs">Grand Residency</div>
+            <div className="text-[#c9a84c] text-xs truncate">{hotelName}</div>
           </div>
         )}
         <button
@@ -145,11 +152,11 @@ export default function Sidebar({ rooms, serviceRequests }) {
       {/* Footer */}
       <div className="px-4 py-4 border-t border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f1f3d] font-bold text-sm flex-shrink-0">R</div>
+          <div className="w-8 h-8 rounded-full bg-[#c9a84c] flex items-center justify-center text-[#0f1f3d] font-bold text-sm flex-shrink-0">{initials}</div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-white text-xs font-medium truncate">Receptionist</div>
-              <div className="text-white/40 text-[10px]">Front Desk</div>
+              <div className="text-white text-xs font-medium truncate">{displayName}</div>
+              <div className="text-white/40 text-[10px]">Receptionist</div>
             </div>
           )}
           <button

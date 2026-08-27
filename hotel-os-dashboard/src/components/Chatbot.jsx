@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { useHotelOS } from '../app/providers.jsx'
 
 const quickReplies = [
   'How many rooms are occupied?',
@@ -7,20 +8,24 @@ const quickReplies = [
   'Which rooms are available?',
 ]
 
-function buildContext(rooms, serviceRequests, foodOrders) {
+function buildContext(hotelName, rooms, guests, serviceRequests, foodOrders) {
   const occupied = rooms.filter(r => r.status === 'occupied')
   const available = rooms.filter(r => r.status === 'available')
   const reserved = rooms.filter(r => r.status === 'reserved')
   const pending = serviceRequests.filter(r => r.status === 'requested')
   const activeOrders = foodOrders.filter(o => o.status !== 'delivered')
+  const checkedIn = guests.filter(g => g.status === 'checked-in')
+  const upcoming = guests.filter(g => g.status === 'reserved')
 
-  return `You are HotelOS AI Assistant for Grand Residency Hotel. Be concise, helpful, and professional.
+  return `You are HotelOS AI Assistant for ${hotelName || 'this hotel'}. Be concise, helpful, and professional.
 
 Current hotel data:
 - Total rooms: ${rooms.length}
-- Occupied: ${occupied.length} (${occupied.map(r=>`Room ${r.id} - ${r.guest}`).join(', ')})
-- Available: ${available.length} (${available.map(r=>`Room ${r.id}`).join(', ')})
-- Reserved: ${reserved.length} (${reserved.map(r=>`Room ${r.id} - ${r.guest || 'TBD'}`).join(', ')})
+- Occupied: ${occupied.length} (${occupied.map(r=>`Room ${r.roomNumber} - ${r.guest || 'TBD'}`).join(', ')})
+- Available: ${available.length} (${available.map(r=>`Room ${r.roomNumber}`).join(', ')})
+- Reserved: ${reserved.length} (${reserved.map(r=>`Room ${r.roomNumber} - ${r.guest || 'TBD'}`).join(', ')})
+- Guests checked in: ${checkedIn.length} (${checkedIn.map(g=>`${g.name} in room ${g.room}`).join(', ')})
+- Upcoming reservations: ${upcoming.length} (${upcoming.map(g=>`${g.name} in room ${g.room}`).join(', ')})
 - Pending service requests: ${pending.length} (${pending.map(r=>`Room ${r.room}: ${r.type}`).join(', ')})
 - Active food orders: ${activeOrders.length} (${activeOrders.map(o=>`Room ${o.room}: ${o.items} [${o.status}]`).join(', ')})
 
@@ -28,6 +33,8 @@ Answer questions about hotel status, suggest actions, and help the receptionist.
 }
 
 export default function Chatbot({ isOpen, setIsOpen, rooms, serviceRequests, foodOrders }) {
+  const { guests, stats } = useHotelOS()
+  const hotelName = stats?.hotelName
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hello! I\'m your HotelOS AI assistant. I can help you check room status, manage requests, and answer any hotel operations questions. How can I help you today?' }
   ])
@@ -50,7 +57,7 @@ export default function Chatbot({ isOpen, setIsOpen, rooms, serviceRequests, foo
     setLoading(true)
 
     try {
-      const systemContext = buildContext(rooms, serviceRequests, foodOrders)
+      const systemContext = buildContext(hotelName, rooms, guests, serviceRequests, foodOrders)
       const apiMessages = newMessages.map(m => ({ role: m.role, content: m.content }))
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {

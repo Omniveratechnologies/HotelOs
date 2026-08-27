@@ -11,6 +11,7 @@ import {
   registerGuest as registerGuestApi,
   deleteGuest as deleteGuestApi,
 } from '../services/guest.service.js'
+import { getDashboardStats as fetchStatsApi } from '../services/dashboard.service.js'
 
 const HotelOSContext = createContext(null)
 
@@ -70,6 +71,9 @@ export function HotelOSProvider({ children }) {
   const [guests, setGuests] = useState([])
   const [guestsLoading, setGuestsLoading] = useState(true)
   const [guestsError, setGuestsError] = useState('')
+  const [stats, setStats] = useState(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -116,6 +120,39 @@ export function HotelOSProvider({ children }) {
 
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      try {
+        const data = await fetchStatsApi()
+        if (!cancelled) {
+          setStats(data)
+          setStatsError('')
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard stats:', err)
+        if (!cancelled) setStatsError(err.message || 'Failed to load dashboard stats')
+      } finally {
+        if (!cancelled) setStatsLoading(false)
+      }
+    }
+
+    load()
+
+    return () => { cancelled = true }
+  }, [])
+
+  const refreshStats = async () => {
+    try {
+      const data = await fetchStatsApi()
+      setStats(data)
+      setStatsError('')
+    } catch (err) {
+      console.error('Failed to refresh dashboard stats:', err)
+    }
+  }
 
   // Persist a status (and any occupancy display fields) to the backend
   const updateRoomStatus = async (roomId, newStatus, guestData = {}) => {
@@ -210,6 +247,7 @@ export function HotelOSProvider({ children }) {
         serviceRequests, setServiceRequests,
         foodOrders, setFoodOrders,
         guests, setGuests, guestsLoading, guestsError,
+        stats, setStats, statsLoading, statsError, refreshStats,
         updateRoomStatus, addRoom, removeRoom,
         addGuest, removeGuest, refreshData,
         acknowledgeRequest, completeRequest, updateOrderStatus,
