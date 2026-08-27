@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 
 import AuthLayout from "./AuthLayout.jsx";
 import HotelLayout from "../layouts/HotelLayout.jsx";
+import ErrorScreen from "./ErrorScreen.jsx";
 
 export function lazyPage(
   importer,
@@ -17,34 +18,39 @@ export function lazyPage(
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    lazy: lazyPage(() => import("../pages/landing/LandingPage.jsx")),
-  },
-  {
-    path: "/login",
-    lazy: lazyPage(() => import("../pages/auth/LoginPage.jsx")),
-  },
-  {
-    path: "/accept-invitation",
-    lazy: lazyPage(() => import("../pages/auth/AcceptInvitationPage.jsx")),
-  },
-  {
-    path: "/reset-password",
-    lazy: lazyPage(() => import("../pages/auth/ResetPasswordPage.jsx")),
-  },
-  {
-    element: <AuthLayout />,
+    errorElement: <ErrorScreen />,
     children: [
       {
-        element: <HotelLayout />,
+        path: "/",
+        lazy: lazyPage(() => import("../pages/landing/LandingPage.jsx")),
+      },
+      {
+        path: "/login",
+        lazy: lazyPage(() => import("../pages/auth/LoginPage.jsx")),
+      },
+      {
+        path: "/accept-invitation",
+        lazy: lazyPage(() => import("../pages/auth/AcceptInvitationPage.jsx")),
+      },
+      {
+        path: "/reset-password",
+        lazy: lazyPage(() => import("../pages/auth/ResetPasswordPage.jsx")),
+      },
+      {
+        element: <AuthLayout />,
         children: [
           {
-            path: "/dashboard",
-            lazy: lazyPage(() => import("../pages/dashboard/DashboardPage.jsx")),
-          },
-          {
-            path: "/members",
-            lazy: lazyPage(() => import("../pages/dashboard/MembersPage.jsx")),
+            element: <HotelLayout />,
+            children: [
+              {
+                path: "/dashboard",
+                lazy: lazyPage(() => import("../pages/dashboard/DashboardPage.jsx")),
+              },
+              {
+                path: "/members",
+                lazy: lazyPage(() => import("../pages/dashboard/MembersPage.jsx")),
+              },
+            ],
           },
         ],
       },
