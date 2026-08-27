@@ -518,6 +518,164 @@ export const updateHotel = async (
 };
 
 // =====================================================
+// GET MY HOTEL (self-service, SUB_ADMIN / RECEPTIONIST)
+// =====================================================
+
+export const getMyHotel = async (
+  req,
+  res
+) => {
+  try {
+    const { hotelId } = req.user;
+
+    if (!hotelId) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You are not assigned to a hotel",
+      });
+    }
+
+    const hotel =
+      await Hotel.findById(hotelId);
+
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: "Hotel not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Hotel fetched successfully",
+      data: hotel,
+    });
+  } catch (error) {
+    console.error(
+      "Get my hotel error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch hotel",
+    });
+  }
+};
+
+// =====================================================
+// UPDATE MY HOTEL (self-service, SUB_ADMIN / RECEPTIONIST)
+// =====================================================
+
+export const updateMyHotel = async (
+  req,
+  res
+) => {
+  try {
+    const { hotelId } = req.user;
+
+    if (!hotelId) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You are not assigned to a hotel",
+      });
+    }
+
+    const hotel =
+      await Hotel.findById(hotelId);
+
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: "Hotel not found",
+      });
+    }
+
+    const {
+      phone,
+      address,
+      city,
+      checkInTime,
+      checkOutTime,
+    } = req.body;
+
+    // =================================================
+    // UPDATE PHONE
+    // =================================================
+
+    if (phone !== undefined) {
+      hotel.phone =
+        String(phone || "")
+          .trim();
+    }
+
+    // =================================================
+    // UPDATE ADDRESS
+    // =================================================
+
+    if (address !== undefined) {
+      hotel.address =
+        String(address || "")
+          .trim();
+    }
+
+    // =================================================
+    // UPDATE CITY
+    // =================================================
+
+    if (city !== undefined) {
+      hotel.city =
+        String(city || "")
+          .trim();
+    }
+
+    // =================================================
+    // UPDATE CHECK-IN TIME
+    // =================================================
+
+    if (checkInTime !== undefined) {
+      hotel.checkInTime =
+        String(checkInTime || "")
+          .trim();
+    }
+
+    // =================================================
+    // UPDATE CHECK-OUT TIME
+    // =================================================
+
+    if (checkOutTime !== undefined) {
+      hotel.checkOutTime =
+        String(checkOutTime || "")
+          .trim();
+    }
+
+    await hotel.save();
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Hotel updated successfully",
+      data: hotel,
+    });
+  } catch (error) {
+    console.error(
+      "Update my hotel error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to update hotel",
+    });
+  }
+};
+
+// =====================================================
 // DELETE HOTEL
 // =====================================================
 

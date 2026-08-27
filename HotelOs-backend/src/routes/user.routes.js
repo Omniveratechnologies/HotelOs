@@ -19,7 +19,7 @@ router.post(
 router.get(
     "/",
     authenticate,
-    authorize("SUPER_ADMIN", "SUB_ADMIN"),
+    authorize("SUPER_ADMIN", "SUB_ADMIN", "RECEPTIONIST"),
     getUsers
   );
 

@@ -7,6 +7,8 @@ import {
   updateHotelStatus,
   updateHotel,
   deleteHotel,
+  getMyHotel,
+  updateMyHotel,
 } from "../controllers/hotel.controller.js";
 
 import {
@@ -18,6 +20,27 @@ import {
 } from "../middleware/role.middleware.js";
 
 const router = express.Router();
+
+// =====================================================
+// SELF-SERVICE HOTEL DETAILS
+// GET: SUB_ADMIN + RECEPTIONIST (read-only view for staff)
+// PATCH: SUB_ADMIN only (only the hotel owner edits details)
+// These must be registered before the SUPER_ADMIN gate.
+// =====================================================
+
+router.get(
+  "/me",
+  authenticate,
+  authorize("SUB_ADMIN", "RECEPTIONIST"),
+  getMyHotel
+);
+
+router.patch(
+  "/me",
+  authenticate,
+  authorize("SUB_ADMIN"),
+  updateMyHotel
+);
 
 // =====================================================
 // ALL HOTEL MANAGEMENT IS SUPER ADMIN ONLY

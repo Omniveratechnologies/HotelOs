@@ -42,6 +42,18 @@ const hotelSchema = new mongoose.Schema(
       default: "",
     },
 
+    checkInTime: {
+      type: String,
+      trim: true,
+      default: "14:00",
+    },
+
+    checkOutTime: {
+      type: String,
+      trim: true,
+      default: "12:00",
+    },
+
     status: {
       type: String,
       enum: ["ACTIVE", "INACTIVE"],
