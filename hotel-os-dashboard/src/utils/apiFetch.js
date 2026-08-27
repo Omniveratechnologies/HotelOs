@@ -29,6 +29,13 @@ export async function apiFetch(path, { method = "GET", body, form, auth = false 
 
   let response;
 
+  const requestBody =
+    form !== undefined
+      ? form
+      : method === "GET" || body === undefined
+        ? undefined
+        : JSON.stringify(body);
+
   try {
     response = await fetch(
       `${API_URL}${path}`,
@@ -37,12 +44,9 @@ export async function apiFetch(path, { method = "GET", body, form, auth = false 
 
         headers,
 
-        body:
-          form !== undefined
-            ? form
-            : body === undefined
-              ? undefined
-              : JSON.stringify(body),
+        ...(requestBody !== undefined
+          ? { body: requestBody }
+          : {}),
       }
     );
   } catch {

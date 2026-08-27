@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
-import { useSubAdmin } from "../app/providers.jsx";
+import { useSubAdmin } from "../app/subAdminContext.js";
 
 const items = [
   {

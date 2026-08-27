@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useMemo,
 } from "react";
 
@@ -9,8 +7,7 @@ import {
   getStoredUser,
 } from "../services/auth.service.js";
 
-const SubAdminContext =
-  createContext(null);
+import { SubAdminContext } from "./subAdminContext.js";
 
 export function SubAdminProvider({
   children,
@@ -38,17 +35,4 @@ export function SubAdminProvider({
       {children}
     </SubAdminContext.Provider>
   );
-}
-
-export function useSubAdmin() {
-  const context =
-    useContext(SubAdminContext);
-
-  if (!context) {
-    throw new Error(
-      "useSubAdmin must be used within a SubAdminProvider"
-    );
-  }
-
-  return context;
 }
