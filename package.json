@@ -5,13 +5,19 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
+    "prepare": "husky",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.4.1",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "turbo": "^2.10.12"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,json,md,css}": "prettier --write"
   },
   "packageManager": "pnpm@11.1.1",
   "engines": {
