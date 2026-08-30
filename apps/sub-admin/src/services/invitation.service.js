@@ -1,4 +1,4 @@
-import { apiFetch } from "../utils/apiFetch.js";
+import { api } from "@hotelos/api";
 
 // =====================================================
 // SEND RECEPTIONIST INVITATION
@@ -11,21 +11,16 @@ export const sendReceptionistInvitation = async ({ name, email, username }) => {
     throw new Error("Receptionist email is required.");
   }
 
-  const result = await apiFetch("/api/v1/invites", {
-    method: "POST",
-
-    auth: true,
-
-    body: {
+  const result = await api.post(
+    "/api/v1/invites",
+    {
       name: name?.trim(),
-
       email: normalizedEmail,
-
       username: username?.trim().toLowerCase(),
-
       role: "RECEPTIONIST",
     },
-  });
+    { auth: true },
+  );
 
   return result.data;
 };
@@ -39,13 +34,7 @@ export const verifyInvitation = async (token) => {
     throw new Error("Invitation token is required.");
   }
 
-  const result = await apiFetch("/api/v1/invites/verify", {
-    method: "POST",
-
-    body: {
-      token,
-    },
-  });
+  const result = await api.post("/api/v1/invites/verify", { token });
 
   return result.data;
 };
@@ -63,18 +52,11 @@ export const acceptInvitation = async ({ token, name, username, password }) => {
     throw new Error("Name, username and password are required.");
   }
 
-  const result = await apiFetch("/api/v1/invites/accept", {
-    method: "POST",
-
-    body: {
-      token,
-
-      name: name.trim(),
-
-      username: username.trim().toLowerCase(),
-
-      password,
-    },
+  const result = await api.post("/api/v1/invites/accept", {
+    token,
+    name: name.trim(),
+    username: username.trim().toLowerCase(),
+    password,
   });
 
   return result.data;

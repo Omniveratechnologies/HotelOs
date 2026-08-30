@@ -1,15 +1,11 @@
-import { apiFetch } from "../utils/apiFetch.js";
+import { api } from "@hotelos/api";
 
 // =====================================================
 // DASHBOARD STATS
 // =====================================================
 
 export const getDashboardStats = async () => {
-  const result = await apiFetch("/api/v1/dashboard/stats", {
-    method: "GET",
-
-    auth: true,
-  });
+  const result = await api.get("/api/v1/dashboard/stats", { auth: true });
 
   return result.data;
 };
