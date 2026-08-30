@@ -1,39 +1,29 @@
-import { apiFetch } from "../utils/apiFetch.js";
+import { api } from "@hotelos/api";
 
 export const getRooms = async () => {
-  const result = await apiFetch("/api/v1/rooms", {
-    method: "GET",
-    auth: true,
-  });
+  const result = await api.get("/api/v1/rooms", { auth: true });
 
   return result.data || [];
 };
 
 export const createRoom = async ({ roomNumber, type, rate, floor }) => {
-  const result = await apiFetch("/api/v1/rooms", {
-    method: "POST",
-    auth: true,
-    body: { roomNumber, type, rate: Number(rate), floor: Number(floor) },
-  });
+  const result = await api.post(
+    "/api/v1/rooms",
+    { roomNumber, type, rate: Number(rate), floor: Number(floor) },
+    { auth: true },
+  );
 
   return result.data;
 };
 
 export const updateRoom = async (roomId, updates) => {
-  const result = await apiFetch(`/api/v1/rooms/${roomId}`, {
-    method: "PATCH",
+  const result = await api.patch(`/api/v1/rooms/${roomId}`, updates, {
     auth: true,
-    body: updates,
   });
 
   return result.data;
 };
 
 export const deleteRoom = async (roomId) => {
-  const result = await apiFetch(`/api/v1/rooms/${roomId}`, {
-    method: "DELETE",
-    auth: true,
-  });
-
-  return result;
+  return api.delete(`/api/v1/rooms/${roomId}`, { auth: true });
 };

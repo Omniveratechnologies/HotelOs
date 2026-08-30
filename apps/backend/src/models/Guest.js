@@ -127,7 +127,10 @@ guestSchema.virtual("nights").get(function () {
   return Math.max(1, nights);
 });
 
-// Convert a stored filesystem path into a servable /uploads/... URL
+// Convert a stored filesystem path into a servable absolute /uploads/... URL.
+// Base URL is hardcoded for now; replaced when uploads move to Cloudflare R2.
+const DOCUMENT_BASE_URL = "http://localhost:5001";
+
 const documentDTO = (doc) => {
   const match = String(doc.path || "").match(/uploads[\\/](.+)$/);
 
@@ -135,7 +138,9 @@ const documentDTO = (doc) => {
     id: doc._id,
     docType: doc.docType,
     filename: doc.filename,
-    url: match ? `/uploads/${match[1].replace(/\\/g, "/")}` : null,
+    url: match
+      ? `${DOCUMENT_BASE_URL}/uploads/${match[1].replace(/\\/g, "/")}`
+      : null,
     uploadedAt: doc.uploadedAt,
   };
 };

@@ -4,7 +4,6 @@ import {
   updateGuest,
   updateGuestCredentials,
 } from "../../../services/guest.service.js";
-import { API_URL } from "../../../utils/apiFetch.js";
 
 export default function GuestDetailsModal({ guest, onClose, onEdit }) {
   const { refreshData } = useHotelOS();
@@ -192,7 +191,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                     </div>
                     {doc.url && (
                       <a
-                        href={`${API_URL}${doc.url}`}
+                        href={doc.url}
                         target="_blank"
                         rel="noreferrer"
                         className="rounded-lg border border-[#c9a84c]/40 px-3 py-1.5 text-xs font-semibold text-[#c9a84c] hover:bg-amber-50"

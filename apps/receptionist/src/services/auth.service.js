@@ -1,4 +1,4 @@
-import { apiFetch } from "../utils/apiFetch.js";
+import { api } from "@hotelos/api";
 
 // =====================================================
 // AUTH STORAGE HELPERS
@@ -36,14 +36,9 @@ export const login = async ({ username, password }) => {
     throw new Error("Username and password are required.");
   }
 
-  const result = await apiFetch("/api/v1/auth/login", {
-    method: "POST",
-
-    body: {
-      username: username.trim(),
-
-      password,
-    },
+  const result = await api.post("/api/v1/auth/login", {
+    username: username.trim(),
+    password,
   });
 
   // =================================================
@@ -82,13 +77,7 @@ async function recoveryRequest(endpoint, email) {
     throw new Error("Please enter your email address.");
   }
 
-  const result = await apiFetch(endpoint, {
-    method: "POST",
-
-    body: {
-      email: email.trim(),
-    },
-  });
+  const result = await api.post(endpoint, { email: email.trim() });
 
   return result.message || "Please check your email.";
 }

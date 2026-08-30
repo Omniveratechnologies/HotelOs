@@ -1,94 +1,67 @@
-import { apiFetch } from "../utils/apiFetch.js";
+import { api } from "@hotelos/api";
 
 export const getGuests = async (status) => {
-  const query =
-    status && status !== "all" ? `?status=${encodeURIComponent(status)}` : "";
-
-  const result = await apiFetch(`/api/v1/guests${query}`, {
-    method: "GET",
+  const result = await api.get("/api/v1/guests", {
     auth: true,
+    ...(status && status !== "all" ? { query: { status } } : {}),
   });
 
   return result.data || [];
 };
 
 export const getGuest = async (guestId) => {
-  const result = await apiFetch(`/api/v1/guests/${guestId}`, {
-    method: "GET",
-    auth: true,
-  });
+  const result = await api.get(`/api/v1/guests/${guestId}`, { auth: true });
 
   return result.data;
 };
 
 // data: { name, email, phone, address, idType, idNumber, roomId, checkIn, checkOut, status, docTypes[], files[] }
 export const registerGuest = async (data) => {
-  const form = new FormData();
+  const body = new FormData();
 
-  form.append("name", data.name);
-  form.append("email", data.email);
-  form.append("phone", data.phone || "");
-  form.append("address", data.address || "");
-  form.append("idType", data.idType || "Aadhaar");
-  form.append("idNumber", data.idNumber || "");
-  form.append("roomId", data.roomId);
-  form.append("checkIn", data.checkIn || "");
-  form.append("checkOut", data.checkOut);
-  form.append("status", data.status);
+  body.append("name", data.name);
+  body.append("email", data.email);
+  body.append("phone", data.phone || "");
+  body.append("address", data.address || "");
+  body.append("idType", data.idType || "Aadhaar");
+  body.append("idNumber", data.idNumber || "");
+  body.append("roomId", data.roomId);
+  body.append("checkIn", data.checkIn || "");
+  body.append("checkOut", data.checkOut);
+  body.append("status", data.status);
 
   if (data.files?.length > 0) {
     for (const file of data.files) {
-      form.append("documents", file);
+      body.append("documents", file);
     }
-    form.append("docTypes", JSON.stringify(data.docTypes || []));
+    body.append("docTypes", JSON.stringify(data.docTypes || []));
   }
 
-  const result = await apiFetch("/api/v1/guests", {
-    method: "POST",
-    form,
-    auth: true,
-  });
+  const result = await api.post("/api/v1/guests", body, { auth: true });
 
   return result.data;
 };
 
 export const updateGuest = async (guestId, updates) => {
-  const result = await apiFetch(`/api/v1/guests/${guestId}`, {
-    method: "PATCH",
+  const result = await api.patch(`/api/v1/guests/${guestId}`, updates, {
     auth: true,
-    body: updates,
   });
 
   return result.data;
 };
 
 export const updateGuestCredentials = async (guestId, payload) => {
-  const result = await apiFetch(`/api/v1/guests/${guestId}/credentials`, {
-    method: "PATCH",
+  return api.patch(`/api/v1/guests/${guestId}/credentials`, payload, {
     auth: true,
-    body: payload,
   });
-
-  return result;
 };
 
 export const deleteGuestDocument = async (guestId, docId) => {
-  const result = await apiFetch(
-    `/api/v1/guests/${guestId}/documents/${docId}`,
-    {
-      method: "DELETE",
-      auth: true,
-    },
-  );
-
-  return result;
+  return api.delete(`/api/v1/guests/${guestId}/documents/${docId}`, {
+    auth: true,
+  });
 };
 
 export const deleteGuest = async (guestId) => {
-  const result = await apiFetch(`/api/v1/guests/${guestId}`, {
-    method: "DELETE",
-    auth: true,
-  });
-
-  return result;
+  return api.delete(`/api/v1/guests/${guestId}`, { auth: true });
 };

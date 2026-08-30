@@ -51,6 +51,9 @@ importers:
 
   apps/receptionist:
     dependencies:
+      '@hotelos/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       lucide-react:
         specifier: ^0.383.0
         version: 0.383.0(react@18.3.1)

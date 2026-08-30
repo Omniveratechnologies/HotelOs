@@ -1,29 +1,19 @@
-import { apiFetch } from "../utils/apiFetch.js";
+import { api } from "@hotelos/api";
 
 export const getMyHotel = async () => {
-  const result = await apiFetch("/api/v1/hotels/me", {
-    method: "GET",
-    auth: true,
-  });
+  const result = await api.get("/api/v1/hotels/me", { auth: true });
 
   return result.data || null;
 };
 
 export const updateMyHotel = async (updates) => {
-  const result = await apiFetch("/api/v1/hotels/me", {
-    method: "PATCH",
-    auth: true,
-    body: updates,
-  });
+  const result = await api.patch("/api/v1/hotels/me", updates, { auth: true });
 
   return result.data;
 };
 
 export const getHotelStaff = async () => {
-  const result = await apiFetch("/api/v1/users", {
-    method: "GET",
-    auth: true,
-  });
+  const result = await api.get("/api/v1/users", { auth: true });
 
   const data = result.data || [];
 
