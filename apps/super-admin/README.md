@@ -54,7 +54,7 @@ To connect a real backend:
 
 1. Copy `.env.example` to `.env` and set your API base URL:
    ```
-   VITE_API_BASE_URL=https://api.yourdomain.com
+   VITE_API_URL=https://api.yourdomain.com
    ```
 2. Open `src/api/client.js`. Every exported function has a commented-out
    "Real backend version" snippet right below the mock implementation —
@@ -68,7 +68,7 @@ To connect a real backend:
 
 3. The `apiFetch` helper at the top of `client.js` already attaches a
    Bearer token from `localStorage.getItem("auth_token")` and your
-   `VITE_API_BASE_URL`. Set that token wherever you implement login.
+   `VITE_API_URL`. Set that token wherever you implement login.
 4. Once every function in `client.js` calls your real API, you can delete
    `src/data/mockData.js` (or keep it for local development/demos).
 
