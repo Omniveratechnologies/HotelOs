@@ -35,7 +35,7 @@ export default function RoomsPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0f1f3d]">
+          <h1 className="font-display text-navy-900 text-2xl font-bold">
             Room Management
           </h1>
           <p className="text-sm text-gray-500">
@@ -45,7 +45,7 @@ export default function RoomsPage() {
         </div>
         <button
           onClick={() => setShowAdd(true)}
-          className="rounded-xl bg-[#0f1f3d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#162847]"
+          className="bg-navy-900 hover:bg-navy-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           + Add Room
         </button>
@@ -57,14 +57,14 @@ export default function RoomsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search room or guest..."
-          className="w-56 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:border-[#c9a84c] focus:outline-none"
+          className="focus:border-gold-400 w-56 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-hidden"
         />
         <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
           {["all", "available", "occupied", "reserved", "cleaning"].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "bg-white text-[#0f1f3d] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
             >
               {s}
             </button>
@@ -73,7 +73,7 @@ export default function RoomsPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#c9a84c] focus:outline-none"
+          className="focus:border-gold-400 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-hidden"
         >
           <option value="all">All Types</option>
           <option>Standard</option>
@@ -111,7 +111,7 @@ export default function RoomsPage() {
               className="rounded-2xl border border-gray-100 bg-white p-4 text-left transition-all hover:scale-105 hover:shadow-md"
             >
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-2xl font-bold text-[#0f1f3d]">
+                <span className="text-navy-900 text-2xl font-bold">
                   {room.roomNumber}
                 </span>
                 <span className="text-xl">🛏</span>
@@ -132,7 +132,7 @@ export default function RoomsPage() {
                   Out: {room.checkOut}
                 </div>
               )}
-              <div className="mt-2 text-xs font-semibold text-[#c9a84c]">
+              <div className="text-gold-400 mt-2 text-xs font-semibold">
                 ₹{room.rate}/night
               </div>
             </button>

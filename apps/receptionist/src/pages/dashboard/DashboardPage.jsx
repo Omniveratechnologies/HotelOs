@@ -122,7 +122,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0f1f3d]">
+          <h1 className="font-display text-navy-900 text-2xl font-bold">
             Good Morning, {firstName} 👋
           </h1>
           <p className="mt-0.5 text-sm text-gray-500">
@@ -130,7 +130,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="rounded-xl bg-[#0f1f3d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#162847]">
+          <button className="bg-navy-900 hover:bg-navy-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors">
             + New Booking
           </button>
           <button className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
@@ -144,7 +144,7 @@ export default function Dashboard() {
         {statCards(rooms, serviceRequests, foodOrders).map((card) => (
           <div
             key={card.label}
-            className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+            className="rounded-2xl border border-gray-100 bg-white p-4 shadow-xs"
           >
             <div
               className={`h-9 w-9 ${card.bg} mb-3 flex items-center justify-center rounded-xl text-lg`}
@@ -154,7 +154,7 @@ export default function Dashboard() {
             <div className={`text-2xl font-bold ${card.color}`}>
               {card.value}
             </div>
-            <div className="mt-0.5 text-xs uppercase tracking-wide text-gray-500">
+            <div className="mt-0.5 text-xs tracking-wide text-gray-500 uppercase">
               {card.label}
             </div>
           </div>
@@ -163,17 +163,17 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Room Grid */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm xl:col-span-2">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs xl:col-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-bold text-[#0f1f3d]">
-              <span className="inline-block h-5 w-1 rounded-full bg-[#c9a84c]" />
+            <h2 className="text-navy-900 flex items-center gap-2 font-bold">
+              <span className="bg-gold-400 inline-block h-5 w-1 rounded-full" />
               Room Grid — Tap a room to manage
             </h2>
           </div>
           <div className="space-y-4">
             {floors.map((floor) => (
               <div key={floor}>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-gray-400">
+                <div className="mb-2 text-xs font-semibold tracking-widest text-gray-400 uppercase">
                   Floor {floor}
                 </div>
                 <div className="grid grid-cols-6 gap-2">
@@ -189,7 +189,7 @@ export default function Dashboard() {
                         <div className="text-sm font-bold">
                           {room.roomNumber}
                         </div>
-                        <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide">
+                        <div className="mt-0.5 text-[9px] font-semibold tracking-wide uppercase">
                           {room.status}
                         </div>
                       </button>
@@ -209,7 +209,7 @@ export default function Dashboard() {
                 key={k}
                 className="flex items-center gap-1.5 text-xs text-gray-600"
               >
-                <span className={`h-3 w-3 rounded-sm ${c}`} />
+                <span className={`h-3 w-3 rounded-xs ${c}`} />
                 {l}
               </div>
             ))}
@@ -219,12 +219,12 @@ export default function Dashboard() {
         {/* Right Column */}
         <div className="space-y-4">
           {/* Service Requests */}
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 flex items-center gap-2 font-bold text-[#0f1f3d]">
-              <span className="inline-block h-5 w-1 rounded-full bg-[#c9a84c]" />
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+            <h2 className="text-navy-900 mb-3 flex items-center gap-2 font-bold">
+              <span className="bg-gold-400 inline-block h-5 w-1 rounded-full" />
               Service Requests
             </h2>
-            <div className="scrollbar-thin max-h-52 space-y-3 overflow-y-auto">
+            <div className="max-h-52 scrollbar-thin space-y-3 overflow-y-auto">
               {serviceRequests
                 .filter((r) => r.status !== "completed")
                 .map((req) => (
@@ -234,7 +234,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold text-[#0f1f3d]">
+                        <div className="text-navy-900 text-xs font-semibold">
                           Room {req.room} · {req.type}
                         </div>
                         <div className="mt-0.5 truncate text-xs text-gray-500">
@@ -242,7 +242,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       {req.priority === "high" && (
-                        <span className="flex-shrink-0 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-600">
+                        <span className="shrink-0 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-600">
                           URGENT
                         </span>
                       )}
@@ -256,7 +256,7 @@ export default function Dashboard() {
                       {req.status === "requested" && (
                         <button
                           onClick={() => acknowledgeRequest(req.id)}
-                          className="rounded-full bg-[#0f1f3d] px-2 py-0.5 text-[9px] text-white transition-colors hover:bg-[#162847]"
+                          className="bg-navy-900 hover:bg-navy-800 rounded-full px-2 py-0.5 text-[9px] text-white transition-colors"
                         >
                           Acknowledge
                         </button>
@@ -279,22 +279,22 @@ export default function Dashboard() {
           </div>
 
           {/* Live Food Orders */}
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 flex items-center gap-2 font-bold text-[#0f1f3d]">
-              <span className="inline-block h-5 w-1 rounded-full bg-[#c9a84c]" />
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+            <h2 className="text-navy-900 mb-3 flex items-center gap-2 font-bold">
+              <span className="bg-gold-400 inline-block h-5 w-1 rounded-full" />
               Live Food Orders
             </h2>
-            <div className="scrollbar-thin max-h-44 space-y-2 overflow-y-auto">
+            <div className="max-h-44 scrollbar-thin space-y-2 overflow-y-auto">
               {foodOrders.map((order) => (
                 <div
                   key={order.id}
                   className="flex items-center gap-3 border-b border-gray-50 py-2 last:border-0"
                 >
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-purple-100 text-sm">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-sm">
                     🍽
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-[#0f1f3d]">
+                    <div className="text-navy-900 text-xs font-semibold">
                       Room {order.room}
                     </div>
                     <div className="truncate text-[10px] text-gray-500">
@@ -302,7 +302,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <span
-                    className={`flex-shrink-0 rounded-full px-2 py-1 text-[9px] font-bold ${
+                    className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-bold ${
                       order.status === "delivered"
                         ? "bg-green-100 text-green-600"
                         : order.status === "out-for-delivery"
@@ -320,9 +320,9 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Activity */}
-          <div className="rounded-2xl bg-[#0f1f3d] p-5">
+          <div className="bg-navy-900 rounded-2xl p-5">
             <h2 className="mb-3 flex items-center gap-2 font-bold text-white">
-              <span className="inline-block h-5 w-1 rounded-full bg-[#c9a84c]" />
+              <span className="bg-gold-400 inline-block h-5 w-1 rounded-full" />
               Recent Activity
             </h2>
             <div className="space-y-2">
@@ -335,7 +335,7 @@ export default function Dashboard() {
               ) : (
                 recentActivity.map((a, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <div className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#c9a84c]" />
+                    <div className="bg-gold-400 mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-xs text-white/80">
                         {a.text}

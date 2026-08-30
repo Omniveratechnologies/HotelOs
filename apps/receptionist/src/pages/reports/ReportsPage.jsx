@@ -51,7 +51,7 @@ export default function ReportsPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0f1f3d]">
+          <h1 className="font-display text-navy-900 text-2xl font-bold">
             Reports & Analytics
           </h1>
           <p className="text-sm text-gray-500">
@@ -94,14 +94,14 @@ export default function ReportsPage() {
             label: "Avg Daily Rate",
             value: `₹${avgDailyRate.toLocaleString()}`,
             sub: "Per occupied room",
-            color: "text-[#c9a84c]",
+            color: "text-gold-400",
             bg: "bg-amber-50",
             icon: "📊",
           },
         ].map((k) => (
           <div
             key={k.label}
-            className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs"
           >
             <div
               className={`h-10 w-10 ${k.bg} mb-3 flex items-center justify-center rounded-xl text-xl`}
@@ -119,13 +119,13 @@ export default function ReportsPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Room Mix by Type */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="mb-4 font-bold text-[#0f1f3d]">Current Room Mix</h3>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+          <h3 className="text-navy-900 mb-4 font-bold">Current Room Mix</h3>
           <div className="space-y-4">
             {byType.map((t) => (
               <div key={t.type}>
                 <div className="mb-1.5 flex justify-between">
-                  <span className="text-sm font-semibold text-[#0f1f3d]">
+                  <span className="text-navy-900 text-sm font-semibold">
                     {t.type}
                   </span>
                   <span className="text-sm text-gray-500">
@@ -134,7 +134,7 @@ export default function ReportsPage() {
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-gray-100">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ${t.occupied > 0 ? "bg-gradient-to-r from-[#0f1f3d] to-[#1e3a5f]" : "bg-gray-200"}`}
+                    className={`h-full rounded-full transition-all duration-700 ${t.occupied > 0 ? "from-navy-900 to-navy-700 bg-linear-to-r" : "bg-gray-200"}`}
                     style={{
                       width: `${total > 0 ? (t.total / total) * 100 : 0}%`,
                     }}
@@ -151,15 +151,15 @@ export default function ReportsPage() {
         </div>
 
         {/* Room Status Donut */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="mb-4 font-bold text-[#0f1f3d]">Current Room Status</h3>
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+          <h3 className="text-navy-900 mb-4 font-bold">Current Room Status</h3>
           {total === 0 ? (
             <div className="py-10 text-center text-sm text-gray-400">
               No rooms yet.
             </div>
           ) : (
             <div className="flex items-center gap-6">
-              <div className="relative h-36 w-36 flex-shrink-0">
+              <div className="relative h-36 w-36 shrink-0">
                 <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
                   <circle
                     cx="18"
@@ -212,7 +212,7 @@ export default function ReportsPage() {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-[#0f1f3d]">
+                    <div className="text-navy-900 text-2xl font-bold">
                       {occupancyRate}%
                     </div>
                     <div className="text-xs text-gray-400">Occupied</div>
@@ -227,11 +227,9 @@ export default function ReportsPage() {
                   ["bg-gray-400", "Cleaning", cleaning.length],
                 ].map(([c, l, n]) => (
                   <div key={l} className="flex items-center gap-3">
-                    <div
-                      className={`h-3 w-3 rounded-full ${c} flex-shrink-0`}
-                    />
+                    <div className={`h-3 w-3 rounded-full ${c} shrink-0`} />
                     <div>
-                      <div className="text-sm font-semibold text-[#0f1f3d]">
+                      <div className="text-navy-900 text-sm font-semibold">
                         {n} rooms
                       </div>
                       <div className="text-xs text-gray-400">{l}</div>
@@ -246,11 +244,11 @@ export default function ReportsPage() {
 
       {/* Guest Status */}
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-600">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+          <div className="mb-2 text-xs font-semibold tracking-wide text-blue-600 uppercase">
             Checked In
           </div>
-          <div className="text-3xl font-bold text-[#0f1f3d]">
+          <div className="text-navy-900 text-3xl font-bold">
             {checkedInGuests.length}
           </div>
           <div className="mt-1 text-sm text-gray-400">
@@ -260,11 +258,11 @@ export default function ReportsPage() {
               .join(" · ") || "No guests in-house"}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+          <div className="mb-2 text-xs font-semibold tracking-wide text-amber-600 uppercase">
             Upcoming Reservations
           </div>
-          <div className="text-3xl font-bold text-[#0f1f3d]">
+          <div className="text-navy-900 text-3xl font-bold">
             {reservedGuests.length}
           </div>
           <div className="mt-1 text-sm text-gray-400">
@@ -274,11 +272,11 @@ export default function ReportsPage() {
               .join(" · ") || "No upcoming reservations"}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+          <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
             Total Guests Registered
           </div>
-          <div className="text-3xl font-bold text-[#0f1f3d]">
+          <div className="text-navy-900 text-3xl font-bold">
             {guests.length}
           </div>
           <div className="mt-1 text-sm text-gray-400">
@@ -288,8 +286,8 @@ export default function ReportsPage() {
       </div>
 
       {/* Revenue by Room Type */}
-      <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h3 className="mb-4 font-bold text-[#0f1f3d]">Revenue by Room Type</h3>
+      <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+        <h3 className="text-navy-900 mb-4 font-bold">Revenue by Room Type</h3>
         {total === 0 ? (
           <div className="py-6 text-center text-sm text-gray-400">
             No rooms yet.
@@ -302,19 +300,19 @@ export default function ReportsPage() {
               return (
                 <div key={t.type}>
                   <div className="mb-1.5 flex justify-between">
-                    <span className="text-sm font-medium text-[#0f1f3d]">
+                    <span className="text-navy-900 text-sm font-medium">
                       {t.type}{" "}
                       <span className="font-normal text-gray-400">
                         ({t.occupied} rooms · ₹{t.avgRate}/night avg)
                       </span>
                     </span>
-                    <span className="text-sm font-bold text-[#0f1f3d]">
+                    <span className="text-navy-900 text-sm font-bold">
                       ₹{rev.toLocaleString()}
                     </span>
                   </div>
                   <div className="h-3 overflow-hidden rounded-full bg-gray-100">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#0f1f3d] to-[#1e3a5f] transition-all duration-700"
+                      className="from-navy-900 to-navy-700 h-full rounded-full bg-linear-to-r transition-all duration-700"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -329,7 +327,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Service Metrics */}
-      <div className="rounded-2xl bg-[#0f1f3d] p-5">
+      <div className="bg-navy-900 rounded-2xl p-5">
         <h3 className="mb-4 font-bold text-white">Service Performance</h3>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {[
@@ -357,7 +355,7 @@ export default function ReportsPage() {
           ].map(([l, v, c]) => (
             <div key={l} className="rounded-xl bg-white/5 p-3 text-center">
               <div className={`text-3xl font-bold ${c}`}>{v}</div>
-              <div className="mt-1 text-xs uppercase tracking-wide text-white/50">
+              <div className="mt-1 text-xs tracking-wide text-white/50 uppercase">
                 {l}
               </div>
             </div>

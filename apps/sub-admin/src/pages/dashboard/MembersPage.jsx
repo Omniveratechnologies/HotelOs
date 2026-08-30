@@ -77,7 +77,7 @@ export default function MembersPage() {
   // =====================================================
 
   return (
-    <div className="min-h-screen bg-ivory font-body">
+    <div className="bg-ivory font-body min-h-screen">
       <div className="px-6 py-8 lg:px-10">
         {/* =================================================
             HEADER
@@ -85,11 +85,11 @@ export default function MembersPage() {
 
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-display text-3xl font-semibold text-navy">
+            <h1 className="font-display text-navy text-3xl font-semibold">
               Members
             </h1>
 
-            <p className="mt-1 text-sm text-muted">
+            <p className="text-muted mt-1 text-sm">
               Manage the staff members of your hotel.
             </p>
           </div>
@@ -125,13 +125,13 @@ export default function MembersPage() {
             MEMBERS CARD
         ================================================= */}
 
-        <div className="overflow-hidden rounded-2xl border border-beige-border bg-cream shadow-card">
-          <div className="border-b border-beige-border px-6 py-5">
-            <h2 className="font-display text-xl font-semibold text-navy">
+        <div className="border-beige-border bg-cream shadow-card overflow-hidden rounded-2xl border">
+          <div className="border-beige-border border-b px-6 py-5">
+            <h2 className="font-display text-navy text-xl font-semibold">
               Hotel Members
             </h2>
 
-            <p className="mt-1 text-sm text-muted">
+            <p className="text-muted mt-1 text-sm">
               Receptionists and staff accounts associated with your hotel.
             </p>
           </div>
@@ -141,7 +141,7 @@ export default function MembersPage() {
           ================================================= */}
 
           {loading && (
-            <div className="px-6 py-12 text-center text-muted">
+            <div className="text-muted px-6 py-12 text-center">
               Loading members...
             </div>
           )}
@@ -154,11 +154,11 @@ export default function MembersPage() {
             <div className="px-6 py-12 text-center">
               <div className="mb-3 text-4xl">👥</div>
 
-              <h3 className="font-display text-lg font-semibold text-navy">
+              <h3 className="font-display text-navy text-lg font-semibold">
                 No members yet
               </h3>
 
-              <p className="mt-1 text-sm text-muted">
+              <p className="text-muted mt-1 text-sm">
                 Add a receptionist to your hotel to get started.
               </p>
             </div>
@@ -169,7 +169,7 @@ export default function MembersPage() {
           ================================================= */}
 
           {!loading && members.length > 0 && (
-            <div className="divide-y divide-beige-border">
+            <div className="divide-beige-border divide-y">
               {members.map((member) => (
                 <div
                   key={member.id}
@@ -178,21 +178,21 @@ export default function MembersPage() {
                   {/* MEMBER INFO */}
 
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy font-display text-lg font-semibold text-cream">
+                    <div className="bg-navy font-display text-cream flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold">
                       {(member.name || member.email || "M")
                         .charAt(0)
                         .toUpperCase()}
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-navy">
+                      <h3 className="text-navy font-semibold">
                         {member.name || "Unnamed Member"}
                       </h3>
 
-                      <p className="text-sm text-muted">{member.email}</p>
+                      <p className="text-muted text-sm">{member.email}</p>
 
                       <div className="mt-1 flex items-center gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-gold">
+                        <span className="text-gold text-xs font-semibold tracking-wide uppercase">
                           {member.role}
                         </span>
 
@@ -237,7 +237,7 @@ export default function MembersPage() {
           {/* OVERLAY */}
 
           <div
-            className="absolute inset-0 bg-navy/50 backdrop-blur-sm"
+            className="bg-navy/50 absolute inset-0 backdrop-blur-xs"
             onClick={() => {
               if (!deleting) {
                 setMemberToDelete(null);
@@ -247,18 +247,18 @@ export default function MembersPage() {
 
           {/* MODAL */}
 
-          <div className="relative w-full max-w-md rounded-2xl bg-cream p-6 shadow-2xl">
+          <div className="bg-cream relative w-full max-w-md rounded-2xl p-6 shadow-2xl">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-50 text-xl text-red-600">
                 !
               </div>
 
               <div>
-                <h2 className="font-display text-xl font-semibold text-navy">
+                <h2 className="font-display text-navy text-xl font-semibold">
                   Delete Account?
                 </h2>
 
-                <p className="mt-2 text-sm leading-6 text-muted">
+                <p className="text-muted mt-2 text-sm leading-6">
                   Are you sure you want to delete{" "}
                   <strong className="text-navy">
                     {memberToDelete.name || memberToDelete.email}
@@ -266,7 +266,7 @@ export default function MembersPage() {
                   's account?
                 </p>
 
-                <p className="mt-2 text-xs text-muted">
+                <p className="text-muted mt-2 text-xs">
                   They will no longer be able to log in to HotelOS.
                 </p>
               </div>
@@ -279,7 +279,7 @@ export default function MembersPage() {
                 type="button"
                 disabled={deleting}
                 onClick={() => setMemberToDelete(null)}
-                className="rounded-lg border border-beige-border px-5 py-2.5 text-sm font-medium text-navy transition hover:bg-ivory"
+                className="border-beige-border text-navy hover:bg-ivory rounded-lg border px-5 py-2.5 text-sm font-medium transition"
               >
                 Cancel
               </button>

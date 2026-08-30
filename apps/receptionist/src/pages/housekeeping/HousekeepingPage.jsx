@@ -66,7 +66,7 @@ export default function HousekeepingPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0f1f3d]">
+          <h1 className="font-display text-navy-900 text-2xl font-bold">
             Housekeeping & Requests
           </h1>
           <p className="text-sm text-gray-500">
@@ -78,7 +78,7 @@ export default function HousekeepingPage() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="rounded-xl bg-[#0f1f3d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#162847]"
+          className="bg-navy-900 hover:bg-navy-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           + New Request
         </button>
@@ -154,7 +154,7 @@ export default function HousekeepingPage() {
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "bg-white text-[#0f1f3d] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
             >
               {s.replace("-", " ")}
             </button>
@@ -167,21 +167,21 @@ export default function HousekeepingPage() {
         {filtered.map((req) => (
           <div
             key={req.id}
-            className={`rounded-2xl border bg-white p-4 shadow-sm ${req.priority === "high" ? "border-red-200" : "border-gray-100"}`}
+            className={`rounded-2xl border bg-white p-4 shadow-xs ${req.priority === "high" ? "border-red-200" : "border-gray-100"}`}
           >
             <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gray-100 text-xl">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-xl">
                 {typeIcon[req.type] || "📝"}
               </div>
               <div className="flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-[#0f1f3d]">
+                      <span className="text-navy-900 font-bold">
                         Room {req.room}
                       </span>
                       <span className="text-gray-400">·</span>
-                      <span className="text-sm font-semibold text-[#0f1f3d]">
+                      <span className="text-navy-900 text-sm font-semibold">
                         {req.type}
                       </span>
                       {req.priority === "high" && (
@@ -193,7 +193,7 @@ export default function HousekeepingPage() {
                     <p className="mt-1 text-sm text-gray-600">{req.detail}</p>
                     <div className="mt-1 text-xs text-gray-400">{req.time}</div>
                   </div>
-                  <div className="flex flex-shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     <span
                       className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusBadge[req.status]}`}
                     >
@@ -202,7 +202,7 @@ export default function HousekeepingPage() {
                     {req.status === "requested" && (
                       <button
                         onClick={() => acknowledgeRequest(req.id)}
-                        className="rounded-lg bg-[#0f1f3d] px-3 py-1.5 text-xs text-white transition-colors hover:bg-[#162847]"
+                        className="bg-navy-900 hover:bg-navy-800 rounded-lg px-3 py-1.5 text-xs text-white transition-colors"
                       >
                         Acknowledge
                       </button>
@@ -237,12 +237,12 @@ export default function HousekeepingPage() {
             className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-4 text-lg font-bold text-[#0f1f3d]">
+            <h3 className="text-navy-900 mb-4 text-lg font-bold">
               New Service Request
             </h3>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Room
                 </label>
                 <select
@@ -250,7 +250,7 @@ export default function HousekeepingPage() {
                   onChange={(e) =>
                     setNewReq((p) => ({ ...p, room: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+                  className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                 >
                   <option value="">Select Room</option>
                   {rooms
@@ -263,7 +263,7 @@ export default function HousekeepingPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Type
                 </label>
                 <select
@@ -271,7 +271,7 @@ export default function HousekeepingPage() {
                   onChange={(e) =>
                     setNewReq((p) => ({ ...p, type: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+                  className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                 >
                   {Object.keys(typeIcon).map((t) => (
                     <option key={t}>{t}</option>
@@ -279,7 +279,7 @@ export default function HousekeepingPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Details
                 </label>
                 <textarea
@@ -288,12 +288,12 @@ export default function HousekeepingPage() {
                     setNewReq((p) => ({ ...p, detail: e.target.value }))
                   }
                   rows={3}
-                  className="mt-1 w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+                  className="focus:border-gold-400 mt-1 w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                   placeholder="Describe the request..."
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Priority
                 </label>
                 <div className="mt-1 flex gap-2">
@@ -303,7 +303,7 @@ export default function HousekeepingPage() {
                       onClick={() =>
                         setNewReq((prev) => ({ ...prev, priority: p }))
                       }
-                      className={`flex-1 rounded-xl border-2 py-2 text-sm font-semibold transition-all ${newReq.priority === p ? (p === "high" ? "border-red-500 bg-red-50 text-red-600" : "border-[#0f1f3d] bg-[#0f1f3d]/5 text-[#0f1f3d]") : "border-gray-200 text-gray-500"}`}
+                      className={`flex-1 rounded-xl border-2 py-2 text-sm font-semibold transition-all ${newReq.priority === p ? (p === "high" ? "border-red-500 bg-red-50 text-red-600" : "border-navy-900 bg-navy-900/5 text-navy-900") : "border-gray-200 text-gray-500"}`}
                     >
                       {p === "high" ? "🚨 Urgent" : "📋 Normal"}
                     </button>
@@ -320,7 +320,7 @@ export default function HousekeepingPage() {
               </button>
               <button
                 onClick={addRequest}
-                className="flex-1 rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#162847]"
+                className="bg-navy-900 hover:bg-navy-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
               >
                 Create Request
               </button>

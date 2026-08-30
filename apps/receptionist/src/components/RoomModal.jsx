@@ -66,9 +66,9 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between rounded-t-2xl bg-[#0f1f3d] p-5">
+          <div className="bg-navy-900 flex items-center justify-between rounded-t-2xl p-5">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-widest text-[#c9a84c]">
+              <div className="text-gold-400 text-xs font-semibold tracking-widest uppercase">
                 Room {room.roomNumber}
               </div>
               <div className="mt-0.5 text-lg font-bold text-white">
@@ -119,10 +119,10 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
               <div>
                 {room.guest && (
                   <div className="mb-4 rounded-xl bg-blue-50 p-4">
-                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    <div className="mb-1 text-xs font-semibold tracking-wide text-blue-600 uppercase">
                       Current Guest
                     </div>
-                    <div className="text-lg font-bold text-[#0f1f3d]">
+                    <div className="text-navy-900 text-lg font-bold">
                       {room.guest}
                     </div>
                     <div className="mt-1 text-sm text-gray-500">
@@ -138,7 +138,7 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
                       <button
                         onClick={openRegister}
                         disabled={saving}
-                        className="col-span-2 rounded-xl bg-[#0f1f3d] py-3 font-semibold text-white transition-colors hover:bg-[#162847] disabled:opacity-60"
+                        className="bg-navy-900 hover:bg-navy-800 col-span-2 rounded-xl py-3 font-semibold text-white transition-colors disabled:opacity-60"
                       >
                         ✓ Check In Guest
                       </button>
@@ -181,7 +181,7 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
                       <button
                         onClick={openRegister}
                         disabled={saving}
-                        className="col-span-2 rounded-xl bg-[#0f1f3d] py-3 font-semibold text-white transition-colors hover:bg-[#162847] disabled:opacity-60"
+                        className="bg-navy-900 hover:bg-navy-800 col-span-2 rounded-xl py-3 font-semibold text-white transition-colors disabled:opacity-60"
                       >
                         ✓ Check In Guest
                       </button>
@@ -209,7 +209,7 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
 
             {view === "checkout" && (
               <div>
-                <h3 className="mb-3 font-bold text-[#0f1f3d]">
+                <h3 className="text-navy-900 mb-3 font-bold">
                   Confirm Check Out
                 </h3>
                 <div className="mb-4 space-y-2 rounded-xl bg-gray-50 p-4">
@@ -234,7 +234,7 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
                   {totalEstimate !== null && (
                     <div className="flex justify-between border-t pt-2 font-bold">
                       <span>Total (est.)</span>
-                      <span className="text-[#0f1f3d]">
+                      <span className="text-navy-900">
                         ₹{totalEstimate.toLocaleString()}
                       </span>
                     </div>

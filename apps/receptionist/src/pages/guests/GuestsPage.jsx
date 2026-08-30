@@ -69,7 +69,7 @@ export default function GuestsPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0f1f3d]">
+          <h1 className="font-display text-navy-900 text-2xl font-bold">
             Guest Directory
           </h1>
           <p className="text-sm text-gray-500">
@@ -79,7 +79,7 @@ export default function GuestsPage() {
         </div>
         <button
           onClick={() => setShowAdd(true)}
-          className="rounded-xl bg-[#0f1f3d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#162847]"
+          className="bg-navy-900 hover:bg-navy-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           + Add Guest
         </button>
@@ -90,14 +90,14 @@ export default function GuestsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search guests..."
-          className="w-64 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:border-[#c9a84c] focus:outline-none"
+          className="focus:border-gold-400 w-64 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-hidden"
         />
         <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
           {["all", "checked-in", "reserved", "checked-out"].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "bg-white text-[#0f1f3d] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
             >
               {s.replace("-", " ")}
             </button>
@@ -123,35 +123,35 @@ export default function GuestsPage() {
       )}
 
       {!guestsLoading && !guestsError && (
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Guest
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Room
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Check In
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Check Out
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Nights
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   ID
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Docs
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Actions
                 </th>
               </tr>
@@ -168,7 +168,7 @@ export default function GuestsPage() {
                           {avatarLetter(g.name)}
                         </div>
                         <div>
-                          <div className="text-sm font-semibold text-[#0f1f3d]">
+                          <div className="text-navy-900 text-sm font-semibold">
                             {g.name}
                           </div>
                           <div className="text-xs text-gray-400">{g.phone}</div>
@@ -176,7 +176,7 @@ export default function GuestsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-bold text-[#0f1f3d]">{g.room}</span>
+                      <span className="text-navy-900 font-bold">{g.room}</span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {g.checkIn || "—"}
@@ -184,7 +184,7 @@ export default function GuestsPage() {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {g.checkOut || "—"}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-[#0f1f3d]">
+                    <td className="text-navy-900 px-4 py-3 text-sm font-medium">
                       {g.nights ? `${g.nights}n` : "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -208,13 +208,13 @@ export default function GuestsPage() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => setViewing(g)}
-                          className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-[#0f1f3d] transition-colors hover:bg-gray-50"
+                          className="text-navy-900 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:bg-gray-50"
                         >
                           View
                         </button>
                         <button
                           onClick={() => setEditing(g)}
-                          className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-[#c9a84c] transition-colors hover:bg-amber-50"
+                          className="text-gold-400 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:bg-amber-50"
                         >
                           Edit
                         </button>
@@ -278,7 +278,7 @@ export default function GuestsPage() {
             className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-2 text-lg font-bold text-[#0f1f3d]">
+            <h3 className="text-navy-900 mb-2 text-lg font-bold">
               Delete Guest Account?
             </h3>
             <p className="mb-1 text-sm text-gray-500">

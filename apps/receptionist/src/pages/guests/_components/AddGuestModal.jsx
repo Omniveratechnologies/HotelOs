@@ -88,7 +88,7 @@ export default function AddGuestModal({
     : rooms.filter((r) => ["available", "cleaning"].includes(r.status));
 
   const inputCls =
-    "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#c9a84c]";
+    "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-gold-400";
   const labelCls =
     "text-xs font-semibold text-gray-500 uppercase tracking-wide";
 
@@ -110,7 +110,7 @@ export default function AddGuestModal({
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-xl text-green-600">
               ✓
             </div>
-            <h3 className="text-lg font-bold text-[#0f1f3d]">
+            <h3 className="text-navy-900 text-lg font-bold">
               Guest Registered
             </h3>
             <p className="mt-1 text-sm text-gray-500">
@@ -124,7 +124,7 @@ export default function AddGuestModal({
             <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
               <div>
                 <div className={labelCls}>Username</div>
-                <div className="font-bold text-[#0f1f3d]">
+                <div className="text-navy-900 font-bold">
                   {credentials.username}
                 </div>
               </div>
@@ -141,7 +141,7 @@ export default function AddGuestModal({
             <div className="flex items-center justify-between rounded-xl bg-amber-50 px-4 py-3">
               <div>
                 <div className={labelCls}>Temporary Password</div>
-                <div className="font-mono font-bold text-[#0f1f3d]">
+                <div className="text-navy-900 font-mono font-bold">
                   {credentials.temporaryPassword}
                 </div>
               </div>
@@ -165,7 +165,7 @@ export default function AddGuestModal({
 
           <button
             onClick={onClose}
-            className="mt-5 w-full rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#162847]"
+            className="bg-navy-900 hover:bg-navy-800 mt-5 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
           >
             Done
           </button>
@@ -184,9 +184,9 @@ export default function AddGuestModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between rounded-t-2xl bg-[#0f1f3d] p-5">
+        <div className="bg-navy-900 sticky top-0 flex items-center justify-between rounded-t-2xl p-5">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-widest text-[#c9a84c]">
+            <div className="text-gold-400 text-xs font-semibold tracking-widest uppercase">
               Register Guest
             </div>
             <div className="mt-0.5 text-lg font-bold text-white">
@@ -346,7 +346,7 @@ export default function AddGuestModal({
               accept=".jpg,.jpeg,.png,.webp,.pdf"
               onChange={handleFiles}
               disabled={saving}
-              className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:rounded-xl file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#0f1f3d] hover:file:bg-gray-200"
+              className="file:text-navy-900 mt-1 w-full text-sm text-gray-500 file:mr-3 file:rounded-xl file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium hover:file:bg-gray-200"
             />
             {docs.length > 0 && (
               <div className="mt-2 space-y-2">
@@ -397,7 +397,7 @@ export default function AddGuestModal({
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="flex-1 rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#162847]"
+              className="bg-navy-900 hover:bg-navy-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
             >
               {saving ? "Registering..." : "Register Guest"}
             </button>

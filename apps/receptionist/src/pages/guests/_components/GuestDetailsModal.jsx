@@ -72,9 +72,9 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between rounded-t-2xl bg-[#0f1f3d] p-5">
+        <div className="bg-navy-900 flex items-center justify-between rounded-t-2xl p-5">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-widest text-[#c9a84c]">
+            <div className="text-gold-400 text-xs font-semibold tracking-widest uppercase">
               Guest Details
             </div>
             <div className="mt-0.5 text-lg font-bold text-white">
@@ -101,7 +101,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
         <div className="space-y-5 p-5">
           {/* Credentials banner */}
           {credentials && (
-            <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-[#0f1f3d]">
+            <div className="text-navy-900 rounded-xl bg-amber-50 px-4 py-3 text-sm">
               <span className="font-semibold">New credentials:</span>{" "}
               <span className="font-mono">{credentials.username}</span> /{" "}
               <span className="font-mono">{credentials.temporaryPassword}</span>
@@ -114,43 +114,43 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
           {/* Info grid */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Room
               </div>
-              <div className="font-semibold text-[#0f1f3d]">
+              <div className="text-navy-900 font-semibold">
                 {guest.room
                   ? `Room ${guest.room.roomNumber} · ${guest.room.type}`
                   : "—"}
               </div>
             </div>
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Status
               </div>
-              <div className="font-semibold capitalize text-[#0f1f3d]">
+              <div className="text-navy-900 font-semibold capitalize">
                 {(guest.status || "").replace("-", " ")}
               </div>
             </div>
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Email
               </div>
               <div className="text-gray-600">{guest.email}</div>
             </div>
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Phone
               </div>
               <div className="text-gray-600">{guest.phone || "—"}</div>
             </div>
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Address
               </div>
               <div className="text-gray-600">{guest.address || "—"}</div>
             </div>
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 ID
               </div>
               <div className="text-gray-600">
@@ -159,7 +159,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
               </div>
             </div>
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Stay
               </div>
               <div className="text-gray-600">
@@ -171,7 +171,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
 
           {/* Documents */}
           <div>
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
               Documents ({guest.documents?.length || 0})
             </div>
             {guest.documents?.length > 0 ? (
@@ -182,10 +182,10 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                     className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-2.5"
                   >
                     <div className="min-w-0">
-                      <div className="text-xs font-semibold uppercase text-gray-400">
+                      <div className="text-xs font-semibold text-gray-400 uppercase">
                         {doc.docType}
                       </div>
-                      <div className="truncate text-sm text-[#0f1f3d]">
+                      <div className="text-navy-900 truncate text-sm">
                         {doc.filename}
                       </div>
                     </div>
@@ -194,7 +194,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-lg border border-[#c9a84c]/40 px-3 py-1.5 text-xs font-semibold text-[#c9a84c] hover:bg-amber-50"
+                        className="border-gold-400/40 text-gold-400 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:bg-amber-50"
                       >
                         View
                       </a>
@@ -211,7 +211,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
 
           {/* Credential management */}
           <div className="border-t pt-4">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
               Login Credentials
             </div>
             {!showNewPassword ? (
@@ -238,7 +238,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="New password (min 8 chars)"
-                  className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#c9a84c] focus:outline-none"
+                  className="focus:border-gold-400 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-hidden"
                 />
                 <button
                   onClick={() => {
@@ -252,7 +252,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                 <button
                   onClick={handleSetPassword}
                   disabled={busy}
-                  className="rounded-xl bg-[#0f1f3d] px-3 text-xs text-white hover:bg-[#162847] disabled:opacity-60"
+                  className="bg-navy-900 hover:bg-navy-800 rounded-xl px-3 text-xs text-white disabled:opacity-60"
                 >
                   {busy ? "..." : "Save"}
                 </button>
@@ -270,7 +270,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
           <div className="flex gap-3 border-t pt-4">
             <button
               onClick={onEdit}
-              className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-[#0f1f3d] hover:bg-gray-50"
+              className="text-navy-900 flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium hover:bg-gray-50"
             >
               ✏️ Edit
             </button>

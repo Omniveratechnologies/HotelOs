@@ -125,11 +125,11 @@ export default function Sidebar({ rooms, serviceRequests }) {
 
   return (
     <aside
-      className={`${collapsed ? "w-16" : "w-56"} relative flex h-full flex-col bg-[#0f1f3d] transition-all duration-300`}
+      className={`${collapsed ? "w-16" : "w-56"} bg-navy-900 relative flex h-full flex-col transition-all duration-300`}
     >
       {/* Logo */}
       <div className="flex items-center gap-3 border-b border-white/10 px-4 py-5">
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#c9a84c]">
+        <div className="bg-gold-400 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
           <svg viewBox="0 0 24 24" fill="white" className="h-4 w-4">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
           </svg>
@@ -139,7 +139,7 @@ export default function Sidebar({ rooms, serviceRequests }) {
             <div className="font-display text-sm font-bold tracking-wide text-white">
               HotelOS
             </div>
-            <div className="truncate text-xs text-[#c9a84c]">{hotelName}</div>
+            <div className="text-gold-400 truncate text-xs">{hotelName}</div>
           </div>
         )}
         <button
@@ -166,21 +166,21 @@ export default function Sidebar({ rooms, serviceRequests }) {
       {!collapsed && (
         <div className="mx-3 mt-3 flex gap-3 rounded-xl bg-white/5 p-3">
           <div className="flex-1 text-center">
-            <div className="text-lg font-bold leading-none text-[#c9a84c]">
+            <div className="text-gold-400 text-lg leading-none font-bold">
               {occupiedRooms}
             </div>
             <div className="mt-0.5 text-[10px] text-white/40">Occupied</div>
           </div>
           <div className="w-px bg-white/10" />
           <div className="flex-1 text-center">
-            <div className="text-lg font-bold leading-none text-[#c9a84c]">
+            <div className="text-gold-400 text-lg leading-none font-bold">
               {pendingRequests}
             </div>
             <div className="mt-0.5 text-[10px] text-white/40">Pending</div>
           </div>
           <div className="w-px bg-white/10" />
           <div className="flex-1 text-center">
-            <div className="text-lg font-bold leading-none text-green-400">
+            <div className="text-lg leading-none font-bold text-green-400">
               {rooms.filter((r) => r.status === "available").length}
             </div>
             <div className="mt-0.5 text-[10px] text-white/40">Free</div>
@@ -196,21 +196,21 @@ export default function Sidebar({ rooms, serviceRequests }) {
             to={item.path}
             className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
               pathname === item.path
-                ? "bg-[#c9a84c] text-[#0f1f3d]"
-                : "hover:bg-white/8 text-white/60 hover:text-white"
+                ? "bg-gold-400 text-navy-900"
+                : "text-white/60 hover:bg-white/8 hover:text-white"
             }`}
           >
-            <span className="flex-shrink-0">{icons[item.id]}</span>
+            <span className="shrink-0">{icons[item.id]}</span>
             {!collapsed && <span>{item.label}</span>}
             {item.id === "housekeeping" && pendingRequests > 0 && (
               <span
-                className={`ml-auto rounded-full px-1.5 py-0.5 text-xs font-bold ${pathname === item.path ? "bg-[#0f1f3d] text-[#c9a84c]" : "bg-red-500 text-white"}`}
+                className={`ml-auto rounded-full px-1.5 py-0.5 text-xs font-bold ${pathname === item.path ? "bg-navy-900 text-gold-400" : "bg-red-500 text-white"}`}
               >
                 {pendingRequests}
               </span>
             )}
             {collapsed && (
-              <span className="pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-lg bg-[#1e3a5f] px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="bg-navy-700 pointer-events-none absolute left-full z-50 ml-2 rounded-lg px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100">
                 {item.label}
               </span>
             )}
@@ -221,7 +221,7 @@ export default function Sidebar({ rooms, serviceRequests }) {
       {/* Footer */}
       <div className="border-t border-white/10 px-4 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#c9a84c] text-sm font-bold text-[#0f1f3d]">
+          <div className="bg-gold-400 text-navy-900 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold">
             {initials}
           </div>
           {!collapsed && (

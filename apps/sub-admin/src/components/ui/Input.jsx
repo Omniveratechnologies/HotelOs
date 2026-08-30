@@ -3,13 +3,13 @@ export function Input({ label, error, ...props }) {
     <div className="mb-4">
       <label
         htmlFor={props.name}
-        className="mb-2 block text-sm font-medium text-navy"
+        className="text-navy mb-2 block text-sm font-medium"
       >
         {label}
       </label>
       <input
         id={props.name}
-        className={`w-full rounded-lg border border-beige-border bg-white px-4 py-3 text-navy outline-none focus:ring-2 focus:ring-gold ${error ? "border-rose-500" : ""}`}
+        className={`border-beige-border text-navy focus:ring-gold w-full rounded-lg border bg-white px-4 py-3 outline-hidden focus:ring-2 ${error ? "border-rose-500" : ""}`}
         {...props}
       />
       {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}

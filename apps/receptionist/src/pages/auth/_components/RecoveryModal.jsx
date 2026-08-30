@@ -42,14 +42,14 @@ export default function RecoveryModal({ mode, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-      <div className="w-full max-w-md rounded-2xl border border-navy-900/10 bg-white p-7 shadow-xl">
+      <div className="border-navy-900/10 w-full max-w-md rounded-2xl border bg-white p-7 shadow-xl">
         {/* Header */}
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h2 className="font-display text-2xl font-semibold text-navy-900">
+            <h2 className="font-display text-navy-900 text-2xl font-semibold">
               {mode === "username" ? "Forgot username?" : "Forgot password?"}
             </h2>
-            <p className="mt-1 text-sm text-navy-900/60">
+            <p className="text-navy-900/60 mt-1 text-sm">
               {mode === "username"
                 ? "Enter your registered email and we'll send your username."
                 : "Enter your registered email and we'll send you a password reset link."}
@@ -59,7 +59,7 @@ export default function RecoveryModal({ mode, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-xl text-navy-900/50 hover:text-navy-900"
+            className="text-navy-900/50 hover:text-navy-900 text-xl"
           >
             ×
           </button>
@@ -69,7 +69,7 @@ export default function RecoveryModal({ mode, onClose }) {
           <div>
             <label
               htmlFor="recoveryEmail"
-              className="mb-1.5 block text-sm font-medium text-navy-900"
+              className="text-navy-900 mb-1.5 block text-sm font-medium"
             >
               Registered Email
             </label>
@@ -81,7 +81,7 @@ export default function RecoveryModal({ mode, onClose }) {
               value={recoveryEmail}
               onChange={(e) => setRecoveryEmail(e.target.value)}
               placeholder="you@hotel.com"
-              className="w-full rounded-lg border border-navy-900/15 bg-cream-50 px-4 py-2.5 text-navy-900 outline-none transition-colors focus:border-gold-400"
+              className="border-navy-900/15 bg-cream-50 text-navy-900 focus:border-gold-400 w-full rounded-lg border px-4 py-2.5 outline-hidden transition-colors"
             />
           </div>
 
@@ -103,7 +103,7 @@ export default function RecoveryModal({ mode, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-navy-900/15 px-5 py-2.5 text-navy-900 transition-colors hover:bg-cream-100"
+              className="border-navy-900/15 text-navy-900 hover:bg-cream-100 rounded-lg border px-5 py-2.5 transition-colors"
             >
               Cancel
             </button>
@@ -111,7 +111,7 @@ export default function RecoveryModal({ mode, onClose }) {
             <button
               type="submit"
               disabled={recoveryLoading}
-              className="rounded-lg bg-navy-900 px-5 py-2.5 text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
+              className="bg-navy-900 text-cream-50 hover:bg-navy-800 rounded-lg px-5 py-2.5 transition-colors disabled:opacity-60"
             >
               {recoveryLoading
                 ? "Sending..."

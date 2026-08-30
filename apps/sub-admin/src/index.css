@@ -1,8 +1,52 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap")
+layer(base);
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #22324e;
+  --color-navy-dark: #1e3252;
+
+  --color-gold: #766242;
+  --color-gold-hover: #826a42;
+
+  --color-ivory: #f4f4e4;
+  --color-cream: #fcfcfc;
+
+  --color-beige: #ecece4;
+  --color-beige-border: #e4e4dc;
+
+  --color-muted: #8a8878;
+
+  --font-display: "Cormorant Garamond", serif;
+  --font-body: "Inter", sans-serif;
+
+  --shadow-soft: 0 4px 24px rgba(34, 50, 78, 0.08);
+  --shadow-card: 0 2px 12px rgba(34, 50, 78, 0.06);
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 * {
   box-sizing: border-box;
@@ -13,9 +57,9 @@ html {
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  color: #22324E;
-  background-color: #F4F4E4;
+  font-family: "Inter", sans-serif;
+  color: #22324e;
+  background-color: #f4f4e4;
 }
 
 ::-webkit-scrollbar {
@@ -23,7 +67,7 @@ body {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #ECECE4;
+  background: #ecece4;
 }
 ::-webkit-scrollbar-thumb {
   background: #766242;

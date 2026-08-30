@@ -3,18 +3,18 @@ import DashboardMockup from "./DashboardMockup.jsx";
 export default function Hero() {
   return (
     <section id="top" className="relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ivory to-cream" />
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 pb-20 pt-14 lg:grid-cols-2 lg:px-10">
+      <div className="from-ivory to-cream absolute inset-0 -z-10 bg-linear-to-b" />
+      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 pt-14 pb-20 lg:grid-cols-2 lg:px-10">
         <div>
-          <span className="mb-6 inline-block rounded-full border border-gold/20 bg-gold/10 px-3.5 py-1.5 text-xs font-medium tracking-wide text-gold">
+          <span className="border-gold/20 bg-gold/10 text-gold mb-6 inline-block rounded-full border px-3.5 py-1.5 text-xs font-medium tracking-wide">
             The Intelligent Operating System for Modern Hotels
           </span>
-          <h1 className="mb-6 font-display text-5xl font-semibold leading-[1.05] text-navy sm:text-6xl">
+          <h1 className="font-display text-navy mb-6 text-5xl leading-[1.05] font-semibold sm:text-6xl">
             One Hotel.
             <br />
             One <span className="text-gold">Intelligent OS.</span>
           </h1>
-          <p className="mb-8 max-w-md text-lg leading-relaxed text-navy/70">
+          <p className="text-navy/70 mb-8 max-w-md text-lg leading-relaxed">
             HotelOS unifies every department, streamlines every workflow, and
             puts every guest at the heart of a smarter stay — all in one
             software.
@@ -22,7 +22,7 @@ export default function Hero() {
           <div className="mb-8 flex flex-wrap items-center gap-4">
             <a
               href="#demo"
-              className="inline-flex items-center gap-2 rounded-full bg-navy px-6 py-3.5 font-medium text-cream transition-colors hover:bg-navy-dark"
+              className="bg-navy text-cream hover:bg-navy-dark inline-flex items-center gap-2 rounded-full px-6 py-3.5 font-medium transition-colors"
             >
               Request a Demo
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -37,12 +37,12 @@ export default function Hero() {
             </a>
             <a
               href="#features"
-              className="inline-flex items-center gap-2 rounded-full border border-beige-border px-6 py-3.5 font-medium text-navy transition-colors hover:border-gold hover:text-gold"
+              className="border-beige-border text-navy hover:border-gold hover:text-gold inline-flex items-center gap-2 rounded-full border px-6 py-3.5 font-medium transition-colors"
             >
               Explore Features
             </a>
           </div>
-          <div className="flex flex-wrap items-center gap-6 text-sm text-muted">
+          <div className="text-muted flex flex-wrap items-center gap-6 text-sm">
             {[
               "PCI DSS Compliant",
               "Secure & Reliable",
@@ -83,11 +83,11 @@ export default function Hero() {
             }}
             className="ml-auto max-w-md"
           />
-          <div className="absolute -bottom-6 -left-6 flex max-w-[230px] items-center gap-3 rounded-xl border border-beige-border bg-cream px-4 py-3 shadow-soft">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-xs font-semibold text-cream">
+          <div className="border-beige-border bg-cream shadow-soft absolute -bottom-6 -left-6 flex max-w-[230px] items-center gap-3 rounded-xl border px-4 py-3">
+            <span className="bg-navy text-cream flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
               AI
             </span>
-            <p className="text-[11px] leading-snug text-navy/80">
+            <p className="text-navy/80 text-[11px] leading-snug">
               Hi! I'm ready to help with today's operations.
             </p>
           </div>

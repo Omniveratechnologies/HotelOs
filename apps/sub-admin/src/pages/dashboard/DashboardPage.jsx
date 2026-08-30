@@ -177,16 +177,16 @@ export default function Dashboard() {
   const hotelName = statsData?.hotelName || "your hotel";
 
   return (
-    <div className="flex min-h-screen bg-ivory font-body">
+    <div className="bg-ivory font-body flex min-h-screen">
       <div className="min-w-0 flex-1">
         {/* =====================================================
             TOPBAR
         ===================================================== */}
 
-        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-beige-border bg-cream/95 px-6 backdrop-blur lg:px-10">
+        <header className="border-beige-border bg-cream/95 sticky top-0 z-20 flex h-20 items-center justify-between border-b px-6 backdrop-blur-sm lg:px-10">
           <div className="flex min-w-0 items-center gap-4">
             <button
-              className="shrink-0 text-navy lg:hidden"
+              className="text-navy shrink-0 lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -201,11 +201,11 @@ export default function Dashboard() {
             </button>
 
             <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-semibold text-navy">
+              <h1 className="font-display text-navy truncate text-2xl font-semibold">
                 Welcome, {firstName}
               </h1>
 
-              <p className="hidden text-sm text-muted sm:block">
+              <p className="text-muted hidden text-sm sm:block">
                 Here's what's happening at {hotelName} today.
               </p>
             </div>
@@ -214,7 +214,7 @@ export default function Dashboard() {
           <div className="flex shrink-0 items-center gap-4">
             <button
               aria-label="Notifications"
-              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-beige-border bg-ivory text-navy"
+              className="border-beige-border bg-ivory text-navy relative flex h-10 w-10 items-center justify-center rounded-full border"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path
@@ -226,15 +226,15 @@ export default function Dashboard() {
                 />
               </svg>
 
-              <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-gold" />
+              <span className="bg-gold absolute top-1.5 right-2 h-2 w-2 rounded-full" />
             </button>
 
             <div className="flex items-center gap-2.5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-navy font-display font-semibold text-cream">
+              <span className="bg-navy font-display text-cream flex h-10 w-10 items-center justify-center rounded-full font-semibold">
                 {(firstName || "A").charAt(0).toUpperCase()}
               </span>
 
-              <span className="hidden text-sm font-medium text-navy sm:block">
+              <span className="text-navy hidden text-sm font-medium sm:block">
                 {user.name || "Admin"}
               </span>
             </div>
@@ -263,7 +263,7 @@ export default function Dashboard() {
           )}
 
           {statsLoading ? (
-            <div className="mb-8 rounded-2xl border border-beige-border bg-cream p-10 text-center text-muted shadow-card">
+            <div className="border-beige-border bg-cream text-muted shadow-card mb-8 rounded-2xl border p-10 text-center">
               Loading dashboard stats...
             </div>
           ) : statsData && !statsError ? (
@@ -286,15 +286,15 @@ export default function Dashboard() {
               RECENT ACTIVITIES
           =================================================== */}
 
-          <div className="rounded-2xl border border-beige-border bg-cream p-6 shadow-card">
+          <div className="border-beige-border bg-cream shadow-card rounded-2xl border p-6">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-navy">
+              <h2 className="font-display text-navy text-xl font-semibold">
                 Recent Activities
               </h2>
 
               <a
                 href="#"
-                className="text-sm font-medium text-gold hover:text-gold-hover"
+                className="text-gold hover:text-gold-hover text-sm font-medium"
               >
                 View all
               </a>
@@ -305,22 +305,22 @@ export default function Dashboard() {
                 {statsData.recentActivities.map((a) => (
                   <div
                     key={a.id}
-                    className="flex items-center justify-between gap-4 border-b border-beige-border pb-4 last:border-0 last:pb-0"
+                    className="border-beige-border flex items-center justify-between gap-4 border-b pb-4 last:border-0 last:pb-0"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-beige-border" />
+                      <span className="bg-beige-border h-2 w-2 shrink-0 rounded-full" />
 
-                      <p className="truncate text-sm text-navy/80">{a.text}</p>
+                      <p className="text-navy/80 truncate text-sm">{a.text}</p>
                     </div>
 
-                    <span className="shrink-0 text-xs text-muted">
+                    <span className="text-muted shrink-0 text-xs">
                       {formatRelativeTime(a.createdAt)}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center text-sm text-muted">
+              <div className="text-muted py-8 text-center text-sm">
                 No recent activity to show yet.
               </div>
             )}

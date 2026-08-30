@@ -12,10 +12,10 @@ export default function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-beige-border bg-cream/95 backdrop-blur">
+    <header className="border-beige-border bg-cream/95 sticky top-0 z-50 border-b backdrop-blur-sm">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
         <a href="#top" className="flex shrink-0 items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-navy">
+          <span className="bg-navy flex h-9 w-9 items-center justify-center rounded-full">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 21V9l8-5 8 5v12"
@@ -31,7 +31,7 @@ export default function Header() {
               />
             </svg>
           </span>
-          <span className="font-display text-2xl font-semibold tracking-tight text-navy">
+          <span className="font-display text-navy text-2xl font-semibold tracking-tight">
             Hotel<span className="text-gold">OS</span>
           </span>
         </a>
@@ -41,7 +41,7 @@ export default function Header() {
             <a
               key={link.label}
               href={link.href}
-              className="text-[15px] text-navy/80 transition-colors hover:text-gold"
+              className="text-navy/80 hover:text-gold text-[15px] transition-colors"
             >
               {link.label}
             </a>
@@ -51,13 +51,13 @@ export default function Header() {
         <div className="hidden items-center gap-3 lg:flex">
           <a
             href="#demo"
-            className="rounded-full border border-beige-border px-5 py-2.5 text-[15px] font-medium text-navy transition-colors hover:border-gold hover:text-gold"
+            className="border-beige-border text-navy hover:border-gold hover:text-gold rounded-full border px-5 py-2.5 text-[15px] font-medium transition-colors"
           >
             Request Demo
           </a>
           <Link
             to="/login"
-            className="flex items-center gap-2 rounded-full bg-navy px-5 py-2.5 text-[15px] font-medium text-cream transition-colors hover:bg-navy-dark"
+            className="bg-navy text-cream hover:bg-navy-dark flex items-center gap-2 rounded-full px-5 py-2.5 text-[15px] font-medium transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <rect
@@ -96,12 +96,12 @@ export default function Header() {
       </div>
 
       {open && (
-        <div className="flex flex-col gap-4 border-t border-beige-border bg-cream px-6 py-5 lg:hidden">
+        <div className="border-beige-border bg-cream flex flex-col gap-4 border-t px-6 py-5 lg:hidden">
           {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="text-[15px] text-navy/80"
+              className="text-navy/80 text-[15px]"
             >
               {link.label}
             </a>
@@ -109,13 +109,13 @@ export default function Header() {
           <div className="flex flex-col gap-3 pt-2">
             <a
               href="#demo"
-              className="rounded-full border border-beige-border px-5 py-2.5 text-center text-[15px] font-medium text-navy"
+              className="border-beige-border text-navy rounded-full border px-5 py-2.5 text-center text-[15px] font-medium"
             >
               Request Demo
             </a>
             <Link
               to="/login"
-              className="rounded-full bg-navy px-5 py-2.5 text-center text-[15px] font-medium text-cream"
+              className="bg-navy text-cream rounded-full px-5 py-2.5 text-center text-[15px] font-medium"
             >
               Login
             </Link>

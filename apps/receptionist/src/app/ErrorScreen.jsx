@@ -6,13 +6,13 @@ export default function ErrorScreen() {
   const message = error?.message;
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-cream-50 p-6">
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-gray-100 bg-white p-10 text-center shadow-sm">
+    <div className="bg-cream-50 flex min-h-screen w-full items-center justify-center p-6">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-gray-100 bg-white p-10 text-center shadow-xs">
         {/* Top Accent */}
-        <div className="absolute inset-x-0 top-0 h-1 bg-[#0f1f3d]" />
+        <div className="bg-navy-900 absolute inset-x-0 top-0 h-1" />
 
         {/* Decorative Blur */}
-        <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-red-50 opacity-60 blur-3xl" />
+        <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-red-50 opacity-60 blur-3xl" />
 
         {/* Icon */}
         <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl">
@@ -20,7 +20,7 @@ export default function ErrorScreen() {
         </div>
 
         {/* Title */}
-        <h1 className="mb-3 font-display text-3xl font-bold text-[#0f1f3d]">
+        <h1 className="font-display text-navy-900 mb-3 text-3xl font-bold">
           We couldn't open this page
         </h1>
 
@@ -37,7 +37,7 @@ export default function ErrorScreen() {
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <button
             onClick={() => window.location.reload()}
-            className="rounded-xl bg-[#0f1f3d] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#162847]"
+            className="bg-navy-900 hover:bg-navy-800 rounded-xl px-6 py-3 font-semibold text-white transition-colors"
           >
             Reload Page
           </button>
@@ -46,7 +46,7 @@ export default function ErrorScreen() {
             onClick={() => {
               window.location.href = "/";
             }}
-            className="rounded-xl border border-gray-200 px-6 py-3 font-semibold text-[#0f1f3d] transition-colors hover:bg-gray-50"
+            className="text-navy-900 rounded-xl border border-gray-200 px-6 py-3 font-semibold transition-colors hover:bg-gray-50"
           >
             Go Home
           </button>
@@ -54,7 +54,7 @@ export default function ErrorScreen() {
 
         {/* Help Section */}
         <div className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 p-5 text-left">
-          <p className="mb-3 text-sm font-semibold text-[#0f1f3d]">
+          <p className="text-navy-900 mb-3 text-sm font-semibold">
             Still having trouble?
           </p>
 
@@ -73,7 +73,7 @@ export default function ErrorScreen() {
             </summary>
 
             <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
-              <p className="break-all font-mono text-[11px] text-gray-500">
+              <p className="font-mono text-[11px] break-all text-gray-500">
                 {message}
               </p>
             </div>

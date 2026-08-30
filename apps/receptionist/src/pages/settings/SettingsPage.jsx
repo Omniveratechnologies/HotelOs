@@ -9,7 +9,7 @@ import {
 const roleLabel = { RECEPTIONIST: "Receptionist", KITCHEN: "Kitchen" };
 
 const inputClass =
-  "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]";
+  "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-gold-400 focus:ring-1 focus:ring-gold-400";
 const disabledInputClass = inputClass + " bg-gray-50 text-gray-400";
 
 export default function SettingsPage() {
@@ -109,7 +109,7 @@ export default function SettingsPage() {
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Hotel Name
               </label>
               <input
@@ -119,7 +119,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Email
               </label>
               <input
@@ -129,7 +129,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Phone
               </label>
               <input
@@ -140,7 +140,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 City
               </label>
               <input
@@ -151,7 +151,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Address
               </label>
               <input
@@ -162,7 +162,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Check-in Time
               </label>
               <input
@@ -174,7 +174,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Check-out Time
               </label>
               <input
@@ -200,7 +200,7 @@ export default function SettingsPage() {
               className="flex items-center justify-between border-b border-gray-50 py-2 last:border-0"
             >
               <div>
-                <div className="text-sm font-medium capitalize text-[#0f1f3d]">
+                <div className="text-navy-900 text-sm font-medium capitalize">
                   {k.replace(/([A-Z])/g, " $1").trim()}
                 </div>
                 <div className="text-xs text-gray-400">
@@ -209,10 +209,10 @@ export default function SettingsPage() {
               </div>
               <button
                 onClick={() => setNotifs((p) => ({ ...p, [k]: !v }))}
-                className={`relative h-6 w-12 rounded-full transition-all duration-200 ${v ? "bg-[#0f1f3d]" : "bg-gray-200"}`}
+                className={`relative h-6 w-12 rounded-full transition-all duration-200 ${v ? "bg-navy-900" : "bg-gray-200"}`}
               >
                 <div
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all duration-200 ${v ? "left-6" : "left-0.5"}`}
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200 ${v ? "left-6" : "left-0.5"}`}
                 />
               </button>
             </div>
@@ -236,11 +236,11 @@ export default function SettingsPage() {
                   className="flex items-center justify-between border-b border-gray-50 py-3"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0f1f3d] text-sm font-bold text-white">
+                    <div className="bg-navy-900 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold text-white">
                       {s.name[0]?.toUpperCase()}
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-[#0f1f3d]">
+                      <div className="text-navy-900 text-sm font-medium">
                         {s.name}
                       </div>
                       <div className="text-xs text-gray-400">
@@ -264,7 +264,7 @@ export default function SettingsPage() {
           <p className="mb-2 text-[10px] text-gray-400">
             Invite or manage staff from the Sub-Admin portal.
           </p>
-          <button className="w-full rounded-xl border-2 border-dashed border-gray-300 py-2.5 text-sm text-gray-500 transition-colors hover:border-[#c9a84c] hover:text-[#c9a84c]">
+          <button className="hover:border-gold-400 hover:text-gold-400 w-full rounded-xl border-2 border-dashed border-gray-300 py-2.5 text-sm text-gray-500 transition-colors">
             + Add Staff Member
           </button>
         </div>
@@ -284,12 +284,12 @@ export default function SettingsPage() {
               key={type}
               className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
             >
-              <span className="font-semibold text-[#0f1f3d]">{type}</span>
+              <span className="text-navy-900 font-semibold">{type}</span>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">₹</span>
                 <input
                   defaultValue={rate}
-                  className="w-24 rounded-lg border border-gray-200 px-3 py-1.5 text-right text-sm font-bold text-[#0f1f3d] focus:border-[#c9a84c] focus:outline-none"
+                  className="text-navy-900 focus:border-gold-400 w-24 rounded-lg border border-gray-200 px-3 py-1.5 text-right text-sm font-bold focus:outline-hidden"
                 />
                 <span className="text-sm text-gray-400">/night</span>
               </div>
@@ -308,7 +308,7 @@ export default function SettingsPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0f1f3d]">
+          <h1 className="font-display text-navy-900 text-2xl font-bold">
             Settings
           </h1>
           <p className="text-sm text-gray-500">Configure your HotelOS</p>
@@ -316,7 +316,7 @@ export default function SettingsPage() {
         <button
           onClick={save}
           disabled={!hotel || saving || !canEditHotel}
-          className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${saved ? "bg-green-600 text-white" : "bg-[#0f1f3d] text-white hover:bg-[#162847]"}`}
+          className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${saved ? "bg-green-600 text-white" : "bg-navy-900 hover:bg-navy-800 text-white"}`}
         >
           {saving ? "Saving..." : saved ? "✓ Saved!" : "Save Changes"}
         </button>
@@ -337,9 +337,9 @@ export default function SettingsPage() {
           {sections.map((s) => (
             <div
               key={s.title}
-              className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+              className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs"
             >
-              <h3 className="mb-4 flex items-center gap-2 font-bold text-[#0f1f3d]">
+              <h3 className="text-navy-900 mb-4 flex items-center gap-2 font-bold">
                 <span>{s.icon}</span> {s.title}
               </h3>
               {s.content}

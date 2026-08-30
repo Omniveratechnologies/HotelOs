@@ -49,9 +49,9 @@ export default function AddRoomModal({ onClose, onAdd }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between rounded-t-2xl bg-[#0f1f3d] p-5">
+        <div className="bg-navy-900 flex items-center justify-between rounded-t-2xl p-5">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-widest text-[#c9a84c]">
+            <div className="text-gold-400 text-xs font-semibold tracking-widest uppercase">
               Add Room
             </div>
             <div className="mt-0.5 text-lg font-bold text-white">
@@ -78,7 +78,7 @@ export default function AddRoomModal({ onClose, onAdd }) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3 p-5">
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
               Room Number *
             </label>
             <input
@@ -87,12 +87,12 @@ export default function AddRoomModal({ onClose, onAdd }) {
               placeholder="e.g. 101"
               autoFocus
               disabled={saving}
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+              className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
               Floor *
             </label>
             <input
@@ -101,20 +101,20 @@ export default function AddRoomModal({ onClose, onAdd }) {
               value={floor}
               onChange={(e) => setFloor(e.target.value)}
               disabled={saving}
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+              className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Type *
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
                 disabled={saving}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+                className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
               >
                 <option>Standard</option>
                 <option>Deluxe</option>
@@ -122,7 +122,7 @@ export default function AddRoomModal({ onClose, onAdd }) {
               </select>
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Rate / Night *
               </label>
               <input
@@ -132,7 +132,7 @@ export default function AddRoomModal({ onClose, onAdd }) {
                 onChange={(e) => setRate(e.target.value)}
                 placeholder="₹2500"
                 disabled={saving}
-                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+                className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
               />
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function AddRoomModal({ onClose, onAdd }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#162847]"
+              className="bg-navy-900 hover:bg-navy-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
             >
               {saving ? "Creating..." : "Create Room"}
             </button>

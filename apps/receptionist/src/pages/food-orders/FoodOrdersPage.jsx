@@ -82,7 +82,7 @@ export default function FoodOrdersPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#0f1f3d]">
+          <h1 className="font-display text-navy-900 text-2xl font-bold">
             Food Orders
           </h1>
           <p className="text-sm text-gray-500">
@@ -94,7 +94,7 @@ export default function FoodOrdersPage() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="rounded-xl bg-[#0f1f3d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#162847]"
+          className="bg-navy-900 hover:bg-navy-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           + New Order
         </button>
@@ -131,7 +131,7 @@ export default function FoodOrdersPage() {
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "bg-white text-[#0f1f3d] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
           >
             {s.replace("-", " ")}
           </button>
@@ -139,29 +139,29 @@ export default function FoodOrdersPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Room
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Items
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Amount
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Payment
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Time
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-3 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Actions
               </th>
             </tr>
@@ -169,13 +169,13 @@ export default function FoodOrdersPage() {
           <tbody className="divide-y divide-gray-50">
             {filtered.map((order) => (
               <tr key={order.id} className="transition-colors hover:bg-gray-50">
-                <td className="px-4 py-3 font-bold text-[#0f1f3d]">
+                <td className="text-navy-900 px-4 py-3 font-bold">
                   {order.room}
                 </td>
                 <td className="max-w-xs truncate px-4 py-3 text-sm text-gray-700">
                   {order.items}
                 </td>
-                <td className="px-4 py-3 font-semibold text-[#0f1f3d]">
+                <td className="text-navy-900 px-4 py-3 font-semibold">
                   ₹{order.amount}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600">
@@ -197,7 +197,7 @@ export default function FoodOrdersPage() {
                     onChange={(e) =>
                       updateOrderStatus(order.id, e.target.value)
                     }
-                    className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:border-[#c9a84c] focus:outline-none"
+                    className="focus:border-gold-400 rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-hidden"
                   >
                     <option value="preparing">Preparing</option>
                     <option value="out-for-delivery">Out for Delivery</option>
@@ -224,13 +224,13 @@ export default function FoodOrdersPage() {
             className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="rounded-t-2xl bg-[#0f1f3d] p-5">
+            <div className="bg-navy-900 rounded-t-2xl p-5">
               <h3 className="text-lg font-bold text-white">New Food Order</h3>
             </div>
             <div className="grid grid-cols-2 gap-5 p-5">
               <div>
                 <div className="mb-3">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                     Room *
                   </label>
                   <select
@@ -238,7 +238,7 @@ export default function FoodOrdersPage() {
                     onChange={(e) =>
                       setNewOrder((p) => ({ ...p, room: e.target.value }))
                     }
-                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+                    className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                   >
                     <option value="">Select Room</option>
                     {rooms
@@ -251,7 +251,7 @@ export default function FoodOrdersPage() {
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                     Payment
                   </label>
                   <select
@@ -259,7 +259,7 @@ export default function FoodOrdersPage() {
                     onChange={(e) =>
                       setNewOrder((p) => ({ ...p, payment: e.target.value }))
                     }
-                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none"
+                    className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                   >
                     <option>COD</option>
                     <option>UPI</option>
@@ -268,7 +268,7 @@ export default function FoodOrdersPage() {
                   </select>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-3">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
                     Cart
                   </div>
                   {cart.length === 0 ? (
@@ -291,7 +291,7 @@ export default function FoodOrdersPage() {
                   {cart.length > 0 && (
                     <div className="mt-1 flex justify-between pt-2 text-sm font-bold">
                       <span>Total</span>
-                      <span className="text-[#0f1f3d]">
+                      <span className="text-navy-900">
                         ₹{cart.reduce((s, c) => s + c.price * c.qty, 0)}
                       </span>
                     </div>
@@ -299,16 +299,16 @@ export default function FoodOrdersPage() {
                 </div>
                 <button
                   onClick={placeOrder}
-                  className="mt-3 w-full rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#162847]"
+                  className="bg-navy-900 hover:bg-navy-800 mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
                 >
                   Place Order
                 </button>
               </div>
               <div>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   Menu
                 </div>
-                <div className="scrollbar-thin max-h-80 space-y-1 overflow-y-auto">
+                <div className="max-h-80 scrollbar-thin space-y-1 overflow-y-auto">
                   {menu.map((item) => (
                     <button
                       key={item.name}
@@ -316,7 +316,7 @@ export default function FoodOrdersPage() {
                       className="flex w-full items-center justify-between rounded-xl border border-gray-100 px-3 py-2.5 text-left transition-colors hover:bg-gray-50"
                     >
                       <div>
-                        <div className="text-sm font-medium text-[#0f1f3d]">
+                        <div className="text-navy-900 text-sm font-medium">
                           {item.name}
                         </div>
                         <div className="text-xs text-gray-400">
@@ -324,10 +324,10 @@ export default function FoodOrdersPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[#c9a84c]">
+                        <span className="text-gold-400 text-sm font-semibold">
                           ₹{item.price}
                         </span>
-                        <span className="text-lg leading-none text-[#0f1f3d]">
+                        <span className="text-navy-900 text-lg leading-none">
                           +
                         </span>
                       </div>

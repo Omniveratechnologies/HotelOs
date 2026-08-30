@@ -42,22 +42,22 @@ export default function VideoAISection() {
     <section className="bg-ivory py-16">
       <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-2 lg:px-10">
         {/* Video */}
-        <div className="group relative flex aspect-[4/3] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl bg-navy p-8">
-          <div className="absolute inset-0 bg-gradient-to-br from-navy via-navy to-navy-dark opacity-90" />
+        <div className="group bg-navy relative flex aspect-4/3 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl p-8">
+          <div className="from-navy via-navy to-navy-dark absolute inset-0 bg-linear-to-br opacity-90" />
           <div className="relative">
-            <p className="max-w-[220px] font-display text-2xl leading-tight text-cream sm:text-3xl">
+            <p className="font-display text-cream max-w-[220px] text-2xl leading-tight sm:text-3xl">
               One Platform, Every Department
             </p>
           </div>
           <button
             aria-label="Play overview video"
-            className="relative flex h-16 w-16 items-center justify-center self-center rounded-full bg-cream/95 transition-transform group-hover:scale-105"
+            className="bg-cream/95 relative flex h-16 w-16 items-center justify-center self-center rounded-full transition-transform group-hover:scale-105"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#22324E">
               <path d="M8 5v14l11-7-11-7z" />
             </svg>
           </button>
-          <div className="relative flex items-center justify-between text-xs text-cream/70">
+          <div className="text-cream/70 relative flex items-center justify-between text-xs">
             <span>HotelOS Overview</span>
             <span>02:15</span>
           </div>
@@ -65,13 +65,13 @@ export default function VideoAISection() {
 
         {/* AI description */}
         <div>
-          <span className="mb-4 inline-block rounded-full border border-gold/20 bg-gold/10 px-3.5 py-1.5 text-xs font-medium tracking-wide text-gold">
+          <span className="border-gold/20 bg-gold/10 text-gold mb-4 inline-block rounded-full border px-3.5 py-1.5 text-xs font-medium tracking-wide">
             AI Assistant for Smarter Care
           </span>
-          <h2 className="mb-3 font-display text-3xl font-semibold text-navy">
+          <h2 className="font-display text-navy mb-3 text-3xl font-semibold">
             Every Dashboard, Powered by AI
           </h2>
-          <p className="mb-8 max-w-md text-navy/60">
+          <p className="text-navy/60 mb-8 max-w-md">
             All HotelOS dashboards are AI-powered — the built-in assistant helps
             staff and guests get instant answers, automates routine tasks, and
             improves efficiency across every department.
@@ -79,14 +79,14 @@ export default function VideoAISection() {
           <div className="space-y-6">
             {aiPoints.map((p) => (
               <div key={p.title} className="flex gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/20 bg-gold/10">
+                <span className="border-gold/20 bg-gold/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     {p.icon}
                   </svg>
                 </span>
                 <div>
-                  <p className="mb-0.5 font-medium text-navy">{p.title}</p>
-                  <p className="text-sm text-navy/60">{p.desc}</p>
+                  <p className="text-navy mb-0.5 font-medium">{p.title}</p>
+                  <p className="text-navy/60 text-sm">{p.desc}</p>
                 </div>
               </div>
             ))}

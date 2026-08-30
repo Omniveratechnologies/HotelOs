@@ -112,7 +112,7 @@ export default function Chatbot({
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#0f1f3d] shadow-2xl transition-all hover:scale-105 hover:bg-[#162847]"
+        className="bg-navy-900 hover:bg-navy-800 fixed right-6 bottom-6 z-40 flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all hover:scale-105"
       >
         {isOpen ? (
           <svg
@@ -131,7 +131,7 @@ export default function Chatbot({
         {!isOpen &&
           serviceRequests.filter((r) => r.status === "requested").length >
             0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
               {serviceRequests.filter((r) => r.status === "requested").length}
             </span>
           )}
@@ -139,10 +139,10 @@ export default function Chatbot({
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-40 flex h-[500px] w-96 flex-col rounded-2xl border border-gray-100 bg-white shadow-2xl">
+        <div className="fixed right-6 bottom-24 z-40 flex h-[500px] w-96 flex-col rounded-2xl border border-gray-100 bg-white shadow-2xl">
           {/* Header */}
-          <div className="flex items-center gap-3 rounded-t-2xl bg-[#0f1f3d] px-4 py-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#c9a84c] text-lg">
+          <div className="bg-navy-900 flex items-center gap-3 rounded-t-2xl px-4 py-3">
+            <div className="bg-gold-400 flex h-9 w-9 items-center justify-center rounded-xl text-lg">
               🤖
             </div>
             <div>
@@ -170,21 +170,21 @@ export default function Chatbot({
           </div>
 
           {/* Messages */}
-          <div className="scrollbar-thin flex-1 space-y-3 overflow-y-auto p-3">
+          <div className="flex-1 scrollbar-thin space-y-3 overflow-y-auto p-3">
             {messages.map((m, i) => (
               <div
                 key={i}
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {m.role === "assistant" && (
-                  <div className="mr-2 mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#0f1f3d] text-sm">
+                  <div className="bg-navy-900 mt-0.5 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm">
                     🤖
                   </div>
                 )}
                 <div
                   className={`max-w-[80%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed ${
                     m.role === "user"
-                      ? "rounded-br-sm bg-[#0f1f3d] text-white"
+                      ? "bg-navy-900 rounded-br-sm text-white"
                       : "rounded-bl-sm bg-gray-100 text-gray-800"
                   }`}
                 >
@@ -194,7 +194,7 @@ export default function Chatbot({
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="mr-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#0f1f3d] text-sm">
+                <div className="bg-navy-900 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm">
                   🤖
                 </div>
                 <div className="flex gap-1 rounded-2xl rounded-bl-sm bg-gray-100 px-4 py-3">
@@ -223,7 +223,7 @@ export default function Chatbot({
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-600 transition-colors hover:bg-[#0f1f3d] hover:text-white"
+                  className="hover:bg-navy-900 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-600 transition-colors hover:text-white"
                 >
                   {q}
                 </button>
@@ -239,13 +239,13 @@ export default function Chatbot({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 placeholder="Ask about rooms, guests, orders..."
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#c9a84c] focus:outline-none focus:ring-1 focus:ring-[#c9a84c]"
+                className="focus:border-gold-400 focus:ring-gold-400 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:ring-1 focus:outline-hidden"
                 disabled={loading}
               />
               <button
                 onClick={() => send()}
                 disabled={loading || !input.trim()}
-                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#0f1f3d] transition-colors hover:bg-[#162847] disabled:opacity-40"
+                className="bg-navy-900 hover:bg-navy-800 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors disabled:opacity-40"
               >
                 <svg
                   viewBox="0 0 24 24"
