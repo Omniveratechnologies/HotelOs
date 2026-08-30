@@ -98,14 +98,14 @@ POST /api/v1/users
 with:
 
 {
-  "name": "Kitchen Operator",
-  "role": "KITCHEN"
+"name": "Kitchen Operator",
+"role": "KITCHEN"
 }
 
 The frontend does not send:
 
 {
-  "hotelId": "HOTEL_B"
+"hotelId": "HOTEL_B"
 }
 
 The backend obtains:
@@ -151,10 +151,10 @@ Examples:
 POST /api/v1/auth/login
 POST /api/v1/auth/logout
 
-GET  /api/v1/users
+GET /api/v1/users
 POST /api/v1/users
 
-GET  /api/v1/hotels
+GET /api/v1/hotels
 POST /api/v1/hotels
 
 Future versions can use:
@@ -229,8 +229,8 @@ GET http://localhost:5001/api/v1/health
 Expected response:
 
 {
-  "success": true,
-  "message": "HotelOS backend is running"
+"success": true,
+"message": "HotelOS backend is running"
 }
 
 6. Backend Structure
@@ -240,49 +240,49 @@ structure.
 
 backend/
 ├── src/
-│   ├── config/
-│   │   ├── db.js
-│   │   └── env.js
-│   │
-│   ├── constants/
-│   │   └── roles.js
-│   │
-│   ├── controllers/
-│   │   ├── auth.controller.js
-│   │   ├── hotel.controller.js
-│   │   └── user.controller.js
-│   │
-│   ├── dto/
-│   │   └── user.dto.js
-│   │
-│   ├── middleware/
-│   │   ├── auth.middleware.js
-│   │   └── role.middleware.js
-│   │
-│   ├── models/
-│   │   ├── Hotel.js
-│   │   └── User.js
-│   │
-│   ├── routes/
-│   │   ├── auth.routes.js
-│   │   ├── hotel.routes.js
-│   │   ├── hotelRoutes.js
-│   │   └── user.routes.js
-│   │
-│   ├── seed/
-│   │   └── superAdmin.seed.js
-│   │
-│   ├── services/
-│   │
-│   ├── utils/
-│   │   ├── generateCredentials.js
-│   │   ├── jwt.js
-│   │   └── password.js
-│   │
-│   ├── validators/
-│   │
-│   ├── app.js
-│   └── server.js
+│ ├── config/
+│ │ ├── db.js
+│ │ └── env.js
+│ │
+│ ├── constants/
+│ │ └── roles.js
+│ │
+│ ├── controllers/
+│ │ ├── auth.controller.js
+│ │ ├── hotel.controller.js
+│ │ └── user.controller.js
+│ │
+│ ├── dto/
+│ │ └── user.dto.js
+│ │
+│ ├── middleware/
+│ │ ├── auth.middleware.js
+│ │ └── role.middleware.js
+│ │
+│ ├── models/
+│ │ ├── Hotel.js
+│ │ └── User.js
+│ │
+│ ├── routes/
+│ │ ├── auth.routes.js
+│ │ ├── hotel.routes.js
+│ │ ├── hotelRoutes.js
+│ │ └── user.routes.js
+│ │
+│ ├── seed/
+│ │ └── superAdmin.seed.js
+│ │
+│ ├── services/
+│ │
+│ ├── utils/
+│ │ ├── generateCredentials.js
+│ │ ├── jwt.js
+│ │ └── password.js
+│ │
+│ ├── validators/
+│ │
+│ ├── app.js
+│ └── server.js
 │
 ├── .env
 ├── .env.example
@@ -296,38 +296,38 @@ The exact contents may grow as additional modules are implemented.
 A typical protected request follows this flow:
 
 Frontend
-   |
-   | HTTP request
-   v
+|
+| HTTP request
+v
 Express Route
-   |
-   v
+|
+v
 authenticate middleware
-   |
-   | verifies JWT
-   v
+|
+| verifies JWT
+v
 req.user populated
-   |
-   v
+|
+v
 authorize middleware
-   |
-   | checks role
-   v
+|
+| checks role
+v
 Controller
-   |
-   v
+|
+v
 Service / Model
-   |
-   v
+|
+v
 MongoDB
-   |
-   v
+|
+v
 DTO
-   |
-   v
+|
+v
 JSON response
-   |
-   v
+|
+v
 Frontend
 
 This separation is important.
@@ -345,27 +345,27 @@ POST /api/v1/auth/login
 Body:
 
 {
-  "username": "your_username",
-  "password": "your_password"
+"username": "your_username",
+"password": "your_password"
 }
 
 Successful response contains:
 
 {
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "token": "JWT_TOKEN",
-    "user": {
-      "id": "...",
-      "name": "...",
-      "username": "...",
-      "role": "...",
-      "hotelId": "...",
-      "roomId": null,
-      "mustChangePassword": true
-    }
-  }
+"success": true,
+"message": "Login successful",
+"data": {
+"token": "JWT_TOKEN",
+"user": {
+"id": "...",
+"name": "...",
+"username": "...",
+"role": "...",
+"hotelId": "...",
+"roomId": null,
+"mustChangePassword": true
+}
+}
 }
 
 The frontend should store the access token according to the
@@ -380,8 +380,8 @@ Authorization: Bearer <JWT_TOKEN>
 In Requestly/Postman:
 
 Authorization
-    Type: Bearer Token
-    Token: <JWT_TOKEN>
+Type: Bearer Token
+Token: <JWT_TOKEN>
 
 For frontend applications, the same concept applies:
 
@@ -392,7 +392,7 @@ Do not send the token inside the JSON body.
 Do not send:
 
 {
-  "token": "..."
+"token": "..."
 }
 
 unless a specific endpoint explicitly requires it.
@@ -465,20 +465,20 @@ Front-desk operational role.
 The intended workflow is:
 
 Guest arrives
-      |
-      v
+|
+v
 Reception checks guest details
-      |
-      v
+|
+v
 Guest account is created/managed
-      |
-      v
+|
+v
 Room is assigned
-      |
-      v
+|
+v
 Check-in
-      |
-      v
+|
+v
 Guest uses Guest Dashboard
 
 Guest account creation should happen through the Reception workflow, not
@@ -549,15 +549,15 @@ const hotelId = req.user.hotelId;
 The frontend should NOT be allowed to choose:
 
 {
-  "hotelId": "HOTEL_B"
+"hotelId": "HOTEL_B"
 }
 
 Even if a malicious frontend sends:
 
 {
-  "name": "Kitchen User",
-  "role": "KITCHEN",
-  "hotelId": "HOTEL_B"
+"name": "Kitchen User",
+"role": "KITCHEN",
+"hotelId": "HOTEL_B"
 }
 
 the backend must ignore that value.
@@ -565,11 +565,11 @@ the backend must ignore that value.
 The backend uses:
 
 Authenticated JWT
-       |
-       v
+|
+v
 req.user.hotelId
-       |
-       v
+|
+v
 MongoDB record
 
 This is the correct multi-tenant isolation pattern.
@@ -599,14 +599,14 @@ are valid operational staff roles.
 Example request:
 
 {
-  "name": "Kitchen Operator"
+"name": "Kitchen Operator"
 }
 
 or, depending on the current controller contract:
 
 {
-  "name": "Kitchen Operator",
-  "role": "KITCHEN"
+"name": "Kitchen Operator",
+"role": "KITCHEN"
 }
 
 The backend generates credentials.
@@ -645,16 +645,16 @@ created.
 Example:
 
 {
-  "success": true,
-  "message": "User created successfully",
-  "data": {
-    "id": "...",
-    "name": "Kitchen Operator",
-    "username": "grand-kitchen-001",
-    "role": "KITCHEN",
-    "hotelId": "...",
-    "temporaryPassword": "..."
-  }
+"success": true,
+"message": "User created successfully",
+"data": {
+"id": "...",
+"name": "Kitchen Operator",
+"username": "grand-kitchen-001",
+"role": "KITCHEN",
+"hotelId": "...",
+"temporaryPassword": "..."
+}
 }
 
 The temporary credential should be treated as sensitive.
@@ -670,13 +670,13 @@ as the long-term Guest creation workflow.
 The intended architecture is:
 
 SUB_ADMIN
-    |
-    | manages rooms / hotel operations
-    v
+|
+| manages rooms / hotel operations
+v
 RECEPTIONIST
-    |
-    | creates guest during check-in
-    v
+|
+| creates guest during check-in
+v
 GUEST
 
 This keeps responsibilities clean.
@@ -708,11 +708,11 @@ hotelId: req.user.hotelId
 Therefore:
 
 Sub Admin of Hotel A
-        |
-        v
+|
+v
 GET /api/v1/users
-        |
-        v
+|
+v
 Only Hotel A users
 
 The backend should never rely on a frontend-provided hotel ID for this
@@ -729,13 +729,13 @@ src/dto/user.dto.js
 The concept is:
 
 export const userResponseDTO = (user) => ({
-  id: user._id,
-  name: user.name,
-  username: user.username,
-  role: user.role,
-  hotelId: user.hotelId,
-  roomId: user.roomId,
-  isActive: user.isActive
+id: user._id,
+name: user.name,
+username: user.username,
+role: user.role,
+hotelId: user.hotelId,
+roomId: user.roomId,
+isActive: user.isActive
 });
 
 Instead of:
@@ -745,8 +745,8 @@ res.json(user);
 use:
 
 res.json({
-  success: true,
-  data: userResponseDTO(user)
+success: true,
+data: userResponseDTO(user)
 });
 
 For multiple users:
@@ -772,16 +772,16 @@ available.
 Successful responses generally follow:
 
 {
-  "success": true,
-  "message": "Operation successful",
-  "data": {}
+"success": true,
+"message": "Operation successful",
+"data": {}
 }
 
 For errors:
 
 {
-  "success": false,
-  "message": "Something went wrong"
+"success": false,
+"message": "Something went wrong"
 }
 
 Frontend developers should always check:
@@ -794,16 +794,16 @@ before assuming the operation succeeded.
 
 Common statuses:
 
-Status   Meaning
+Status Meaning
 
-200      Request successful
-201      Resource successfully created
-400      Invalid/missing request data
-401      Authentication required/invalid credentials
-403      Authenticated but not authorized
-404      Resource/route not found
-409      Duplicate/conflicting resource
-500      Internal server error
+200 Request successful
+201 Resource successfully created
+400 Invalid/missing request data
+401 Authentication required/invalid credentials
+403 Authenticated but not authorized
+404 Resource/route not found
+409 Duplicate/conflicting resource
+500 Internal server error
 
 Example:
 
@@ -866,14 +866,14 @@ by removing the access token.
 Frontend should:
 
 User clicks Logout
-       |
-       v
+|
+v
 Optional POST /api/v1/auth/logout
-       |
-       v
+|
+v
 Delete access token locally
-       |
-       v
+|
+v
 Redirect to Login
 
 The initial implementation intentionally does not overcomplicate logout
@@ -901,13 +901,13 @@ management/allocation.
 Important distinction:
 
 SUB_ADMIN
-    |
-    | manages total rooms / room allocation
-    v
+|
+| manages total rooms / room allocation
+v
 RECEPTIONIST
-    |
-    | assigns a room to a specific guest
-    v
+|
+| assigns a room to a specific guest
+v
 GUEST
 
 Do not mix room inventory management with Guest account creation.
@@ -948,18 +948,18 @@ Planned namespace:
 Example workflow:
 
 Guest
-  |
-  | creates service request
-  v
+|
+| creates service request
+v
 Backend
-  |
-  v
+|
+v
 Reception / relevant department
-  |
-  v
+|
+v
 Request processed
-  |
-  v
+|
+v
 Status updated
 
 The exact request/status schema should be documented when implemented.
@@ -1003,10 +1003,10 @@ const API_BASE_URL = "http://localhost:5001/api/v1";
 Then:
 
 fetch(`${API_BASE_URL}/users`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json"
-  }
+headers: {
+Authorization: `Bearer ${token}`,
+"Content-Type": "application/json"
+}
 });
 
 Do not scatter:
@@ -1021,13 +1021,13 @@ For example:
 
 src/
 └── config/
-    └── api.js
+└── api.js
 
 or:
 
 src/
 └── services/
-    └── api.js
+└── api.js
 
 27. Recommended Frontend Structure
 
@@ -1037,15 +1037,15 @@ src/
 ├── components/
 ├── pages/
 ├── services/
-│   ├── auth.js
-│   ├── users.js
-│   ├── rooms.js
-│   ├── orders.js
-│   └── serviceRequests.js
+│ ├── auth.js
+│ ├── users.js
+│ ├── rooms.js
+│ ├── orders.js
+│ └── serviceRequests.js
 ├── context/
-│   └── AuthContext.jsx
+│ └── AuthContext.jsx
 ├── config/
-│   └── api.js
+│ └── api.js
 └── App.jsx
 
 Keep API calls in service files rather than putting large fetch/axios
@@ -1056,43 +1056,43 @@ calls directly inside UI components.
 Example:
 
 Login Page
-    |
-    | username + password
-    v
+|
+| username + password
+v
 POST /api/v1/auth/login
-    |
-    v
+|
+v
 Backend validates credentials
-    |
-    v
+|
+v
 JWT generated
-    |
-    v
+|
+v
 Frontend receives token + user
-    |
-    +----> store authenticated state
-    |
-    +----> inspect user.role
-    |
-    v
+|
++----> store authenticated state
+|
++----> inspect user.role
+|
+v
 Redirect to correct dashboard
 
 Example:
 
 if (user.role === "SUB_ADMIN") {
-  navigate("/sub-admin");
+navigate("/sub-admin");
 }
 
 if (user.role === "RECEPTIONIST") {
-  navigate("/reception");
+navigate("/reception");
 }
 
 if (user.role === "KITCHEN") {
-  navigate("/kitchen");
+navigate("/kitchen");
 }
 
 if (user.role === "GUEST") {
-  navigate("/guest");
+navigate("/guest");
 }
 
 These frontend checks are for navigation/UI only.
@@ -1129,17 +1129,17 @@ Recommended Requestly organization:
 HotelOS
 │
 ├── Authentication
-│   ├── Super Admin Login
-│   ├── Sub Admin Login
-│   └── Logout
+│ ├── Super Admin Login
+│ ├── Sub Admin Login
+│ └── Logout
 │
 ├── Hotels
-│   └── Create Hotel
+│ └── Create Hotel
 │
 ├── Users
-│   ├── Create Kitchen User
-│   ├── Create Reception User
-│   └── Get Users
+│ ├── Create Kitchen User
+│ ├── Create Reception User
+│ └── Get Users
 │
 ├── Rooms
 │
@@ -1156,18 +1156,18 @@ POST http://localhost:5001/api/v1/auth/login
 Body:
 
 {
-  "username": "your_username",
-  "password": "your_password"
+"username": "your_username",
+"password": "your_password"
 }
 
 A successful response contains:
 
 {
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "token": "..."
-  }
+"success": true,
+"message": "Login successful",
+"data": {
+"token": "..."
+}
 }
 
 Copy the token.
@@ -1191,8 +1191,8 @@ Bearer <SUB_ADMIN_TOKEN>
 Body:
 
 {
-  "name": "Kitchen Operator",
-  "role": "KITCHEN"
+"name": "Kitchen Operator",
+"role": "KITCHEN"
 }
 
 The backend generates:
@@ -1216,9 +1216,9 @@ Sub Admin A -> Hotel A
 Try sending:
 
 {
-  "name": "Test User",
-  "role": "KITCHEN",
-  "hotelId": "HOTEL_B"
+"name": "Test User",
+"role": "KITCHEN",
+"hotelId": "HOTEL_B"
 }
 
 The backend should still assign:
@@ -1246,8 +1246,8 @@ No body is required.
 Expected:
 
 {
-  "success": true,
-  "data": []
+"success": true,
+"data": []
 }
 
 The response should contain DTO fields rather than raw MongoDB
@@ -1266,8 +1266,8 @@ Login:
 curl -X POST http://localhost:5001/api/v1/auth/login \
 -H "Content-Type: application/json" \
 -d '{
-  "username": "your_username",
-  "password": "your_password"
+"username": "your_username",
+"password": "your_password"
 }'
 
 Protected request:
@@ -1281,8 +1281,8 @@ curl -X POST http://localhost:5001/api/v1/users \
 -H "Content-Type: application/json" \
 -H "Authorization: Bearer YOUR_SUB_ADMIN_TOKEN" \
 -d '{
-  "name": "Kitchen Operator",
-  "role": "KITCHEN"
+"name": "Kitchen Operator",
+"role": "KITCHEN"
 }'
 
 36. Common Errors
@@ -1371,8 +1371,7 @@ but a malicious user can still manually call the API.
 
 Therefore the backend must enforce:
 
-authenticate
-+
+authenticate +
 authorize
 
 Rule 4 --- Never hard-code production secrets
@@ -1426,8 +1425,8 @@ SUB_ADMIN
 
 Body:
 {
-  "name": "Kitchen Operator",
-  "role": "KITCHEN"
+"name": "Kitchen Operator",
+"role": "KITCHEN"
 }
 
 Hotel ID:
@@ -1438,9 +1437,9 @@ req.user.hotelId
 
 Response:
 {
-  "success": true,
-  "message": "User created successfully",
-  "data": {...}
+"success": true,
+"message": "User created successfully",
+"data": {...}
 }
 
 This format should be followed for future endpoints.
@@ -1513,35 +1512,35 @@ Hotel services
 When implementing a new feature:
 
 1. Define database model
-        |
-        v
+   |
+   v
 2. Define request/response contract
-        |
-        v
+   |
+   v
 3. Create DTO
-        |
-        v
+   |
+   v
 4. Create controller/service
-        |
-        v
+   |
+   v
 5. Add authentication
-        |
-        v
+   |
+   v
 6. Add authorization
-        |
-        v
+   |
+   v
 7. Add route
-        |
-        v
+   |
+   v
 8. Mount route in app.js
-        |
-        v
+   |
+   v
 9. Test with Requestly/curl
-        |
-        v
+   |
+   v
 10. Give frontend developer the API contract
-        |
-        v
+    |
+    v
 11. Build frontend integration
 
 Do not build the frontend API integration before the backend contract is
@@ -1564,9 +1563,9 @@ app.use("/api/v1/rooms", roomRoutes);
 
 The frontend can then use:
 
-GET  /api/v1/rooms
+GET /api/v1/rooms
 POST /api/v1/rooms
-PUT  /api/v1/rooms/:id
+PUT /api/v1/rooms/:id
 DELETE /api/v1/rooms/:id
 
 Only implement operations that are actually required and authorized.
@@ -1700,14 +1699,14 @@ SUB_ADMIN
 
 Body:
 {
-  "name": "Example"
+"name": "Example"
 }
 
 Response:
 {
-  "success": true,
-  "message": "Created successfully",
-  "data": {}
+"success": true,
+"message": "Created successfully",
+"data": {}
 }
 
 This keeps the backend handoff clean for every frontend developer.
@@ -1759,7 +1758,7 @@ POST /auth/logout
 
 Hotels
 
-GET  /hotels
+GET /hotels
 POST /hotels
 
 Use the currently implemented route/controller contract as the source of
@@ -1767,7 +1766,7 @@ truth for exact permissions and fields.
 
 Users
 
-GET  /users
+GET /users
 POST /users
 
 Planned/expanding modules
@@ -1814,9 +1813,10 @@ The overall HotelOS backend direction is:
                           |
        +----------+-------+-------+----------+
        |          |               |          |
-   Super Admin  Sub Admin     Reception   Kitchen
-                                             |
-                                           Guest
+
+Super Admin Sub Admin Reception Kitchen
+|
+Guest
 
 The most important architectural principle is:
 

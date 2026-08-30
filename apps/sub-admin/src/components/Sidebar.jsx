@@ -83,11 +83,7 @@ const items = [
     label: "Reports",
     path: "/reports",
     icon: (
-      <path
-        d="M4 20V10M11 20V4M18 20v-7"
-        fill="none"
-        strokeLinecap="round"
-      />
+      <path d="M4 20V10M11 20V4M18 20v-7" fill="none" strokeLinecap="round" />
     ),
   },
   {
@@ -123,31 +119,24 @@ export default function Sidebar({ open, onClose }) {
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 bg-navy/40 z-30 lg:hidden"
+          className="fixed inset-0 z-30 bg-navy/40 lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed lg:sticky top-0 z-40 h-screen w-64 bg-navy shrink-0 flex flex-col transition-transform duration-200 ${
-          open
-            ? "translate-x-0"
-            : "-translate-x-full lg:translate-x-0"
+        className={`fixed top-0 z-40 flex h-screen w-64 shrink-0 flex-col bg-navy transition-transform duration-200 lg:sticky ${
+          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Logo */}
         <Link
           to="/dashboard"
           onClick={onClose}
-          className="flex items-center gap-2.5 px-6 h-20 shrink-0"
+          className="flex h-20 shrink-0 items-center gap-2.5 px-6"
         >
-          <span className="w-9 h-9 rounded-full bg-cream/10 flex items-center justify-center">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-cream/10">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 21V9l8-5 8 5v12"
                 stroke="#F4F4E4"
@@ -170,7 +159,7 @@ export default function Sidebar({ open, onClose }) {
         </Link>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
           {items.map((item) => {
             return (
               <NavLink
@@ -178,9 +167,9 @@ export default function Sidebar({ open, onClose }) {
                 to={item.path}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-colors ${
+                  `flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm transition-colors ${
                     isActive
-                      ? "bg-gold/15 text-gold font-medium"
+                      ? "bg-gold/15 font-medium text-gold"
                       : "text-cream/60 hover:bg-cream/5 hover:text-cream"
                   }`
                 }
@@ -203,18 +192,18 @@ export default function Sidebar({ open, onClose }) {
         </nav>
 
         {/* Logged-in user */}
-        <div className="px-4 py-3 border-t border-cream/10">
+        <div className="border-t border-cream/10 px-4 py-3">
           <div className="flex items-center gap-2.5 px-3.5">
-            <span className="w-8 h-8 rounded-full bg-gold/20 text-gold flex items-center justify-center text-sm font-display font-semibold">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 font-display text-sm font-semibold text-gold">
               {(user?.name || "A").charAt(0).toUpperCase()}
             </span>
 
             <div className="min-w-0">
-              <p className="text-sm font-medium text-cream truncate">
+              <p className="truncate text-sm font-medium text-cream">
                 {user?.name || "Sub Admin"}
               </p>
 
-              <p className="text-xs text-cream/50 capitalize truncate">
+              <p className="truncate text-xs capitalize text-cream/50">
                 {(user?.role || "sub admin").toLowerCase()}
               </p>
             </div>
@@ -222,12 +211,12 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         {/* Logout */}
-        <div className="px-4 py-5 border-t border-cream/10">
+        <div className="border-t border-cream/10 px-4 py-5">
           <button
             type="button"
             onClick={handleLogout}
             disabled={loggingOut}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm text-cream/60 hover:bg-cream/5 hover:text-cream transition-colors disabled:opacity-60"
+            className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm text-cream/60 transition-colors hover:bg-cream/5 hover:text-cream disabled:opacity-60"
           >
             <svg
               width="18"
@@ -243,7 +232,6 @@ export default function Sidebar({ open, onClose }) {
                 strokeLinejoin="round"
               />
             </svg>
-
             Log out
           </button>
         </div>

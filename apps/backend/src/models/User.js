@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     username: {
@@ -16,76 +16,76 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
-      lowercase: true
+      lowercase: true,
     },
 
     email: {
       type: String,
       lowercase: true,
-      trim: true
+      trim: true,
     },
 
     password: {
       type: String,
       required: true,
-      select: false
+      select: false,
     },
 
     role: {
       type: String,
       enum: Object.values(ROLES),
-      required: true
+      required: true,
     },
 
     hotelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hotel",
-      default: null
+      default: null,
     },
 
     // Subscription is applicable to Sub Admin accounts
     subscriptionStartDate: {
       type: Date,
-      default: null
+      default: null,
     },
 
     subscriptionEndDate: {
       type: Date,
-      default: null
+      default: null,
     },
 
     roomId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Room",
-      default: null
+      default: null,
     },
 
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
     },
 
     mustChangePassword: {
       type: Boolean,
-      default: true
+      default: true,
     },
 
     // Password recovery
     resetPasswordToken: {
       type: String,
       default: null,
-      select: false
+      select: false,
     },
 
     resetPasswordExpires: {
       type: Date,
       default: null,
-      select: false
-    }
+      select: false,
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 userSchema.pre("save", async function () {
@@ -93,22 +93,11 @@ userSchema.pre("save", async function () {
     return;
   }
 
-  this.password = await bcrypt.hash(
-    this.password,
-    12
-  );
+  this.password = await bcrypt.hash(this.password, 12);
 });
 
-userSchema.methods.comparePassword = function (
-  password
-) {
-  return bcrypt.compare(
-    password,
-    this.password
-  );
+userSchema.methods.comparePassword = function (password) {
+  return bcrypt.compare(password, this.password);
 };
 
-export default mongoose.model(
-  "User",
-  userSchema
-);
+export default mongoose.model("User", userSchema);

@@ -5,10 +5,7 @@ import {
   forgotUsername,
 } from "../../../services/auth.service.js";
 
-export default function RecoveryModal({
-  recoveryMode,
-  onClose,
-}) {
+export default function RecoveryModal({ recoveryMode, onClose }) {
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState("");
@@ -27,14 +24,10 @@ export default function RecoveryModal({
 
       setRecoveryMessage(message);
     } catch (err) {
-      console.error(
-        "Recovery error:",
-        err
-      );
+      console.error("Recovery error:", err);
 
       setRecoveryMessage(
-        err.message ||
-          "Something went wrong. Please try again."
+        err.message || "Something went wrong. Please try again.",
       );
     } finally {
       setRecoveryLoading(false);
@@ -42,13 +35,10 @@ export default function RecoveryModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-6 z-50">
-
-      <div className="w-full max-w-md bg-cream rounded-2xl shadow-soft border border-beige-border p-7">
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+      <div className="w-full max-w-md rounded-2xl border border-beige-border bg-cream p-7 shadow-soft">
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-
+        <div className="mb-6 flex items-start justify-between">
           <div>
             <h2 className="font-display text-2xl font-semibold text-navy">
               {recoveryMode === "username"
@@ -56,7 +46,7 @@ export default function RecoveryModal({
                 : "Forgot password?"}
             </h2>
 
-            <p className="text-sm text-navy/60 mt-1">
+            <p className="mt-1 text-sm text-navy/60">
               {recoveryMode === "username"
                 ? "Enter your registered email and we'll send your username."
                 : "Enter your registered email and we'll send you a password reset link."}
@@ -66,22 +56,17 @@ export default function RecoveryModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-navy/50 hover:text-navy text-xl"
+            className="text-xl text-navy/50 hover:text-navy"
           >
             ×
           </button>
-
         </div>
 
-        <form
-          onSubmit={handleRecovery}
-          className="space-y-5"
-        >
-
+        <form onSubmit={handleRecovery} className="space-y-5">
           <div>
             <label
               htmlFor="recoveryEmail"
-              className="block text-sm font-medium text-navy mb-1.5"
+              className="mb-1.5 block text-sm font-medium text-navy"
             >
               Registered Email
             </label>
@@ -92,27 +77,24 @@ export default function RecoveryModal({
               required
               autoFocus
               value={recoveryEmail}
-              onChange={(e) =>
-                setRecoveryEmail(e.target.value)
-              }
+              onChange={(e) => setRecoveryEmail(e.target.value)}
               placeholder="you@hotel.com"
-              className="w-full bg-ivory border border-beige-border rounded-lg px-4 py-2.5 text-navy placeholder:text-muted outline-none focus:border-gold transition-colors"
+              className="w-full rounded-lg border border-beige-border bg-ivory px-4 py-2.5 text-navy outline-none transition-colors placeholder:text-muted focus:border-gold"
             />
           </div>
 
           {/* Recovery message */}
           {recoveryMessage && (
-            <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-600">
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-600">
               {recoveryMessage}
             </div>
           )}
 
           <div className="flex justify-end gap-3">
-
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-lg border border-beige-border text-navy hover:bg-ivory transition-colors"
+              className="rounded-lg border border-beige-border px-5 py-2.5 text-navy transition-colors hover:bg-ivory"
             >
               Cancel
             </button>
@@ -120,17 +102,15 @@ export default function RecoveryModal({
             <button
               type="submit"
               disabled={recoveryLoading}
-              className="px-5 py-2.5 rounded-lg bg-navy text-cream hover:bg-navy-dark transition-colors disabled:opacity-60"
+              className="rounded-lg bg-navy px-5 py-2.5 text-cream transition-colors hover:bg-navy-dark disabled:opacity-60"
             >
               {recoveryLoading
                 ? "Sending..."
                 : recoveryMode === "username"
-                ? "Send Username"
-                : "Send Reset Link"}
+                  ? "Send Username"
+                  : "Send Reset Link"}
             </button>
-
           </div>
-
         </form>
       </div>
     </div>

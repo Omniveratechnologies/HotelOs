@@ -50,14 +50,14 @@ tailwind.config.js  Color tokens (navy, gold, ivory, cream, beige, muted)
 
 ## Palette used
 
-| Token | Hex |
-|---|---|
-| Navy | `#22324E` |
-| Navy Dark | `#1E3252` |
-| Gold | `#766242` |
+| Token      | Hex       |
+| ---------- | --------- |
+| Navy       | `#22324E` |
+| Navy Dark  | `#1E3252` |
+| Gold       | `#766242` |
 | Gold Hover | `#826A42` |
-| Ivory | `#F4F4E4` |
-| Cream | `#FCFCFC` |
-| Beige | `#ECECE4` |
-| Border | `#E4E4DC` |
+| Ivory      | `#F4F4E4` |
+| Cream      | `#FCFCFC` |
+| Beige      | `#ECECE4` |
+| Border     | `#E4E4DC` |
 | Muted text | `#8A8878` |

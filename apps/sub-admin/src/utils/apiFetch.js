@@ -1,20 +1,18 @@
-export const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5001";
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
-export async function apiFetch(path, { method = "GET", body, auth = false } = {}) {
+export async function apiFetch(
+  path,
+  { method = "GET", body, auth = false } = {},
+) {
   const headers = {
     "Content-Type": "application/json",
   };
 
   if (auth) {
-    const token =
-      localStorage.getItem("auth_token");
+    const token = localStorage.getItem("auth_token");
 
     if (!token) {
-      throw new Error(
-        "You are not logged in. Please login again."
-      );
+      throw new Error("You are not logged in. Please login again.");
     }
 
     headers.Authorization = `Bearer ${token}`;
@@ -23,44 +21,29 @@ export async function apiFetch(path, { method = "GET", body, auth = false } = {}
   let response;
 
   try {
-    response = await fetch(
-      `${API_URL}${path}`,
-      {
-        method,
+    response = await fetch(`${API_URL}${path}`, {
+      method,
 
-        headers,
+      headers,
 
-        body:
-          body === undefined
-            ? undefined
-            : JSON.stringify(body),
-      }
-    );
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
   } catch {
     throw new Error(
-      "Unable to reach the server. Please check your connection."
+      "Unable to reach the server. Please check your connection.",
     );
   }
 
   let result;
 
   try {
-    result =
-      await response.json();
+    result = await response.json();
   } catch {
-    throw new Error(
-      "Invalid response from the server."
-    );
+    throw new Error("Invalid response from the server.");
   }
 
-  if (
-    !response.ok ||
-    !result.success
-  ) {
-    throw new Error(
-      result.message ||
-        "Request failed"
-    );
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || "Request failed");
   }
 
   return result;

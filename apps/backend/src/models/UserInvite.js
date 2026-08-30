@@ -20,11 +20,7 @@ const userInviteSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: [
-        "SUB_ADMIN",
-        "RECEPTIONIST",
-        "KITCHEN",
-      ],
+      enum: ["SUB_ADMIN", "RECEPTIONIST", "KITCHEN"],
     },
 
     // Secure invitation token
@@ -44,23 +40,15 @@ const userInviteSchema = new mongoose.Schema(
     // Invitation status
     status: {
       type: String,
-      enum: [
-        "PENDING",
-        "ACCEPTED",
-        "EXPIRED",
-        "CANCELLED",
-      ],
+      enum: ["PENDING", "ACCEPTED", "EXPIRED", "CANCELLED"],
       default: "PENDING",
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-const UserInvite = mongoose.model(
-  "UserInvite",
-  userInviteSchema
-);
+const UserInvite = mongoose.model("UserInvite", userInviteSchema);
 
 export default UserInvite;

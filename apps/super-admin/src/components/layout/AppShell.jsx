@@ -33,8 +33,7 @@ export default function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen bg-canvas">
-
+    <div className="bg-canvas flex min-h-screen">
       <Sidebar
         onLogoutClick={() => setLogoutOpen(true)}
         mobileOpen={mobileOpen}
@@ -56,11 +55,7 @@ export default function AppShell() {
         subtitle="You'll need to sign in again to access the super admin dashboard."
       >
         <div className="flex justify-end gap-2.5">
-
-          <Button
-            variant="secondary"
-            onClick={() => setLogoutOpen(false)}
-          >
+          <Button variant="secondary" onClick={() => setLogoutOpen(false)}>
             Cancel
           </Button>
 
@@ -71,10 +66,8 @@ export default function AppShell() {
           >
             {loggingOut ? "Logging out…" : "Log out"}
           </Button>
-
         </div>
       </Modal>
-
     </div>
   );
 }

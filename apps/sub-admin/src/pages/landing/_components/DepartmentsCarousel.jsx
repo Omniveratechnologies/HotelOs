@@ -13,7 +13,14 @@ const departments = [
       { label: "Occupied", value: "142" },
     ],
     chart: { percent: 79, label: "Occupancy" },
-    list: { title: "Guest requests", items: ["Room 302 — Towels", "Room 214 — Late checkout", "Room 108 — Room service"] },
+    list: {
+      title: "Guest requests",
+      items: [
+        "Room 302 — Towels",
+        "Room 214 — Late checkout",
+        "Room 108 — Room service",
+      ],
+    },
   },
   {
     name: "Housekeeping Dashboard",
@@ -26,7 +33,14 @@ const departments = [
       { label: "Staff Active", value: "14" },
     ],
     chart: { percent: 68, label: "Completed" },
-    list: { title: "Priority rooms", items: ["Room 410 — Checkout clean", "Room 118 — Inspection", "Room 305 — Maintenance"] },
+    list: {
+      title: "Priority rooms",
+      items: [
+        "Room 410 — Checkout clean",
+        "Room 118 — Inspection",
+        "Room 305 — Maintenance",
+      ],
+    },
   },
   {
     name: "Guest Portal",
@@ -39,7 +53,10 @@ const departments = [
       { label: "Balance", value: "$0" },
     ],
     chart: { percent: 100, label: "Stay progress" },
-    list: { title: "Quick actions", items: ["Request late checkout", "Order room service", "Book spa slot"] },
+    list: {
+      title: "Quick actions",
+      items: ["Request late checkout", "Order room service", "Book spa slot"],
+    },
   },
   {
     name: "Manager Dashboard",
@@ -52,7 +69,14 @@ const departments = [
       { label: "Staff On", value: "31" },
     ],
     chart: { percent: 92, label: "Efficiency" },
-    list: { title: "Alerts", items: ["Housekeeping short-staffed", "3 pending refunds", "VIP arrival at 4 PM"] },
+    list: {
+      title: "Alerts",
+      items: [
+        "Housekeeping short-staffed",
+        "3 pending refunds",
+        "VIP arrival at 4 PM",
+      ],
+    },
   },
 ];
 
@@ -76,14 +100,15 @@ export default function DepartmentsCarousel() {
   };
 
   return (
-    <section id="product" className="py-24 bg-cream">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="text-center max-w-xl mx-auto mb-14">
-          <h2 className="font-display text-4xl font-semibold text-navy mb-3">
+    <section id="product" className="bg-cream py-24">
+      <div className="mx-auto max-w-7xl px-6 lg:px-10">
+        <div className="mx-auto mb-14 max-w-xl text-center">
+          <h2 className="mb-3 font-display text-4xl font-semibold text-navy">
             All Departments. One Platform.
           </h2>
           <p className="text-navy/60">
-            An all-in-one software designed for modern hotels, built for real-world hospitality.
+            An all-in-one software designed for modern hotels, built for
+            real-world hospitality.
           </p>
         </div>
 
@@ -91,22 +116,31 @@ export default function DepartmentsCarousel() {
           <button
             onClick={() => shift(-1)}
             aria-label="Previous"
-            className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-cream border border-beige-border shadow-soft items-center justify-center text-navy hover:text-gold hover:border-gold transition-colors"
+            className="absolute -left-5 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-beige-border bg-cream text-navy shadow-soft transition-colors hover:border-gold hover:text-gold md:flex"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M15 6l-6 6 6 6"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
 
           <div
             ref={trackRef}
-            className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pb-4"
+            className="no-scrollbar flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-4"
           >
             {departments.map((d, i) => (
-              <div key={d.name} className="snap-center shrink-0 w-[280px] sm:w-[340px]">
+              <div
+                key={d.name}
+                className="w-[280px] shrink-0 snap-center sm:w-[340px]"
+              >
                 <DashboardMockup {...d} />
                 <p
-                  className={`text-center mt-4 text-sm font-medium transition-colors ${
+                  className={`mt-4 text-center text-sm font-medium transition-colors ${
                     i === active ? "text-gold" : "text-navy/70"
                   }`}
                 >
@@ -119,15 +153,21 @@ export default function DepartmentsCarousel() {
           <button
             onClick={() => shift(1)}
             aria-label="Next"
-            className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-cream border border-beige-border shadow-soft items-center justify-center text-navy hover:text-gold hover:border-gold transition-colors"
+            className="absolute -right-5 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-beige-border bg-cream text-navy shadow-soft transition-colors hover:border-gold hover:text-gold md:flex"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-2 mt-6">
+        <div className="mt-6 flex items-center justify-center gap-2">
           {departments.map((d, i) => (
             <button
               key={d.name}

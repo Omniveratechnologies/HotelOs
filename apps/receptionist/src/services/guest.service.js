@@ -1,7 +1,8 @@
 import { apiFetch } from "../utils/apiFetch.js";
 
 export const getGuests = async (status) => {
-  const query = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
+  const query =
+    status && status !== "all" ? `?status=${encodeURIComponent(status)}` : "";
 
   const result = await apiFetch(`/api/v1/guests${query}`, {
     method: "GET",
@@ -72,10 +73,13 @@ export const updateGuestCredentials = async (guestId, payload) => {
 };
 
 export const deleteGuestDocument = async (guestId, docId) => {
-  const result = await apiFetch(`/api/v1/guests/${guestId}/documents/${docId}`, {
-    method: "DELETE",
-    auth: true,
-  });
+  const result = await apiFetch(
+    `/api/v1/guests/${guestId}/documents/${docId}`,
+    {
+      method: "DELETE",
+      auth: true,
+    },
+  );
 
   return result;
 };

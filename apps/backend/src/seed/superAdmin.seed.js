@@ -24,8 +24,8 @@ const createSuperAdmin = async () => {
       role: "SUPER_ADMIN",
       hotelId: null,
       isActive: true,
-      mustChangePassword: false
-  });
+      mustChangePassword: false,
+    });
     console.log("Super Admin created successfully!");
     console.log("Username:", superAdmin.username);
     console.log("Email:", superAdmin.email);

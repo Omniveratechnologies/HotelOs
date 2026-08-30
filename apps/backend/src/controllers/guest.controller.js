@@ -10,7 +10,7 @@ import UserInvite from "../models/UserInvite.js";
 
 import {
   generateUsername,
-  generateTemporaryPassword
+  generateTemporaryPassword,
 } from "../utils/generateCredentials.js";
 
 import { sendGuestCredentialsEmail } from "../services/email.service.js";
@@ -27,7 +27,11 @@ async function generateGuestUsername(hotelCode) {
 
   // Loop until an unused username is found
   do {
-    username = generateUsername(hotelCode, "GST", String(number).padStart(3, "0"));
+    username = generateUsername(
+      hotelCode,
+      "GST",
+      String(number).padStart(3, "0"),
+    );
 
     const existingUser = await User.findOne({ username });
 
@@ -57,7 +61,7 @@ function resolveDocumentFiles(req) {
   return (req.files || []).map((file, index) => ({
     docType: docTypes[index] || null,
     filename: file.originalname,
-    path: file.path
+    path: file.path,
   }));
 }
 
@@ -77,7 +81,7 @@ async function freeRoom(roomId) {
     status: "cleaning",
     currentGuest: null,
     checkIn: null,
-    checkOut: null
+    checkOut: null,
   });
 }
 
@@ -87,18 +91,24 @@ async function claimRoom(roomId, { guestName, checkIn, checkOut, reserved }) {
     status: reserved ? "reserved" : "occupied",
     currentGuest: guestName,
     checkIn: checkIn || null,
-    checkOut: checkOut || null
+    checkOut: checkOut || null,
   });
 }
 
-async function sendCredentialsQuietly({ email, name, username, temporaryPassword, hotelName }) {
+async function sendCredentialsQuietly({
+  email,
+  name,
+  username,
+  temporaryPassword,
+  hotelName,
+}) {
   try {
     await sendGuestCredentialsEmail({
       email,
       name,
       username,
       password: temporaryPassword,
-      hotelName
+      hotelName,
     });
 
     return true;
@@ -128,7 +138,7 @@ export const registerGuest = async (req, res) => {
       roomId,
       checkIn,
       checkOut,
-      status
+      status,
     } = req.body;
 
     // =================================================
@@ -136,30 +146,41 @@ export const registerGuest = async (req, res) => {
     // =================================================
 
     if (!name?.trim()) {
-      return res.status(400).json({ success: false, message: "Guest name is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Guest name is required" });
     }
 
     if (!email?.trim()) {
-      return res.status(400).json({ success: false, message: "Guest email is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Guest email is required" });
     }
 
     if (!roomId) {
-      return res.status(400).json({ success: false, message: "Room is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Room is required" });
     }
 
-    const guestStatus =
-      status === "reserved" ? "reserved" : "checked-in";
+    const guestStatus = status === "reserved" ? "reserved" : "checked-in";
 
     if (guestStatus === "checked-in" && !checkIn) {
-      return res.status(400).json({ success: false, message: "Check-in date is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Check-in date is required" });
     }
 
     if (!checkOut) {
-      return res.status(400).json({ success: false, message: "Check-out date is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Check-out date is required" });
     }
 
     if (checkIn && new Date(checkOut) <= new Date(checkIn)) {
-      return res.status(400).json({ success: false, message: "Check-out must be after check-in" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Check-out must be after check-in" });
     }
 
     // =================================================
@@ -168,7 +189,7 @@ export const registerGuest = async (req, res) => {
 
     const room = await Room.findOne({
       _id: roomId,
-      hotelId: req.user.hotelId
+      hotelId: req.user.hotelId,
     });
 
     if (!room) {
@@ -176,7 +197,9 @@ export const registerGuest = async (req, res) => {
 
       await removeFilesQuietly(uploadedPaths);
 
-      return res.status(404).json({ success: false, message: "Room not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Room not found" });
     }
 
     if (["occupied", "reserved"].includes(room.status)) {
@@ -184,7 +207,9 @@ export const registerGuest = async (req, res) => {
 
       await removeFilesQuietly(uploadedPaths);
 
-      return res.status(409).json({ success: false, message: "This room is not available" });
+      return res
+        .status(409)
+        .json({ success: false, message: "This room is not available" });
     }
 
     // =================================================
@@ -200,21 +225,29 @@ export const registerGuest = async (req, res) => {
 
       await removeFilesQuietly(uploadedPaths);
 
-      return res.status(409).json({ success: false, message: "A user with this email already exists" });
+      return res.status(409).json({
+        success: false,
+        message: "A user with this email already exists",
+      });
     }
 
     // =================================================
     // GENERATE CREDENTIALS
     // =================================================
 
-    const hotel = await Hotel.findById(req.user.hotelId).select("hotelCode name");
+    const hotel = await Hotel.findById(req.user.hotelId).select(
+      "hotelCode name",
+    );
 
     if (!hotel) {
       uploadedPaths = (req.files || []).map((f) => f.path);
 
       await removeFilesQuietly(uploadedPaths);
 
-      return res.status(400).json({ success: false, message: "You are not assigned to a valid hotel" });
+      return res.status(400).json({
+        success: false,
+        message: "You are not assigned to a valid hotel",
+      });
     }
 
     const username = await generateGuestUsername(hotel.hotelCode);
@@ -234,7 +267,7 @@ export const registerGuest = async (req, res) => {
       hotelId: req.user.hotelId,
       roomId: room._id,
       isActive: true,
-      mustChangePassword: false
+      mustChangePassword: false,
     });
 
     // =================================================
@@ -258,7 +291,7 @@ export const registerGuest = async (req, res) => {
       checkIn: checkIn ? new Date(checkIn) : undefined,
       checkOut: new Date(checkOut),
       status: guestStatus,
-      documents
+      documents,
     });
 
     // =================================================
@@ -269,7 +302,7 @@ export const registerGuest = async (req, res) => {
       guestName: guest.name,
       checkIn: guest.checkIn,
       checkOut: guest.checkOut,
-      reserved: guestStatus === "reserved"
+      reserved: guestStatus === "reserved",
     });
 
     // =================================================
@@ -281,7 +314,7 @@ export const registerGuest = async (req, res) => {
       name: guest.name,
       username,
       temporaryPassword,
-      hotelName: hotel.name
+      hotelName: hotel.name,
     });
 
     console.log(
@@ -290,7 +323,7 @@ export const registerGuest = async (req, res) => {
       "| USERNAME:",
       username,
       "| EMAIL SENT:",
-      credentialsEmailSent
+      credentialsEmailSent,
     );
 
     return res.status(201).json({
@@ -301,9 +334,9 @@ export const registerGuest = async (req, res) => {
         credentials: {
           username,
           temporaryPassword,
-          emailSent: credentialsEmailSent
-        }
-      }
+          emailSent: credentialsEmailSent,
+        },
+      },
     });
   } catch (error) {
     console.error("Register Guest Error:", error);
@@ -323,13 +356,13 @@ export const registerGuest = async (req, res) => {
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
-        message: "A user with these details already exists"
+        message: "A user with these details already exists",
       });
     }
 
     return res.status(500).json({
       success: false,
-      message: "Failed to register guest"
+      message: "Failed to register guest",
     });
   }
 };
@@ -342,7 +375,10 @@ export const getGuests = async (req, res) => {
   try {
     const filter = { hotelId: req.user.hotelId };
 
-    if (req.query.status && ["reserved", "checked-in", "checked-out"].includes(req.query.status)) {
+    if (
+      req.query.status &&
+      ["reserved", "checked-in", "checked-out"].includes(req.query.status)
+    ) {
       filter.status = req.query.status;
     }
 
@@ -361,18 +397,18 @@ export const getGuests = async (req, res) => {
                 roomNumber: g.roomId.roomNumber,
                 type: g.roomId.type,
                 rate: g.roomId.rate,
-                floor: g.roomId.floor
+                floor: g.roomId.floor,
               }
-            : null
-        })
-      )
+            : null,
+        }),
+      ),
     });
   } catch (error) {
     console.error("Get Guests Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch guests"
+      message: "Failed to fetch guests",
     });
   }
 };
@@ -385,13 +421,13 @@ export const getGuestById = async (req, res) => {
   try {
     const guest = await Guest.findOne({
       _id: req.params.id,
-      hotelId: req.user.hotelId
+      hotelId: req.user.hotelId,
     }).populate("roomId", "roomNumber type rate floor");
 
     if (!guest) {
       return res.status(404).json({
         success: false,
-        message: "Guest not found"
+        message: "Guest not found",
       });
     }
 
@@ -405,17 +441,17 @@ export const getGuestById = async (req, res) => {
               roomNumber: guest.roomId.roomNumber,
               type: guest.roomId.type,
               rate: guest.roomId.rate,
-              floor: guest.roomId.floor
+              floor: guest.roomId.floor,
             }
-          : null
-      })
+          : null,
+      }),
     });
   } catch (error) {
     console.error("Get Guest Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch guest"
+      message: "Failed to fetch guest",
     });
   }
 };
@@ -430,7 +466,7 @@ export const updateGuest = async (req, res) => {
   try {
     const guest = await Guest.findOne({
       _id: req.params.id,
-      hotelId: req.user.hotelId
+      hotelId: req.user.hotelId,
     });
 
     if (!guest) {
@@ -440,7 +476,7 @@ export const updateGuest = async (req, res) => {
 
       return res.status(404).json({
         success: false,
-        message: "Guest not found"
+        message: "Guest not found",
       });
     }
 
@@ -453,9 +489,12 @@ export const updateGuest = async (req, res) => {
     }
 
     // Email change must stay unique across users
-    if (req.body.email !== undefined && req.body.email.trim().toLowerCase() !== guest.email) {
+    if (
+      req.body.email !== undefined &&
+      req.body.email.trim().toLowerCase() !== guest.email
+    ) {
       const clash = await User.findOne({
-        email: req.body.email.trim().toLowerCase()
+        email: req.body.email.trim().toLowerCase(),
       });
 
       if (clash && String(clash._id) !== String(guest.userId)) {
@@ -465,7 +504,7 @@ export const updateGuest = async (req, res) => {
 
         return res.status(409).json({
           success: false,
-          message: "Another account already uses this email"
+          message: "Another account already uses this email",
         });
       }
 
@@ -487,15 +526,12 @@ export const updateGuest = async (req, res) => {
     if (req.body.name?.trim()) {
       await User.updateOne(
         { _id: guest.userId },
-        { name: req.body.name.trim() }
+        { name: req.body.name.trim() },
       );
     }
 
     // Status transition to checked-out frees the room
-    if (
-      req.body.status === "checked-out" &&
-      guest.status !== "checked-out"
-    ) {
+    if (req.body.status === "checked-out" && guest.status !== "checked-out") {
       guest.status = "checked-out";
 
       await guest.save();
@@ -505,7 +541,7 @@ export const updateGuest = async (req, res) => {
 
     const populated = await Guest.findById(guest._id).populate(
       "roomId",
-      "roomNumber type rate floor"
+      "roomNumber type rate floor",
     );
 
     return res.status(200).json({
@@ -518,10 +554,10 @@ export const updateGuest = async (req, res) => {
               roomNumber: populated.roomId.roomNumber,
               type: populated.roomId.type,
               rate: populated.roomId.rate,
-              floor: populated.roomId.floor
+              floor: populated.roomId.floor,
             }
-          : null
-      })
+          : null,
+      }),
     });
   } catch (error) {
     console.error("Update Guest Error:", error);
@@ -530,7 +566,7 @@ export const updateGuest = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to update guest"
+      message: "Failed to update guest",
     });
   }
 };
@@ -543,13 +579,13 @@ export const updateGuestCredentials = async (req, res) => {
   try {
     const guest = await Guest.findOne({
       _id: req.params.id,
-      hotelId: req.user.hotelId
+      hotelId: req.user.hotelId,
     });
 
     if (!guest) {
       return res.status(404).json({
         success: false,
-        message: "Guest not found"
+        message: "Guest not found",
       });
     }
 
@@ -558,21 +594,20 @@ export const updateGuestCredentials = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "Guest login account not found"
+        message: "Guest login account not found",
       });
     }
 
     const regenerate = req.body.action === "regenerate";
 
-    const newPassword =
-      regenerate
-        ? generateTemporaryPassword()
-        : req.body.password;
+    const newPassword = regenerate
+      ? generateTemporaryPassword()
+      : req.body.password;
 
     if (!regenerate && (!newPassword || newPassword.length < 8)) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 8 characters long"
+        message: "Password must be at least 8 characters long",
       });
     }
 
@@ -590,7 +625,7 @@ export const updateGuestCredentials = async (req, res) => {
         name: guest.name,
         username: user.username,
         temporaryPassword: newPassword,
-        hotelName: hotel?.name || ""
+        hotelName: hotel?.name || "",
       });
     }
 
@@ -605,15 +640,15 @@ export const updateGuestCredentials = async (req, res) => {
         username: user.username,
         ...(regenerate || req.body.reveal === true
           ? { temporaryPassword: newPassword, emailSent }
-          : {})
-      }
+          : {}),
+      },
     });
   } catch (error) {
     console.error("Update Guest Credentials Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to update guest credentials"
+      message: "Failed to update guest credentials",
     });
   }
 };
@@ -626,13 +661,13 @@ export const deleteGuestDocument = async (req, res) => {
   try {
     const guest = await Guest.findOne({
       _id: req.params.guestId,
-      hotelId: req.user.hotelId
+      hotelId: req.user.hotelId,
     });
 
     if (!guest) {
       return res.status(404).json({
         success: false,
-        message: "Guest not found"
+        message: "Guest not found",
       });
     }
 
@@ -641,7 +676,7 @@ export const deleteGuestDocument = async (req, res) => {
     if (!document) {
       return res.status(404).json({
         success: false,
-        message: "Document not found"
+        message: "Document not found",
       });
     }
 
@@ -654,14 +689,14 @@ export const deleteGuestDocument = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Document deleted successfully",
-      data: { id: guest._id, documents: guest.documents }
+      data: { id: guest._id, documents: guest.documents },
     });
   } catch (error) {
     console.error("Delete Guest Document Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to delete document"
+      message: "Failed to delete document",
     });
   }
 };
@@ -674,13 +709,13 @@ export const deleteGuest = async (req, res) => {
   try {
     const guest = await Guest.findOne({
       _id: req.params.id,
-      hotelId: req.user.hotelId
+      hotelId: req.user.hotelId,
     });
 
     if (!guest) {
       return res.status(404).json({
         success: false,
-        message: "Guest not found"
+        message: "Guest not found",
       });
     }
 
@@ -702,7 +737,7 @@ export const deleteGuest = async (req, res) => {
         roomId,
         hotelId: req.user.hotelId,
         status: { $ne: "checked-out" },
-        _id: { $ne: guest._id }
+        _id: { $ne: guest._id },
       });
 
       if (!stillHeld) {
@@ -714,14 +749,14 @@ export const deleteGuest = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Guest deleted successfully"
+      message: "Guest deleted successfully",
     });
   } catch (error) {
     console.error("Delete Guest Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to delete guest"
+      message: "Failed to delete guest",
     });
   }
 };

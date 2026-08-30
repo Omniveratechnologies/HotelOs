@@ -13,81 +13,46 @@ import Subscriptions from "./pages/Subscriptions.jsx";
 import ServiceRequests from "./pages/ServiceRequests.jsx";
 import Settings from "./pages/Settings.jsx";
 
-
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* =========================
             PUBLIC ROUTES
         ========================= */}
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        <Route path="/login" element={<Login />} />
 
-        <Route
-          path="/reset-password"
-          element={<ResetPassword />}
-        />
-
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* =========================
             PROTECTED ROUTES
         ========================= */}
 
         <Route element={<ProtectedRoute />}>
-
           <Route element={<AppShell />}>
-
             {/* Root → Dashboard */}
-            <Route
-              index
-              element={<Navigate to="/dashboard" replace />}
-            />
+            <Route index element={<Navigate to="/dashboard" replace />} />
 
             {/* Dashboard */}
-            <Route
-              path="dashboard"
-              element={<Overview />}
-            />
+            <Route path="dashboard" element={<Overview />} />
 
             {/* Hotels */}
-            <Route
-              path="hotels"
-              element={<Hotels />}
-            />
+            <Route path="hotels" element={<Hotels />} />
 
             {/* Transactions */}
-            <Route
-              path="transactions"
-              element={<Transactions />}
-            />
+            <Route path="transactions" element={<Transactions />} />
 
             {/* Subscriptions */}
-            <Route
-              path="subscriptions"
-              element={<Subscriptions />}
-            />
+            <Route path="subscriptions" element={<Subscriptions />} />
 
             {/* Service Requests */}
-            <Route
-              path="service-requests"
-              element={<ServiceRequests />}
-            />
+            <Route path="service-requests" element={<ServiceRequests />} />
 
             {/* Settings */}
-            <Route
-              path="settings"
-              element={<Settings />}
-            />
-
+            <Route path="settings" element={<Settings />} />
           </Route>
-
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

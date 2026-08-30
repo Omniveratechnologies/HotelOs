@@ -8,14 +8,16 @@ import { currentAdmin } from "../data/mockData.js";
 
 function SectionCard({ icon: Icon, title, description, children }) {
   return (
-    <div className="rounded-2xl border border-line bg-white p-5 sm:p-6">
+    <div className="border-line rounded-2xl border bg-white p-5 sm:p-6">
       <div className="mb-5 flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-signal-100 text-signal-600">
+        <div className="bg-signal-100 text-signal-600 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
           <Icon size={17} strokeWidth={2.25} />
         </div>
         <div>
-          <h3 className="font-display font-bold text-ink-body">{title}</h3>
-          {description && <p className="mt-0.5 text-sm text-ink-muted">{description}</p>}
+          <h3 className="font-display text-ink-body font-bold">{title}</h3>
+          {description && (
+            <p className="text-ink-muted mt-0.5 text-sm">{description}</p>
+          )}
         </div>
       </div>
       {children}
@@ -27,8 +29,12 @@ function Toggle({ checked, onChange, label, description }) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-4 py-3">
       <span>
-        <span className="block text-sm font-semibold text-ink-body">{label}</span>
-        {description && <span className="block text-xs text-ink-muted">{description}</span>}
+        <span className="text-ink-body block text-sm font-semibold">
+          {label}
+        </span>
+        {description && (
+          <span className="text-ink-muted block text-xs">{description}</span>
+        )}
       </span>
       <button
         type="button"
@@ -66,23 +72,44 @@ export default function Settings() {
 
   return (
     <>
-      <Topbar title="Settings" subtitle="Manage your admin profile, security, and notifications." onMenuClick={onMenuClick} />
+      <Topbar
+        title="Settings"
+        subtitle="Manage your admin profile, security, and notifications."
+        onMenuClick={onMenuClick}
+      />
 
       <main className="flex-1 space-y-5 px-5 pb-10 lg:px-8">
         <form onSubmit={handleSave} className="space-y-5">
-          <SectionCard icon={User} title="Profile" description="This information is visible to your team.">
+          <SectionCard
+            icon={User}
+            title="Profile"
+            description="This information is visible to your team."
+          >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Full name">
-                <input className={inputClass()} value={name} onChange={(e) => setName(e.target.value)} />
+                <input
+                  className={inputClass()}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </Field>
               <Field label="Email address">
-                <input type="email" className={inputClass()} value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input
+                  type="email"
+                  className={inputClass()}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </Field>
             </div>
           </SectionCard>
 
-          <SectionCard icon={Bell} title="Notifications" description="Choose what you get notified about.">
-            <div className="divide-y divide-line">
+          <SectionCard
+            icon={Bell}
+            title="Notifications"
+            description="Choose what you get notified about."
+          >
+            <div className="divide-line divide-y">
               <Toggle
                 checked={notifyExpiry}
                 onChange={setNotifyExpiry}
@@ -104,7 +131,11 @@ export default function Settings() {
             </div>
           </SectionCard>
 
-          <SectionCard icon={ShieldCheck} title="Security" description="Keep your super admin account secure.">
+          <SectionCard
+            icon={ShieldCheck}
+            title="Security"
+            description="Keep your super admin account secure."
+          >
             <Toggle
               checked={twoFactor}
               onChange={setTwoFactor}
@@ -117,7 +148,11 @@ export default function Settings() {
             <Button type="submit" icon={Save}>
               Save changes
             </Button>
-            {saved && <span className="text-sm font-medium text-signal-600">Saved.</span>}
+            {saved && (
+              <span className="text-signal-600 text-sm font-medium">
+                Saved.
+              </span>
+            )}
           </div>
         </form>
       </main>

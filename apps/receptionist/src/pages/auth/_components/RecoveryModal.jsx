@@ -33,8 +33,7 @@ export default function RecoveryModal({ mode, onClose }) {
     } catch (err) {
       console.error("Recovery error:", err);
       setRecoveryError(
-        err.message ||
-          "Something went wrong. Please try again."
+        err.message || "Something went wrong. Please try again.",
       );
     } finally {
       setRecoveryLoading(false);
@@ -42,17 +41,15 @@ export default function RecoveryModal({ mode, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-6 z-50">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-navy-900/10 p-7">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+      <div className="w-full max-w-md rounded-2xl border border-navy-900/10 bg-white p-7 shadow-xl">
         {/* Header */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="mb-6 flex items-start justify-between">
           <div>
             <h2 className="font-display text-2xl font-semibold text-navy-900">
-              {mode === "username"
-                ? "Forgot username?"
-                : "Forgot password?"}
+              {mode === "username" ? "Forgot username?" : "Forgot password?"}
             </h2>
-            <p className="text-sm text-navy-900/60 mt-1">
+            <p className="mt-1 text-sm text-navy-900/60">
               {mode === "username"
                 ? "Enter your registered email and we'll send your username."
                 : "Enter your registered email and we'll send you a password reset link."}
@@ -62,7 +59,7 @@ export default function RecoveryModal({ mode, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-navy-900/50 hover:text-navy-900 text-xl"
+            className="text-xl text-navy-900/50 hover:text-navy-900"
           >
             ×
           </button>
@@ -72,7 +69,7 @@ export default function RecoveryModal({ mode, onClose }) {
           <div>
             <label
               htmlFor="recoveryEmail"
-              className="block text-sm font-medium text-navy-900 mb-1.5"
+              className="mb-1.5 block text-sm font-medium text-navy-900"
             >
               Registered Email
             </label>
@@ -82,24 +79,22 @@ export default function RecoveryModal({ mode, onClose }) {
               required
               autoFocus
               value={recoveryEmail}
-              onChange={(e) =>
-                setRecoveryEmail(e.target.value)
-              }
+              onChange={(e) => setRecoveryEmail(e.target.value)}
               placeholder="you@hotel.com"
-              className="w-full bg-cream-50 border border-navy-900/15 rounded-lg px-4 py-2.5 text-navy-900 outline-none focus:border-gold-400 transition-colors"
+              className="w-full rounded-lg border border-navy-900/15 bg-cream-50 px-4 py-2.5 text-navy-900 outline-none transition-colors focus:border-gold-400"
             />
           </div>
 
           {/* Recovery error */}
           {recoveryError && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {recoveryError}
             </div>
           )}
 
           {/* Recovery message */}
           {recoveryMessage && (
-            <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
               {recoveryMessage}
             </div>
           )}
@@ -108,7 +103,7 @@ export default function RecoveryModal({ mode, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-lg border border-navy-900/15 text-navy-900 hover:bg-cream-100 transition-colors"
+              className="rounded-lg border border-navy-900/15 px-5 py-2.5 text-navy-900 transition-colors hover:bg-cream-100"
             >
               Cancel
             </button>
@@ -116,13 +111,13 @@ export default function RecoveryModal({ mode, onClose }) {
             <button
               type="submit"
               disabled={recoveryLoading}
-              className="px-5 py-2.5 rounded-lg bg-navy-900 text-cream-50 hover:bg-navy-800 transition-colors disabled:opacity-60"
+              className="rounded-lg bg-navy-900 px-5 py-2.5 text-cream-50 transition-colors hover:bg-navy-800 disabled:opacity-60"
             >
               {recoveryLoading
                 ? "Sending..."
                 : mode === "username"
-                ? "Send Username"
-                : "Send Reset Link"}
+                  ? "Send Username"
+                  : "Send Reset Link"}
             </button>
           </div>
         </form>

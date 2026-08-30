@@ -4,9 +4,7 @@ import AuthLayout from "./AuthLayout.jsx";
 import HotelLayout from "../layouts/HotelLayout.jsx";
 import ErrorScreen from "./ErrorScreen.jsx";
 
-export function lazyPage(
-  importer,
-) {
+export function lazyPage(importer) {
   return async () => {
     const { default: Component } = await importer();
 
@@ -44,11 +42,15 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: "/dashboard",
-                lazy: lazyPage(() => import("../pages/dashboard/DashboardPage.jsx")),
+                lazy: lazyPage(
+                  () => import("../pages/dashboard/DashboardPage.jsx"),
+                ),
               },
               {
                 path: "/members",
-                lazy: lazyPage(() => import("../pages/dashboard/MembersPage.jsx")),
+                lazy: lazyPage(
+                  () => import("../pages/dashboard/MembersPage.jsx"),
+                ),
               },
             ],
           },

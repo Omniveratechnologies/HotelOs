@@ -9,7 +9,7 @@ router.get(
   "/stats",
   authenticate,
   authorize("SUPER_ADMIN", "SUB_ADMIN", "RECEPTIONIST"),
-  getDashboardStats
+  getDashboardStats,
 );
 
 export default router;

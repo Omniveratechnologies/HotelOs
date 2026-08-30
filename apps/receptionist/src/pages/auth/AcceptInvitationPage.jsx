@@ -36,7 +36,7 @@ export default function AcceptInvitationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-cream-50">
         <p className="text-navy-900">Verifying your invitation...</p>
       </div>
     );
@@ -44,8 +44,8 @@ export default function AcceptInvitationPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-cream-50 flex items-center justify-center px-6">
-        <div className="w-full max-w-md rounded-2xl bg-cream-100 border border-navy-900/10 px-8 py-10 text-center">
+      <div className="flex min-h-screen items-center justify-center bg-cream-50 px-6">
+        <div className="w-full max-w-md rounded-2xl border border-navy-900/10 bg-cream-100 px-8 py-10 text-center">
           <h1 className="font-display text-2xl font-semibold text-navy-900">
             Invitation Invalid
           </h1>
@@ -55,10 +55,5 @@ export default function AcceptInvitationPage() {
     );
   }
 
-  return (
-    <CreateAccount
-      token={token}
-      invitation={invitation}
-    />
-  );
+  return <CreateAccount token={token} invitation={invitation} />;
 }

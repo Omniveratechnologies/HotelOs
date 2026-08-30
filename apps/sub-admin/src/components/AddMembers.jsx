@@ -36,7 +36,11 @@ export default function AddMembers({ onInvited }) {
     setReceptionistInviteError({});
 
     // check each required field is filled
-    if (!receptionistData.name || !receptionistData.username || !receptionistData.email) {
+    if (
+      !receptionistData.name ||
+      !receptionistData.username ||
+      !receptionistData.email
+    ) {
       setReceptionistInviteError((prevErrors) => ({
         ...prevErrors,
         name: "Name is required.",
@@ -73,7 +77,9 @@ export default function AddMembers({ onInvited }) {
 
       await sendReceptionistInvitation(receptionistData);
 
-      setInviteMessage(`Invitation sent successfully to ${receptionistData.email}`);
+      setInviteMessage(
+        `Invitation sent successfully to ${receptionistData.email}`,
+      );
 
       setReceptionistData({
         name: "",
@@ -95,12 +101,16 @@ export default function AddMembers({ onInvited }) {
   };
 
   return (
-    <div className="bg-cream border border-beige-border rounded-2xl shadow-card p-6 mb-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="mb-8 rounded-2xl border border-beige-border bg-cream p-6 shadow-card">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-xl font-semibold text-navy">Add Members</h2>
+          <h2 className="font-display text-xl font-semibold text-navy">
+            Add Members
+          </h2>
 
-          <p className="text-sm text-muted mt-1">Add staff members to your hotel.</p>
+          <p className="mt-1 text-sm text-muted">
+            Add staff members to your hotel.
+          </p>
         </div>
 
         <button
@@ -111,7 +121,7 @@ export default function AddMembers({ onInvited }) {
             setInviteMessage("");
             setReceptionistInviteError({});
           }}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-navy text-cream px-5 py-3 font-medium hover:opacity-90 transition"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-navy px-5 py-3 font-medium text-cream transition hover:opacity-90"
         >
           <span className="text-lg">{showReceptionistForm ? "-" : "+"}</span>
           Add Receptionist
@@ -123,7 +133,7 @@ export default function AddMembers({ onInvited }) {
       =============================================== */}
 
       <div
-        className={`transition-all duration-500 ease-linear overflow-hidden ${showReceptionistForm ? "max-h-[1000px] mt-6 pt-6 border-t border-beige-border " : "max-h-0"}`}
+        className={`overflow-hidden transition-all duration-500 ease-linear ${showReceptionistForm ? "mt-6 max-h-[1000px] border-t border-beige-border pt-6 " : "max-h-0"}`}
       >
         <form onSubmit={handleSendReceptionistInvite} className="max-w-xl">
           <Input
@@ -159,9 +169,9 @@ export default function AddMembers({ onInvited }) {
             error={receptionistInviteError.username}
           />
 
-          <p className="text-xs text-muted mt-2">
-            An invitation link will be sent to this email. The receptionist will create their own
-            account and password.
+          <p className="mt-2 text-xs text-muted">
+            An invitation link will be sent to this email. The receptionist will
+            create their own account and password.
           </p>
 
           {receptionistInviteError.other && (
@@ -179,7 +189,7 @@ export default function AddMembers({ onInvited }) {
           <button
             type="submit"
             disabled={sendingInvite}
-            className="mt-5 rounded-lg bg-gold px-6 py-3 font-semibold text-navy hover:bg-gold-hover transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="mt-5 rounded-lg bg-gold px-6 py-3 font-semibold text-navy transition hover:bg-gold-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {sendingInvite ? "Sending Invite..." : "Send Invite"}
           </button>

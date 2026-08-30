@@ -10,12 +10,9 @@ export const getStoredToken = () => {
 
 export const getStoredUser = () => {
   try {
-    const raw =
-      localStorage.getItem("auth_user");
+    const raw = localStorage.getItem("auth_user");
 
-    return raw
-      ? JSON.parse(raw)
-      : null;
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
@@ -36,10 +33,7 @@ export const setAuth = ({ token, user }) => {
   }
 
   if (user) {
-    localStorage.setItem(
-      "auth_user",
-      JSON.stringify(user)
-    );
+    localStorage.setItem("auth_user", JSON.stringify(user));
   }
 };
 
@@ -47,52 +41,33 @@ export const setAuth = ({ token, user }) => {
 // LOGIN
 // =====================================================
 
-export const login = async ({
-  username,
-  password,
-}) => {
-  if (
-    !username?.trim() ||
-    !password
-  ) {
-    throw new Error(
-      "Username and password are required."
-    );
+export const login = async ({ username, password }) => {
+  if (!username?.trim() || !password) {
+    throw new Error("Username and password are required.");
   }
 
-  const result = await apiFetch(
-    "/api/v1/auth/login",
-    {
-      method: "POST",
+  const result = await apiFetch("/api/v1/auth/login", {
+    method: "POST",
 
-      body: {
-        username:
-          username.trim(),
+    body: {
+      username: username.trim(),
 
-        password,
-      },
-    }
-  );
+      password,
+    },
+  });
 
   // =================================================
   // ONLY SUB ADMINS CAN ACCESS THIS DASHBOARD
   // =================================================
 
-  if (
-    result.data?.user?.role !==
-    "SUB_ADMIN"
-  ) {
-    throw new Error(
-      "This account does not have sub admin access."
-    );
+  if (result.data?.user?.role !== "SUB_ADMIN") {
+    throw new Error("This account does not have sub admin access.");
   }
 
   setAuth({
-    token:
-      result.data.token,
+    token: result.data.token,
 
-    user:
-      result.data.user,
+    user: result.data.user,
   });
 
   return result.data.user;
@@ -103,72 +78,51 @@ export const login = async ({
 // =====================================================
 
 export const forgotUsername = async (email) => {
-  return recoveryRequest(
-    "/api/v1/auth/forgot-username",
-    email
-  );
+  return recoveryRequest("/api/v1/auth/forgot-username", email);
 };
 
 export const forgotPassword = async (email) => {
-  return recoveryRequest(
-    "/api/v1/auth/forgot-password",
-    email
-  );
+  return recoveryRequest("/api/v1/auth/forgot-password", email);
 };
 
 async function recoveryRequest(endpoint, email) {
   if (!email?.trim()) {
-    throw new Error(
-      "Please enter your email address."
-    );
+    throw new Error("Please enter your email address.");
   }
 
   const result = await apiFetch(endpoint, {
     method: "POST",
 
     body: {
-      email:
-        email.trim(),
+      email: email.trim(),
     },
   });
 
-  return result.message ||
-    "Please check your email.";
+  return result.message || "Please check your email.";
 }
 
 // =====================================================
 // RESET PASSWORD
 // =====================================================
 
-export const resetPassword = async ({
-  token,
-  password,
-}) => {
+export const resetPassword = async ({ token, password }) => {
   if (!token) {
-    throw new Error(
-      "This password reset link is invalid or missing."
-    );
+    throw new Error("This password reset link is invalid or missing.");
   }
 
   if (!password || password.length < 8) {
-    throw new Error(
-      "Password must be at least 8 characters."
-    );
+    throw new Error("Password must be at least 8 characters.");
   }
 
-  const result = await apiFetch(
-    "/api/v1/auth/reset-password",
-    {
-      method: "POST",
+  const result = await apiFetch("/api/v1/auth/reset-password", {
+    method: "POST",
 
-      body: {
-        token,
+    body: {
+      token,
 
-        password,
-      },
-    }
-  );
+      password,
+    },
+  });
 
-  return result.message ||
-    "Your password has been reset successfully.";
+  return result.message || "Your password has been reset successfully.";
 };

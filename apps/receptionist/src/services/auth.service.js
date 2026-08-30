@@ -10,12 +10,9 @@ export const getStoredToken = () => {
 
 export const getStoredUser = () => {
   try {
-    const raw =
-      localStorage.getItem("auth_user");
+    const raw = localStorage.getItem("auth_user");
 
-    return raw
-      ? JSON.parse(raw)
-      : null;
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
@@ -34,55 +31,32 @@ export const clearAuth = () => {
 // LOGIN
 // =====================================================
 
-export const login = async ({
-  username,
-  password,
-}) => {
-  if (
-    !username?.trim() ||
-    !password
-  ) {
-    throw new Error(
-      "Username and password are required."
-    );
+export const login = async ({ username, password }) => {
+  if (!username?.trim() || !password) {
+    throw new Error("Username and password are required.");
   }
 
-  const result = await apiFetch(
-    "/api/v1/auth/login",
-    {
-      method: "POST",
+  const result = await apiFetch("/api/v1/auth/login", {
+    method: "POST",
 
-      body: {
-        username:
-          username.trim(),
+    body: {
+      username: username.trim(),
 
-        password,
-      },
-    }
-  );
+      password,
+    },
+  });
 
   // =================================================
   // ONLY RECEPTIONISTS CAN ACCESS THE DASHBOARD
   // =================================================
 
-  if (
-    result.data?.user?.role !==
-    "RECEPTIONIST"
-  ) {
-    throw new Error(
-      "This account does not have receptionist access."
-    );
+  if (result.data?.user?.role !== "RECEPTIONIST") {
+    throw new Error("This account does not have receptionist access.");
   }
 
-  localStorage.setItem(
-    "auth_token",
-    result.data.token
-  );
+  localStorage.setItem("auth_token", result.data.token);
 
-  localStorage.setItem(
-    "auth_user",
-    JSON.stringify(result.data.user)
-  );
+  localStorage.setItem("auth_user", JSON.stringify(result.data.user));
 
   return result.data.user;
 };
@@ -92,10 +66,7 @@ export const login = async ({
 // =====================================================
 
 export const forgotUsername = async (email) => {
-  return recoveryRequest(
-    "/api/v1/auth/forgot-username",
-    email
-  );
+  return recoveryRequest("/api/v1/auth/forgot-username", email);
 };
 
 // =====================================================
@@ -103,28 +74,21 @@ export const forgotUsername = async (email) => {
 // =====================================================
 
 export const forgotPassword = async (email) => {
-  return recoveryRequest(
-    "/api/v1/auth/forgot-password",
-    email
-  );
+  return recoveryRequest("/api/v1/auth/forgot-password", email);
 };
 
 async function recoveryRequest(endpoint, email) {
   if (!email?.trim()) {
-    throw new Error(
-      "Please enter your email address."
-    );
+    throw new Error("Please enter your email address.");
   }
 
   const result = await apiFetch(endpoint, {
     method: "POST",
 
     body: {
-      email:
-        email.trim(),
+      email: email.trim(),
     },
   });
 
-  return result.message ||
-    "Please check your email.";
+  return result.message || "Please check your email.";
 }

@@ -5,7 +5,7 @@ import { ROLES } from "../constants/roles.js";
 
 import {
   generateUsername,
-  generateTemporaryPassword
+  generateTemporaryPassword,
 } from "../utils/generateCredentials.js";
 
 import { userResponseDTO } from "../dto/user.dto.js";
@@ -18,7 +18,7 @@ export const createUser = async (req, res) => {
     if (!name || !role) {
       return res.status(400).json({
         success: false,
-        message: "name and role are required"
+        message: "name and role are required",
       });
     }
 
@@ -28,7 +28,7 @@ export const createUser = async (req, res) => {
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid user role"
+        message: "Invalid user role",
       });
     }
 
@@ -38,7 +38,7 @@ export const createUser = async (req, res) => {
     if (!hotelId) {
       return res.status(400).json({
         success: false,
-        message: "Sub Admin is not assigned to a hotel"
+        message: "Sub Admin is not assigned to a hotel",
       });
     }
 
@@ -50,7 +50,11 @@ export const createUser = async (req, res) => {
     let username;
 
     do {
-      username = generateUsername(hotelCode, role, String(number).padStart(3, "0"));
+      username = generateUsername(
+        hotelCode,
+        role,
+        String(number).padStart(3, "0"),
+      );
 
       const existingUser = await User.findOne({ username });
 
@@ -70,7 +74,7 @@ export const createUser = async (req, res) => {
       username,
       password: temporaryPassword,
       role,
-      hotelId
+      hotelId,
     });
 
     return res.status(201).json({
@@ -78,16 +82,15 @@ export const createUser = async (req, res) => {
       message: "User created successfully",
       data: {
         ...userResponseDTO(user),
-        temporaryPassword
-      }
+        temporaryPassword,
+      },
     });
-
   } catch (error) {
     console.error("Create User Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to create user"
+      message: "Failed to create user",
     });
   }
 };
@@ -108,7 +111,7 @@ export const getUsers = async (req, res) => {
       if (!Object.values(ROLES).includes(role)) {
         return res.status(400).json({
           success: false,
-          message: "Invalid role filter"
+          message: "Invalid role filter",
         });
       }
 
@@ -119,15 +122,14 @@ export const getUsers = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: users.map(userResponseDTO)
+      data: users.map(userResponseDTO),
     });
-
   } catch (error) {
     console.error("Get users error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch users"
+      message: "Failed to fetch users",
     });
   }
 };
@@ -143,7 +145,7 @@ export const deleteUser = async (req, res) => {
     if (!id) {
       return res.status(400).json({
         success: false,
-        message: "User id is required"
+        message: "User id is required",
       });
     }
 
@@ -152,7 +154,7 @@ export const deleteUser = async (req, res) => {
     if (!target) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
@@ -160,23 +162,26 @@ export const deleteUser = async (req, res) => {
     if (target.role === "SUPER_ADMIN") {
       return res.status(403).json({
         success: false,
-        message: "Super Admin accounts cannot be deleted"
+        message: "Super Admin accounts cannot be deleted",
       });
     }
 
     // Sub Admins can only delete staff of their own hotel
     if (req.user.role === "SUB_ADMIN") {
-      if (!req.user.hotelId || String(target.hotelId) !== String(req.user.hotelId)) {
+      if (
+        !req.user.hotelId ||
+        String(target.hotelId) !== String(req.user.hotelId)
+      ) {
         return res.status(403).json({
           success: false,
-          message: "You can only delete users belonging to your hotel"
+          message: "You can only delete users belonging to your hotel",
         });
       }
 
       if (!["RECEPTIONIST", "KITCHEN"].includes(target.role)) {
         return res.status(403).json({
           success: false,
-          message: "You do not have permission to delete this user"
+          message: "You do not have permission to delete this user",
         });
       }
     }
@@ -188,15 +193,14 @@ export const deleteUser = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "User deleted successfully"
+      message: "User deleted successfully",
     });
-
   } catch (error) {
     console.error("Delete user error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to delete user"
+      message: "Failed to delete user",
     });
   }
 };

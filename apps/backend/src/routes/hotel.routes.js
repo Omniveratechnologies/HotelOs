@@ -11,13 +11,9 @@ import {
   updateMyHotel,
 } from "../controllers/hotel.controller.js";
 
-import {
-  authenticate,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
-import {
-  authorize,
-} from "../middleware/role.middleware.js";
+import { authorize } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
@@ -32,34 +28,23 @@ router.get(
   "/me",
   authenticate,
   authorize("SUB_ADMIN", "RECEPTIONIST"),
-  getMyHotel
+  getMyHotel,
 );
 
-router.patch(
-  "/me",
-  authenticate,
-  authorize("SUB_ADMIN"),
-  updateMyHotel
-);
+router.patch("/me", authenticate, authorize("SUB_ADMIN"), updateMyHotel);
 
 // =====================================================
 // ALL HOTEL MANAGEMENT IS SUPER ADMIN ONLY
 // =====================================================
 
-router.use(
-  authenticate,
-  authorize("SUPER_ADMIN")
-);
+router.use(authenticate, authorize("SUPER_ADMIN"));
 
 // =====================================================
 // GET ALL HOTELS
 // CREATE HOTEL
 // =====================================================
 
-router
-  .route("/")
-  .get(getHotels)
-  .post(createHotel);
+router.route("/").get(getHotels).post(createHotel);
 
 // =====================================================
 // GET SINGLE HOTEL
@@ -77,9 +62,6 @@ router
 // ACTIVATE / DEACTIVATE HOTEL
 // =====================================================
 
-router.patch(
-  "/:hotelId/status",
-  updateHotelStatus
-);
+router.patch("/:hotelId/status", updateHotelStatus);
 
 export default router;

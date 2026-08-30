@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getStoredUser } from "../../services/auth.service.js";
-import { getMyHotel, updateMyHotel, getHotelStaff } from "../../services/settings.service.js";
+import {
+  getMyHotel,
+  updateMyHotel,
+  getHotelStaff,
+} from "../../services/settings.service.js";
 
 const roleLabel = { RECEPTIONIST: "Receptionist", KITCHEN: "Kitchen" };
 
@@ -98,25 +102,34 @@ export default function SettingsPage() {
       content: (
         <div>
           {!canEditHotel && (
-            <p className="text-[10px] text-gray-400 mb-4">
-              Hotel details are managed by the Sub-Admin. You have read-only access.
+            <p className="mb-4 text-[10px] text-gray-400">
+              Hotel details are managed by the Sub-Admin. You have read-only
+              access.
             </p>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Hotel Name
               </label>
-              <input value={hotel?.name || ""} disabled className={disabledInputClass} />
+              <input
+                value={hotel?.name || ""}
+                disabled
+                className={disabledInputClass}
+              />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Email
               </label>
-              <input value={hotel?.email || ""} disabled className={disabledInputClass} />
+              <input
+                value={hotel?.email || ""}
+                disabled
+                className={disabledInputClass}
+              />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Phone
               </label>
               <input
@@ -127,7 +140,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 City
               </label>
               <input
@@ -138,7 +151,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Address
               </label>
               <input
@@ -149,7 +162,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Check-in Time
               </label>
               <input
@@ -161,7 +174,7 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Check-out Time
               </label>
               <input
@@ -184,20 +197,22 @@ export default function SettingsPage() {
           {Object.entries(notifs).map(([k, v]) => (
             <div
               key={k}
-              className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
+              className="flex items-center justify-between border-b border-gray-50 py-2 last:border-0"
             >
               <div>
-                <div className="font-medium text-[#0f1f3d] text-sm capitalize">
+                <div className="text-sm font-medium capitalize text-[#0f1f3d]">
                   {k.replace(/([A-Z])/g, " $1").trim()}
                 </div>
-                <div className="text-gray-400 text-xs">Receive alerts for this event</div>
+                <div className="text-xs text-gray-400">
+                  Receive alerts for this event
+                </div>
               </div>
               <button
                 onClick={() => setNotifs((p) => ({ ...p, [k]: !v }))}
-                className={`w-12 h-6 rounded-full transition-all duration-200 relative ${v ? "bg-[#0f1f3d]" : "bg-gray-200"}`}
+                className={`relative h-6 w-12 rounded-full transition-all duration-200 ${v ? "bg-[#0f1f3d]" : "bg-gray-200"}`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow absolute top-0.5 transition-all duration-200 ${v ? "left-6" : "left-0.5"}`}
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all duration-200 ${v ? "left-6" : "left-0.5"}`}
                 />
               </button>
             </div>
@@ -214,25 +229,27 @@ export default function SettingsPage() {
       content: (
         <div>
           {staff.length > 0 ? (
-            <div className="space-y-3 mb-4">
+            <div className="mb-4 space-y-3">
               {staff.map((s) => (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between py-3 border-b border-gray-50"
+                  className="flex items-center justify-between border-b border-gray-50 py-3"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#0f1f3d] flex items-center justify-center text-white font-bold text-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0f1f3d] text-sm font-bold text-white">
                       {s.name[0]?.toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-medium text-[#0f1f3d] text-sm">{s.name}</div>
-                      <div className="text-gray-400 text-xs">
+                      <div className="text-sm font-medium text-[#0f1f3d]">
+                        {s.name}
+                      </div>
+                      <div className="text-xs text-gray-400">
                         {roleLabel[s.role] || s.role} · {s.email}
                       </div>
                     </div>
                   </div>
                   <span
-                    className={`text-[10px] font-bold px-2 py-1 rounded-full ${s.isActive ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}
+                    className={`rounded-full px-2 py-1 text-[10px] font-bold ${s.isActive ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}
                   >
                     {s.isActive ? "ACTIVE" : "INACTIVE"}
                   </span>
@@ -240,12 +257,14 @@ export default function SettingsPage() {
               ))}
             </div>
           ) : (
-            <div className="py-6 text-center text-sm text-gray-400">No staff accounts yet.</div>
+            <div className="py-6 text-center text-sm text-gray-400">
+              No staff accounts yet.
+            </div>
           )}
-          <p className="text-[10px] text-gray-400 mb-2">
+          <p className="mb-2 text-[10px] text-gray-400">
             Invite or manage staff from the Sub-Admin portal.
           </p>
-          <button className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
+          <button className="w-full rounded-xl border-2 border-dashed border-gray-300 py-2.5 text-sm text-gray-500 transition-colors hover:border-[#c9a84c] hover:text-[#c9a84c]">
             + Add Staff Member
           </button>
         </div>
@@ -263,21 +282,22 @@ export default function SettingsPage() {
           ].map(([type, rate]) => (
             <div
               key={type}
-              className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3"
+              className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
             >
               <span className="font-semibold text-[#0f1f3d]">{type}</span>
               <div className="flex items-center gap-2">
-                <span className="text-gray-500 text-sm">₹</span>
+                <span className="text-sm text-gray-500">₹</span>
                 <input
                   defaultValue={rate}
-                  className="w-24 text-right px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-bold text-[#0f1f3d] focus:outline-none focus:border-[#c9a84c]"
+                  className="w-24 rounded-lg border border-gray-200 px-3 py-1.5 text-right text-sm font-bold text-[#0f1f3d] focus:border-[#c9a84c] focus:outline-none"
                 />
-                <span className="text-gray-400 text-sm">/night</span>
+                <span className="text-sm text-gray-400">/night</span>
               </div>
             </div>
           ))}
           <p className="text-[10px] text-gray-400">
-            Rates are set per room in Room Management; this panel is informational for now.
+            Rates are set per room in Room Management; this panel is
+            informational for now.
           </p>
         </div>
       ),
@@ -286,25 +306,29 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0f1f3d] font-display">Settings</h1>
-          <p className="text-gray-500 text-sm">Configure your HotelOS</p>
+          <h1 className="font-display text-2xl font-bold text-[#0f1f3d]">
+            Settings
+          </h1>
+          <p className="text-sm text-gray-500">Configure your HotelOS</p>
         </div>
         <button
           onClick={save}
           disabled={!hotel || saving || !canEditHotel}
-          className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${saved ? "bg-green-600 text-white" : "bg-[#0f1f3d] text-white hover:bg-[#162847]"}`}
+          className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${saved ? "bg-green-600 text-white" : "bg-[#0f1f3d] text-white hover:bg-[#162847]"}`}
         >
           {saving ? "Saving..." : saved ? "✓ Saved!" : "Save Changes"}
         </button>
       </div>
 
       {loading && (
-        <div className="py-16 text-center text-gray-400 text-sm">Loading settings...</div>
+        <div className="py-16 text-center text-sm text-gray-400">
+          Loading settings...
+        </div>
       )}
       {!loading && loadError && (
-        <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600 mb-4">
+        <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
           {loadError}
         </div>
       )}
@@ -313,9 +337,9 @@ export default function SettingsPage() {
           {sections.map((s) => (
             <div
               key={s.title}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+              className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
             >
-              <h3 className="font-bold text-[#0f1f3d] flex items-center gap-2 mb-4">
+              <h3 className="mb-4 flex items-center gap-2 font-bold text-[#0f1f3d]">
                 <span>{s.icon}</span> {s.title}
               </h3>
               {s.content}

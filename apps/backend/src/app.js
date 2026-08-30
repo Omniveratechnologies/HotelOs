@@ -15,8 +15,8 @@ const app = express();
 app.use(
   cors({
     origin: true,
-    credentials: true
-  })
+    credentials: true,
+  }),
 );
 
 app.use(express.json());
@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/api/v1/health", (req, res) => {
   res.json({
     success: true,
-    message: "HotelOS backend is running"
+    message: "HotelOS backend is running",
   });
 });
 

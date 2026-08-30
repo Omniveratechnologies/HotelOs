@@ -1,50 +1,61 @@
-import React, { useState } from 'react'
-import { useHotelOS } from '../../../app/providers.jsx'
+import React, { useState } from "react";
+import { useHotelOS } from "../../../app/providers.jsx";
 
-const ID_TYPES = ['Aadhaar', 'PAN', 'Passport', 'Driving License', 'Voter ID', 'Other']
+const ID_TYPES = [
+  "Aadhaar",
+  "PAN",
+  "Passport",
+  "Driving License",
+  "Voter ID",
+  "Other",
+];
 
-export default function AddGuestModal({ onClose, onRegistered, initial = null }) {
-  const { rooms, addGuest } = useHotelOS()
+export default function AddGuestModal({
+  onClose,
+  onRegistered,
+  initial = null,
+}) {
+  const { rooms, addGuest } = useHotelOS();
 
   const [form, setForm] = useState({
-    name: initial?.name || '',
-    phone: '',
-    email: '',
-    address: '',
-    roomId: initial?.roomId || '',
-    checkIn: initial?.checkIn || new Date().toISOString().split('T')[0],
-    checkOut: initial?.checkOut || '',
-    idType: 'Aadhaar',
-    idNumber: '',
-    status: 'checked-in',
-  })
+    name: initial?.name || "",
+    phone: "",
+    email: "",
+    address: "",
+    roomId: initial?.roomId || "",
+    checkIn: initial?.checkIn || new Date().toISOString().split("T")[0],
+    checkOut: initial?.checkOut || "",
+    idType: "Aadhaar",
+    idNumber: "",
+    status: "checked-in",
+  });
 
-  const [docs, setDocs] = useState([]) // [{ file, docType }]
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [credentials, setCredentials] = useState(null)
+  const [docs, setDocs] = useState([]); // [{ file, docType }]
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [credentials, setCredentials] = useState(null);
 
-  const setField = (k, v) => setForm(p => ({ ...p, [k]: v }))
+  const setField = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleFiles = (e) => {
-    const files = Array.from(e.target.files || [])
-    setDocs(files.slice(0, 5).map(file => ({ file, docType: form.idType })))
-  }
+    const files = Array.from(e.target.files || []);
+    setDocs(files.slice(0, 5).map((file) => ({ file, docType: form.idType })));
+  };
 
   const setDocType = (idx, docType) => {
-    setDocs(prev => prev.map((d, i) => (i === idx ? { ...d, docType } : d)))
-  }
+    setDocs((prev) => prev.map((d, i) => (i === idx ? { ...d, docType } : d)));
+  };
 
   const handleSubmit = async () => {
-    setError('')
+    setError("");
 
-    if (!form.name.trim()) return setError('Guest name is required.')
-    if (!form.email.trim()) return setError('Email is required.')
-    if (!form.roomId) return setError('Please select a room.')
-    if (!form.checkOut) return setError('Check-out date is required.')
+    if (!form.name.trim()) return setError("Guest name is required.");
+    if (!form.email.trim()) return setError("Email is required.");
+    if (!form.roomId) return setError("Please select a room.");
+    if (!form.checkOut) return setError("Check-out date is required.");
 
     try {
-      setSaving(true)
+      setSaving(true);
 
       const created = await addGuest({
         name: form.name.trim(),
@@ -57,27 +68,29 @@ export default function AddGuestModal({ onClose, onRegistered, initial = null })
         checkIn: form.checkIn,
         checkOut: form.checkOut,
         status: form.status,
-        docTypes: docs.map(d => d.docType),
-        files: docs.map(d => d.file),
-      })
+        docTypes: docs.map((d) => d.docType),
+        files: docs.map((d) => d.file),
+      });
 
-      onRegistered?.(created)
-      setCredentials(created.credentials || null)
+      onRegistered?.(created);
+      setCredentials(created.credentials || null);
     } catch (err) {
-      console.error('Failed to register guest:', err)
-      setError(err.message || 'Failed to register the guest.')
+      console.error("Failed to register guest:", err);
+      setError(err.message || "Failed to register the guest.");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   // When prefilled, only that room can be chosen; otherwise free rooms
   const selectableRooms = initial?.roomId
-    ? rooms.filter(r => r.id === initial.roomId)
-    : rooms.filter(r => ['available', 'cleaning'].includes(r.status))
+    ? rooms.filter((r) => r.id === initial.roomId)
+    : rooms.filter((r) => ["available", "cleaning"].includes(r.status));
 
-  const inputCls = "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#c9a84c]"
-  const labelCls = "text-xs font-semibold text-gray-500 uppercase tracking-wide"
+  const inputCls =
+    "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#c9a84c]";
+  const labelCls =
+    "text-xs font-semibold text-gray-500 uppercase tracking-wide";
 
   // =====================================================
   // SUCCESS PANEL - generated credentials shown once
@@ -85,150 +98,282 @@ export default function AddGuestModal({ onClose, onRegistered, initial = null })
 
   if (credentials) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-          <div className="text-center mb-5">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-xl">✓</div>
-            <h3 className="font-bold text-[#0f1f3d] text-lg">Guest Registered</h3>
-            <p className="text-gray-500 text-sm mt-1">
-              Login credentials were generated{credentials.emailSent ? ' and emailed' : ''}.
-              Save them now — the password won&apos;t be shown again.
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        onClick={onClose}
+      >
+        <div
+          className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-5 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-xl text-green-600">
+              ✓
+            </div>
+            <h3 className="text-lg font-bold text-[#0f1f3d]">
+              Guest Registered
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Login credentials were generated
+              {credentials.emailSent ? " and emailed" : ""}. Save them now — the
+              password won&apos;t be shown again.
             </p>
           </div>
 
           <div className="space-y-3">
-            <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
               <div>
                 <div className={labelCls}>Username</div>
-                <div className="font-bold text-[#0f1f3d]">{credentials.username}</div>
+                <div className="font-bold text-[#0f1f3d]">
+                  {credentials.username}
+                </div>
               </div>
-              <button onClick={() => navigator.clipboard?.writeText(credentials.username)} className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Copy</button>
+              <button
+                onClick={() =>
+                  navigator.clipboard?.writeText(credentials.username)
+                }
+                className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs hover:bg-gray-50"
+              >
+                Copy
+              </button>
             </div>
 
-            <div className="bg-amber-50 rounded-xl px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center justify-between rounded-xl bg-amber-50 px-4 py-3">
               <div>
                 <div className={labelCls}>Temporary Password</div>
-                <div className="font-bold text-[#0f1f3d] font-mono">{credentials.temporaryPassword}</div>
+                <div className="font-mono font-bold text-[#0f1f3d]">
+                  {credentials.temporaryPassword}
+                </div>
               </div>
-              <button onClick={() => navigator.clipboard?.writeText(credentials.temporaryPassword)} className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-white">Copy</button>
+              <button
+                onClick={() =>
+                  navigator.clipboard?.writeText(credentials.temporaryPassword)
+                }
+                className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs hover:bg-white"
+              >
+                Copy
+              </button>
             </div>
 
             {!credentials.emailSent && (
-              <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
-                The email could not be sent. Please share these credentials manually.
+              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+                The email could not be sent. Please share these credentials
+                manually.
               </div>
             )}
           </div>
 
-          <button onClick={onClose} className="w-full mt-5 py-2.5 bg-[#0f1f3d] text-white rounded-xl text-sm font-semibold hover:bg-[#162847] transition-colors">
+          <button
+            onClick={onClose}
+            className="mt-5 w-full rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#162847]"
+          >
             Done
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl my-8" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="my-8 w-full max-w-lg rounded-2xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="bg-[#0f1f3d] rounded-t-2xl p-5 flex items-center justify-between sticky top-0">
+        <div className="sticky top-0 flex items-center justify-between rounded-t-2xl bg-[#0f1f3d] p-5">
           <div>
-            <div className="text-[#c9a84c] text-xs font-semibold uppercase tracking-widest">Register Guest</div>
-            <div className="text-white font-bold text-lg mt-0.5">
-              {initial ? `Room ${initial.roomNumber}` : 'New Guest'}
+            <div className="text-xs font-semibold uppercase tracking-widest text-[#c9a84c]">
+              Register Guest
+            </div>
+            <div className="mt-0.5 text-lg font-bold text-white">
+              {initial ? `Room ${initial.roomNumber}` : "New Guest"}
             </div>
           </div>
-          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          <button
+            onClick={onClose}
+            className="text-white/40 transition-colors hover:text-white"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-5 w-5"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
 
         {/* Form */}
-        <div className="p-5 space-y-3">
+        <div className="space-y-3 p-5">
           <div>
             <label className={labelCls}>Guest Name *</label>
-            <input value={form.name} onChange={e => setField('name', e.target.value)} placeholder="Full name" disabled={saving} className={inputCls}/>
+            <input
+              value={form.name}
+              onChange={(e) => setField("name", e.target.value)}
+              placeholder="Full name"
+              disabled={saving}
+              className={inputCls}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Email *</label>
-              <input type="email" value={form.email} onChange={e => setField('email', e.target.value)} placeholder="guest@email.com" disabled={saving} className={inputCls}/>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setField("email", e.target.value)}
+                placeholder="guest@email.com"
+                disabled={saving}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className={labelCls}>Phone</label>
-              <input value={form.phone} onChange={e => setField('phone', e.target.value)} placeholder="+91 XXXXX XXXXX" disabled={saving} className={inputCls}/>
+              <input
+                value={form.phone}
+                onChange={(e) => setField("phone", e.target.value)}
+                placeholder="+91 XXXXX XXXXX"
+                disabled={saving}
+                className={inputCls}
+              />
             </div>
           </div>
 
           <div>
             <label className={labelCls}>Address</label>
-            <input value={form.address} onChange={e => setField('address', e.target.value)} placeholder="City, State" disabled={saving} className={inputCls}/>
+            <input
+              value={form.address}
+              onChange={(e) => setField("address", e.target.value)}
+              placeholder="City, State"
+              disabled={saving}
+              className={inputCls}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Room *</label>
-              <select value={form.roomId} onChange={e => setField('roomId', e.target.value)} disabled={saving || !!initial?.roomId} className={inputCls}>
+              <select
+                value={form.roomId}
+                onChange={(e) => setField("roomId", e.target.value)}
+                disabled={saving || !!initial?.roomId}
+                className={inputCls}
+              >
                 <option value="">Select</option>
-                {selectableRooms.map(r => (
-                  <option key={r.id} value={r.id}>Room {r.roomNumber} ({r.type})</option>
+                {selectableRooms.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    Room {r.roomNumber} ({r.type})
+                  </option>
                 ))}
               </select>
             </div>
             <div>
               <label className={labelCls}>Booking Type</label>
-              <select value={form.status} onChange={e => setField('status', e.target.value)} disabled={saving} className={inputCls}>
+              <select
+                value={form.status}
+                onChange={(e) => setField("status", e.target.value)}
+                disabled={saving}
+                className={inputCls}
+              >
                 <option value="checked-in">Check In Now</option>
                 <option value="reserved">Reserve for Later</option>
               </select>
             </div>
             <div>
               <label className={labelCls}>Check In *</label>
-              <input type="date" value={form.checkIn} onChange={e => setField('checkIn', e.target.value)} disabled={saving} className={inputCls}/>
+              <input
+                type="date"
+                value={form.checkIn}
+                onChange={(e) => setField("checkIn", e.target.value)}
+                disabled={saving}
+                className={inputCls}
+              />
             </div>
             <div>
               <label className={labelCls}>Check Out *</label>
-              <input type="date" value={form.checkOut} onChange={e => setField('checkOut', e.target.value)} disabled={saving} className={inputCls}/>
+              <input
+                type="date"
+                value={form.checkOut}
+                onChange={(e) => setField("checkOut", e.target.value)}
+                disabled={saving}
+                className={inputCls}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>ID Type</label>
-              <select value={form.idType} onChange={e => setField('idType', e.target.value)} disabled={saving} className={inputCls}>
-                {ID_TYPES.map(t => <option key={t}>{t}</option>)}
+              <select
+                value={form.idType}
+                onChange={(e) => setField("idType", e.target.value)}
+                disabled={saving}
+                className={inputCls}
+              >
+                {ID_TYPES.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
               </select>
             </div>
             <div>
               <label className={labelCls}>ID Number</label>
-              <input value={form.idNumber} onChange={e => setField('idNumber', e.target.value)} placeholder="XXXX-XXXX-XXXX" disabled={saving} className={inputCls}/>
+              <input
+                value={form.idNumber}
+                onChange={(e) => setField("idNumber", e.target.value)}
+                placeholder="XXXX-XXXX-XXXX"
+                disabled={saving}
+                className={inputCls}
+              />
             </div>
           </div>
 
           {/* Documents */}
           <div>
-            <label className={labelCls}>Documents (max 5 · JPG/PNG/PDF/WEBP · 5MB each)</label>
+            <label className={labelCls}>
+              Documents (max 5 · JPG/PNG/PDF/WEBP · 5MB each)
+            </label>
             <input
               type="file"
               multiple
               accept=".jpg,.jpeg,.png,.webp,.pdf"
               onChange={handleFiles}
               disabled={saving}
-              className="w-full mt-1 text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-gray-100 file:text-sm file:font-medium file:text-[#0f1f3d] hover:file:bg-gray-200"
+              className="mt-1 w-full text-sm text-gray-500 file:mr-3 file:rounded-xl file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#0f1f3d] hover:file:bg-gray-200"
             />
             {docs.length > 0 && (
               <div className="mt-2 space-y-2">
                 {docs.map((d, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="flex-1 truncate text-xs text-gray-600">{d.file.name}</span>
-                    <select value={d.docType} onChange={e => setDocType(i, e.target.value)} disabled={saving} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs">
-                      {ID_TYPES.map(t => <option key={t}>{t}</option>)}
+                    <span className="flex-1 truncate text-xs text-gray-600">
+                      {d.file.name}
+                    </span>
+                    <select
+                      value={d.docType}
+                      onChange={(e) => setDocType(i, e.target.value)}
+                      disabled={saving}
+                      className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs"
+                    >
+                      {ID_TYPES.map((t) => (
+                        <option key={t}>{t}</option>
+                      ))}
                     </select>
-                    <button type="button" onClick={() => setDocs(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 text-sm px-1">×</button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDocs((prev) => prev.filter((_, j) => j !== i))
+                      }
+                      className="px-1 text-sm text-red-400 hover:text-red-600"
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
               </div>
@@ -236,17 +381,29 @@ export default function AddGuestModal({ onClose, onRegistered, initial = null })
           </div>
 
           {error && (
-            <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">{error}</div>
+            <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
           )}
 
           <div className="flex gap-3 pt-2">
-            <button onClick={onClose} disabled={saving} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
-            <button onClick={handleSubmit} disabled={saving} className="flex-1 py-2.5 bg-[#0f1f3d] text-white rounded-xl text-sm font-semibold hover:bg-[#162847] transition-colors">
-              {saving ? 'Registering...' : 'Register Guest'}
+            <button
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={saving}
+              className="flex-1 rounded-xl bg-[#0f1f3d] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#162847]"
+            >
+              {saving ? "Registering..." : "Register Guest"}
             </button>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

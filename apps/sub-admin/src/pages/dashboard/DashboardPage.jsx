@@ -12,7 +12,12 @@ const statDefinitions = [
   },
   {
     label: "Available Rooms",
-    icon: <path d="M9 12l2 2 4-4M12 3l9 4.5v9L12 21l-9-4.5v-9L12 3z" strokeLinejoin="round" />,
+    icon: (
+      <path
+        d="M9 12l2 2 4-4M12 3l9 4.5v9L12 21l-9-4.5v-9L12 3z"
+        strokeLinejoin="round"
+      />
+    ),
     value: (data) => String(data.rooms?.available ?? 0),
   },
   {
@@ -29,27 +34,54 @@ const statDefinitions = [
   {
     label: "Total Check-ins",
     sub: "Today",
-    icon: <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />,
+    icon: (
+      <path
+        d="M5 12h14M13 6l6 6-6 6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
     value: (data) => String(data.guests?.arrivalsToday ?? 0),
   },
   {
     label: "Today's Checkouts",
-    icon: <path d="M19 12H5M11 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />,
+    icon: (
+      <path
+        d="M19 12H5M11 18l-6-6 6-6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
     value: (data) => String(data.guests?.departuresToday ?? 0),
   },
   {
     label: "Pending Reservations",
-    icon: <path d="M12 8v4l2.5 2.5M12 3a9 9 0 100 18 9 9 0 000-18z" strokeLinecap="round" />,
+    icon: (
+      <path
+        d="M12 8v4l2.5 2.5M12 3a9 9 0 100 18 9 9 0 000-18z"
+        strokeLinecap="round"
+      />
+    ),
     value: (data) => String(data.pendingReservations ?? 0),
   },
   {
     label: "Today's Revenue",
-    icon: <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" strokeLinecap="round" />,
+    icon: (
+      <path
+        d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"
+        strokeLinecap="round"
+      />
+    ),
     value: (data) => `$${Number(data.revenueToday ?? 0).toLocaleString()}`,
   },
   {
     label: "Pending Service Requests",
-    icon: <path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z" strokeLinejoin="round" />,
+    icon: (
+      <path
+        d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"
+        strokeLinejoin="round"
+      />
+    ),
     value: (data) => String(data.pendingServiceRequests ?? 0),
   },
   {
@@ -145,16 +177,16 @@ export default function Dashboard() {
   const hotelName = statsData?.hotelName || "your hotel";
 
   return (
-    <div className="min-h-screen bg-ivory flex font-body">
-      <div className="flex-1 min-w-0">
+    <div className="flex min-h-screen bg-ivory font-body">
+      <div className="min-w-0 flex-1">
         {/* =====================================================
             TOPBAR
         ===================================================== */}
 
-        <header className="sticky top-0 z-20 bg-cream/95 backdrop-blur border-b border-beige-border h-20 flex items-center justify-between px-6 lg:px-10">
-          <div className="flex items-center gap-4 min-w-0">
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-beige-border bg-cream/95 px-6 backdrop-blur lg:px-10">
+          <div className="flex min-w-0 items-center gap-4">
             <button
-              className="lg:hidden text-navy shrink-0"
+              className="shrink-0 text-navy lg:hidden"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -169,20 +201,20 @@ export default function Dashboard() {
             </button>
 
             <div className="min-w-0">
-              <h1 className="font-display text-2xl font-semibold text-navy truncate">
+              <h1 className="truncate font-display text-2xl font-semibold text-navy">
                 Welcome, {firstName}
               </h1>
 
-              <p className="text-sm text-muted hidden sm:block">
+              <p className="hidden text-sm text-muted sm:block">
                 Here's what's happening at {hotelName} today.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex shrink-0 items-center gap-4">
             <button
               aria-label="Notifications"
-              className="relative w-10 h-10 rounded-full bg-ivory border border-beige-border flex items-center justify-center text-navy"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-beige-border bg-ivory text-navy"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path
@@ -194,15 +226,15 @@ export default function Dashboard() {
                 />
               </svg>
 
-              <span className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-gold" />
+              <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-gold" />
             </button>
 
             <div className="flex items-center gap-2.5">
-              <span className="w-10 h-10 rounded-full bg-navy text-cream flex items-center justify-center font-display font-semibold">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-navy font-display font-semibold text-cream">
                 {(firstName || "A").charAt(0).toUpperCase()}
               </span>
 
-              <span className="hidden sm:block text-sm font-medium text-navy">
+              <span className="hidden text-sm font-medium text-navy sm:block">
                 {user.name || "Admin"}
               </span>
             </div>
@@ -213,7 +245,7 @@ export default function Dashboard() {
             CONTENT
         ===================================================== */}
 
-        <main className="px-6 lg:px-10 py-8">
+        <main className="px-6 py-8 lg:px-10">
           {/* ===================================================
               ADD MEMBERS
           =================================================== */}
@@ -231,15 +263,21 @@ export default function Dashboard() {
           )}
 
           {statsLoading ? (
-            <div className="bg-cream border border-beige-border rounded-2xl shadow-card p-10 mb-8 text-center text-muted">
+            <div className="mb-8 rounded-2xl border border-beige-border bg-cream p-10 text-center text-muted shadow-card">
               Loading dashboard stats...
             </div>
           ) : statsData && !statsError ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
+            <div className="mb-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {statDefinitions.map((s) => {
                 const { value, ...rest } = s;
 
-                return <StatCard key={rest.label} {...rest} value={value(statsData)} />;
+                return (
+                  <StatCard
+                    key={rest.label}
+                    {...rest}
+                    value={value(statsData)}
+                  />
+                );
               })}
             </div>
           ) : null}
@@ -248,11 +286,16 @@ export default function Dashboard() {
               RECENT ACTIVITIES
           =================================================== */}
 
-          <div className="bg-cream border border-beige-border rounded-2xl shadow-card p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-display text-xl font-semibold text-navy">Recent Activities</h2>
+          <div className="rounded-2xl border border-beige-border bg-cream p-6 shadow-card">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="font-display text-xl font-semibold text-navy">
+                Recent Activities
+              </h2>
 
-              <a href="#" className="text-sm text-gold font-medium hover:text-gold-hover">
+              <a
+                href="#"
+                className="text-sm font-medium text-gold hover:text-gold-hover"
+              >
                 View all
               </a>
             </div>
@@ -262,15 +305,15 @@ export default function Dashboard() {
                 {statsData.recentActivities.map((a) => (
                   <div
                     key={a.id}
-                    className="flex items-center justify-between gap-4 pb-4 border-b border-beige-border last:border-0 last:pb-0"
+                    className="flex items-center justify-between gap-4 border-b border-beige-border pb-4 last:border-0 last:pb-0"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-2 h-2 rounded-full shrink-0 bg-beige-border" />
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-beige-border" />
 
-                      <p className="text-sm text-navy/80 truncate">{a.text}</p>
+                      <p className="truncate text-sm text-navy/80">{a.text}</p>
                     </div>
 
-                    <span className="text-xs text-muted shrink-0">
+                    <span className="shrink-0 text-xs text-muted">
                       {formatRelativeTime(a.createdAt)}
                     </span>
                   </div>

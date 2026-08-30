@@ -67,11 +67,46 @@ export const mockHotels = [
 ];
 
 export const mockTransactions = [
-  { id: "txn_1001", hotelId: "htl_001", hotelName: "The Grand Meridian", amount: 84250, transactions: 312, lastTransactionAt: "2026-08-14" },
-  { id: "txn_1002", hotelId: "htl_002", hotelName: "Blue Harbor Suites", amount: 52100, transactions: 198, lastTransactionAt: "2026-08-13" },
-  { id: "txn_1003", hotelId: "htl_003", hotelName: "Palm & Pine Resort", amount: 12800, transactions: 44, lastTransactionAt: "2026-07-02" },
-  { id: "txn_1004", hotelId: "htl_004", hotelName: "Northgate Inn", amount: 96700, transactions: 401, lastTransactionAt: "2026-08-15" },
-  { id: "txn_1005", hotelId: "htl_005", hotelName: "Sable Ridge Lodge", amount: 33420, transactions: 121, lastTransactionAt: "2026-08-12" },
+  {
+    id: "txn_1001",
+    hotelId: "htl_001",
+    hotelName: "The Grand Meridian",
+    amount: 84250,
+    transactions: 312,
+    lastTransactionAt: "2026-08-14",
+  },
+  {
+    id: "txn_1002",
+    hotelId: "htl_002",
+    hotelName: "Blue Harbor Suites",
+    amount: 52100,
+    transactions: 198,
+    lastTransactionAt: "2026-08-13",
+  },
+  {
+    id: "txn_1003",
+    hotelId: "htl_003",
+    hotelName: "Palm & Pine Resort",
+    amount: 12800,
+    transactions: 44,
+    lastTransactionAt: "2026-07-02",
+  },
+  {
+    id: "txn_1004",
+    hotelId: "htl_004",
+    hotelName: "Northgate Inn",
+    amount: 96700,
+    transactions: 401,
+    lastTransactionAt: "2026-08-15",
+  },
+  {
+    id: "txn_1005",
+    hotelId: "htl_005",
+    hotelName: "Sable Ridge Lodge",
+    amount: 33420,
+    transactions: 121,
+    lastTransactionAt: "2026-08-12",
+  },
 ];
 
 export const mockServiceRequests = [

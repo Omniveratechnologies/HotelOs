@@ -6,7 +6,7 @@ export const GUEST_ID_TYPES = [
   "Passport",
   "Driving License",
   "Voter ID",
-  "Other"
+  "Other",
 ];
 
 export const GUEST_STATUSES = ["reserved", "checked-in", "checked-out"];
@@ -16,71 +16,71 @@ const guestSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     email: {
       type: String,
       required: true,
       lowercase: true,
-      trim: true
+      trim: true,
     },
 
     phone: {
       type: String,
       default: "",
-      trim: true
+      trim: true,
     },
 
     address: {
       type: String,
       default: "",
-      trim: true
+      trim: true,
     },
 
     idType: {
       type: String,
       enum: GUEST_ID_TYPES,
-      default: "Aadhaar"
+      default: "Aadhaar",
     },
 
     idNumber: {
       type: String,
       default: "",
-      trim: true
+      trim: true,
     },
 
     roomId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Room",
-      required: true
+      required: true,
     },
 
     hotelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Hotel",
-      required: true
+      required: true,
     },
 
     // Login account (role GUEST) auto-generated at registration
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
 
     checkIn: {
-      type: Date
+      type: Date,
     },
 
     checkOut: {
-      type: Date
+      type: Date,
     },
 
     status: {
       type: String,
       enum: GUEST_STATUSES,
-      default: "checked-in"
+      default: "checked-in",
     },
 
     documents: [
@@ -88,30 +88,30 @@ const guestSchema = new mongoose.Schema(
         docType: {
           type: String,
           enum: GUEST_ID_TYPES,
-          required: true
+          required: true,
         },
         filename: {
           type: String,
-          required: true
+          required: true,
         },
         path: {
           type: String,
-          required: true
+          required: true,
         },
         uploadedAt: {
           type: Date,
-          default: Date.now
-        }
-      }
-    ]
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
 
     toJSON: { virtuals: true },
 
-    toObject: { virtuals: true }
-  }
+    toObject: { virtuals: true },
+  },
 );
 
 // Number of nights between check-in and check-out
@@ -121,7 +121,7 @@ guestSchema.virtual("nights").get(function () {
   }
 
   const nights = Math.round(
-    (this.checkOut - this.checkIn) / (1000 * 60 * 60 * 24)
+    (this.checkOut - this.checkIn) / (1000 * 60 * 60 * 24),
   );
 
   return Math.max(1, nights);
@@ -136,7 +136,7 @@ const documentDTO = (doc) => {
     docType: doc.docType,
     filename: doc.filename,
     url: match ? `/uploads/${match[1].replace(/\\/g, "/")}` : null,
-    uploadedAt: doc.uploadedAt
+    uploadedAt: doc.uploadedAt,
   };
 };
 
@@ -155,7 +155,7 @@ const guestResponseDTO = (guest, extra = {}) => ({
         roomNumber: guest.room.roomNumber,
         type: guest.room.type,
         rate: guest.room.rate,
-        floor: guest.room.floor
+        floor: guest.room.floor,
       }
     : null,
   hotelId: guest.hotelId,
@@ -166,7 +166,7 @@ const guestResponseDTO = (guest, extra = {}) => ({
   nights: guest.nights ?? null,
   documents: (guest.documents || []).map(documentDTO),
   createdAt: guest.createdAt,
-  ...extra
+  ...extra,
 });
 
 export default mongoose.model("Guest", guestSchema);

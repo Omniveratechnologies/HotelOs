@@ -10,7 +10,7 @@ const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
-  "application/pdf"
+  "application/pdf",
 ];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -33,20 +33,17 @@ const storage = multer.diskStorage({
 
   filename: (req, file, cb) => {
     // Random name to avoid collisions and path traversal issues
-    const unique =
-      `${Date.now()}-${crypto.randomBytes(6).toString("hex")}`;
+    const unique = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}`;
 
     const ext = path.extname(file.originalname).toLowerCase();
 
     cb(null, `${unique}${ext}`);
-  }
+  },
 });
 
 const fileFilter = (req, file, cb) => {
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-    return cb(
-      new Error("Only JPG, PNG, WEBP and PDF documents are allowed")
-    );
+    return cb(new Error("Only JPG, PNG, WEBP and PDF documents are allowed"));
   }
 
   cb(null, true);
@@ -57,8 +54,8 @@ export const uploadGuestDocuments = multer({
   fileFilter,
   limits: {
     fileSize: MAX_FILE_SIZE,
-    files: MAX_FILES
-  }
+    files: MAX_FILES,
+  },
 }).array("documents", MAX_FILES);
 
 // Multer errors arrive as plain Error instances; map the common ones
@@ -67,27 +64,27 @@ export function handleUploadError(err, req, res, next) {
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
         success: false,
-        message: "Each document must be 5 MB or smaller"
+        message: "Each document must be 5 MB or smaller",
       });
     }
 
     if (err.code === "LIMIT_FILE_COUNT") {
       return res.status(400).json({
         success: false,
-        message: `A maximum of ${MAX_FILES} documents can be uploaded at once`
+        message: `A maximum of ${MAX_FILES} documents can be uploaded at once`,
       });
     }
 
     return res.status(400).json({
       success: false,
-      message: err.message || "Document upload failed"
+      message: err.message || "Document upload failed",
     });
   }
 
   if (err) {
     return res.status(400).json({
       success: false,
-      message: err.message || "Document upload failed"
+      message: err.message || "Document upload failed",
     });
   }
 

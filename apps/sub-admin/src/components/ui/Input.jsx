@@ -1,7 +1,10 @@
 export function Input({ label, error, ...props }) {
   return (
     <div className="mb-4">
-      <label htmlFor={props.name} className="block text-sm font-medium text-navy mb-2">
+      <label
+        htmlFor={props.name}
+        className="mb-2 block text-sm font-medium text-navy"
+      >
         {label}
       </label>
       <input

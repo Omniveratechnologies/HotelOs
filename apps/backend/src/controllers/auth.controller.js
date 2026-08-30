@@ -3,7 +3,7 @@ import { generateToken } from "../utils/jwt.js";
 import { generateInviteToken } from "../utils/invitation.js";
 import {
   sendUsernameReminderEmail,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
 } from "../services/email.service.js";
 
 export const login = async (req, res) => {
@@ -13,35 +13,32 @@ export const login = async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: "Username and password are required"
+        message: "Username and password are required",
       });
     }
 
-    const user = await User
-      .findOne({ username })
-      .select("+password");
+    const user = await User.findOne({ username }).select("+password");
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials"
+        message: "Invalid credentials",
       });
     }
 
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: "Account is disabled"
+        message: "Account is disabled",
       });
     }
 
-    const isPasswordCorrect =
-      await user.comparePassword(password);
+    const isPasswordCorrect = await user.comparePassword(password);
 
     if (!isPasswordCorrect) {
       return res.status(401).json({
         success: false,
-        message: "Invalid credentials"
+        message: "Invalid credentials",
       });
     }
 
@@ -59,16 +56,16 @@ export const login = async (req, res) => {
           role: user.role,
           hotelId: user.hotelId,
           roomId: user.roomId,
-          mustChangePassword: user.mustChangePassword
-        }
-      }
+          mustChangePassword: user.mustChangePassword,
+        },
+      },
     });
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
       success: false,
-      message: "Login failed"
+      message: "Login failed",
     });
   }
 };
@@ -80,18 +77,18 @@ export const createSubAdmin = async (req, res) => {
     if (!name || !username || !email || !password || !hotelId) {
       return res.status(400).json({
         success: false,
-        message: "name, username, email, password and hotelId are required"
+        message: "name, username, email, password and hotelId are required",
       });
     }
 
     const existingUser = await User.findOne({
-      $or: [{ username }, { email }]
+      $or: [{ username }, { email }],
     });
 
     if (existingUser) {
       return res.status(409).json({
         success: false,
-        message: "Username or email already exists"
+        message: "Username or email already exists",
       });
     }
 
@@ -101,7 +98,7 @@ export const createSubAdmin = async (req, res) => {
       email,
       password,
       role: "SUB_ADMIN",
-      hotelId
+      hotelId,
     });
 
     return res.status(201).json({
@@ -113,16 +110,15 @@ export const createSubAdmin = async (req, res) => {
         username: subAdmin.username,
         email: subAdmin.email,
         role: subAdmin.role,
-        hotelId: subAdmin.hotelId
-      }
+        hotelId: subAdmin.hotelId,
+      },
     });
-
   } catch (error) {
     console.error("Create Sub Admin Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to create Sub Admin"
+      message: "Failed to create Sub Admin",
     });
   }
 };
@@ -132,7 +128,7 @@ export const createSubAdmin = async (req, res) => {
 export const logout = async (req, res) => {
   return res.status(200).json({
     success: true,
-    message: "Logout successful"
+    message: "Logout successful",
   });
 };
 
@@ -147,7 +143,7 @@ export const forgotUsername = async (req, res) => {
     if (!email?.trim()) {
       return res.status(400).json({
         success: false,
-        message: "Email is required"
+        message: "Email is required",
       });
     }
 
@@ -162,28 +158,28 @@ export const forgotUsername = async (req, res) => {
     if (!user || !user.email) {
       return res.status(200).json({
         success: true,
-        message
+        message,
       });
     }
 
     await sendUsernameReminderEmail({
       email: user.email,
       name: user.name,
-      username: user.username
+      username: user.username,
     });
 
     console.log("USERNAME REMINDER SENT TO:", user.email);
 
     return res.status(200).json({
       success: true,
-      message
+      message,
     });
   } catch (error) {
     console.error("Forgot Username Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to process forgot username request"
+      message: "Failed to process forgot username request",
     });
   }
 };
@@ -199,7 +195,7 @@ export const forgotPassword = async (req, res) => {
     if (!email?.trim()) {
       return res.status(400).json({
         success: false,
-        message: "Email is required"
+        message: "Email is required",
       });
     }
 
@@ -214,7 +210,7 @@ export const forgotPassword = async (req, res) => {
     if (!user || !user.email) {
       return res.status(200).json({
         success: true,
-        message
+        message,
       });
     }
 
@@ -227,30 +223,28 @@ export const forgotPassword = async (req, res) => {
     await user.save();
 
     const subAdminFrontendUrl =
-      process.env.SUB_ADMIN_FRONTEND_URL ||
-      "http://localhost:5175";
+      process.env.SUB_ADMIN_FRONTEND_URL || "http://localhost:5175";
 
-    const resetUrl =
-      `${subAdminFrontendUrl}/reset-password?token=${resetToken}`;
+    const resetUrl = `${subAdminFrontendUrl}/reset-password?token=${resetToken}`;
 
     await sendPasswordResetEmail({
       email: user.email,
       name: user.name,
-      resetUrl
+      resetUrl,
     });
 
     console.log("PASSWORD RESET EMAIL SENT TO:", user.email);
 
     return res.status(200).json({
       success: true,
-      message
+      message,
     });
   } catch (error) {
     console.error("Forgot Password Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to process forgot password request"
+      message: "Failed to process forgot password request",
     });
   }
 };
@@ -266,26 +260,26 @@ export const resetPassword = async (req, res) => {
     if (!token || !password) {
       return res.status(400).json({
         success: false,
-        message: "Token and password are required"
+        message: "Token and password are required",
       });
     }
 
     if (password.length < 8) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 8 characters long"
+        message: "Password must be at least 8 characters long",
       });
     }
 
     const user = await User.findOne({
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: new Date() }
+      resetPasswordExpires: { $gt: new Date() },
     }).select("+resetPasswordToken +resetPasswordExpires");
 
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "This password reset link is invalid or has expired"
+        message: "This password reset link is invalid or has expired",
       });
     }
 
@@ -301,15 +295,14 @@ export const resetPassword = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Your password has been reset successfully"
+      message: "Your password has been reset successfully",
     });
   } catch (error) {
     console.error("Reset Password Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to reset password"
+      message: "Failed to reset password",
     });
   }
 };
-

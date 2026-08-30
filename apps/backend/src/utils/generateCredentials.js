@@ -1,8 +1,7 @@
 import crypto from "crypto";
 
 export const generateUsername = (hotelCode, role, number) => {
-  return `${hotelCode}-${role}-${number}`
-    .toLowerCase();
+  return `${hotelCode}-${role}-${number}`.toLowerCase();
 };
 
 export const generateTemporaryPassword = () => {

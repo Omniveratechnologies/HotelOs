@@ -4,18 +4,14 @@
 // Central API communication for the Super Admin Dashboard.
 // ---------------------------------------------------------------------------
 
-import {
-  mockTransactions,
-  mockServiceRequests,
-} from "../data/mockData.js";
+import { mockTransactions, mockServiceRequests } from "../data/mockData.js";
 
 // ===========================================================================
 // API BASE URL
 // ===========================================================================
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5001";
+  import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 // ===========================================================================
 // GENERIC AUTHENTICATED FETCH
@@ -48,9 +44,7 @@ export async function apiFetch(path, options = {}) {
       localStorage.removeItem("auth_user");
     }
 
-    throw new Error(
-      body.message || `Request failed: ${res.status}`
-    );
+    throw new Error(body.message || `Request failed: ${res.status}`);
   }
 
   return body;
@@ -61,41 +55,30 @@ export async function apiFetch(path, options = {}) {
 // ===========================================================================
 
 export async function loginAdmin(username, password) {
-  const result = await apiFetch(
-    "/api/v1/auth/login",
-    {
-      method: "POST",
+  const result = await apiFetch("/api/v1/auth/login", {
+    method: "POST",
 
-      body: JSON.stringify({
-        username,
-        password,
-      }),
-    }
-  );
+    body: JSON.stringify({
+      username,
+      password,
+    }),
+  });
 
   if (!result.success) {
-    throw new Error(
-      result.message || "Login failed"
-    );
+    throw new Error(result.message || "Login failed");
   }
 
   const { token, user } = result.data;
 
   if (user.role !== "SUPER_ADMIN") {
     throw new Error(
-      "You are not authorized to access the Super Admin Dashboard"
+      "You are not authorized to access the Super Admin Dashboard",
     );
   }
 
-  localStorage.setItem(
-    "auth_token",
-    token
-  );
+  localStorage.setItem("auth_token", token);
 
-  localStorage.setItem(
-    "auth_user",
-    JSON.stringify(user)
-  );
+  localStorage.setItem("auth_user", JSON.stringify(user));
 
   return result.data;
 }
@@ -119,15 +102,10 @@ export async function logoutAdmin() {
 
 // Get all hotels
 export async function fetchHotels() {
-  const result = await apiFetch(
-    "/api/v1/hotels"
-  );
+  const result = await apiFetch("/api/v1/hotels");
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-      "Failed to fetch hotels"
-    );
+    throw new Error(result.message || "Failed to fetch hotels");
   }
 
   return result.data;
@@ -135,15 +113,10 @@ export async function fetchHotels() {
 
 // Get one hotel
 export async function fetchHotelById(hotelId) {
-  const result = await apiFetch(
-    `/api/v1/hotels/${hotelId}`
-  );
+  const result = await apiFetch(`/api/v1/hotels/${hotelId}`);
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-      "Failed to fetch hotel"
-    );
+    throw new Error(result.message || "Failed to fetch hotel");
   }
 
   return result.data;
@@ -151,48 +124,29 @@ export async function fetchHotelById(hotelId) {
 
 // Create hotel
 export async function createHotel(hotelData) {
-  const result = await apiFetch(
-    "/api/v1/hotels",
-    {
-      method: "POST",
+  const result = await apiFetch("/api/v1/hotels", {
+    method: "POST",
 
-      body: JSON.stringify(
-        hotelData
-      ),
-    }
-  );
+    body: JSON.stringify(hotelData),
+  });
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-      "Failed to create hotel"
-    );
+    throw new Error(result.message || "Failed to create hotel");
   }
 
   return result.data;
 }
 
 // Update hotel
-export async function updateHotel(
-  hotelId,
-  hotelData
-) {
-  const result = await apiFetch(
-    `/api/v1/hotels/${hotelId}`,
-    {
-      method: "PATCH",
+export async function updateHotel(hotelId, hotelData) {
+  const result = await apiFetch(`/api/v1/hotels/${hotelId}`, {
+    method: "PATCH",
 
-      body: JSON.stringify(
-        hotelData
-      ),
-    }
-  );
+    body: JSON.stringify(hotelData),
+  });
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-      "Failed to update hotel"
-    );
+    throw new Error(result.message || "Failed to update hotel");
   }
 
   return result.data;
@@ -203,26 +157,17 @@ export async function updateHotel(
 // ===========================================================================
 
 // Activate / deactivate hotel
-export async function toggleHotelStatus(
-  hotelId,
-  nextStatus
-) {
-  const result = await apiFetch(
-    `/api/v1/hotels/${hotelId}/status`,
-    {
-      method: "PATCH",
+export async function toggleHotelStatus(hotelId, nextStatus) {
+  const result = await apiFetch(`/api/v1/hotels/${hotelId}/status`, {
+    method: "PATCH",
 
-      body: JSON.stringify({
-        status: nextStatus,
-      }),
-    }
-  );
+    body: JSON.stringify({
+      status: nextStatus,
+    }),
+  });
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-      "Failed to update hotel status"
-    );
+    throw new Error(result.message || "Failed to update hotel status");
   }
 
   return result.data;
@@ -232,27 +177,18 @@ export async function toggleHotelStatus(
 // HOTEL CREDENTIALS
 // ===========================================================================
 
-export async function updateHotelCredentials(
-  hotelId,
-  { email, password }
-) {
-  const result = await apiFetch(
-    `/api/v1/hotels/${hotelId}/credentials`,
-    {
-      method: "PATCH",
+export async function updateHotelCredentials(hotelId, { email, password }) {
+  const result = await apiFetch(`/api/v1/hotels/${hotelId}/credentials`, {
+    method: "PATCH",
 
-      body: JSON.stringify({
-        email,
-        password,
-      }),
-    }
-  );
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  });
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-      "Failed to update hotel credentials"
-    );
+    throw new Error(result.message || "Failed to update hotel credentials");
   }
 
   return result.data;
@@ -262,26 +198,17 @@ export async function updateHotelCredentials(
 // HOTEL INVITATION
 // ===========================================================================
 
-export async function inviteHotelAdmin(
-  hotelId,
-  email
-) {
-  const result = await apiFetch(
-    `/api/v1/hotels/${hotelId}/invite`,
-    {
-      method: "POST",
+export async function inviteHotelAdmin(hotelId, email) {
+  const result = await apiFetch(`/api/v1/hotels/${hotelId}/invite`, {
+    method: "POST",
 
-      body: JSON.stringify({
-        email,
-      }),
-    }
-  );
+    body: JSON.stringify({
+      email,
+    }),
+  });
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-      "Failed to send invitation"
-    );
+    throw new Error(result.message || "Failed to send invitation");
   }
 
   return result.data;
@@ -292,18 +219,12 @@ export async function inviteHotelAdmin(
 // ===========================================================================
 
 export async function deleteHotel(hotelId) {
-  const result = await apiFetch(
-    `/api/v1/hotels/${hotelId}`,
-    {
-      method: "DELETE",
-    }
-  );
+  const result = await apiFetch(`/api/v1/hotels/${hotelId}`, {
+    method: "DELETE",
+  });
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-      "Failed to delete hotel"
-    );
+    throw new Error(result.message || "Failed to delete hotel");
   }
 
   return result;
@@ -325,48 +246,34 @@ export async function fetchSubscriptions() {
     hotelId: hotel._id,
     hotelName: hotel.name,
     plan: hotel.plan || "Standard",
-    startDate:
-      hotel.subscriptionStartDate || null,
-    endDate:
-      hotel.subscriptionEndDate || null,
+    startDate: hotel.subscriptionStartDate || null,
+    endDate: hotel.subscriptionEndDate || null,
     status: hotel.status,
   }));
 }
 
 // Get one hotel's subscription
-export async function fetchHotelSubscription(
-  hotelId
-) {
-  const hotel = await fetchHotelById(
-    hotelId
-  );
+export async function fetchHotelSubscription(hotelId) {
+  const hotel = await fetchHotelById(hotelId);
 
   return {
     _id: hotel._id,
     hotelId: hotel._id,
     hotelName: hotel.name,
     plan: hotel.plan || "Standard",
-    startDate:
-      hotel.subscriptionStartDate || null,
-    endDate:
-      hotel.subscriptionEndDate || null,
+    startDate: hotel.subscriptionStartDate || null,
+    endDate: hotel.subscriptionEndDate || null,
     status: hotel.status,
   };
 }
 
 // Create / update hotel subscription
-export async function saveSubscription(
-  hotelId,
-  { plan, startDate, endDate }
-) {
-  return updateHotel(
-    hotelId,
-    {
-      plan,
-      subscriptionStartDate: startDate,
-      subscriptionEndDate: endDate,
-    }
-  );
+export async function saveSubscription(hotelId, { plan, startDate, endDate }) {
+  return updateHotel(hotelId, {
+    plan,
+    subscriptionStartDate: startDate,
+    subscriptionEndDate: endDate,
+  });
 }
 
 // ===========================================================================
@@ -377,9 +284,7 @@ export async function saveSubscription(
 // ===========================================================================
 
 export async function fetchTransactionSummary() {
-  return [
-    ...mockTransactions,
-  ];
+  return [...mockTransactions];
 }
 
 // ===========================================================================
@@ -390,20 +295,11 @@ export async function fetchTransactionSummary() {
 // ===========================================================================
 
 export async function fetchServiceRequests() {
-  return [
-    ...mockServiceRequests,
-  ];
+  return [...mockServiceRequests];
 }
 
-export async function updateServiceRequestStatus(
-  requestId,
-  status
-) {
-  const request =
-    mockServiceRequests.find(
-      (item) =>
-        item.id === requestId
-    );
+export async function updateServiceRequestStatus(requestId, status) {
+  const request = mockServiceRequests.find((item) => item.id === requestId);
 
   if (request) {
     request.status = status;

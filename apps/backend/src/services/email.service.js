@@ -5,8 +5,7 @@ const transporter = nodemailer.createTransport({
 
   port: Number(process.env.EMAIL_PORT),
 
-  secure:
-    process.env.EMAIL_SECURE === "true",
+  secure: process.env.EMAIL_SECURE === "true",
 
   auth: {
     user: process.env.EMAIL_USER,
@@ -21,8 +20,7 @@ export const sendInvitationEmail = async ({
   role,
   hotelName,
 }) => {
-  const subject =
-    `HotelOS Invitation - ${hotelName}`;
+  const subject = `HotelOS Invitation - ${hotelName}`;
 
   const html = `
     <div
@@ -91,13 +89,8 @@ export const sendInvitationEmail = async ({
 // FORGOT USERNAME EMAIL
 // =====================================================
 
-export const sendUsernameReminderEmail = async ({
-  email,
-  name,
-  username,
-}) => {
-  const subject =
-    "HotelOS - Your Username";
+export const sendUsernameReminderEmail = async ({ email, name, username }) => {
+  const subject = "HotelOS - Your Username";
 
   const html = `
     <div
@@ -151,8 +144,7 @@ export const sendGuestCredentialsEmail = async ({
   password,
   hotelName,
 }) => {
-  const subject =
-    `Your HotelOS Guest Account - ${hotelName}`;
+  const subject = `Your HotelOS Guest Account - ${hotelName}`;
 
   const html = `
     <div
@@ -205,13 +197,8 @@ export const sendGuestCredentialsEmail = async ({
 // PASSWORD RESET EMAIL
 // =====================================================
 
-export const sendPasswordResetEmail = async ({
-  email,
-  name,
-  resetUrl,
-}) => {
-  const subject =
-    "HotelOS - Reset Your Password";
+export const sendPasswordResetEmail = async ({ email, name, resetUrl }) => {
+  const subject = "HotelOS - Reset Your Password";
 
   const html = `
     <div

@@ -5,14 +5,11 @@ import { apiFetch } from "../utils/apiFetch.js";
 // =====================================================
 
 export const fetchMembers = async () => {
-  const result = await apiFetch(
-    "/api/v1/users?role=RECEPTIONIST",
-    {
-      method: "GET",
+  const result = await apiFetch("/api/v1/users?role=RECEPTIONIST", {
+    method: "GET",
 
-      auth: true,
-    }
-  );
+    auth: true,
+  });
 
   return result.data || [];
 };
@@ -23,19 +20,14 @@ export const fetchMembers = async () => {
 
 export const deleteMember = async (memberId) => {
   if (!memberId) {
-    throw new Error(
-      "Member id is required."
-    );
+    throw new Error("Member id is required.");
   }
 
-  const result = await apiFetch(
-    `/api/v1/users/${memberId}`,
-    {
-      method: "DELETE",
+  const result = await apiFetch(`/api/v1/users/${memberId}`, {
+    method: "DELETE",
 
-      auth: true,
-    }
-  );
+    auth: true,
+  });
 
   return result;
 };

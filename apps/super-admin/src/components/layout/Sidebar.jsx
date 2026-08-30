@@ -19,11 +19,7 @@ const NAV_ITEMS = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
-export default function Sidebar({
-  onLogoutClick,
-  mobileOpen,
-  onCloseMobile,
-}) {
+export default function Sidebar({ onLogoutClick, mobileOpen, onCloseMobile }) {
   // Get currently logged-in user
   const storedUser = localStorage.getItem("auth_user");
 
@@ -48,32 +44,28 @@ export default function Sidebar({
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-ink-950/50 lg:hidden"
+          className="bg-ink-950/50 fixed inset-0 z-30 lg:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-ink-950 transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`bg-ink-950 fixed inset-y-0 left-0 z-40 flex w-64 flex-col transition-transform duration-200 lg:static lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-6 py-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-signal-500">
-            <Hotel
-              size={18}
-              className="text-white"
-              strokeWidth={2.25}
-            />
+          <div className="bg-signal-500 flex h-9 w-9 items-center justify-center rounded-lg">
+            <Hotel size={18} className="text-white" strokeWidth={2.25} />
           </div>
 
           <div>
-            <p className="font-display text-sm font-bold leading-tight text-white">
+            <p className="font-display text-sm leading-tight font-bold text-white">
               Stayscape
             </p>
 
-            <p className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+            <p className="text-[11px] font-medium tracking-wider text-white/40 uppercase">
               Super Admin
             </p>
           </div>

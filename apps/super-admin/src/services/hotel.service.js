@@ -33,30 +33,22 @@ export async function createHotelData(hotelData) {
 // =====================================================
 
 export async function sendSubAdminInvite(inviteData) {
-  const result = await apiFetch(
-    "/api/v1/invites",
-    {
-      method: "POST",
+  const result = await apiFetch("/api/v1/invites", {
+    method: "POST",
 
-      body: JSON.stringify({
-        name: inviteData.name,
-        username: inviteData.username,
-        email: inviteData.email,
-        role: "SUB_ADMIN",
-        hotelId: inviteData.hotelId,
-        subscriptionStartDate:
-          inviteData.subscriptionStartDate,
-        subscriptionEndDate:
-          inviteData.subscriptionEndDate,
-      }),
-    }
-  );
+    body: JSON.stringify({
+      name: inviteData.name,
+      username: inviteData.username,
+      email: inviteData.email,
+      role: "SUB_ADMIN",
+      hotelId: inviteData.hotelId,
+      subscriptionStartDate: inviteData.subscriptionStartDate,
+      subscriptionEndDate: inviteData.subscriptionEndDate,
+    }),
+  });
 
   if (!result.success) {
-    throw new Error(
-      result.message ||
-        "Failed to send Sub Admin invitation"
-    );
+    throw new Error(result.message || "Failed to send Sub Admin invitation");
   }
 
   return result.data;
@@ -66,36 +58,22 @@ export async function sendSubAdminInvite(inviteData) {
 // UPDATE HOTEL STATUS
 // =====================================================
 
-export async function updateHotelStatus(
-  hotelId,
-  status
-) {
-  return toggleHotelStatus(
-    hotelId,
-    status
-  );
+export async function updateHotelStatus(hotelId, status) {
+  return toggleHotelStatus(hotelId, status);
 }
 
 // =====================================================
 // UPDATE HOTEL
 // =====================================================
 
-export async function updateHotelDetails(
-  hotelId,
-  hotelData
-) {
-  return updateHotel(
-    hotelId,
-    hotelData
-  );
+export async function updateHotelDetails(hotelId, hotelData) {
+  return updateHotel(hotelId, hotelData);
 }
 
 // =====================================================
 // DELETE HOTEL
 // =====================================================
 
-export async function removeHotel(
-  hotelId
-) {
+export async function removeHotel(hotelId) {
   return deleteHotel(hotelId);
 }

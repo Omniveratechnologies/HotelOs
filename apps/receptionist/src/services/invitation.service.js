@@ -9,16 +9,13 @@ export const verifyInvitation = async (token) => {
     throw new Error("Invitation token is required.");
   }
 
-  const result = await apiFetch(
-    "/api/v1/invites/verify",
-    {
-      method: "POST",
+  const result = await apiFetch("/api/v1/invites/verify", {
+    method: "POST",
 
-      body: {
-        token,
-      },
-    }
-  );
+    body: {
+      token,
+    },
+  });
 
   return result.data;
 };
@@ -27,48 +24,28 @@ export const verifyInvitation = async (token) => {
 // ACCEPT INVITATION
 // =====================================================
 
-export const acceptInvitation = async ({
-  token,
-  name,
-  username,
-  password,
-}) => {
+export const acceptInvitation = async ({ token, name, username, password }) => {
   if (!token) {
-    throw new Error(
-      "Invitation token is required."
-    );
+    throw new Error("Invitation token is required.");
   }
 
-  if (
-    !name?.trim() ||
-    !username?.trim() ||
-    !password
-  ) {
-    throw new Error(
-      "Name, username and password are required."
-    );
+  if (!name?.trim() || !username?.trim() || !password) {
+    throw new Error("Name, username and password are required.");
   }
 
-  const result = await apiFetch(
-    "/api/v1/invites/accept",
-    {
-      method: "POST",
+  const result = await apiFetch("/api/v1/invites/accept", {
+    method: "POST",
 
-      body: {
-        token,
+    body: {
+      token,
 
-        name:
-          name.trim(),
+      name: name.trim(),
 
-        username:
-          username
-            .trim()
-            .toLowerCase(),
+      username: username.trim().toLowerCase(),
 
-        password,
-      },
-    }
-  );
+      password,
+    },
+  });
 
   return result.data;
 };

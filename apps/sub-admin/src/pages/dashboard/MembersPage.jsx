@@ -58,7 +58,9 @@ export default function MembersPage() {
         currentMembers.filter((member) => member.id !== memberToDelete.id),
       );
 
-      setSuccess(`${memberToDelete.name || "Member"}'s account has been deleted.`);
+      setSuccess(
+        `${memberToDelete.name || "Member"}'s account has been deleted.`,
+      );
 
       setMemberToDelete(null);
     } catch (error) {
@@ -76,16 +78,20 @@ export default function MembersPage() {
 
   return (
     <div className="min-h-screen bg-ivory font-body">
-      <div className="px-6 lg:px-10 py-8">
+      <div className="px-6 py-8 lg:px-10">
         {/* =================================================
             HEADER
         ================================================= */}
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-display text-3xl font-semibold text-navy">Members</h1>
+            <h1 className="font-display text-3xl font-semibold text-navy">
+              Members
+            </h1>
 
-            <p className="text-sm text-muted mt-1">Manage the staff members of your hotel.</p>
+            <p className="mt-1 text-sm text-muted">
+              Manage the staff members of your hotel.
+            </p>
           </div>
         </div>
 
@@ -119,11 +125,13 @@ export default function MembersPage() {
             MEMBERS CARD
         ================================================= */}
 
-        <div className="bg-cream border border-beige-border rounded-2xl shadow-card overflow-hidden">
-          <div className="px-6 py-5 border-b border-beige-border">
-            <h2 className="font-display text-xl font-semibold text-navy">Hotel Members</h2>
+        <div className="overflow-hidden rounded-2xl border border-beige-border bg-cream shadow-card">
+          <div className="border-b border-beige-border px-6 py-5">
+            <h2 className="font-display text-xl font-semibold text-navy">
+              Hotel Members
+            </h2>
 
-            <p className="text-sm text-muted mt-1">
+            <p className="mt-1 text-sm text-muted">
               Receptionists and staff accounts associated with your hotel.
             </p>
           </div>
@@ -132,7 +140,11 @@ export default function MembersPage() {
               LOADING
           ================================================= */}
 
-          {loading && <div className="px-6 py-12 text-center text-muted">Loading members...</div>}
+          {loading && (
+            <div className="px-6 py-12 text-center text-muted">
+              Loading members...
+            </div>
+          )}
 
           {/* =================================================
               EMPTY
@@ -140,11 +152,13 @@ export default function MembersPage() {
 
           {!loading && members.length === 0 && (
             <div className="px-6 py-12 text-center">
-              <div className="text-4xl mb-3">👥</div>
+              <div className="mb-3 text-4xl">👥</div>
 
-              <h3 className="font-display text-lg font-semibold text-navy">No members yet</h3>
+              <h3 className="font-display text-lg font-semibold text-navy">
+                No members yet
+              </h3>
 
-              <p className="text-sm text-muted mt-1">
+              <p className="mt-1 text-sm text-muted">
                 Add a receptionist to your hotel to get started.
               </p>
             </div>
@@ -159,22 +173,26 @@ export default function MembersPage() {
               {members.map((member) => (
                 <div
                   key={member.id}
-                  className="px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-5"
+                  className="flex flex-col gap-5 px-6 py-5 md:flex-row md:items-center md:justify-between"
                 >
                   {/* MEMBER INFO */}
 
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-navy text-cream flex items-center justify-center font-display font-semibold text-lg">
-                      {(member.name || member.email || "M").charAt(0).toUpperCase()}
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-navy font-display text-lg font-semibold text-cream">
+                      {(member.name || member.email || "M")
+                        .charAt(0)
+                        .toUpperCase()}
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-navy">{member.name || "Unnamed Member"}</h3>
+                      <h3 className="font-semibold text-navy">
+                        {member.name || "Unnamed Member"}
+                      </h3>
 
                       <p className="text-sm text-muted">{member.email}</p>
 
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs uppercase tracking-wide text-gold font-semibold">
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-gold">
                           {member.role}
                         </span>
 
@@ -198,7 +216,7 @@ export default function MembersPage() {
                       type="button"
                       onClick={() => setMemberToDelete(member)}
                       disabled={!member.isActive}
-                      className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Delete Account
                     </button>
@@ -229,16 +247,18 @@ export default function MembersPage() {
 
           {/* MODAL */}
 
-          <div className="relative w-full max-w-md bg-cream rounded-2xl shadow-2xl p-6">
+          <div className="relative w-full max-w-md rounded-2xl bg-cream p-6 shadow-2xl">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600 text-xl shrink-0">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-50 text-xl text-red-600">
                 !
               </div>
 
               <div>
-                <h2 className="font-display text-xl font-semibold text-navy">Delete Account?</h2>
+                <h2 className="font-display text-xl font-semibold text-navy">
+                  Delete Account?
+                </h2>
 
-                <p className="text-sm text-muted mt-2 leading-6">
+                <p className="mt-2 text-sm leading-6 text-muted">
                   Are you sure you want to delete{" "}
                   <strong className="text-navy">
                     {memberToDelete.name || memberToDelete.email}
@@ -246,7 +266,7 @@ export default function MembersPage() {
                   's account?
                 </p>
 
-                <p className="text-xs text-muted mt-2">
+                <p className="mt-2 text-xs text-muted">
                   They will no longer be able to log in to HotelOS.
                 </p>
               </div>
@@ -254,12 +274,12 @@ export default function MembersPage() {
 
             {/* BUTTONS */}
 
-            <div className="flex justify-end gap-3 mt-7">
+            <div className="mt-7 flex justify-end gap-3">
               <button
                 type="button"
                 disabled={deleting}
                 onClick={() => setMemberToDelete(null)}
-                className="rounded-lg border border-beige-border px-5 py-2.5 text-sm font-medium text-navy hover:bg-ivory transition"
+                className="rounded-lg border border-beige-border px-5 py-2.5 text-sm font-medium text-navy transition hover:bg-ivory"
               >
                 Cancel
               </button>
@@ -268,7 +288,7 @@ export default function MembersPage() {
                 type="button"
                 disabled={deleting}
                 onClick={handleDelete}
-                className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition disabled:opacity-60"
+                className="rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
               >
                 {deleting ? "Deleting..." : "Delete Account"}
               </button>

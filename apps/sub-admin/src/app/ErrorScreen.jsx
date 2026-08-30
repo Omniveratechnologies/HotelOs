@@ -6,26 +6,26 @@ export default function ErrorScreen() {
   const message = error?.message;
 
   return (
-    <div className="min-h-screen w-full bg-ivory flex items-center justify-center p-6 font-body">
-      <div className="relative bg-cream rounded-3xl border border-beige-border shadow-soft p-10 max-w-lg w-full text-center overflow-hidden">
+    <div className="flex min-h-screen w-full items-center justify-center bg-ivory p-6 font-body">
+      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-beige-border bg-cream p-10 text-center shadow-soft">
         {/* Top Accent */}
         <div className="absolute inset-x-0 top-0 h-1 bg-navy" />
 
         {/* Decorative Blur */}
-        <div className="absolute -top-20 -right-20 w-40 h-40 bg-red-50 rounded-full blur-3xl opacity-60" />
+        <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-red-50 opacity-60 blur-3xl" />
 
         {/* Icon */}
-        <div className="relative w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6">
+        <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-red-50 text-4xl">
           😕
         </div>
 
         {/* Title */}
-        <h1 className="text-3xl font-bold text-navy font-display mb-3">
+        <h1 className="mb-3 font-display text-3xl font-bold text-navy">
           We couldn't open this page
         </h1>
 
         {/* Description */}
-        <p className="text-navy/60 leading-relaxed mb-8">
+        <p className="mb-8 leading-relaxed text-navy/60">
           Something unexpected happened while loading this page.
           <br />
           Don't worry — your information is safe.
@@ -34,10 +34,10 @@ export default function ErrorScreen() {
         </p>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-navy text-cream font-semibold rounded-xl hover:bg-navy-dark transition-colors"
+            className="rounded-xl bg-navy px-6 py-3 font-semibold text-cream transition-colors hover:bg-navy-dark"
           >
             Reload Page
           </button>
@@ -46,15 +46,15 @@ export default function ErrorScreen() {
             onClick={() => {
               window.location.href = "/";
             }}
-            className="px-6 py-3 border border-beige-border text-navy font-semibold rounded-xl hover:bg-ivory transition-colors"
+            className="rounded-xl border border-beige-border px-6 py-3 font-semibold text-navy transition-colors hover:bg-ivory"
           >
             Go Home
           </button>
         </div>
 
         {/* Help Section */}
-        <div className="mt-8 rounded-2xl bg-ivory border border-beige-border p-5 text-left">
-          <p className="text-sm font-semibold text-navy mb-3">
+        <div className="mt-8 rounded-2xl border border-beige-border bg-ivory p-5 text-left">
+          <p className="mb-3 text-sm font-semibold text-navy">
             Still having trouble?
           </p>
 
@@ -68,12 +68,12 @@ export default function ErrorScreen() {
         {/* Technical Details (Hidden by Default) */}
         {message && (
           <details className="mt-6 text-left">
-            <summary className="cursor-pointer text-xs text-muted hover:text-navy transition-colors">
+            <summary className="cursor-pointer text-xs text-muted transition-colors hover:text-navy">
               Technical details
             </summary>
 
-            <div className="mt-2 rounded-xl bg-ivory border border-beige-border p-3">
-              <p className="text-[11px] text-navy/60 break-all font-mono">
+            <div className="mt-2 rounded-xl border border-beige-border bg-ivory p-3">
+              <p className="break-all font-mono text-[11px] text-navy/60">
                 {message}
               </p>
             </div>

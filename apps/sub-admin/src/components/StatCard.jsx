@@ -1,8 +1,10 @@
 export default function StatCard({ label, value, sub, icon }) {
   return (
-    <div className="rounded-2xl p-5 shadow-card bg-cream text-navy border border-beige-border">
-      <div className="flex items-start justify-between mb-4">
-        <span className={`w-10 h-10 rounded-full flex items-center justify-center ${"bg-gold/10"}`}>
+    <div className="rounded-2xl border border-beige-border bg-cream p-5 text-navy shadow-card">
+      <div className="mb-4 flex items-start justify-between">
+        <span
+          className={`flex h-10 w-10 items-center justify-center rounded-full ${"bg-gold/10"}`}
+        >
           <svg
             width="18"
             height="18"
@@ -15,9 +17,11 @@ export default function StatCard({ label, value, sub, icon }) {
           </svg>
         </span>
       </div>
-      <p className={`text-2xl font-display font-semibold ${"text-navy"}`}>{value}</p>
-      <p className={`text-sm mt-1 ${"text-muted"}`}>{label}</p>
-      {sub && <p className={`text-xs mt-2 ${"text-gold"}`}>{sub}</p>}
+      <p className={`font-display text-2xl font-semibold ${"text-navy"}`}>
+        {value}
+      </p>
+      <p className={`mt-1 text-sm ${"text-muted"}`}>{label}</p>
+      {sub && <p className={`mt-2 text-xs ${"text-gold"}`}>{sub}</p>}
     </div>
   );
 }

@@ -75,6 +75,7 @@ To connect a real backend:
 ### Expected API shapes
 
 **Hotel**
+
 ```json
 {
   "id": "htl_001",
@@ -82,18 +83,38 @@ To connect a real backend:
   "email": "admin@grandmeridian.com",
   "status": "active",
   "createdAt": "2025-11-02",
-  "subscription": { "plan": "Pro", "expiresOn": "2026-09-14", "status": "active" }
+  "subscription": {
+    "plan": "Pro",
+    "expiresOn": "2026-09-14",
+    "status": "active"
+  }
 }
 ```
 
 **Transaction summary row**
+
 ```json
-{ "id": "txn_1001", "hotelId": "htl_001", "hotelName": "The Grand Meridian", "amount": 84250, "transactions": 312, "lastTransactionAt": "2026-08-14" }
+{
+  "id": "txn_1001",
+  "hotelId": "htl_001",
+  "hotelName": "The Grand Meridian",
+  "amount": 84250,
+  "transactions": 312,
+  "lastTransactionAt": "2026-08-14"
+}
 ```
 
 **Service request**
+
 ```json
-{ "id": "req_501", "hotelName": "The Grand Meridian", "subject": "POS terminal not syncing", "priority": "high", "status": "open", "createdAt": "2026-08-14" }
+{
+  "id": "req_501",
+  "hotelName": "The Grand Meridian",
+  "subject": "POS terminal not syncing",
+  "priority": "high",
+  "status": "open",
+  "createdAt": "2026-08-14"
+}
 ```
 
 `status` for hotels: `"active" | "deactivated"`.

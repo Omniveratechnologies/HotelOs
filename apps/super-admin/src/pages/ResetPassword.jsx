@@ -42,62 +42,45 @@ export default function ResetPassword() {
     try {
       setLoading(true);
 
-      const API_URL =
-        import.meta.env.VITE_API_URL || "http://localhost:5001";
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
-      const response = await fetch(
-        `${API_URL}/api/v1/auth/reset-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            token,
-            password,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/api/v1/auth/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token,
+          password,
+        }),
+      });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          result.message || "Unable to reset password."
-        );
+        throw new Error(result.message || "Unable to reset password.");
       }
 
       setSuccess(
-        "Your password has been reset successfully. Redirecting to login..."
+        "Your password has been reset successfully. Redirecting to login...",
       );
 
       setTimeout(() => {
         navigate("/login");
       }, 2000);
     } catch (err) {
-      setError(
-        err.message || "Something went wrong. Please try again."
-      );
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-ivory flex items-center justify-center px-6">
-      <div className="w-full max-w-sm bg-cream border border-beige-border rounded-2xl shadow-soft px-8 py-10">
-
-        <Link
-          to="/"
-          className="flex items-center gap-2.5 mb-8"
-        >
-          <span className="w-9 h-9 rounded-full bg-navy flex items-center justify-center">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
+    <div className="bg-ivory flex min-h-screen items-center justify-center px-6">
+      <div className="bg-cream border-beige-border shadow-soft w-full max-w-sm rounded-2xl border px-8 py-10">
+        <Link to="/" className="mb-8 flex items-center gap-2.5">
+          <span className="bg-navy flex h-9 w-9 items-center justify-center rounded-full">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 21V9l8-5 8 5v12"
                 stroke="#F4F4E4"
@@ -113,12 +96,12 @@ export default function ResetPassword() {
             </svg>
           </span>
 
-          <span className="font-display text-xl font-semibold text-navy">
+          <span className="font-display text-navy text-xl font-semibold">
             Hotel<span className="text-gold">OS</span>
           </span>
         </Link>
 
-        <h1 className="font-display text-3xl font-semibold text-navy mb-1">
+        <h1 className="font-display text-navy mb-1 text-3xl font-semibold">
           Reset Password
         </h1>
 
@@ -127,25 +110,22 @@ export default function ResetPassword() {
         </p>
 
         {error && (
-          <div className="mb-5 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+          <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-5 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+          <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
             {success}
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5"
-        >
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-navy mb-1.5"
+              className="text-navy mb-1.5 block text-sm font-medium"
             >
               New Password
             </label>
@@ -157,14 +137,14 @@ export default function ResetPassword() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-ivory border border-beige-border rounded-lg px-4 py-2.5 text-navy placeholder:text-muted outline-none focus:border-gold transition-colors"
+              className="bg-ivory border-beige-border text-navy placeholder:text-muted focus:border-gold w-full rounded-lg border px-4 py-2.5 transition-colors outline-none"
             />
           </div>
 
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-sm font-medium text-navy mb-1.5"
+              className="text-navy mb-1.5 block text-sm font-medium"
             >
               Confirm New Password
             </label>
@@ -174,32 +154,26 @@ export default function ResetPassword() {
               type="password"
               required
               value={confirmPassword}
-              onChange={(e) =>
-                setConfirmPassword(e.target.value)
-              }
+              onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-ivory border border-beige-border rounded-lg px-4 py-2.5 text-navy placeholder:text-muted outline-none focus:border-gold transition-colors"
+              className="bg-ivory border-beige-border text-navy placeholder:text-muted focus:border-gold w-full rounded-lg border px-4 py-2.5 transition-colors outline-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-navy text-cream font-medium rounded-lg px-5 py-3 hover:bg-navy-dark transition-colors disabled:opacity-60"
+            className="bg-navy text-cream hover:bg-navy-dark w-full rounded-lg px-5 py-3 font-medium transition-colors disabled:opacity-60"
           >
             {loading ? "Resetting..." : "Reset Password"}
           </button>
         </form>
 
-        <div className="text-center mt-6">
-          <Link
-            to="/login"
-            className="text-sm text-navy/70 hover:text-navy"
-          >
+        <div className="mt-6 text-center">
+          <Link to="/login" className="text-navy/70 hover:text-navy text-sm">
             Back to Login
           </Link>
         </div>
-
       </div>
     </div>
   );

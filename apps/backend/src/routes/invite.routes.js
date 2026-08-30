@@ -6,9 +6,7 @@ import {
   acceptInvite,
 } from "../controllers/invite.controller.js";
 
-import {
-  authenticate,
-} from "../middleware/auth.middleware.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -17,30 +15,20 @@ const router = express.Router();
 // PUBLIC
 // =====================================================
 
-router.post(
-  "/verify",
-  verifyInvite
-);
+router.post("/verify", verifyInvite);
 
 // =====================================================
 // ACCEPT INVITATION + CREATE ACCOUNT
 // PUBLIC
 // =====================================================
 
-router.post(
-  "/accept",
-  acceptInvite
-);
+router.post("/accept", acceptInvite);
 
 // =====================================================
 // SEND INVITATION
 // AUTHENTICATED
 // =====================================================
 
-router.post(
-  "/",
-  authenticate,
-  sendInvite
-);
+router.post("/", authenticate, sendInvite);
 
 export default router;

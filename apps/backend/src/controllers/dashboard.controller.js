@@ -17,7 +17,7 @@ export const getDashboardStats = async (req, res) => {
     if (!hotelId) {
       return res.status(400).json({
         success: false,
-        message: "You are not assigned to a hotel"
+        message: "You are not assigned to a hotel",
       });
     }
 
@@ -34,7 +34,7 @@ export const getDashboardStats = async (req, res) => {
     const activeStaff = await User.countDocuments({
       hotelId,
       isActive: true,
-      role: { $in: ["RECEPTIONIST", "KITCHEN"] }
+      role: { $in: ["RECEPTIONIST", "KITCHEN"] },
     });
 
     // =================================================
@@ -43,7 +43,7 @@ export const getDashboardStats = async (req, res) => {
 
     const roomStatusCounts = await Room.aggregate([
       { $match: { hotelId: hotel._id } },
-      { $group: { _id: "$status", count: { $sum: 1 } } }
+      { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
     const statusCount = (status) =>
@@ -54,7 +54,7 @@ export const getDashboardStats = async (req, res) => {
       available: statusCount("available"),
       occupied: statusCount("occupied"),
       reserved: statusCount("reserved"),
-      cleaning: statusCount("cleaning")
+      cleaning: statusCount("cleaning"),
     };
 
     // =================================================
@@ -73,25 +73,23 @@ export const getDashboardStats = async (req, res) => {
       Guest.countDocuments({ hotelId, status: "checked-in" }),
       Guest.countDocuments({
         hotelId,
-        checkIn: { $gte: startOfToday, $lt: endOfToday }
+        checkIn: { $gte: startOfToday, $lt: endOfToday },
       }),
       Guest.countDocuments({
         hotelId,
         checkOut: { $gte: startOfToday, $lt: endOfToday },
-        status: { $ne: "checked-out" }
-      })
+        status: { $ne: "checked-out" },
+      }),
     ]);
 
     const guests = {
       checkedIn,
       arrivalsToday,
-      departuresToday
+      departuresToday,
     };
 
     const occupancyPercent =
-      rooms.total > 0
-        ? Math.round((rooms.occupied / rooms.total) * 100)
-        : 0;
+      rooms.total > 0 ? Math.round((rooms.occupied / rooms.total) * 100) : 0;
 
     // TODO(Phase B2/B3): derive from reservations & service requests
     const pendingReservations = 0;
@@ -128,7 +126,7 @@ export const getDashboardStats = async (req, res) => {
         id: g._id,
         text,
         tone: g.status === "checked-in" ? "gold" : "default",
-        createdAt: g.updatedAt
+        createdAt: g.updatedAt,
       };
     });
 
@@ -144,15 +142,15 @@ export const getDashboardStats = async (req, res) => {
         pendingServiceRequests,
         revenueToday,
         activeStaff,
-        recentActivities
-      }
+        recentActivities,
+      },
     });
   } catch (error) {
     console.error("Get dashboard stats error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch dashboard stats"
+      message: "Failed to fetch dashboard stats",
     });
   }
 };

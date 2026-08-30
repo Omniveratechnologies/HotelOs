@@ -6,13 +6,10 @@ import Hotel from "../models/Hotel.js";
 
 const generateHotelCode = async (name) => {
   // Remove spaces and special characters
-  const cleanName = name
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toUpperCase();
+  const cleanName = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
   // First 8 characters
-  const baseCode =
-    cleanName.slice(0, 8) || "HOTEL";
+  const baseCode = cleanName.slice(0, 8) || "HOTEL";
 
   let hotelCode = baseCode;
   let count = 1;
@@ -50,12 +47,7 @@ export const createHotel = async (req, res) => {
     // VALIDATION
     // =================================================
 
-    if (
-      !name ||
-      !email ||
-      !subscriptionStartDate ||
-      !subscriptionEndDate
-    ) {
+    if (!name || !email || !subscriptionStartDate || !subscriptionEndDate) {
       return res.status(400).json({
         success: false,
         message:
@@ -67,26 +59,17 @@ export const createHotel = async (req, res) => {
     // NORMALIZE EMAIL
     // =================================================
 
-    const normalizedEmail = email
-      .toLowerCase()
-      .trim();
+    const normalizedEmail = email.toLowerCase().trim();
 
     // =================================================
     // VALIDATE DATES
     // =================================================
 
-    const startDate = new Date(
-      subscriptionStartDate
-    );
+    const startDate = new Date(subscriptionStartDate);
 
-    const endDate = new Date(
-      subscriptionEndDate
-    );
+    const endDate = new Date(subscriptionEndDate);
 
-    if (
-      Number.isNaN(startDate.getTime()) ||
-      Number.isNaN(endDate.getTime())
-    ) {
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return res.status(400).json({
         success: false,
         message: "Invalid subscription dates",
@@ -96,8 +79,7 @@ export const createHotel = async (req, res) => {
     if (endDate <= startDate) {
       return res.status(400).json({
         success: false,
-        message:
-          "Subscription end date must be after the start date",
+        message: "Subscription end date must be after the start date",
       });
     }
 
@@ -112,8 +94,7 @@ export const createHotel = async (req, res) => {
     if (existingHotel) {
       return res.status(409).json({
         success: false,
-        message:
-          "A hotel with this email already exists",
+        message: "A hotel with this email already exists",
       });
     }
 
@@ -121,10 +102,7 @@ export const createHotel = async (req, res) => {
     // GENERATE UNIQUE HOTEL CODE
     // =================================================
 
-    const hotelCode =
-      await generateHotelCode(
-        name.trim()
-      );
+    const hotelCode = await generateHotelCode(name.trim());
 
     // =================================================
     // CREATE HOTEL
@@ -137,40 +115,30 @@ export const createHotel = async (req, res) => {
 
       email: normalizedEmail,
 
-      phone:
-        phone?.trim() || "",
+      phone: phone?.trim() || "",
 
-      address:
-        address?.trim() || "",
+      address: address?.trim() || "",
 
-      city:
-        city?.trim() || "",
+      city: city?.trim() || "",
 
-      subscriptionStartDate:
-        startDate,
+      subscriptionStartDate: startDate,
 
-      subscriptionEndDate:
-        endDate,
+      subscriptionEndDate: endDate,
 
       status: "ACTIVE",
     });
 
     return res.status(201).json({
       success: true,
-      message:
-        "Hotel created successfully",
+      message: "Hotel created successfully",
       data: hotel,
     });
   } catch (error) {
-    console.error(
-      "Create hotel error:",
-      error
-    );
+    console.error("Create hotel error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to create hotel",
+      message: "Failed to create hotel",
     });
   }
 };
@@ -181,27 +149,21 @@ export const createHotel = async (req, res) => {
 
 export const getHotels = async (req, res) => {
   try {
-    const hotels = await Hotel.find()
-      .sort({
-        createdAt: -1,
-      });
+    const hotels = await Hotel.find().sort({
+      createdAt: -1,
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Hotels fetched successfully",
+      message: "Hotels fetched successfully",
       data: hotels,
     });
   } catch (error) {
-    console.error(
-      "Get hotels error:",
-      error
-    );
+    console.error("Get hotels error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch hotels",
+      message: "Failed to fetch hotels",
     });
   }
 };
@@ -210,15 +172,11 @@ export const getHotels = async (req, res) => {
 // GET HOTEL BY ID
 // =====================================================
 
-export const getHotelById = async (
-  req,
-  res
-) => {
+export const getHotelById = async (req, res) => {
   try {
     const { hotelId } = req.params;
 
-    const hotel =
-      await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelId);
 
     if (!hotel) {
       return res.status(404).json({
@@ -229,20 +187,15 @@ export const getHotelById = async (
 
     return res.status(200).json({
       success: true,
-      message:
-        "Hotel fetched successfully",
+      message: "Hotel fetched successfully",
       data: hotel,
     });
   } catch (error) {
-    console.error(
-      "Get hotel by ID error:",
-      error
-    );
+    console.error("Get hotel by ID error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch hotel",
+      message: "Failed to fetch hotel",
     });
   }
 };
@@ -251,43 +204,32 @@ export const getHotelById = async (
 // UPDATE HOTEL STATUS
 // =====================================================
 
-export const updateHotelStatus = async (
-  req,
-  res
-) => {
+export const updateHotelStatus = async (req, res) => {
   try {
     const { hotelId } = req.params;
     const { status } = req.body;
 
-    const normalizedStatus = String(
-      status || ""
-    )
+    const normalizedStatus = String(status || "")
       .trim()
       .toUpperCase();
 
-    if (
-      !["ACTIVE", "INACTIVE"].includes(
-        normalizedStatus
-      )
-    ) {
+    if (!["ACTIVE", "INACTIVE"].includes(normalizedStatus)) {
       return res.status(400).json({
         success: false,
-        message:
-          "Status must be ACTIVE or INACTIVE",
+        message: "Status must be ACTIVE or INACTIVE",
       });
     }
 
-    const hotel =
-      await Hotel.findByIdAndUpdate(
-        hotelId,
-        {
-          status: normalizedStatus,
-        },
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+    const hotel = await Hotel.findByIdAndUpdate(
+      hotelId,
+      {
+        status: normalizedStatus,
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
 
     if (!hotel) {
       return res.status(404).json({
@@ -305,15 +247,11 @@ export const updateHotelStatus = async (
       data: hotel,
     });
   } catch (error) {
-    console.error(
-      "Update hotel status error:",
-      error
-    );
+    console.error("Update hotel status error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to update hotel status",
+      message: "Failed to update hotel status",
     });
   }
 };
@@ -322,10 +260,7 @@ export const updateHotelStatus = async (
 // UPDATE HOTEL DETAILS
 // =====================================================
 
-export const updateHotel = async (
-  req,
-  res
-) => {
+export const updateHotel = async (req, res) => {
   try {
     const { hotelId } = req.params;
 
@@ -339,8 +274,7 @@ export const updateHotel = async (
       subscriptionEndDate,
     } = req.body;
 
-    const hotel =
-      await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelId);
 
     if (!hotel) {
       return res.status(404).json({
@@ -357,8 +291,7 @@ export const updateHotel = async (
       if (!name.trim()) {
         return res.status(400).json({
           success: false,
-          message:
-            "Hotel name cannot be empty",
+          message: "Hotel name cannot be empty",
         });
       }
 
@@ -370,23 +303,19 @@ export const updateHotel = async (
     // =================================================
 
     if (email !== undefined) {
-      const normalizedEmail = email
-        .toLowerCase()
-        .trim();
+      const normalizedEmail = email.toLowerCase().trim();
 
-      const existingHotel =
-        await Hotel.findOne({
-          email: normalizedEmail,
-          _id: {
-            $ne: hotelId,
-          },
-        });
+      const existingHotel = await Hotel.findOne({
+        email: normalizedEmail,
+        _id: {
+          $ne: hotelId,
+        },
+      });
 
       if (existingHotel) {
         return res.status(409).json({
           success: false,
-          message:
-            "Another hotel already uses this email",
+          message: "Another hotel already uses this email",
         });
       }
 
@@ -398,8 +327,7 @@ export const updateHotel = async (
     // =================================================
 
     if (phone !== undefined) {
-      hotel.phone =
-        phone?.trim() || "";
+      hotel.phone = phone?.trim() || "";
     }
 
     // =================================================
@@ -407,8 +335,7 @@ export const updateHotel = async (
     // =================================================
 
     if (address !== undefined) {
-      hotel.address =
-        address?.trim() || "";
+      hotel.address = address?.trim() || "";
     }
 
     // =================================================
@@ -416,62 +343,41 @@ export const updateHotel = async (
     // =================================================
 
     if (city !== undefined) {
-      hotel.city =
-        city?.trim() || "";
+      hotel.city = city?.trim() || "";
     }
 
     // =================================================
     // UPDATE SUBSCRIPTION START DATE
     // =================================================
 
-    if (
-      subscriptionStartDate !== undefined
-    ) {
-      const startDate = new Date(
-        subscriptionStartDate
-      );
+    if (subscriptionStartDate !== undefined) {
+      const startDate = new Date(subscriptionStartDate);
 
-      if (
-        Number.isNaN(
-          startDate.getTime()
-        )
-      ) {
+      if (Number.isNaN(startDate.getTime())) {
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid subscription start date",
+          message: "Invalid subscription start date",
         });
       }
 
-      hotel.subscriptionStartDate =
-        startDate;
+      hotel.subscriptionStartDate = startDate;
     }
 
     // =================================================
     // UPDATE SUBSCRIPTION END DATE
     // =================================================
 
-    if (
-      subscriptionEndDate !== undefined
-    ) {
-      const endDate = new Date(
-        subscriptionEndDate
-      );
+    if (subscriptionEndDate !== undefined) {
+      const endDate = new Date(subscriptionEndDate);
 
-      if (
-        Number.isNaN(
-          endDate.getTime()
-        )
-      ) {
+      if (Number.isNaN(endDate.getTime())) {
         return res.status(400).json({
           success: false,
-          message:
-            "Invalid subscription end date",
+          message: "Invalid subscription end date",
         });
       }
 
-      hotel.subscriptionEndDate =
-        endDate;
+      hotel.subscriptionEndDate = endDate;
     }
 
     // =================================================
@@ -481,13 +387,11 @@ export const updateHotel = async (
     if (
       hotel.subscriptionStartDate &&
       hotel.subscriptionEndDate &&
-      hotel.subscriptionEndDate <=
-        hotel.subscriptionStartDate
+      hotel.subscriptionEndDate <= hotel.subscriptionStartDate
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "Subscription end date must be after the start date",
+        message: "Subscription end date must be after the start date",
       });
     }
 
@@ -499,20 +403,15 @@ export const updateHotel = async (
 
     return res.status(200).json({
       success: true,
-      message:
-        "Hotel updated successfully",
+      message: "Hotel updated successfully",
       data: hotel,
     });
   } catch (error) {
-    console.error(
-      "Update hotel error:",
-      error
-    );
+    console.error("Update hotel error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to update hotel",
+      message: "Failed to update hotel",
     });
   }
 };
@@ -521,23 +420,18 @@ export const updateHotel = async (
 // GET MY HOTEL (self-service, SUB_ADMIN / RECEPTIONIST)
 // =====================================================
 
-export const getMyHotel = async (
-  req,
-  res
-) => {
+export const getMyHotel = async (req, res) => {
   try {
     const { hotelId } = req.user;
 
     if (!hotelId) {
       return res.status(400).json({
         success: false,
-        message:
-          "You are not assigned to a hotel",
+        message: "You are not assigned to a hotel",
       });
     }
 
-    const hotel =
-      await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelId);
 
     if (!hotel) {
       return res.status(404).json({
@@ -548,20 +442,15 @@ export const getMyHotel = async (
 
     return res.status(200).json({
       success: true,
-      message:
-        "Hotel fetched successfully",
+      message: "Hotel fetched successfully",
       data: hotel,
     });
   } catch (error) {
-    console.error(
-      "Get my hotel error:",
-      error
-    );
+    console.error("Get my hotel error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to fetch hotel",
+      message: "Failed to fetch hotel",
     });
   }
 };
@@ -570,23 +459,18 @@ export const getMyHotel = async (
 // UPDATE MY HOTEL (self-service, SUB_ADMIN / RECEPTIONIST)
 // =====================================================
 
-export const updateMyHotel = async (
-  req,
-  res
-) => {
+export const updateMyHotel = async (req, res) => {
   try {
     const { hotelId } = req.user;
 
     if (!hotelId) {
       return res.status(400).json({
         success: false,
-        message:
-          "You are not assigned to a hotel",
+        message: "You are not assigned to a hotel",
       });
     }
 
-    const hotel =
-      await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelId);
 
     if (!hotel) {
       return res.status(404).json({
@@ -595,22 +479,14 @@ export const updateMyHotel = async (
       });
     }
 
-    const {
-      phone,
-      address,
-      city,
-      checkInTime,
-      checkOutTime,
-    } = req.body;
+    const { phone, address, city, checkInTime, checkOutTime } = req.body;
 
     // =================================================
     // UPDATE PHONE
     // =================================================
 
     if (phone !== undefined) {
-      hotel.phone =
-        String(phone || "")
-          .trim();
+      hotel.phone = String(phone || "").trim();
     }
 
     // =================================================
@@ -618,9 +494,7 @@ export const updateMyHotel = async (
     // =================================================
 
     if (address !== undefined) {
-      hotel.address =
-        String(address || "")
-          .trim();
+      hotel.address = String(address || "").trim();
     }
 
     // =================================================
@@ -628,9 +502,7 @@ export const updateMyHotel = async (
     // =================================================
 
     if (city !== undefined) {
-      hotel.city =
-        String(city || "")
-          .trim();
+      hotel.city = String(city || "").trim();
     }
 
     // =================================================
@@ -638,9 +510,7 @@ export const updateMyHotel = async (
     // =================================================
 
     if (checkInTime !== undefined) {
-      hotel.checkInTime =
-        String(checkInTime || "")
-          .trim();
+      hotel.checkInTime = String(checkInTime || "").trim();
     }
 
     // =================================================
@@ -648,29 +518,22 @@ export const updateMyHotel = async (
     // =================================================
 
     if (checkOutTime !== undefined) {
-      hotel.checkOutTime =
-        String(checkOutTime || "")
-          .trim();
+      hotel.checkOutTime = String(checkOutTime || "").trim();
     }
 
     await hotel.save();
 
     return res.status(200).json({
       success: true,
-      message:
-        "Hotel updated successfully",
+      message: "Hotel updated successfully",
       data: hotel,
     });
   } catch (error) {
-    console.error(
-      "Update my hotel error:",
-      error
-    );
+    console.error("Update my hotel error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to update hotel",
+      message: "Failed to update hotel",
     });
   }
 };
@@ -679,15 +542,11 @@ export const updateMyHotel = async (
 // DELETE HOTEL
 // =====================================================
 
-export const deleteHotel = async (
-  req,
-  res
-) => {
+export const deleteHotel = async (req, res) => {
   try {
     const { hotelId } = req.params;
 
-    const hotel =
-      await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelId);
 
     if (!hotel) {
       return res.status(404).json({
@@ -696,25 +555,18 @@ export const deleteHotel = async (
       });
     }
 
-    await Hotel.findByIdAndDelete(
-      hotelId
-    );
+    await Hotel.findByIdAndDelete(hotelId);
 
     return res.status(200).json({
       success: true,
-      message:
-        "Hotel deleted successfully",
+      message: "Hotel deleted successfully",
     });
   } catch (error) {
-    console.error(
-      "Delete hotel error:",
-      error
-    );
+    console.error("Delete hotel error:", error);
 
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to delete hotel",
+      message: "Failed to delete hotel",
     });
   }
 };
