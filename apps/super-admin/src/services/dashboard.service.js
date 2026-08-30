@@ -1,5 +1,5 @@
-import { apiFetch } from "../api/client.js";
+import { api } from "@hotelos/api";
 
 export const getDashboardHealth = async () => {
-  return apiFetch("/api/v1/health");
+  return api.get("/api/v1/health");
 };

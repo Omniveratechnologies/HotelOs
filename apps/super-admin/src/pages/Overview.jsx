@@ -15,12 +15,10 @@ import Badge from "../components/ui/Badge.jsx";
 import Button from "../components/ui/Button.jsx";
 import CreateHotelModal from "../components/hotels/CreateHotelModal.jsx";
 
-import {
-  fetchHotels,
-  fetchSubscriptions,
-  fetchTransactionSummary,
-  fetchServiceRequests,
-} from "../api/client.js";
+import { getHotels } from "../services/hotel.service.js";
+import { fetchSubscriptions } from "../services/subscriptions.service.js";
+import { fetchTransactionSummary } from "../services/transactions.service.js";
+import { fetchServiceRequests } from "../services/serviceRequests.service.js";
 
 // =====================================================
 // FORMAT CURRENCY
@@ -67,7 +65,7 @@ export default function Overview() {
 
         const [hotelsData, subscriptionsData, transactionsData, requestsData] =
           await Promise.all([
-            fetchHotels(),
+            getHotels(),
             fetchSubscriptions(),
             fetchTransactionSummary(),
             fetchServiceRequests(),

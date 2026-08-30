@@ -7,7 +7,7 @@ import { TableSkeleton, EmptyState } from "../components/ui/States.jsx";
 import {
   fetchServiceRequests,
   updateServiceRequestStatus,
-} from "../api/client.js";
+} from "../services/serviceRequests.service.js";
 
 const STATUS_OPTIONS = ["open", "in_progress", "resolved"];
 

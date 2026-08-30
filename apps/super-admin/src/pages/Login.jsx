@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginAdmin } from "../api/client.js";
+import { loginSuperAdmin } from "../services/auth.service.js";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ export default function Login() {
     try {
       setLoading(true);
 
-      const data = await loginAdmin(username, password);
+      const data = await loginSuperAdmin(username, password);
 
       console.log("Super Admin login successful:", data);
 

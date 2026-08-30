@@ -1,8 +1,5 @@
-import { apiFetch } from "../api/client.js";
+import { api } from "@hotelos/api";
 
 export const createUser = async (userData) => {
-  return apiFetch("/api/v1/users", {
-    method: "POST",
-    body: JSON.stringify(userData),
-  });
+  return api.post("/api/v1/users", userData, { auth: true });
 };

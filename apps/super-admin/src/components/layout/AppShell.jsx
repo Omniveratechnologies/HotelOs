@@ -5,7 +5,7 @@ import Sidebar from "./Sidebar.jsx";
 import Modal from "../ui/Modal.jsx";
 import Button from "../ui/Button.jsx";
 
-import { logoutAdmin } from "../../api/client.js";
+import { logoutSuperAdmin } from "../../services/auth.service.js";
 
 export default function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -18,7 +18,7 @@ export default function AppShell() {
     setLoggingOut(true);
 
     try {
-      await logoutAdmin();
+      await logoutSuperAdmin();
 
       setLogoutOpen(false);
 

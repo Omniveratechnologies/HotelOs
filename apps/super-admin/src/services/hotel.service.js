@@ -1,18 +1,23 @@
-import {
-  apiFetch,
-  fetchHotels,
-  createHotel,
-  updateHotel,
-  toggleHotelStatus,
-  deleteHotel,
-} from "../api/client.js";
+import { api } from "@hotelos/api";
 
 // =====================================================
 // GET ALL HOTELS
 // =====================================================
 
 export async function getHotels() {
-  return fetchHotels();
+  const result = await api.get("/api/v1/hotels", { auth: true });
+
+  return result.data;
+}
+
+// =====================================================
+// GET ONE HOTEL
+// =====================================================
+
+export async function getHotelById(hotelId) {
+  const result = await api.get(`/api/v1/hotels/${hotelId}`, { auth: true });
+
+  return result.data;
 }
 
 // =====================================================
@@ -20,36 +25,24 @@ export async function getHotels() {
 // =====================================================
 
 export async function createNewHotel(hotelData) {
-  return createHotel(hotelData);
+  const result = await api.post("/api/v1/hotels", hotelData, { auth: true });
+
+  return result.data;
 }
 
 // Backward-compatible export
 export async function createHotelData(hotelData) {
-  return createHotel(hotelData);
+  return createNewHotel(hotelData);
 }
 
 // =====================================================
-// SEND SUB ADMIN INVITATION
+// UPDATE HOTEL
 // =====================================================
 
-export async function sendSubAdminInvite(inviteData) {
-  const result = await apiFetch("/api/v1/invites", {
-    method: "POST",
-
-    body: JSON.stringify({
-      name: inviteData.name,
-      username: inviteData.username,
-      email: inviteData.email,
-      role: "SUB_ADMIN",
-      hotelId: inviteData.hotelId,
-      subscriptionStartDate: inviteData.subscriptionStartDate,
-      subscriptionEndDate: inviteData.subscriptionEndDate,
-    }),
+export async function updateHotelDetails(hotelId, hotelData) {
+  const result = await api.patch(`/api/v1/hotels/${hotelId}`, hotelData, {
+    auth: true,
   });
-
-  if (!result.success) {
-    throw new Error(result.message || "Failed to send Sub Admin invitation");
-  }
 
   return result.data;
 }
@@ -59,15 +52,63 @@ export async function sendSubAdminInvite(inviteData) {
 // =====================================================
 
 export async function updateHotelStatus(hotelId, status) {
-  return toggleHotelStatus(hotelId, status);
+  const result = await api.patch(
+    `/api/v1/hotels/${hotelId}/status`,
+    { status },
+    { auth: true },
+  );
+
+  return result.data;
 }
 
 // =====================================================
-// UPDATE HOTEL
+// UPDATE HOTEL CREDENTIALS
 // =====================================================
 
-export async function updateHotelDetails(hotelId, hotelData) {
-  return updateHotel(hotelId, hotelData);
+export async function updateHotelCredentials(hotelId, { email, password }) {
+  return api.patch(
+    `/api/v1/hotels/${hotelId}/credentials`,
+    { email, password },
+    { auth: true },
+  );
+}
+
+// =====================================================
+// HOTEL INVITATION
+// =====================================================
+
+export async function inviteHotelAdmin(hotelId, email) {
+  return api.post(
+    `/api/v1/hotels/${hotelId}/invite`,
+    { email },
+    { auth: true },
+  );
+}
+
+// =====================================================
+// SEND SUB ADMIN INVITATION
+// =====================================================
+
+export async function sendSubAdminInvite(inviteData) {
+  const result = await api.post(
+    "/api/v1/invites",
+    {
+      name: inviteData.name,
+      username: inviteData.username,
+      email: inviteData.email,
+      role: "SUB_ADMIN",
+      hotelId: inviteData.hotelId,
+      subscriptionStartDate: inviteData.subscriptionStartDate,
+      subscriptionEndDate: inviteData.subscriptionEndDate,
+    },
+    { auth: true },
+  );
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to send Sub Admin invitation");
+  }
+
+  return result.data;
 }
 
 // =====================================================
@@ -75,5 +116,5 @@ export async function updateHotelDetails(hotelId, hotelData) {
 // =====================================================
 
 export async function removeHotel(hotelId) {
-  return deleteHotel(hotelId);
+  await api.delete(`/api/v1/hotels/${hotelId}`, { auth: true });
 }

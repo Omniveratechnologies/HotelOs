@@ -1,11 +1,30 @@
-import { loginAdmin, logoutAdmin } from "../api/client.js";
+import { api } from "@hotelos/api";
 
 export const loginSuperAdmin = async (username, password) => {
-  return loginAdmin(username, password);
+  const result = await api.post("/api/v1/auth/login", { username, password });
+
+  if (!result.success) {
+    throw new Error(result.message || "Login failed");
+  }
+
+  const { token, user } = result.data;
+
+  if (user.role !== "SUPER_ADMIN") {
+    throw new Error(
+      "You are not authorized to access the Super Admin Dashboard",
+    );
+  }
+
+  localStorage.setItem("auth_token", token);
+
+  localStorage.setItem("auth_user", JSON.stringify(user));
+
+  return result.data;
 };
 
-export const logoutSuperAdmin = async () => {
-  return logoutAdmin();
+export const logoutSuperAdmin = () => {
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("auth_user");
 };
 
 export const getCurrentUser = () => {

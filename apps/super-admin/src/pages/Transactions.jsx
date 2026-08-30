@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import { Search, Wallet, ArrowDownUp } from "lucide-react";
 import Topbar from "../components/layout/Topbar.jsx";
 import { TableSkeleton, EmptyState } from "../components/ui/States.jsx";
-import { fetchTransactionSummary } from "../api/client.js";
+import { fetchTransactionSummary } from "../services/transactions.service.js";
 
 function formatCurrency(n) {
   return new Intl.NumberFormat("en-IN", {

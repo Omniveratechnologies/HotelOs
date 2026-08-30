@@ -6,7 +6,10 @@ import Topbar from "../components/layout/Topbar.jsx";
 import Badge from "../components/ui/Badge.jsx";
 import { TableSkeleton, EmptyState } from "../components/ui/States.jsx";
 
-import { fetchSubscriptions, saveSubscription } from "../api/client.js";
+import {
+  fetchSubscriptions,
+  saveSubscription,
+} from "../services/subscriptions.service.js";
 
 const FILTERS = [
   { key: "all", label: "All" },

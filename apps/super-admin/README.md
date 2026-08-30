@@ -27,8 +27,8 @@ Open the printed local URL (usually http://localhost:5173).
 
 ```
 src/
-  api/client.js          <- ALL backend calls live here. Start here.
-  data/mockData.js        <- Mock data matching the shape your API should return
+  services/              <- Domain API calls (auth, hotels, subscriptions, …)
+  data/mockData.js        <- Mock data used by Transactions & Service Requests
   components/
     layout/                Sidebar, Topbar, AppShell (route outlet + logout modal)
     ui/                     Button, Modal, Badge, Field, StatCard, empty/loading states
@@ -45,32 +45,13 @@ src/
 
 ## Connecting your backend
 
-Everything the UI needs from a server goes through **`src/api/client.js`**.
-Each function currently reads/writes the in-memory mock data in
-`src/data/mockData.js` after a short fake delay, so the whole app works
-immediately without a backend.
+All API calls go through the shared **`@hotelos/api`** package (see
+`packages/api`), which reads `VITE_API_URL` from `.env` and attaches the
+`auth_token` from `localStorage` when you pass `{ auth: true }`.
 
-To connect a real backend:
-
-1. Copy `.env.example` to `.env` and set your API base URL:
-   ```
-   VITE_API_URL=https://api.yourdomain.com
-   ```
-2. Open `src/api/client.js`. Every exported function has a commented-out
-   "Real backend version" snippet right below the mock implementation —
-   uncomment it and delete the mock lines above it. For example:
-
-   ```js
-   export async function fetchHotels() {
-     return apiFetch("/api/hotels");
-   }
-   ```
-
-3. The `apiFetch` helper at the top of `client.js` already attaches a
-   Bearer token from `localStorage.getItem("auth_token")` and your
-   `VITE_API_URL`. Set that token wherever you implement login.
-4. Once every function in `client.js` calls your real API, you can delete
-   `src/data/mockData.js` (or keep it for local development/demos).
+`src/services/*.js` hold the domain calls (auth, hotels, subscriptions).
+Transactions and Service Requests still read the in-memory mock data in
+`src/data/mockData.js`.
 
 ### Expected API shapes
 
