@@ -1,1863 +1,1179 @@
-HotelOS Backend
+# HotelOS Backend
 
-Backend API for HotelOS, a multi-role hotel management system.
+The backend REST API for **HotelOS**, a multi-role, multi-tenant hotel
+management platform. It provides authentication, role-based authorization,
+hotel (tenant) isolation, user management, invitations, rooms, guests,
+dashboard metrics, and credential/email flows.
 
-This backend is designed to support multiple frontend applications such
-as:
+This document is the authoritative **API reference and handoff guide** for
+frontend developers building on HotelOS.
 
-Super Admin Dashboard
+- Package name: `backend`
+- Runtime: Node.js + Express 5
+- Database: MongoDB (Mongoose)
+- Base URL: `http://localhost:5001/api/v1`
 
-Hotel/Sub Admin Dashboard
+---
 
-Reception Dashboard
+## Supported frontends
 
-Kitchen Dashboard
+The backend is designed to serve multiple role-specific frontends:
 
-Guest Dashboard
-
-The backend provides authentication, role-based authorization, hotel
-isolation, user management, credential generation, DTO-based API
-responses, and the foundation for hotel operations such as rooms,
-guests, orders, food items, and service requests.
-
-1. Purpose of This README
-
-This document is the main handoff guide for frontend developers working
-on HotelOS.
-
-If you are building the:
-
-Reception frontend
-
-Kitchen frontend
-
-Guest frontend
-
-Sub Admin frontend
-
-Super Admin frontend
-
-you should be able to use this README to understand:
-
-How the backend is structured.
-
-How authentication works.
-
-How to obtain and send JWT access tokens.
-
-Which roles exist.
-
-What each role is allowed to do.
-
-How users are created.
-
-How hotel isolation works.
-
-How API responses are structured.
-
-How DTOs protect the frontend from raw database documents.
-
-How to add future API modules.
-
-How to test APIs using Requestly/Postman/curl.
-
-What frontend developers should and should not send to the backend.
-
-2. Project Overview
-
-HotelOS follows a role-based architecture.
-
-                    SUPER ADMIN
-                         |
-                         | creates/manages hotels
-                         v
-                    SUB ADMIN
-                         |
-             +-----------+-----------+
-             |                       |
-             v                       v
-        RECEPTION                 KITCHEN
-             |
-             | creates guest account
-             | during guest check-in
-             v
-           GUEST
-
-The important rule is:
-
-A frontend must never be trusted to decide which hotel a user belongs
-to.
-
-The backend determines hotel ownership from the authenticated user's
-JWT.
-
-For example, a Sub Admin belonging to Hotel A sends:
-
-POST /api/v1/users
-
-with:
-
-{
-"name": "Kitchen Operator",
-"role": "KITCHEN"
-}
-
-The frontend does not send:
-
-{
-"hotelId": "HOTEL_B"
-}
-
-The backend obtains:
-
-hotelId = req.user.hotelId
-
-from the authenticated JWT.
-
-This prevents a Sub Admin from creating users inside another hotel.
-
-3. Technology Stack
-
-The current backend uses:
-
-Node.js
-
-Express.js
-
-MongoDB
-
-Mongoose
-
-JWT authentication
-
-bcrypt/password hashing through the User model
-
-CORS
-
-Nodemon for development
-
-The project uses ES Modules (import / export).
-
-4. API Versioning
-
-All APIs use version v1.
-
-Base URL:
-
-http://localhost:5001/api/v1
-
-Examples:
-
-POST /api/v1/auth/login
-POST /api/v1/auth/logout
-
-GET /api/v1/users
-POST /api/v1/users
-
-GET /api/v1/hotels
-POST /api/v1/hotels
-
-Future versions can use:
-
-/api/v2/
-
-without breaking existing v1 clients.
-
-Important for frontend developers
-
-Always build API calls using the /api/v1/ prefix.
-
-Do not create frontend calls such as:
-
-/api/users
-
-when the backend endpoint is:
-
-/api/v1/users
-
-5. Local Development
-
-Requirements
-
-Install:
-
-Node.js
-
-npm
-
-MongoDB or a MongoDB connection string
-
-Requestly, Postman, curl, or another API client
-
-Install dependencies
-
-From the backend directory:
-
-npm install
-
-Environment variables
-
-The backend uses environment configuration including the MongoDB
-connection and JWT configuration.
-
-A typical .env contains values similar to:
-
-PORT=5001
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-JWT_EXPIRES_IN=your_expiration
-
-Use the actual variable names already defined in the project's .env /
-environment configuration.
-
-Do not commit the real .env file to Git.
-
-Use .env.example for documentation of required variables.
-
-Start development server
-
-npm run dev
-
-Expected server:
-
-http://localhost:5001
+| Frontend              | Role           |
+| --------------------- | -------------- |
+| Super Admin Dashboard | `SUPER_ADMIN`  |
+| Sub Admin Dashboard   | `SUB_ADMIN`    |
+| Reception Dashboard   | `RECEPTIONIST` |
+| Kitchen Dashboard     | `KITCHEN`      |
+| Guest Dashboard       | `GUEST`        |
+
+The repository currently ships the Super Admin, Sub Admin, and Receptionist
+apps (see the root `README.md`).
+
+---
+
+## Roles
+
+Defined in `src/constants/roles.js`:
+
+| Role           | Scope                                        |
+| -------------- | -------------------------------------------- |
+| `SUPER_ADMIN`  | Platform — manages all hotels and Sub Admins |
+| `SUB_ADMIN`    | One hotel — manages rooms, staff, settings   |
+| `RECEPTIONIST` | One hotel — registers guests, assigns rooms  |
+| `KITCHEN`      | One hotel — kitchen operations               |
+| `GUEST`        | One hotel — guest-facing features            |
+
+The backend always enforces authorization. Frontend role checks are for
+navigation/UI only and are never a security boundary.
+
+### Role hierarchy
+
+```
+              SUPER ADMIN
+                  │
+                  │ creates / manages hotels & Sub Admins
+                  ▼
+              SUB ADMIN           (administrates ONE hotel)
+                  │
+     ┌────────────┴─────────────┐
+     │                          │
+     ▼                          ▼
+ RECEPTIONIST                KITCHEN         (hotel staff)
+     │
+     │ creates guest account during check-in
+     ▼
+   GUEST
+```
+
+The backend derives each staff user's hotel from the authenticated JWT
+(`req.user.hotelId`); the frontend is never trusted to choose the hotel.
+
+---
+
+## Core principles
+
+### 1. Hotel isolation is backend-owned
+
+A frontend must never decide which hotel a user belongs to. The backend
+derives hotel ownership from the authenticated user's JWT:
+
+```js
+const hotelId = req.user.hotelId; // from the JWT, not the request body
+```
+
+Example: a Sub Admin of Hotel A calls `POST /api/v1/users` with `{ name,
+role }`. The frontend does **not** send a `hotelId`; the backend assigns the
+Current Sub Admin's hotel. A malicious `hotelId` in the body is ignored.
+
+### 2. Authentication vs authorization
+
+- **Authentication** — "Who are you?" Handled by the `authenticate`
+  middleware (verifies the JWT and loads the user).
+- **Authorization** — "Are you allowed to do this?" Handled by the
+  `authorize(...)` middleware (checks the user's role).
+
+### 3. DTOs protect the API contract
+
+Responses are shaped by DTOs instead of raw Mongoose documents, so database
+fields such as `password`, `resetPasswordToken`, and internal metadata are
+never leaked. Build your UI against the documented DTO fields.
+
+---
+
+## Request flow
+
+A typical protected request travels through the following stages:
+
+```
+      Frontend
+        │
+        │ HTTP request (Authorization: Bearer <JWT>)
+        ▼
+      Express Route                    (routes/*.js)
+        │
+        ▼
+      authenticate middleware          (verifies JWT, loads user → req.user)
+        │
+        ▼
+      authorize middleware             (checks role against allowed roles)
+        │
+        ▼
+      Controller                       (controllers/*.js)
+        │
+        ▼
+      Service / Model                  (services/*.js, models/*.js)
+        │
+        ▼
+      MongoDB
+        │
+        ▼
+      DTO                              (dto/*.js — shapes the response)
+        │
+        ▼
+      JSON response                    { success, message, data }
+        │
+        ▼
+      Frontend
+```
+
+This separation matters: frontends should never bypass authentication or
+role checks, and the backend stays the single source of truth for both.
+
+---
+
+## Project structure
+
+```
+src/
+│
+├── app.js                  Express app, route mounting, static /uploads
+├── server.js               Entry point (connects DB, starts server)
+│
+├── config/
+│   ├── db.js               MongoDB connection
+│   └── env.js              Loads & validates env vars
+│
+├── constants/
+│   └── roles.js            Role constants
+│
+├── controllers/
+│   ├── auth.controller.js      login, logout, forgot/reset password
+│   ├── hotel.controller.js     hotel CRUD + status + self-service /me
+│   ├── user.controller.js      create / list / delete users
+│   ├── invite.controller.js    send / verify / accept invitations
+│   ├── room.controller.js      room CRUD
+│   ├── guest.controller.js     guest register / CRUD / documents / credentials
+│   └── dashboard.controller.js dashboard stats
+│
+├── dto/
+│   └── user.dto.js         userResponseDTO
+│
+├── middleware/
+│   ├── auth.middleware.js  authenticate (JWT)
+│   ├── role.middleware.js  authorize(...roles)
+│   └── upload.middleware.js Multer guest document upload + error handler
+│
+├── models/
+│   ├── Hotel.js            Hotel schema
+│   ├── User.js             User schema (+ bcrypt hashing)
+│   ├── UserInvite.js       Invitation tokens
+│   ├── Room.js             Room schema (+ roomResponseDTO)
+│   └── Guest.js            Guest schema (+ guestResponseDTO)
+│
+├── routes/
+│   ├── auth.routes.js      /api/v1/auth/*
+│   ├── hotel.routes.js     /api/v1/hotels/*
+│   ├── user.routes.js      /api/v1/users*
+│   ├── invite.routes.js    /api/v1/invites/*
+│   ├── room.routes.js      /api/v1/rooms/*
+│   ├── guest.routes.js     /api/v1/guests/*
+│   └── dashboard.routes.js /api/v1/dashboard/*
+│
+├── seed/
+│   └── superAdmin.seed.js  Create the first SUPER_ADMIN
+│
+├── services/
+│   └── email.service.js    Nodemailer transports (invite, credentials, reset)
+│
+└── utils/
+    ├── jwt.js              Token generation
+    ├── generateCredentials.js  Usernames & temporary passwords
+    ├── invitation.js       Invite tokens & expiry
+    └── password.js         Password helpers
+
+.env / .env.example         Environment configuration
+```
+
+---
+
+## Setup & local development
+
+### Requirements
+
+- Node.js >= 24
+- pnpm (this is a pnpm workspace, but the backend can also run standalone
+  with `npm`)
+- A MongoDB connection (local or Atlas)
+
+New to pnpm? If it's not already installed on your machine, install it
+globally with npm:
+
+```bash
+npm install -g pnpm
+```
+
+All `pnpm <task> -F <workspace>` commands below are Turbo-style (task first,
+filter after); running them from the repository root avoids needing to `cd`
+into this directory. See the root `README.md` ("pnpm & Turborepo explained")
+for details.
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Configure environment
+
+```bash
+cp apps/backend/.env.example apps/backend/.env
+```
+
+Required variables (validated in `src/config/env.js`):
+
+| Variable                                                                   | Required | Description                                                         |
+| -------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------- |
+| `MONGODB_URI`                                                              | Yes      | MongoDB connection string                                           |
+| `JWT_SECRET`                                                               | Yes      | Long random secret used to sign tokens                              |
+| `PORT`                                                                     | No       | Server port. **Frontends expect `5001`**                            |
+| `JWT_EXPIRES_IN`                                                           | No       | Token lifetime (default `1d`)                                       |
+| `CLIENT_URL`                                                               | No       | Frontend origin for CORS                                            |
+| `SUB_ADMIN_FRONTEND_URL`                                                   | No       | Base URL for invite / reset links (default `http://localhost:5175`) |
+| `SUPER_ADMIN_PASSWORD`                                                     | No       | Used by the seed script                                             |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD` | No       | SMTP config for transactional emails                                |
+
+> **Note:** the port default is `5001` in `src/server.js`. Make sure your
+> `.env` sets `PORT=5001` (or leaves it unset) so the frontends, which
+> default to `http://localhost:5001`, work out of the box.
+
+### 3. Seed the super admin
+
+```bash
+pnpm seed -F backend
+```
+
+This creates a `SUPER_ADMIN` user with username `superadmin` and the
+password from `SUPER_ADMIN_PASSWORD` (skips if one already exists).
+
+### 4. Run the server
+
+```bash
+pnpm dev -F backend        # nodemon (dev)
+pnpm start -F backend      # node
+```
 
 Health check:
 
+```text
 GET http://localhost:5001/api/v1/health
+```
 
-Expected response:
-
+```json
 {
-"success": true,
-"message": "HotelOS backend is running"
+  "success": true,
+  "message": "HotelOS backend is running"
 }
+```
 
-6. Backend Structure
+---
 
-The current project follows a controller/route/middleware/model
-structure.
+## Response envelope
 
-backend/
-├── src/
-│ ├── config/
-│ │ ├── db.js
-│ │ └── env.js
-│ │
-│ ├── constants/
-│ │ └── roles.js
-│ │
-│ ├── controllers/
-│ │ ├── auth.controller.js
-│ │ ├── hotel.controller.js
-│ │ └── user.controller.js
-│ │
-│ ├── dto/
-│ │ └── user.dto.js
-│ │
-│ ├── middleware/
-│ │ ├── auth.middleware.js
-│ │ └── role.middleware.js
-│ │
-│ ├── models/
-│ │ ├── Hotel.js
-│ │ └── User.js
-│ │
-│ ├── routes/
-│ │ ├── auth.routes.js
-│ │ ├── hotel.routes.js
-│ │ ├── hotelRoutes.js
-│ │ └── user.routes.js
-│ │
-│ ├── seed/
-│ │ └── superAdmin.seed.js
-│ │
-│ ├── services/
-│ │
-│ ├── utils/
-│ │ ├── generateCredentials.js
-│ │ ├── jwt.js
-│ │ └── password.js
-│ │
-│ ├── validators/
-│ │
-│ ├── app.js
-│ └── server.js
-│
-├── .env
-├── .env.example
-├── package.json
-└── README.md
+Successful responses:
 
-The exact contents may grow as additional modules are implemented.
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": {}
+}
+```
 
-7. Request Flow
+Errors:
 
-A typical protected request follows this flow:
+```json
+{
+  "success": false,
+  "message": "Something went wrong"
+}
+```
 
-Frontend
-|
-| HTTP request
-v
-Express Route
-|
-v
-authenticate middleware
-|
-| verifies JWT
-v
-req.user populated
-|
-v
-authorize middleware
-|
-| checks role
-v
-Controller
-|
-v
-Service / Model
-|
-v
-MongoDB
-|
-v
-DTO
-|
-v
-JSON response
-|
-v
-Frontend
+Frontends should always check `response.success` (or rely on `@hotelos/api`
+throwing on a non-2xx response).
 
-This separation is important.
+### HTTP status codes
 
-Frontend developers should not bypass authentication or role checks.
+| Status | Meaning                                       |
+| ------ | --------------------------------------------- |
+| `200`  | OK                                            |
+| `201`  | Created                                       |
+| `400`  | Missing / invalid request data                |
+| `401`  | Authentication required / invalid credentials |
+| `403`  | Authenticated but not authorized              |
+| `404`  | Resource / route not found                    |
+| `409`  | Duplicate / conflicting resource              |
+| `500`  | Internal server error                         |
 
-8. Authentication
+---
 
-HotelOS uses JWT-based authentication.
+## API versioning
 
-Login endpoint:
+All endpoints are versioned under **`v1`**. The base URL is:
 
+```text
+http://localhost:5001/api/v1
+```
+
+Examples:
+
+```text
 POST /api/v1/auth/login
-
-Body:
-
-{
-"username": "your_username",
-"password": "your_password"
-}
-
-Successful response contains:
-
-{
-"success": true,
-"message": "Login successful",
-"data": {
-"token": "JWT_TOKEN",
-"user": {
-"id": "...",
-"name": "...",
-"username": "...",
-"role": "...",
-"hotelId": "...",
-"roomId": null,
-"mustChangePassword": true
-}
-}
-}
-
-The frontend should store the access token according to the
-application's security policy and attach it to protected API requests.
-
-9. Bearer Token
-
-Protected requests use:
-
-Authorization: Bearer <JWT_TOKEN>
-
-In Requestly/Postman:
-
-Authorization
-Type: Bearer Token
-Token: <JWT_TOKEN>
-
-For frontend applications, the same concept applies:
-
-Authorization: Bearer ${accessToken}
-
-Do not send the token inside the JSON body.
-
-Do not send:
-
-{
-"token": "..."
-}
-
-unless a specific endpoint explicitly requires it.
-
-10. Roles
-
-HotelOS currently uses roles including:
-
-SUPER_ADMIN
-SUB_ADMIN
-RECEPTIONIST
-KITCHEN
-GUEST
-
-The exact permissions should always be enforced by the backend.
-
-The frontend should use the role received from login to determine which
-dashboard/UI to display, but frontend role checks are not a security
-boundary.
-
-The backend must always verify authorization.
-
-11. Role Hierarchy
-
-SUPER_ADMIN
-
-Global platform-level administrator.
-
-Responsibilities include:
-
-Create hotels.
-
-Create/manage Sub Admin accounts.
-
-Manage global hotel configuration.
-
-Perform platform-level operations.
-
-A Super Admin can work across hotels where the backend explicitly
-permits it.
-
-SUB_ADMIN
-
-Hotel-level administrator.
-
-A Sub Admin is associated with one hotel through:
-
-req.user.hotelId
-
-Responsibilities include hotel-level management such as:
-
-Manage hotel operations.
-
-Manage room allocation/configuration.
-
-Create Kitchen users.
-
-Create Receptionist users.
-
-View users belonging to their hotel.
-
-Manage hotel-level operational settings.
-
-A Sub Admin must not be able to operate on another hotel's data.
-
-RECEPTIONIST
-
-Front-desk operational role.
-
-The intended workflow is:
-
-Guest arrives
-|
-v
-Reception checks guest details
-|
-v
-Guest account is created/managed
-|
-v
-Room is assigned
-|
-v
-Check-in
-|
-v
-Guest uses Guest Dashboard
-
-Guest account creation should happen through the Reception workflow, not
-through the Sub Admin's generic staff-user creation endpoint.
-
-KITCHEN
-
-Kitchen operational role.
-
-Kitchen users work with kitchen-related modules such as:
-
-Food orders
-
-Order status
-
-Food preparation
-
-Kitchen queue
-
-Relevant service requests
-
-The Kitchen frontend should only depend on APIs explicitly assigned to
-the Kitchen role.
-
-GUEST
-
-Guest-facing role.
-
-A guest account represents an actual hotel guest.
-
-The Guest frontend may eventually consume APIs for:
-
-Room information
-
-Orders
-
-Food
-
-Service requests
-
-Hotel services
-
-Guest profile
-
-Booking/check-in information
-
-Guest creation should be tied to the Reception/check-in workflow.
-
-12. Hotel Isolation
-
-This is one of the most important security rules in HotelOS.
-
-A Sub Admin belongs to one hotel.
-
-Example:
-
-Sub Admin A
-hotelId = HOTEL_A
-
-If Sub Admin A calls:
-
-POST /api/v1/users
-
-the backend determines:
-
-const hotelId = req.user.hotelId;
-
-The frontend should NOT be allowed to choose:
-
-{
-"hotelId": "HOTEL_B"
-}
-
-Even if a malicious frontend sends:
-
-{
-"name": "Kitchen User",
-"role": "KITCHEN",
-"hotelId": "HOTEL_B"
-}
-
-the backend must ignore that value.
-
-The backend uses:
-
-Authenticated JWT
-|
-v
-req.user.hotelId
-|
-v
-MongoDB record
-
-This is the correct multi-tenant isolation pattern.
-
-13. User Creation
-
-Endpoint:
-
-POST /api/v1/users
-
-This endpoint is protected.
-
-Current intended authorization:
-
-SUB_ADMIN
-
-and the backend restricts the roles that can be created through this
-endpoint.
-
-Currently:
-
-KITCHEN
-RECEPTIONIST
-
-are valid operational staff roles.
-
-Example request:
-
-{
-"name": "Kitchen Operator"
-}
-
-or, depending on the current controller contract:
-
-{
-"name": "Kitchen Operator",
-"role": "KITCHEN"
-}
-
-The backend generates credentials.
-
-14. Credential Generation
-
-Credential generation is implemented in:
-
-src/utils/generateCredentials.js
-
-The utility generates usernames such as:
-
-grand-kitchen-001
-grand-kitchen-002
-grand-receptionist-001
-
-and temporary passwords.
-
-The username generator follows the concept:
-
-generateUsername(hotelCode, role, number)
-
-Example:
-
-GRAND + KITCHEN + 001
-
-becomes:
-
-grand-kitchen-001
-
-Temporary passwords are generated using Node's crypto functionality.
-
-The API returns the temporary password when the account is initially
-created.
-
-Example:
-
-{
-"success": true,
-"message": "User created successfully",
-"data": {
-"id": "...",
-"name": "Kitchen Operator",
-"username": "grand-kitchen-001",
-"role": "KITCHEN",
-"hotelId": "...",
-"temporaryPassword": "..."
-}
-}
-
-The temporary credential should be treated as sensitive.
-
-15. Guest Account Creation
-
-Do not use:
-
-POST /api/v1/users
-
-as the long-term Guest creation workflow.
-
-The intended architecture is:
-
-SUB_ADMIN
-|
-| manages rooms / hotel operations
-v
-RECEPTIONIST
-|
-| creates guest during check-in
-v
-GUEST
-
-This keeps responsibilities clean.
-
-A future Guest API should have a dedicated endpoint, for example:
-
-/api/v1/guests
-
-rather than treating guests as ordinary staff users.
-
-The exact Guest API contract should be documented here when that module
-is implemented.
-
-16. Getting Users
-
-Endpoint:
-
-GET /api/v1/users
-
-Requires authentication.
-
-The current implementation allows authorized administrative roles to
-retrieve users.
-
-For a Sub Admin, the query is filtered using:
-
-hotelId: req.user.hotelId
-
-Therefore:
-
-Sub Admin of Hotel A
-|
-v
-GET /api/v1/users
-|
-v
-Only Hotel A users
-
-The backend should never rely on a frontend-provided hotel ID for this
-filtering.
-
-17. DTOs
-
-HotelOS uses DTOs to avoid returning raw Mongoose documents directly.
-
-User DTO:
-
-src/dto/user.dto.js
-
-The concept is:
-
-export const userResponseDTO = (user) => ({
-id: user._id,
-name: user.name,
-username: user.username,
-role: user.role,
-hotelId: user.hotelId,
-roomId: user.roomId,
-isActive: user.isActive
-});
-
-Instead of:
-
-res.json(user);
-
-use:
-
-res.json({
-success: true,
-data: userResponseDTO(user)
-});
-
-For multiple users:
-
-data: users.map(userResponseDTO)
-
-Why DTOs matter
-
-DTOs provide a stable API contract.
-
-They prevent accidental exposure of database fields such as:
-
-password
-internal fields
-Mongoose metadata
-
-Frontend developers should build their UI against the documented DTO
-response rather than assuming the complete MongoDB document is
-available.
-
-18. Standard Response Format
-
-Successful responses generally follow:
-
-{
-"success": true,
-"message": "Operation successful",
-"data": {}
-}
-
-For errors:
-
-{
-"success": false,
-"message": "Something went wrong"
-}
-
-Frontend developers should always check:
-
-response.success
-
-before assuming the operation succeeded.
-
-19. HTTP Status Codes
-
-Common statuses:
-
-Status Meaning
-
-200 Request successful
-201 Resource successfully created
-400 Invalid/missing request data
-401 Authentication required/invalid credentials
-403 Authenticated but not authorized
-404 Resource/route not found
-409 Duplicate/conflicting resource
-500 Internal server error
-
-Example:
-
-401
-Authentication required
-
-means the frontend needs a valid access token.
-
-Example:
-
-403
-You do not have permission
-
-means the user is authenticated but their role cannot perform that
-operation.
-
-20. Authentication vs Authorization
-
-These are different.
-
-Authentication
-
-Question:
-
-Who are you?
-
-Handled by:
-
-authenticate
-
-JWT is verified.
-
-Authorization
-
-Question:
-
-Are you allowed to perform this operation?
-
-Handled by:
-
-authorize(...)
-
-Example:
-
-authorize("SUB_ADMIN")
-
-means only a Sub Admin can proceed.
-
-21. Logout
-
-Current initial implementation follows a basic JWT approach.
-
-Endpoint:
-
 POST /api/v1/auth/logout
 
-With basic JWT authentication, logout is primarily handled client-side
-by removing the access token.
+GET  /api/v1/users
+POST /api/v1/users
 
-Frontend should:
+GET  /api/v1/hotels
+POST /api/v1/hotels
+```
 
-User clicks Logout
-|
-v
-Optional POST /api/v1/auth/logout
-|
-v
-Delete access token locally
-|
-v
-Redirect to Login
+Future versions can use `/api/v2/` without breaking existing `v1` clients.
 
-The initial implementation intentionally does not overcomplicate logout
-with:
+> **For frontend developers:** always build API calls with the `/api/v1/`
+> prefix. Do **not** create calls such as `/api/users` when the backend
+> endpoint is `/api/v1/users`.
 
-Refresh-token rotation
+---
 
-Device/session tracking
+## Authentication
 
-Token revocation database
+JWT-based. Login with `username` + `password`:
 
-Token blacklist
+```text
+POST /api/v1/auth/login
+```
 
-These can be added later for a production-grade session system.
-
-22. Rooms
-
-The planned API namespace is:
-
-/api/v1/rooms
-
-The Sub Admin's responsibility includes hotel-level room
-management/allocation.
-
-Important distinction:
-
-SUB_ADMIN
-|
-| manages total rooms / room allocation
-v
-RECEPTIONIST
-|
-| assigns a room to a specific guest
-v
-GUEST
-
-Do not mix room inventory management with Guest account creation.
-
-The exact Room API contract should be documented here once the Room
-controller/routes are implemented.
-
-23. Orders
-
-Planned API namespace:
-
-/api/v1/orders
-
-Likely consumers:
-
-GUEST
-KITCHEN
-RECEPTION
-SUB_ADMIN
-
-depending on the specific operation.
-
-A guest may create/order food.
-
-Kitchen may update preparation/order status.
-
-The backend must enforce role-specific permissions for each operation.
-
-Do not assume that because a frontend can display a button, the user is
-authorized to call the API.
-
-24. Service Requests
-
-Planned namespace:
-
-/api/v1/service-requests
-
-Example workflow:
-
-Guest
-|
-| creates service request
-v
-Backend
-|
-v
-Reception / relevant department
-|
-v
-Request processed
-|
-v
-Status updated
-
-The exact request/status schema should be documented when implemented.
-
-25. Food Items
-
-Planned namespace:
-
-/api/v1/food-items
-
-This will support the food/kitchen system.
-
-Potential frontend consumers:
-
-Guest Dashboard
-Kitchen Dashboard
-Sub Admin Dashboard
-
-The backend should define exactly which role can:
-
-create food items
-
-update food items
-
-disable food items
-
-view food items
-
-change availability
-
-before frontend implementation.
-
-26. Frontend Integration Guide
-
-Every frontend should have a centralized API configuration.
-
-Example:
-
-const API_BASE_URL = "http://localhost:5001/api/v1";
-
-Then:
-
-fetch(`${API_BASE_URL}/users`, {
-headers: {
-Authorization: `Bearer ${token}`,
-"Content-Type": "application/json"
+```json
+{
+  "username": "your_username",
+  "password": "your_password"
 }
-});
+```
 
-Do not scatter:
+Successful response:
 
-http://localhost:5001
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "token": "<JWT>",
+    "user": {
+      "id": "...",
+      "name": "...",
+      "username": "...",
+      "role": "...",
+      "hotelId": "...",
+      "roomId": null,
+      "mustChangePassword": true
+    }
+  }
+}
+```
 
-throughout the frontend code.
+Protected endpoints expect:
 
-Use one API configuration file.
+```text
+Authorization: Bearer <JWT>
+```
 
-For example:
+**Never** send the token inside the JSON body.
 
-src/
-└── config/
-└── api.js
+The JWT payload is:
 
-or:
+```json
+{
+  "userId": "...",
+  "role": "...",
+  "hotelId": "..."
+}
+```
 
-src/
-└── services/
-└── api.js
+`logout` (`authenticate`-protected) is client-driven: it returns success and
+the frontend removes the token locally.
 
-27. Recommended Frontend Structure
+---
 
-A frontend can use a structure such as:
+## Middleware
 
+### `authenticate` (`middleware/auth.middleware.js`)
+
+- Requires `Authorization: Bearer <token>`.
+- Verifies the JWT and loads the user from the DB.
+- Rejects if the token is missing/expired or the user is inactive.
+- Populates `req.user`.
+
+### `authorize(...allowedRoles)` (`middleware/role.middleware.js`)
+
+- Returns `401` if not authenticated.
+- Returns `403` if the user's role is not in the allowed list.
+
+### Document upload (`middleware/upload.middleware.js`)
+
+Multer middleware for guest documents (`uploadGuestDocuments` +
+`handleUploadError`). See [Guest documents](#guest-documents).
+
+---
+
+## Endpoint reference
+
+### Auth — `/api/v1/auth`
+
+| Method | Endpoint                | Auth | Roles  | Description                                |
+| ------ | ----------------------- | ---- | ------ | ------------------------------------------ |
+| POST   | `/auth/login`           | —    | Public | Log in, returns JWT + user                 |
+| POST   | `/auth/logout`          | Yes  | Any    | Log out (client-driven)                    |
+| POST   | `/auth/forgot-username` | —    | Public | Email the username                         |
+| POST   | `/auth/forgot-password` | —    | Public | Email a password reset link (valid 1 hour) |
+| POST   | `/auth/reset-password`  | —    | Public | Set a new password with the reset token    |
+
+**Login** — see [Authentication](#authentication).
+
+**forgot-username / forgot-password** — send `{ "email": "..." }`. Both
+return the same neutral message whether or not an account exists (prevents
+account enumeration).
+
+**reset-password**:
+
+```json
+{ "token": "...", "password": "newPassword123" }
+```
+
+Password must be at least 8 characters.
+
+### Hotels — `/api/v1/hotels`
+
+| Method | Endpoint                  | Auth | Roles                   | Description                                                 |
+| ------ | ------------------------- | ---- | ----------------------- | ----------------------------------------------------------- |
+| GET    | `/hotels`                 | Yes  | SUPER_ADMIN             | List all hotels                                             |
+| POST   | `/hotels`                 | Yes  | SUPER_ADMIN             | Create a hotel                                              |
+| GET    | `/hotels/:hotelId`        | Yes  | SUPER_ADMIN             | Get a hotel                                                 |
+| PATCH  | `/hotels/:hotelId`        | Yes  | SUPER_ADMIN             | Update hotel details / subscription                         |
+| DELETE | `/hotels/:hotelId`        | Yes  | SUPER_ADMIN             | Delete a hotel                                              |
+| PATCH  | `/hotels/:hotelId/status` | Yes  | SUPER_ADMIN             | Activate / deactivate                                       |
+| GET    | `/hotels/me`              | Yes  | SUB_ADMIN, RECEPTIONIST | Current user's hotel (read-only)                            |
+| PATCH  | `/hotels/me`              | Yes  | SUB_ADMIN               | Update own hotel (phone, address, city, check-in/out times) |
+
+**Create hotel** (`POST /hotels`):
+
+```json
+{
+  "name": "The Grand Meridian",
+  "email": "admin@grandmeridian.com",
+  "phone": "+1 555 0100",
+  "address": "1 Main St",
+  "city": "Springfield",
+  "subscriptionStartDate": "2026-01-01",
+  "subscriptionEndDate": "2026-12-31"
+}
+```
+
+`name`, `email`, `subscriptionStartDate`, and `subscriptionEndDate` are
+required. The backend generates a unique `hotelCode` from the name.
+
+**Update status** (`PATCH /hotels/:hotelId/status`):
+
+```json
+{ "status": "ACTIVE" }
+```
+
+Valid: `ACTIVE` | `INACTIVE`.
+
+> The `GET /me` and `PATCH /me` self-service routes are registered before
+> the SUPER_ADMIN-only gate so hotel staff can read their own hotel.
+
+### Users — `/api/v1/users`
+
+| Method | Endpoint     | Auth | Roles                                | Description         |
+| ------ | ------------ | ---- | ------------------------------------ | ------------------- |
+| GET    | `/users`     | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | List users          |
+| POST   | `/users`     | Yes  | SUPER_ADMIN, SUB_ADMIN               | Create a staff user |
+| DELETE | `/users/:id` | Yes  | SUPER_ADMIN, SUB_ADMIN               | Delete a user       |
+
+**List users** — supports an optional `?role=` filter. Sub Admins only see
+users of their own hotel. Receptionists can list users too (used to view
+staff).
+
+**Create user** (`POST /users`, hotel-scoped):
+
+```json
+{
+  "name": "Kitchen Operator",
+  "role": "KITCHEN"
+}
+```
+
+Valid roles to create here: `KITCHEN`, `RECEPTIONIST`. The backend generates
+the `username` (e.g. `grand-kitchen-001`) and a `temporaryPassword`, then
+assigns `req.user.hotelId`. The response reveals the temporary password
+once:
+
+```json
+{
+  "success": true,
+  "message": "User created successfully",
+  "data": {
+    "id": "...",
+    "name": "Kitchen Operator",
+    "username": "grand-kitchen-001",
+    "role": "KITCHEN",
+    "hotelId": "...",
+    "temporaryPassword": "..."
+  }
+}
+```
+
+**Delete user** — Sub Admins may only delete Receptionists/Kitchen of their
+own hotel. SUPER_ADMIN accounts cannot be deleted through this endpoint.
+
+> Prefer the **invitation flow** for provisioning Sub Admin / Receptionist /
+> Kitchen accounts (see below) rather than direct user creation.
+
+### Invitations — `/api/v1/invites`
+
+| Method | Endpoint          | Auth | Roles                  | Description                                |
+| ------ | ----------------- | ---- | ---------------------- | ------------------------------------------ |
+| POST   | `/invites`        | Yes  | SUPER_ADMIN, SUB_ADMIN | Send an invitation email                   |
+| POST   | `/invites/verify` | —    | Public                 | Validate an invitation token               |
+| POST   | `/invites/accept` | —    | Public                 | Accept invite, create/activate the account |
+
+**Send invite** (`POST /invites`):
+
+```json
+{
+  "name": "Ada Lovelace",
+  "username": "ada",
+  "email": "ada@example.com",
+  "role": "RECEPTIONIST",
+  "hotelId": "..." // required ONLY when a SUPER_ADMIN invites a SUB_ADMIN
+}
+```
+
+Authorization rules:
+
+- `SUPER_ADMIN` → can only invite `SUB_ADMIN` (must provide `hotelId`).
+- `SUB_ADMIN` → can only invite `RECEPTIONIST` or `KITCHEN` (hotel comes
+  from `req.user.hotelId`).
+- Invitations only to `ACTIVE` hotels.
+- The invited user is created inactive (`isActive: false`,
+  `mustChangePassword: true`) and an email is sent with an invite link.
+- Tokens expire in **24 hours**.
+
+**Verify** (`POST /invites/verify`):
+
+```json
+{ "token": "..." }
+```
+
+Returns the invited user's details and hotel name if valid.
+
+**Accept** (`POST /invites/accept`):
+
+```json
+{
+  "token": "...",
+  "name": "Ada Lovelace",
+  "username": "ada",
+  "password": "newPassword123"
+}
+```
+
+Password must be at least 8 characters. On success the account is activated
+and a JWT is returned so the user is logged in immediately.
+
+### Rooms — `/api/v1/rooms`
+
+Scoped to the authenticated user's hotel.
+
+| Method | Endpoint     | Auth | Roles                   | Description   |
+| ------ | ------------ | ---- | ----------------------- | ------------- |
+| GET    | `/rooms`     | Yes  | SUB_ADMIN, RECEPTIONIST | List rooms    |
+| GET    | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Get a room    |
+| POST   | `/rooms`     | Yes  | SUB_ADMIN, RECEPTIONIST | Create a room |
+| PATCH  | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Update a room |
+| DELETE | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete a room |
+
+**Create room** (`POST /rooms`):
+
+```json
+{
+  "roomNumber": "101",
+  "type": "Standard",
+  "rate": 1200,
+  "floor": 1
+}
+```
+
+- `type` must be `Standard` | `Deluxe` | `Suite`.
+- `rate` must be a non-negative number.
+- A room number must be unique within one hotel (`409` if duplicated).
+
+**Update room** — accepts any of `status`, `type`, `rate`, `floor`,
+`currentGuest`, `checkIn`, `checkOut`. Room `status` values:
+`available` | `occupied` | `reserved` | `cleaning`.
+
+Room response DTO fields:
+
+```json
+{
+  "id": "...",
+  "roomNumber": "101",
+  "floor": 1,
+  "type": "Standard",
+  "status": "available",
+  "rate": 1200,
+  "currentGuest": null,
+  "checkIn": null,
+  "checkOut": null
+}
+```
+
+### Guests — `/api/v1/guests`
+
+Scoped to the authenticated user's hotel. Accessible by `SUB_ADMIN` and
+`RECEPTIONIST` (router-level authorization).
+
+| Method | Endpoint                       | Auth | Roles                   | Description                     |
+| ------ | ------------------------------ | ---- | ----------------------- | ------------------------------- |
+| GET    | `/guests`                      | Yes  | SUB_ADMIN, RECEPTIONIST | List guests (`?status=`)        |
+| GET    | `/guests/:id`                  | Yes  | SUB_ADMIN, RECEPTIONIST | Get a guest                     |
+| POST   | `/guests`                      | Yes  | SUB_ADMIN, RECEPTIONIST | Register a guest (multipart)    |
+| PATCH  | `/guests/:id`                  | Yes  | SUB_ADMIN, RECEPTIONIST | Update guest / check-out        |
+| PATCH  | `/guests/:id/credentials`      | Yes  | SUB_ADMIN, RECEPTIONIST | Update / regenerate credentials |
+| DELETE | `/guests/:id/documents/:docId` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete one document             |
+| DELETE | `/guests/:id`                  | Yes  | SUB_ADMIN, RECEPTIONIST | Delete a guest                  |
+
+**Register guest** (`POST /guests`) — sent as `multipart/form-data`:
+
+| Field       | Type         | Notes                                          |
+| ----------- | ------------ | ---------------------------------------------- |
+| `name`      | string       | Required                                       |
+| `email`     | string       | Required, must be unique                       |
+| `phone`     | string       | Optional                                       |
+| `address`   | string       | Optional                                       |
+| `idType`    | string       | Default `Aadhaar`                              |
+| `idNumber`  | string       | Optional                                       |
+| `roomId`    | string       | Required; must belong to the hotel and be free |
+| `checkIn`   | string       | Required when `status` is `checked-in`         |
+| `checkOut`  | string       | Required, must be after `checkIn`              |
+| `status`    | string       | `checked-in` (default) or `reserved`           |
+| `documents` | files[]      | Up to 5 files (`documents` field)              |
+| `docTypes`  | string(json) | Optional JSON array parallel to files          |
+
+On success the backend:
+
+1. Generates a guest `username` (e.g. `GRAND-GST-001`) and temporary
+   password,
+2. creates a `GUEST` login account (`User`),
+3. creates the `Guest` profile with documents,
+4. claims the room (sets it to `occupied` or `reserved` with display info),
+5. emails the guest credentials (non-blocking on failure).
+
+Response includes the guest DTO plus the generated credentials:
+
+```json
+{
+  "success": true,
+  "message": "Guest registered successfully",
+  "data": {
+    "id": "...",
+    "name": "Ada Lovelace",
+    "...": "guest DTO fields...",
+    "credentials": {
+      "username": "grand-gst-001",
+      "temporaryPassword": "...",
+      "emailSent": true
+    }
+  }
+}
+```
+
+**Check-out** — `PATCH /guests/:id` with `{ "status": "checked-out" }`
+frees the room (sets it back to `cleaning`).
+
+**Update credentials** (`PATCH /guests/:id/credentials`) — regenerate and
+email new credentials, or set a specific password:
+
+```json
+{ "action": "regenerate" }
+// or
+{ "password": "newPassword123", "reveal": true }
+```
+
+**List guests** — supports `?status=reserved|checked-in|checked-out`.
+Populates room details (`roomNumber`, `type`, `rate`, `floor`).
+
+Guest response DTO includes `id`, `name`, `email`, `phone`, `address`,
+`idType`, `idNumber`, `roomId`, `room`, `hotelId`, `userId`, `checkIn`,
+`checkOut`, `status`, `nights`, `documents`, `createdAt`.
+
+#### Guest documents
+
+- Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`,
+  `application/pdf` (`400` otherwise).
+- Max **5 MB** per file, max **5 files** per request.
+- Stored on disk under `uploads/guests/<hotelId>/` and served statically at
+  `/uploads/...` (the `documentDTO` rewrites paths to absolute URLs).
+- Document objects contain `id`, `docType`, `filename`, `url`, `uploadedAt`.
+
+### Dashboard — `/api/v1/dashboard`
+
+| Method | Endpoint           | Auth | Roles                                | Description           |
+| ------ | ------------------ | ---- | ------------------------------------ | --------------------- |
+| GET    | `/dashboard/stats` | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Hotel dashboard stats |
+
+`GET /api/v1/dashboard/stats` returns (hotel-scoped for SU and REC):
+
+```json
+{
+  "data": {
+    "hotelName": "The Grand Meridian",
+    "rooms": {
+      "total": 12,
+      "available": 8,
+      "occupied": 3,
+      "reserved": 1,
+      "cleaning": 0
+    },
+    "guests": {
+      "checkedIn": 3,
+      "arrivalsToday": 1,
+      "departuresToday": 0
+    },
+    "occupancyPercent": 25,
+    "pendingReservations": 0,
+    "pendingServiceRequests": 0,
+    "revenueToday": 0,
+    "activeStaff": 4,
+    "recentActivities": []
+  }
+}
+```
+
+`pendingReservations`, `pendingServiceRequests`, and `revenueToday` are
+still neutral (`0`) pending future modules.
+
+---
+
+## Email flows
+
+All email is sent by `src/services/email.service.js` via Nodemailer using
+`EMAIL_*` env vars. Four email types:
+
+| Trigger                                    | Email                       |
+| ------------------------------------------ | --------------------------- |
+| Staff invite (`POST /invites`)             | Invitation link (valid 24h) |
+| Guest registration / credential regenerate | Guest credentials           |
+| `forgot-username`                          | Username reminder           |
+| `forgot-password`                          | Reset link (valid 1 hour)   |
+
+If SMTP isn't configured, guest-credential email failures are logged and
+ignored (the guest still gets their credentials in the API response).
+
+---
+
+## Frontend integration guide
+
+The recommended way to call the API is the shared **`@hotelos/api`** package
+(`packages/api`), which handles the base URL, bearer token, response parsing,
+and errors. See `packages/api/README.md`.
+
+```js
+import { api } from "@hotelos/api";
+
+// public
+const login = await api.post("/api/v1/auth/login", { username, password });
+
+// protected
+const rooms = await api.get("/api/v1/rooms", { auth: true });
+
+// JSON body
+const user = await api.post("/api/v1/users", { name, role }, { auth: true });
+
+// multipart uploads (FormData)
+const result = await api.post("/api/v1/guests", formData, { auth: true });
+```
+
+Golden rules:
+
+- Always use the `/api/v1/` prefix.
+- Login first, then send the JWT as a `Bearer` token.
+- Never send a `hotelId` the backend derives from the authenticated user.
+- Never rely on frontend role checks for security — the backend authorizes.
+- Do not expect passwords in responses (except temporary passwords returned
+  at creation time).
+- Use the documented DTO fields.
+- Handle `401` by re-authenticating; handle `403` as a permissions problem.
+- Keep API calls in a dedicated service layer.
+
+Recommended login routing on the frontend:
+
+```js
+if (user.role === "SUPER_ADMIN") navigate("/super-admin");
+if (user.role === "SUB_ADMIN") navigate("/sub-admin");
+if (user.role === "RECEPTIONIST") navigate("/reception");
+```
+
+### Login flow
+
+```
+Login Page
+   │  username + password
+   ▼
+POST /api/v1/auth/login
+   │
+   ▼
+Backend validates credentials → JWT generated
+   │
+   ▼
+Frontend receives token + user
+   │
+   ├──→ store authenticated state (auth_token / auth_user in localStorage)
+   │
+   └──→ inspect user.role → redirect to the correct dashboard
+```
+
+These role checks are for navigation/UI only — the backend remains
+responsible for security.
+
+### Recommended frontend structure
+
+Keep API calls in a service layer rather than inside UI components:
+
+```
 src/
 ├── components/
 ├── pages/
-├── services/
-│ ├── auth.js
-│ ├── users.js
-│ ├── rooms.js
-│ ├── orders.js
-│ └── serviceRequests.js
-├── context/
-│ └── AuthContext.jsx
-├── config/
-│ └── api.js
+├── services/            <- domain API calls (auth, users, rooms, guests, ...)
+├── context/             <- e.g. AuthContext
+├── config/              <- e.g. api.js (base URL, shared helpers)
 └── App.jsx
+```
 
-Keep API calls in service files rather than putting large fetch/axios
-calls directly inside UI components.
+The apps in this repo already follow this pattern via `src/services/*` and
+the shared `@hotelos/api` client.
 
-28. Login Flow for Frontend Developers
+### Token handling
 
-Example:
+For every protected request:
 
-Login Page
-|
-| username + password
-v
-POST /api/v1/auth/login
-|
-v
-Backend validates credentials
-|
-v
-JWT generated
-|
-v
-Frontend receives token + user
-|
-+----> store authenticated state
-|
-+----> inspect user.role
-|
-v
-Redirect to correct dashboard
-
-Example:
-
-if (user.role === "SUB_ADMIN") {
-navigate("/sub-admin");
-}
-
-if (user.role === "RECEPTIONIST") {
-navigate("/reception");
-}
-
-if (user.role === "KITCHEN") {
-navigate("/kitchen");
-}
-
-if (user.role === "GUEST") {
-navigate("/guest");
-}
-
-These frontend checks are for navigation/UI only.
-
-The backend remains responsible for security.
-
-29. Token Handling
-
-For protected API calls:
-
+```text
 Authorization: Bearer <TOKEN>
+```
 
-Do not:
+Do **not**:
 
-hard-code tokens in source code
-
-commit tokens to Git
-
-send another user's token
-
-expose tokens in public logs
-
-put JWTs in screenshots shared publicly
+- hard-code tokens in source code,
+- commit tokens to Git,
+- send another user's token,
+- expose tokens in public logs, or
+- put JWTs in screenshots shared publicly.
 
 If a token is accidentally exposed, treat it as compromised and log in
 again / rotate credentials as appropriate.
 
-30. Testing with Requestly
+---
 
-The project has been tested using Requestly API Client.
+## Common errors & troubleshooting
 
-Recommended Requestly organization:
+| Status | Message                                            | Cause & fix                                                                                                                                      |
+| ------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `401`  | Authentication required / invalid or expired token | No `Authorization` header, invalid JWT, or expired JWT. Re-check `Authorization: Bearer <token>`; if expired, log in again                       |
+| `403`  | You do not have permission                         | Authentication worked but the role is not allowed. E.g. `KITCHEN` calling an endpoint restricted to `SUB_ADMIN`                                  |
+| `404`  | Cannot POST/GET `/api/v1/...`                      | Route not imported / not mounted. Check `app.js` has `app.use("/api/v1/...", ...Routes)`; verify the URL and HTTP method; is the server running? |
+| `500`  | Failed to ...                                      | Check the backend terminal — it logs the actual exception. Don't rely only on the frontend error message                                         |
 
-HotelOS
-│
-├── Authentication
-│ ├── Super Admin Login
-│ ├── Sub Admin Login
-│ └── Logout
-│
-├── Hotels
-│ └── Create Hotel
-│
-├── Users
-│ ├── Create Kitchen User
-│ ├── Create Reception User
-│ └── Get Users
-│
-├── Rooms
-│
-├── Orders
-│
-└── Service Requests
+For `404`, the app should contain something equivalent to:
 
-31. Testing Login
+```js
+app.use("/api/v1/users", userRoutes);
+```
 
-Request:
+---
 
-POST http://localhost:5001/api/v1/auth/login
+## Frontend ownership by dashboard
 
-Body:
+| Dashboard   | Main backend areas                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| Super Admin | Authentication, Hotels, Sub Admin management, global administration                        |
+| Sub Admin   | Authentication, own hotel info, Rooms, staff management (Kitchen / Reception), hotel users |
+| Reception   | Authentication, Guests, check-in / check-out, room assignment, guest info & credentials    |
+| Kitchen     | Authentication, food items, orders, order status, kitchen queue (roadmap)                  |
+| Guest       | Authentication, guest profile, room info, food menu, orders, service requests (roadmap)    |
 
-{
-"username": "your_username",
-"password": "your_password"
-}
+Guests are created as part of the Reception/check-in workflow — never mix
+guest provisioning with staff user creation.
 
-A successful response contains:
+---
 
-{
-"success": true,
-"message": "Login successful",
-"data": {
-"token": "..."
-}
-}
+## Testing with curl
 
-Copy the token.
-
-Use it as the Bearer token for protected requests.
-
-32. Testing Sub Admin User Creation
-
-First login as a Sub Admin.
-
-Copy the JWT.
-
-Then:
-
-POST http://localhost:5001/api/v1/users
-
-Authorization:
-
-Bearer <SUB_ADMIN_TOKEN>
-
-Body:
-
-{
-"name": "Kitchen Operator",
-"role": "KITCHEN"
-}
-
-The backend generates:
-
-username
-
-temporary password
-
-hotel ID
-
-The frontend does not provide the hotel ID.
-
-33. Testing Hotel Isolation
-
-This is a critical security test.
-
-Suppose:
-
-Sub Admin A -> Hotel A
-
-Try sending:
-
-{
-"name": "Test User",
-"role": "KITCHEN",
-"hotelId": "HOTEL_B"
-}
-
-The backend should still assign:
-
-Hotel A
-
-because it uses:
-
-req.user.hotelId
-
-rather than trusting the body.
-
-34. Testing Get Users
-
-Request:
-
-GET http://localhost:5001/api/v1/users
-
-Authorization:
-
-Bearer <SUB_ADMIN_TOKEN>
-
-No body is required.
-
-Expected:
-
-{
-"success": true,
-"data": []
-}
-
-The response should contain DTO fields rather than raw MongoDB
-documents.
-
-Passwords must not be returned.
-
-35. Testing with curl
-
-Health:
-
+```bash
+# Health
 curl http://localhost:5001/api/v1/health
 
-Login:
-
+# Login (capture the token from the response)
 curl -X POST http://localhost:5001/api/v1/auth/login \
--H "Content-Type: application/json" \
--d '{
-"username": "your_username",
-"password": "your_password"
-}'
+  -H "Content-Type: application/json" \
+  -d '{"username":"your_username","password":"your_password"}'
 
-Protected request:
-
+# Protected request
 curl http://localhost:5001/api/v1/users \
--H "Authorization: Bearer YOUR_TOKEN"
+  -H "Authorization: Bearer YOUR_TOKEN"
 
-Create staff user:
-
+# Create a staff user
 curl -X POST http://localhost:5001/api/v1/users \
--H "Content-Type: application/json" \
--H "Authorization: Bearer YOUR_SUB_ADMIN_TOKEN" \
--d '{
-"name": "Kitchen Operator",
-"role": "KITCHEN"
-}'
-
-36. Common Errors
-
-401 Authentication required
-
-Usually means:
-
-no Authorization header
-
-invalid JWT
-
-expired JWT
-
-Check:
-
-Authorization: Bearer <token>
-
-403 You do not have permission
-
-Authentication worked, but the user's role is not allowed.
-
-For example:
-
-KITCHEN
-
-trying to access an endpoint restricted to:
-
-SUB_ADMIN
-
-404 Cannot POST /api/v1/users
-
-Check:
-
-Is user.routes.js imported?
-
-Is it mounted in app.js?
-
-Is the URL correct?
-
-Is the HTTP method correct?
-
-Is the server running?
-
-The app should contain something equivalent to:
-
-app.use("/api/v1/users", userRoutes);
-
-500 Failed to create user
-
-Check the backend terminal.
-
-Do not rely only on the frontend error message.
-
-The backend logs the actual exception.
-
-37. Important Security Rules
-
-Rule 1 --- Never trust frontend hotel IDs
-
-Bad:
-
-const { hotelId } = req.body;
-
-for Sub Admin hotel ownership.
-
-Good:
-
-const hotelId = req.user.hotelId;
-
-Rule 2 --- Never return passwords
-
-Never do:
-
-res.json(user);
-
-Use DTOs.
-
-Rule 3 --- Never rely only on frontend authorization
-
-A frontend may hide:
-
-Delete button
-
-but a malicious user can still manually call the API.
-
-Therefore the backend must enforce:
-
-authenticate +
-authorize
-
-Rule 4 --- Never hard-code production secrets
-
-Do not commit:
-
-JWT_SECRET
-MONGODB_URI
-database passwords
-real tokens
-
-Rule 5 --- Do not mix Guest and Staff creation
-
-Staff:
-
-SUB_ADMIN -> KITCHEN / RECEPTIONIST
-
-Guest:
-
-RECEPTIONIST -> GUEST
-
-Keep these workflows separate.
-
-38. API Contract for Frontend Developers
-
-Before building a frontend feature, identify:
-
-1. HTTP method
-2. URL
-3. Authentication requirement
-4. Allowed role
-5. Request body
-6. Response body
-7. Error responses
-
-For example:
-
-Feature: Create Kitchen User
-
-Method:
-POST
-
-URL:
-/api/v1/users
-
-Authentication:
-Required
-
-Role:
-SUB_ADMIN
-
-Body:
-{
-"name": "Kitchen Operator",
-"role": "KITCHEN"
-}
-
-Hotel ID:
-NOT PROVIDED BY FRONTEND
-
-Backend:
-req.user.hotelId
-
-Response:
-{
-"success": true,
-"message": "User created successfully",
-"data": {...}
-}
-
-This format should be followed for future endpoints.
-
-39. Frontend Ownership by Dashboard
-
-Super Admin Dashboard
-
-Main backend areas:
-
-Authentication
-Hotels
-Sub Admin management
-Global administration
-
-Sub Admin Dashboard
-
-Main backend areas:
-
-Authentication
-Hotel information
-Rooms
-Room allocation/configuration
-Kitchen user management
-Reception user management
-Hotel-level users
-
-Reception Dashboard
-
-Main backend areas:
-
-Authentication
-Guests
-Check-in
-Check-out
-Room assignment
-Guest information
-Guest service requests
-Relevant orders
-
-Guest accounts should be created as part of the Reception/guest
-workflow.
-
-Kitchen Dashboard
-
-Main backend areas:
-
-Authentication
-Food items
-Orders
-Order status
-Kitchen queue
-Relevant service requests
-
-Guest Dashboard
-
-Main backend areas:
-
-Authentication
-Guest profile
-Room information
-Food menu
-Orders
-Service requests
-Order/request status
-Hotel services
-
-40. Recommended Development Workflow
-
-When implementing a new feature:
-
-1. Define database model
-   |
-   v
-2. Define request/response contract
-   |
-   v
-3. Create DTO
-   |
-   v
-4. Create controller/service
-   |
-   v
-5. Add authentication
-   |
-   v
-6. Add authorization
-   |
-   v
-7. Add route
-   |
-   v
-8. Mount route in app.js
-   |
-   v
-9. Test with Requestly/curl
-   |
-   v
-10. Give frontend developer the API contract
-    |
-    v
-11. Build frontend integration
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_SUB_ADMIN_TOKEN" \
+  -d '{"name":"Kitchen Operator","role":"KITCHEN"}'
+```
+
+---
+
+## Security rules
+
+- **Never trust frontend hotel IDs** — use `req.user.hotelId`.
+- **Never return passwords** — always respond via DTOs.
+- **Never rely only on frontend authorization** — the backend must enforce
+  `authenticate` + `authorize`.
+- **Never hard-code or commit secrets** (`JWT_SECRET`, `MONGODB_URI`, SMTP
+  passwords, real tokens).
+- **Keep staff and guest provisioning separate** — staff via invites /
+  `/users`; guests via the reception `/guests` flow.
+
+---
+
+## Recommended development workflow
+
+When implementing a new backend feature:
+
+1. Define the database model
+2. Define the request/response contract
+3. Create the DTO
+4. Create the controller / service
+5. Add authentication (`authenticate`)
+6. Add authorization (`authorize(...)`)
+7. Add the route
+8. Mount the route in `app.js`
+9. Test with curl / an API client
+10. Hand the API contract to the frontend developer
+11. Build the frontend integration
 
 Do not build the frontend API integration before the backend contract is
 clear.
 
-41. Adding a New Module
+---
 
-Suppose we add Rooms.
+## Adding a new module
 
-Create:
+A new feature follows the existing pattern. For example, adding a module:
 
-src/models/Room.js
-src/controllers/room.controller.js
-src/routes/room.routes.js
-src/dto/room.dto.js
+```text
+src/models/MyModule.js              model + DTO
+src/controllers/myModule.controller.js
+src/routes/myModule.routes.js
+src/dto/myModule.dto.js
+```
 
-Then mount:
+Then mount it in `app.js`:
 
-app.use("/api/v1/rooms", roomRoutes);
+```js
+app.use("/api/v1/my-module", myModuleRoutes);
+```
 
-The frontend can then use:
+Frontends can then use the standard CRUD verbs:
 
-GET /api/v1/rooms
-POST /api/v1/rooms
-PUT /api/v1/rooms/:id
-DELETE /api/v1/rooms/:id
+```text
+GET    /api/v1/my-module
+POST   /api/v1/my-module
+PATCH  /api/v1/my-module/:id
+DELETE /api/v1/my-module/:id
+```
 
 Only implement operations that are actually required and authorized.
 
-42. Do Not Assume an Endpoint Exists
+---
 
-Frontend developers should not invent API URLs.
+## Do not assume an endpoint exists
 
-For example, do not assume:
+Frontend developers should not invent API URLs. For example, do not assume
+`/api/v1/guest/login` or `/api/v1/orders` exist unless they have been
+implemented and documented here. Namespaces such as `rooms`, `orders`,
+`service-requests`, and `food-items` are part of the planned architecture
+and should be treated as available only after their backend implementation
+is complete. Check the backend routes first.
 
-/api/v1/guest/login
+---
 
-exists unless it has been implemented.
-
-Check the backend routes first.
-
-The same applies to:
-
-/api/v1/rooms
-/api/v1/orders
-/api/v1/service-requests
-/api/v1/food-items
-
-These namespaces are part of the planned HotelOS API architecture and
-should be treated as available only after their backend implementation
-is complete.
-
-43. Current API Foundation
-
-The current backend foundation includes:
-
-✅ Express server
-✅ MongoDB connection
-✅ API v1 namespace
-✅ JWT authentication
-✅ Role-based authorization
-✅ Super Admin seed
-✅ Hotel creation foundation
-✅ Sub Admin creation
-✅ Sub Admin login
-✅ Protected user endpoints
-✅ Sub Admin hotel isolation
-✅ Kitchen user creation
-✅ Receptionist user creation
-✅ Automatic staff credential generation
-✅ DTO-based user responses
-✅ Basic logout endpoint
-
-The following areas are part of the broader HotelOS roadmap and should
-be completed/documented as their APIs are implemented:
-
-⏳ Rooms
-⏳ Guest management
-⏳ Check-in/check-out
-⏳ Orders
-⏳ Food items
-⏳ Service requests
-⏳ Advanced session management
-
-44. Production Improvements
-
-The initial backend intentionally keeps authentication simple.
-
-For a production-grade deployment, consider adding:
-
-Refresh tokens
-
-Refresh-token rotation
-
-Session/device tracking
-
-Token revocation
-
-Rate limiting
-
-Request validation
-
-Centralized error handling
-
-Audit logs
-
-Password reset
-
-Email verification
-
-Stronger credential delivery
-
-Security headers
-
-Request logging
-
-Database indexes
-
-Pagination
-
-API documentation/OpenAPI
-
-Automated tests
-
-Automated deployment
-
-Environment-specific configuration
-
-These should be added incrementally rather than overcomplicating the
-initial foundation.
-
-45. API Documentation Checklist
-
-Whenever a new endpoint is added, update the README with:
-
-Endpoint
-HTTP method
-Authentication
-Allowed roles
-Request body
-Path parameters
-Query parameters
-Success response
-Error responses
-Example frontend request
-
-Example:
-
-POST /api/v1/example
-
-Authentication:
-Bearer JWT
-
-Roles:
-SUB_ADMIN
-
-Body:
-{
-"name": "Example"
-}
-
-Response:
-{
-"success": true,
-"message": "Created successfully",
-"data": {}
-}
-
-This keeps the backend handoff clean for every frontend developer.
-
-46. Golden Rules for Frontend Developers
-
-Before integrating any HotelOS API, remember:
-
-Always use /api/v1/.
-
-Login first for protected APIs.
-
-Send the JWT as a Bearer token.
-
-Never send a hotel ID when the backend derives it from the
-authenticated user.
-
-Never assume frontend role checks provide security.
-
-Do not expect passwords in API responses.
-
-Use the documented DTO fields.
-
-Check success and HTTP status.
-
-Handle 401 by requiring authentication again.
-
-Handle 403 as a permissions problem.
-
-Keep API calls in a dedicated service layer.
-
-Do not invent endpoints that are not implemented.
-
-Keep Guest and Staff workflows separate.
-
-Ask the backend developer for the API contract before integrating a
-new feature.
-
-47. Quick Reference
-
-Base URL
-
-http://localhost:5001/api/v1
-
-Authentication
-
-POST /auth/login
-POST /auth/logout
-
-Hotels
-
-GET /hotels
-POST /hotels
-
-Use the currently implemented route/controller contract as the source of
-truth for exact permissions and fields.
-
-Users
-
-GET /users
-POST /users
-
-Planned/expanding modules
-
-/rooms
-/guests
-/orders
-/service-requests
-/food-items
-
-48. Final Architecture
-
-The overall HotelOS backend direction is:
-
-                         HOTEL OS BACKEND
-                                |
-                +---------------+---------------+
-                |               |               |
-             AUTH             USERS           HOTELS
-                |               |               |
-             JWT/RBAC       DTOs/Roles      Multi-hotel
-                |               |
-                |         +-----+-----+
-                |         |           |
-                |       STAFF       GUESTS
-                |         |           |
-                |    +----+----+      |
-                |    |         |      |
-                | Kitchen  Reception  |
-                |              |      |
-                |              +------+
-                |                 |
-                +-----------------+
-                          |
-                    HOTEL OPERATIONS
-                          |
-             +------------+-------------+
-             |            |             |
-           ROOMS        ORDERS       REQUESTS
-             |            |             |
-             +------------+-------------+
-                          |
-                     FRONTENDS
-                          |
-       +----------+-------+-------+----------+
-       |          |               |          |
-
-Super Admin Sub Admin Reception Kitchen
-|
-Guest
-
-The most important architectural principle is:
-
-The frontend decides what to display. The backend decides what the
-user is actually allowed to do.
-
-That principle should remain true for every future HotelOS module.
-
-49. For New Developers
-
-If you are joining the project for the first time, follow this order:
+## Learning path for a new developer
 
 1. Read this README completely.
-2. Run the backend locally.
-3. Test /api/v1/health.
-4. Test Super Admin login.
-5. Test Sub Admin login.
-6. Copy a valid JWT.
-7. Test one protected endpoint.
-8. Understand the role hierarchy.
-9. Understand hotel isolation.
-10. Read the relevant controller and route.
-11. Test the API in Requestly/Postman.
-12. Only then start the frontend integration.
+2. Run the backend locally and test `/api/v1/health`.
+3. Test Super Admin login, then Sub Admin login.
+4. Copy a valid JWT and hit one protected endpoint.
+5. Understand the role hierarchy and hotel isolation.
+6. Read the relevant controller and route for the feature you're building.
+7. Test the API in an API client (see below).
+8. Only then start the frontend integration.
 
-Do not start by guessing API URLs.
+Do not start by guessing API URLs — the backend routes and controller
+contracts are the source of truth.
 
-The backend routes and controller contracts are the source of truth.
+---
 
-Maintainers
+## Testing with an API client (Requestly / Postman)
 
-HotelOS Backend
+The project has been tested with the Requestly API client. A recommended
+collection organization:
 
-For changes to API behavior, update:
+```
+HotelOS
+├── Authentication
+│   ├── Super Admin Login
+│   ├── Sub Admin Login
+│   └── Logout
+├── Hotels
+│   ├── Create Hotel
+│   └── ...
+├── Users
+│   ├── Create Kitchen User
+│   ├── Create Reception User
+│   └── Get Users
+├── Invites
+├── Rooms
+├── Guests
+└── Dashboard
+```
 
-Backend implementation
+The base URL is `http://localhost:5001/api/v1`. Store the login token in the
+client's environment/collection variable and use it as the `Bearer` token for
+protected requests.
 
-API tests
+---
 
-This README
+## Production improvements
 
-Frontend integration documentation where necessary
+The initial backend intentionally keeps authentication simple. For a
+production-grade deployment, these hardening items should be added
+**incrementally** rather than overcomplicating the foundation today:
 
-Keep the API contract stable whenever possible.
+- Refresh tokens + refresh-token rotation
+- Session / device tracking + token revocation
+- Rate limiting
+- Request validation
+- Centralized error handling
+- Audit logs
+- Email verification
+- Stronger credential delivery
+- Security headers
+- Request logging
+- Database indexes
+- Pagination
+- API documentation / OpenAPI
+- Automated tests
+- Automated deployment
+- Environment-specific configuration
+
+---
+
+## Current implementation status
+
+Implemented and documented:
+
+- Express + MongoDB server, `/api/v1` namespace
+- JWT authentication + role-based authorization
+- Super Admin seed
+- Hotel CRUD + status + self-service `/me`
+- Staff user creation (`KITCHEN`, `RECEPTIONIST`) with auto-generated
+  credentials and hotel isolation
+- Invitation flow (send / verify / accept) for Sub Admin, Receptionist,
+  Kitchen
+- Forgot username / forgot password / reset password (email-based)
+- Rooms CRUD (hotel-scoped)
+- Guest registration, check-in/out, documents (multipart upload), and
+  credentials
+- Dashboard stats (rooms, guests, occupancy, staff, activity)
+- DTO-based responses, standard `{ success, message, data }` envelope
+- Static `/uploads` serving for guest documents
+
+Roadmap (not yet implemented):
+
+- Held-back `pendingReservations` / `pendingServiceRequests` / `billing`
+  metrics
+- Orders / food items / kitchen queue
+- Service requests
+- Advanced session management (refresh tokens, revocation)
+
+Add new modules following the existing pattern: model → DTO → controller →
+service → route (with `authenticate` + `authorize`) → mount in `app.js` →
+document the endpoint here.
+
+---
+
+## API documentation checklist
+
+### For backend developers
+
+When adding an endpoint, record:
+
+1. HTTP method & URL
+2. Authentication requirement
+3. Allowed roles
+4. Request body
+5. Path / query parameters
+6. Success response
+7. Error responses
+8. Example frontend request
+
+Keep the API contract stable where possible.
+
+### For frontend developers
+
+Before building a frontend feature, identify the same contract points — for
+example, "Create Kitchen User":
+
+- **Method:** `POST`
+- **URL:** `/api/v1/users`
+- **Authentication:** required
+- **Roles:** `SUB_ADMIN`
+- **Body:**
+  ```json
+  {
+    "name": "Kitchen Operator",
+    "role": "KITCHEN"
+  }
+  ```
+- **Hotel ID:** not provided by the frontend — the backend uses
+  `req.user.hotelId`
+- **Response:**
+  ```json
+  {
+    "success": true,
+    "message": "User created successfully",
+    "data": {}
+  }
+  ```
+
+Follow this format for every new endpoint so the backend handoff stays clean
+for every frontend developer.
