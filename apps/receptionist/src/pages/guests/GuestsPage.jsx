@@ -4,6 +4,21 @@ import AddGuestModal from "./_components/AddGuestModal.jsx";
 import GuestDetailsModal from "./_components/GuestDetailsModal.jsx";
 import EditGuestModal from "./_components/EditGuestModal.jsx";
 
+const statusBadge = {
+  "checked-in": "bg-blue-100 text-blue-700",
+  reserved: "bg-amber-100 text-amber-700",
+  "checked-out": "bg-gray-100 text-gray-600",
+};
+
+const avatarColors = [
+  "bg-purple-500",
+  "bg-blue-500",
+  "bg-green-500",
+  "bg-red-500",
+  "bg-orange-500",
+  "bg-pink-500",
+];
+
 export default function GuestsPage() {
   const { guests, guestsLoading, guestsError, removeGuest, refreshData } =
     useHotelOS();
@@ -48,22 +63,6 @@ export default function GuestsPage() {
       setDeleteBusy(false);
     }
   };
-
-  const statusBadge = {
-    "checked-in": "bg-blue-100 text-blue-700",
-    reserved: "bg-amber-100 text-amber-700",
-    "checked-out": "bg-gray-100 text-gray-600",
-  };
-
-  const avatarLetter = (name) => (name ? name[0].toUpperCase() : "?");
-  const avatarColors = [
-    "bg-purple-500",
-    "bg-blue-500",
-    "bg-green-500",
-    "bg-red-500",
-    "bg-orange-500",
-    "bg-pink-500",
-  ];
 
   return (
     <div className="p-6">
@@ -165,7 +164,7 @@ export default function GuestsPage() {
                         <div
                           className={`h-9 w-9 rounded-xl ${avatarColors[idx % avatarColors.length]} flex items-center justify-center text-sm font-bold text-white`}
                         >
-                          {avatarLetter(g.name)}
+                          {g.name ? g.name[0].toUpperCase() : "?"}
                         </div>
                         <div>
                           <div className="text-navy-900 text-sm font-semibold">
