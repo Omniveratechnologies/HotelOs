@@ -27,8 +27,9 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {
-      "dependsOn": ["^lint"]
+    "preview": {
+      "cache": false,
+      "persistent": true
     },
     "format": {}
   }
