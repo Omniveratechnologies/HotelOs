@@ -8,32 +8,32 @@ export default function DashboardMockup({
 }) {
   return (
     <div
-      className={`overflow-hidden rounded-2xl border border-beige-border bg-cream shadow-soft ${className}`}
+      className={`border-beige-border bg-cream shadow-soft overflow-hidden rounded-2xl border ${className}`}
     >
       {/* window chrome */}
-      <div className="flex items-center gap-2 border-b border-beige-border bg-ivory/60 px-4 py-3">
-        <span className="h-2.5 w-2.5 rounded-full bg-gold/40" />
-        <span className="h-2.5 w-2.5 rounded-full bg-gold/40" />
-        <span className="h-2.5 w-2.5 rounded-full bg-gold/40" />
-        <span className="ml-3 text-[11px] font-medium tracking-wide text-muted">
+      <div className="border-beige-border bg-ivory/60 flex items-center gap-2 border-b px-4 py-3">
+        <span className="bg-gold/40 h-2.5 w-2.5 rounded-full" />
+        <span className="bg-gold/40 h-2.5 w-2.5 rounded-full" />
+        <span className="bg-gold/40 h-2.5 w-2.5 rounded-full" />
+        <span className="text-muted ml-3 text-[11px] font-medium tracking-wide">
           {label}
         </span>
       </div>
 
       <div className="p-4">
-        <p className="mb-3 text-xs text-muted">{greeting}</p>
+        <p className="text-muted mb-3 text-xs">{greeting}</p>
 
         {stats.length > 0 && (
           <div className="mb-3 grid grid-cols-4 gap-2">
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-lg border border-beige-border bg-ivory px-2 py-2"
+                className="border-beige-border bg-ivory rounded-lg border px-2 py-2"
               >
-                <p className="text-sm font-semibold leading-none text-navy">
+                <p className="text-navy text-sm leading-none font-semibold">
                   {s.value}
                 </p>
-                <p className="mt-1 text-[9px] leading-tight text-muted">
+                <p className="text-muted mt-1 text-[9px] leading-tight">
                   {s.label}
                 </p>
               </div>
@@ -43,7 +43,7 @@ export default function DashboardMockup({
 
         <div className="grid grid-cols-2 gap-3">
           {chart && (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-beige-border bg-ivory p-3">
+            <div className="border-beige-border bg-ivory flex flex-col items-center justify-center rounded-lg border p-3">
               <div
                 className="h-16 w-16 rounded-full"
                 style={{
@@ -51,27 +51,27 @@ export default function DashboardMockup({
                 }}
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-full">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-cream">
-                    <span className="text-[10px] font-semibold text-navy">
+                  <div className="bg-cream flex h-10 w-10 items-center justify-center rounded-full">
+                    <span className="text-navy text-[10px] font-semibold">
                       {chart.percent}%
                     </span>
                   </div>
                 </div>
               </div>
-              <p className="mt-2 text-[9px] text-muted">{chart.label}</p>
+              <p className="text-muted mt-2 text-[9px]">{chart.label}</p>
             </div>
           )}
 
           {list && (
-            <div className="rounded-lg border border-beige-border bg-ivory p-3">
-              <p className="mb-2 text-[9px] font-medium text-muted">
+            <div className="border-beige-border bg-ivory rounded-lg border p-3">
+              <p className="text-muted mb-2 text-[9px] font-medium">
                 {list.title}
               </p>
               <div className="space-y-1.5">
                 {list.items.map((item) => (
                   <div key={item} className="flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
-                    <span className="truncate text-[9px] text-navy/80">
+                    <span className="bg-gold h-1.5 w-1.5 shrink-0 rounded-full" />
+                    <span className="text-navy/80 truncate text-[9px]">
                       {item}
                     </span>
                   </div>

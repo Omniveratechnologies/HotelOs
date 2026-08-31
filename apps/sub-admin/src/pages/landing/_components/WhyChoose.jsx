@@ -65,19 +65,19 @@ export default function WhyChoose() {
   return (
     <section id="features" className="bg-cream py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
-        <h2 className="mb-16 text-center font-display text-4xl font-semibold text-navy">
+        <h2 className="font-display text-navy mb-16 text-center text-4xl font-semibold">
           Why Hotels Choose HotelOS
         </h2>
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {reasons.map((r) => (
             <div key={r.title} className="text-center">
-              <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full border border-gold/20 bg-gold/10">
+              <span className="border-gold/20 bg-gold/10 mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full border">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                   {r.icon}
                 </svg>
               </span>
-              <p className="mb-1.5 font-medium text-navy">{r.title}</p>
-              <p className="text-sm leading-relaxed text-navy/60">{r.desc}</p>
+              <p className="text-navy mb-1.5 font-medium">{r.title}</p>
+              <p className="text-navy/60 text-sm leading-relaxed">{r.desc}</p>
             </div>
           ))}
         </div>

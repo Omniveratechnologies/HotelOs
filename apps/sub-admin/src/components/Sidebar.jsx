@@ -119,13 +119,13 @@ export default function Sidebar({ open, onClose }) {
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-navy/40 lg:hidden"
+          className="bg-navy/40 fixed inset-0 z-30 lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed top-0 z-40 flex h-screen w-64 shrink-0 flex-col bg-navy transition-transform duration-200 lg:sticky ${
+        className={`bg-navy fixed top-0 z-40 flex h-screen w-64 shrink-0 flex-col transition-transform duration-200 lg:sticky ${
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
@@ -135,7 +135,7 @@ export default function Sidebar({ open, onClose }) {
           onClick={onClose}
           className="flex h-20 shrink-0 items-center gap-2.5 px-6"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-cream/10">
+          <span className="bg-cream/10 flex h-9 w-9 items-center justify-center rounded-full">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 21V9l8-5 8 5v12"
@@ -153,7 +153,7 @@ export default function Sidebar({ open, onClose }) {
             </svg>
           </span>
 
-          <span className="font-display text-xl font-semibold text-cream">
+          <span className="font-display text-cream text-xl font-semibold">
             Hotel<span className="text-gold">OS</span>
           </span>
         </Link>
@@ -169,7 +169,7 @@ export default function Sidebar({ open, onClose }) {
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm transition-colors ${
                     isActive
-                      ? "bg-gold/15 font-medium text-gold"
+                      ? "bg-gold/15 text-gold font-medium"
                       : "text-cream/60 hover:bg-cream/5 hover:text-cream"
                   }`
                 }
@@ -192,18 +192,18 @@ export default function Sidebar({ open, onClose }) {
         </nav>
 
         {/* Logged-in user */}
-        <div className="border-t border-cream/10 px-4 py-3">
+        <div className="border-cream/10 border-t px-4 py-3">
           <div className="flex items-center gap-2.5 px-3.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 font-display text-sm font-semibold text-gold">
+            <span className="bg-gold/20 font-display text-gold flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold">
               {(user?.name || "A").charAt(0).toUpperCase()}
             </span>
 
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-cream">
+              <p className="text-cream truncate text-sm font-medium">
                 {user?.name || "Sub Admin"}
               </p>
 
-              <p className="truncate text-xs capitalize text-cream/50">
+              <p className="text-cream/50 truncate text-xs capitalize">
                 {(user?.role || "sub admin").toLowerCase()}
               </p>
             </div>
@@ -211,12 +211,12 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         {/* Logout */}
-        <div className="border-t border-cream/10 px-4 py-5">
+        <div className="border-cream/10 border-t px-4 py-5">
           <button
             type="button"
             onClick={handleLogout}
             disabled={loggingOut}
-            className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm text-cream/60 transition-colors hover:bg-cream/5 hover:text-cream disabled:opacity-60"
+            className="text-cream/60 hover:bg-cream/5 hover:text-cream flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm transition-colors disabled:opacity-60"
           >
             <svg
               width="18"

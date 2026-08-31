@@ -9,7 +9,7 @@ function DashboardShell() {
     useHotelOS();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-cream-50">
+    <div className="bg-cream-50 flex h-screen overflow-hidden">
       <Sidebar rooms={rooms} serviceRequests={serviceRequests} />
       <main className="flex-1 overflow-auto">
         <Outlet />

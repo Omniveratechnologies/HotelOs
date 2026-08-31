@@ -1,6 +1,6 @@
 export default function StatCard({ label, value, sub, icon }) {
   return (
-    <div className="rounded-2xl border border-beige-border bg-cream p-5 text-navy shadow-card">
+    <div className="border-beige-border bg-cream text-navy shadow-card rounded-2xl border p-5">
       <div className="mb-4 flex items-start justify-between">
         <span
           className={`flex h-10 w-10 items-center justify-center rounded-full ${"bg-gold/10"}`}

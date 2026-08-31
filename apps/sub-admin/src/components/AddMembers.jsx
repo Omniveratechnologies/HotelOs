@@ -101,14 +101,14 @@ export default function AddMembers({ onInvited }) {
   };
 
   return (
-    <div className="mb-8 rounded-2xl border border-beige-border bg-cream p-6 shadow-card">
+    <div className="border-beige-border bg-cream shadow-card mb-8 rounded-2xl border p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-xl font-semibold text-navy">
+          <h2 className="font-display text-navy text-xl font-semibold">
             Add Members
           </h2>
 
-          <p className="mt-1 text-sm text-muted">
+          <p className="text-muted mt-1 text-sm">
             Add staff members to your hotel.
           </p>
         </div>
@@ -121,7 +121,7 @@ export default function AddMembers({ onInvited }) {
             setInviteMessage("");
             setReceptionistInviteError({});
           }}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-navy px-5 py-3 font-medium text-cream transition hover:opacity-90"
+          className="bg-navy text-cream inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-medium transition hover:opacity-90"
         >
           <span className="text-lg">{showReceptionistForm ? "-" : "+"}</span>
           Add Receptionist
@@ -133,7 +133,7 @@ export default function AddMembers({ onInvited }) {
       =============================================== */}
 
       <div
-        className={`overflow-hidden transition-all duration-500 ease-linear ${showReceptionistForm ? "mt-6 max-h-[1000px] border-t border-beige-border pt-6 " : "max-h-0"}`}
+        className={`overflow-hidden transition-all duration-500 ease-linear ${showReceptionistForm ? "border-beige-border mt-6 max-h-[1000px] border-t pt-6 " : "max-h-0"}`}
       >
         <form onSubmit={handleSendReceptionistInvite} className="max-w-xl">
           <Input
@@ -169,7 +169,7 @@ export default function AddMembers({ onInvited }) {
             error={receptionistInviteError.username}
           />
 
-          <p className="mt-2 text-xs text-muted">
+          <p className="text-muted mt-2 text-xs">
             An invitation link will be sent to this email. The receptionist will
             create their own account and password.
           </p>
@@ -189,7 +189,7 @@ export default function AddMembers({ onInvited }) {
           <button
             type="submit"
             disabled={sendingInvite}
-            className="mt-5 rounded-lg bg-gold px-6 py-3 font-semibold text-navy transition hover:bg-gold-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-gold text-navy hover:bg-gold-hover mt-5 rounded-lg px-6 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
           >
             {sendingInvite ? "Sending Invite..." : "Send Invite"}
           </button>

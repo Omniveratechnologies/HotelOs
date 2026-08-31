@@ -9,7 +9,7 @@ export default function HotelLayout() {
 
   return (
     <SubAdminProvider>
-      <div className="flex min-h-screen bg-ivory font-body">
+      <div className="bg-ivory font-body flex min-h-screen">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <div className="min-w-0 flex-1">

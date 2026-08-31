@@ -103,7 +103,7 @@ export default function DepartmentsCarousel() {
     <section id="product" className="bg-cream py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="mx-auto mb-14 max-w-xl text-center">
-          <h2 className="mb-3 font-display text-4xl font-semibold text-navy">
+          <h2 className="font-display text-navy mb-3 text-4xl font-semibold">
             All Departments. One Platform.
           </h2>
           <p className="text-navy/60">
@@ -116,7 +116,7 @@ export default function DepartmentsCarousel() {
           <button
             onClick={() => shift(-1)}
             aria-label="Previous"
-            className="absolute -left-5 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-beige-border bg-cream text-navy shadow-soft transition-colors hover:border-gold hover:text-gold md:flex"
+            className="border-beige-border bg-cream text-navy shadow-soft hover:border-gold hover:text-gold absolute top-1/2 -left-5 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border transition-colors md:flex"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path
@@ -153,7 +153,7 @@ export default function DepartmentsCarousel() {
           <button
             onClick={() => shift(1)}
             aria-label="Next"
-            className="absolute -right-5 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-beige-border bg-cream text-navy shadow-soft transition-colors hover:border-gold hover:text-gold md:flex"
+            className="border-beige-border bg-cream text-navy shadow-soft hover:border-gold hover:text-gold absolute top-1/2 -right-5 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border transition-colors md:flex"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path
@@ -174,7 +174,7 @@ export default function DepartmentsCarousel() {
               aria-label={`Go to ${d.name}`}
               onClick={() => scrollToIndex(i)}
               className={`h-1.5 rounded-full transition-all ${
-                i === active ? "w-6 bg-gold" : "w-1.5 bg-beige-border"
+                i === active ? "bg-gold w-6" : "bg-beige-border w-1.5"
               }`}
             />
           ))}

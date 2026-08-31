@@ -41,7 +41,7 @@ export default function Pricing() {
     <section id="pricing" className="bg-ivory py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="mx-auto mb-14 max-w-xl text-center">
-          <h2 className="mb-3 font-display text-4xl font-semibold text-navy">
+          <h2 className="font-display text-navy mb-3 text-4xl font-semibold">
             Simple, Transparent Pricing
           </h2>
           <p className="text-navy/60">
@@ -55,7 +55,7 @@ export default function Pricing() {
               key={p.name}
               className={`rounded-2xl border p-8 ${
                 p.featured
-                  ? "scale-[1.02] border-navy bg-navy text-cream shadow-soft"
+                  ? "border-navy bg-navy text-cream shadow-soft scale-[1.02]"
                   : "border-beige-border bg-cream text-navy"
               }`}
             >
@@ -70,7 +70,7 @@ export default function Pricing() {
                 </span>
                 <span
                   className={
-                    p.featured ? "text-sm text-cream/50" : "text-sm text-muted"
+                    p.featured ? "text-cream/50 text-sm" : "text-muted text-sm"
                   }
                 >
                   {p.period}
@@ -106,7 +106,7 @@ export default function Pricing() {
                 className={`block rounded-full px-5 py-3 text-center font-medium transition-colors ${
                   p.featured
                     ? "bg-gold text-cream hover:bg-gold-hover"
-                    : "border border-beige-border text-navy hover:border-gold hover:text-gold"
+                    : "border-beige-border text-navy hover:border-gold hover:text-gold border"
                 }`}
               >
                 Get Started

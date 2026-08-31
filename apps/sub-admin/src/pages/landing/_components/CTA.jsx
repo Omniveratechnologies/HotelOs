@@ -2,9 +2,9 @@ export default function CTA() {
   return (
     <section id="demo" className="bg-cream py-16">
       <div className="mx-auto max-w-5xl px-6">
-        <div className="items-center justify-between gap-6 rounded-2xl bg-navy px-8 py-10 sm:flex">
+        <div className="bg-navy items-center justify-between gap-6 rounded-2xl px-8 py-10 sm:flex">
           <div className="mb-6 flex items-start gap-4 sm:mb-0">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cream/10">
+            <span className="bg-cream/10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <rect
                   x="3"
@@ -24,17 +24,17 @@ export default function CTA() {
               </svg>
             </span>
             <div>
-              <p className="mb-1 font-display text-2xl font-semibold text-cream">
+              <p className="font-display text-cream mb-1 text-2xl font-semibold">
                 Ready to Transform Your Hotel?
               </p>
-              <p className="text-sm text-cream/60">
+              <p className="text-cream/60 text-sm">
                 Schedule a personalized demo and see HotelOS in action.
               </p>
             </div>
           </div>
           <a
             href="#demo"
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-gold px-6 py-3.5 font-medium text-cream transition-colors hover:bg-gold-hover"
+            className="bg-gold text-cream hover:bg-gold-hover inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-3.5 font-medium transition-colors"
           >
             Book a Demo
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
