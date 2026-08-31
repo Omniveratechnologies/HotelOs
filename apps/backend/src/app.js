@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import path from "path";
 
 import hotelRoutes from "./routes/hotel.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -36,8 +35,5 @@ app.use("/api/v1/invites", inviteRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/rooms", roomRoutes);
 app.use("/api/v1/guests", guestRoutes);
-
-// Uploaded guest documents
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 export default app;

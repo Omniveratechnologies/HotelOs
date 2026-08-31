@@ -1,5 +1,4 @@
-import path from "path";
-import fs from "fs";
+import crypto from "crypto";
 
 import Guest from "../models/Guest.js";
 import { guestResponseDTO } from "../models/Guest.js";
@@ -15,7 +14,12 @@ import {
 
 import { sendGuestCredentialsEmail } from "../services/email.service.js";
 
-import crypto from "crypto";
+import { generateUploadUrl, deleteObjects } from "../config/r2.js";
+
+import {
+  MAX_FILES,
+  validateDocument,
+} from "../middleware/upload.middleware.js";
 
 // =====================================================
 // HELPERS
@@ -45,34 +49,31 @@ async function generateGuestUsername(hotelCode) {
   return username;
 }
 
-function resolveDocumentFiles(req) {
-  // Files arrive as req.files (multer .array("documents")).
-  // Optional docTypes JSON array runs parallel to the file order.
-  let docTypes = [];
-
-  try {
-    if (req.body.docTypes) {
-      docTypes = JSON.parse(req.body.docTypes);
-    }
-  } catch {
-    docTypes = [];
+// Documents arrive as JSON metadata referencing R2 objects the client has
+// already uploaded. Each entry: { key, filename, docType, size, mimeType }.
+function resolveDocuments(req) {
+  if (!Array.isArray(req.body.documents)) {
+    return [];
   }
 
-  return (req.files || []).map((file, index) => ({
-    docType: docTypes[index] || null,
-    filename: file.originalname,
-    path: file.path,
+  return req.body.documents.map((doc) => ({
+    docType: doc.docType || null,
+    filename: doc.filename,
+    path: doc.key,
   }));
 }
 
-async function removeFilesQuietly(files) {
-  for (const filePath of files || []) {
-    try {
-      await fs.promises.unlink(filePath);
-    } catch {
-      // File may already be gone - nothing to do
-    }
-  }
+// Best-effort removal of R2 objects referenced by their keys
+async function removeFilesQuietly(keys) {
+  await deleteObjects(keys);
+}
+
+// Build a hotel-partitioned, collision-safe R2 object key for a document.
+function buildDocumentKey(hotelId, originalname) {
+  const unique = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}`;
+  const ext = (originalname.match(/\.[^.]*$/) || [""])[0].toLowerCase();
+
+  return `guests/${hotelId}/${unique}${ext}`;
 }
 
 // Free a room back to cleaning state
@@ -118,6 +119,83 @@ async function sendCredentialsQuietly({
     return false;
   }
 }
+
+// =====================================================
+// GENERATE PRESIGNED UPLOAD URLS (direct-to-R2)
+// =====================================================
+
+export const getDocumentUploadUrls = async (req, res) => {
+  try {
+    const files = req.body.files;
+
+    if (!Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one document is required",
+      });
+    }
+
+    if (files.length > MAX_FILES) {
+      return res.status(400).json({
+        success: false,
+        message: `A maximum of ${MAX_FILES} documents can be uploaded at once`,
+      });
+    }
+
+    for (const file of files) {
+      if (!file?.filename || !file?.mimeType) {
+        return res.status(400).json({
+          success: false,
+          message: "Each document must include a filename and mimeType",
+        });
+      }
+
+      const validationError = validateDocument(file);
+
+      if (validationError) {
+        return res.status(400).json({
+          success: false,
+          message: validationError,
+        });
+      }
+    }
+
+    // Files are stored per hotel: guests/<hotelId>/...
+    const hotelId = req.user.hotelId;
+
+    const uploads = await Promise.all(
+      files.map(async (file) => {
+        const key = buildDocumentKey(hotelId, file.filename);
+
+        const uploadUrl = await generateUploadUrl(key, {
+          contentType: file.mimeType,
+        });
+
+        return {
+          key,
+          uploadUrl,
+          filename: file.filename,
+          docType: file.docType || null,
+          mimeType: file.mimeType,
+          size: file.size,
+        };
+      }),
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Document upload URLs generated successfully",
+      data: uploads,
+    });
+  } catch (error) {
+    console.error("Generate Upload URLs Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate document upload URLs",
+    });
+  }
+};
 
 // =====================================================
 // REGISTER GUEST (multipart)
@@ -193,7 +271,7 @@ export const registerGuest = async (req, res) => {
     });
 
     if (!room) {
-      uploadedPaths = (req.files || []).map((f) => f.path);
+      uploadedPaths = resolveDocuments(req).map((d) => d.path);
 
       await removeFilesQuietly(uploadedPaths);
 
@@ -203,7 +281,7 @@ export const registerGuest = async (req, res) => {
     }
 
     if (["occupied", "reserved"].includes(room.status)) {
-      uploadedPaths = (req.files || []).map((f) => f.path);
+      uploadedPaths = resolveDocuments(req).map((d) => d.path);
 
       await removeFilesQuietly(uploadedPaths);
 
@@ -221,7 +299,7 @@ export const registerGuest = async (req, res) => {
     const existingUser = await User.findOne({ email: normalizedEmail });
 
     if (existingUser) {
-      uploadedPaths = (req.files || []).map((f) => f.path);
+      uploadedPaths = resolveDocuments(req).map((d) => d.path);
 
       await removeFilesQuietly(uploadedPaths);
 
@@ -240,7 +318,7 @@ export const registerGuest = async (req, res) => {
     );
 
     if (!hotel) {
-      uploadedPaths = (req.files || []).map((f) => f.path);
+      uploadedPaths = resolveDocuments(req).map((d) => d.path);
 
       await removeFilesQuietly(uploadedPaths);
 
@@ -274,7 +352,7 @@ export const registerGuest = async (req, res) => {
     // CREATE GUEST PROFILE WITH DOCUMENTS
     // =================================================
 
-    const documents = resolveDocumentFiles(req);
+    const documents = resolveDocuments(req);
 
     uploadedPaths = documents.map((d) => d.path);
 
@@ -330,7 +408,7 @@ export const registerGuest = async (req, res) => {
       success: true,
       message: "Guest registered successfully",
       data: {
-        ...guestResponseDTO(guest.toJSON()),
+        ...(await guestResponseDTO(guest.toJSON())),
         credentials: {
           username,
           temporaryPassword,
@@ -386,10 +464,8 @@ export const getGuests = async (req, res) => {
       .populate("roomId", "roomNumber type rate floor")
       .sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      success: true,
-      message: "Guests fetched successfully",
-      data: guests.map((g) =>
+    const data = await Promise.all(
+      guests.map((g) =>
         guestResponseDTO(g, {
           room: g.roomId
             ? {
@@ -402,6 +478,12 @@ export const getGuests = async (req, res) => {
             : null,
         }),
       ),
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Guests fetched successfully",
+      data,
     });
   } catch (error) {
     console.error("Get Guests Error:", error);
@@ -434,7 +516,7 @@ export const getGuestById = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Guest fetched successfully",
-      data: guestResponseDTO(guest, {
+      data: await guestResponseDTO(guest, {
         room: guest.roomId
           ? {
               id: guest.roomId._id,
@@ -470,7 +552,7 @@ export const updateGuest = async (req, res) => {
     });
 
     if (!guest) {
-      uploadedPaths = (req.files || []).map((f) => f.path);
+      uploadedPaths = resolveDocuments(req).map((d) => d.path);
 
       await removeFilesQuietly(uploadedPaths);
 
@@ -498,7 +580,7 @@ export const updateGuest = async (req, res) => {
       });
 
       if (clash && String(clash._id) !== String(guest.userId)) {
-        uploadedPaths = (req.files || []).map((f) => f.path);
+        uploadedPaths = resolveDocuments(req).map((d) => d.path);
 
         await removeFilesQuietly(uploadedPaths);
 
@@ -511,8 +593,8 @@ export const updateGuest = async (req, res) => {
       guest.email = req.body.email.trim().toLowerCase();
     }
 
-    // Optional new documents (multipart edit)
-    const newDocuments = resolveDocumentFiles(req);
+    // Optional new documents (JSON edit)
+    const newDocuments = resolveDocuments(req);
 
     uploadedPaths = newDocuments.map((d) => d.path);
 
@@ -547,7 +629,7 @@ export const updateGuest = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Guest updated successfully",
-      data: guestResponseDTO(populated, {
+      data: await guestResponseDTO(populated, {
         room: populated.roomId
           ? {
               id: populated.roomId._id,

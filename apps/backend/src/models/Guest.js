@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+import { generateDownloadUrl } from "../config/r2.js";
+
 export const GUEST_ID_TYPES = [
   "Aadhaar",
   "PAN",
@@ -127,25 +129,21 @@ guestSchema.virtual("nights").get(function () {
   return Math.max(1, nights);
 });
 
-// Convert a stored filesystem path into a servable absolute /uploads/... URL.
-// Base URL is hardcoded for now; replaced when uploads move to Cloudflare R2.
-const DOCUMENT_BASE_URL = "http://localhost:5001";
-
-const documentDTO = (doc) => {
-  const match = String(doc.path || "").match(/uploads[\\/](.+)$/);
+// The document's stored "path" is the Cloudflare R2 object key; expose it
+// through a short-lived presigned download URL.
+const documentDTO = async (doc) => {
+  const key = String(doc.path || "");
 
   return {
     id: doc._id,
     docType: doc.docType,
     filename: doc.filename,
-    url: match
-      ? `${DOCUMENT_BASE_URL}/uploads/${match[1].replace(/\\/g, "/")}`
-      : null,
+    url: key ? await generateDownloadUrl(key) : null,
     uploadedAt: doc.uploadedAt,
   };
 };
 
-const guestResponseDTO = (guest, extra = {}) => ({
+const guestResponseDTO = async (guest, extra = {}) => ({
   id: guest._id,
   name: guest.name,
   email: guest.email,
@@ -169,7 +167,7 @@ const guestResponseDTO = (guest, extra = {}) => ({
   checkOut: guest.checkOut,
   status: guest.status,
   nights: guest.nights ?? null,
-  documents: (guest.documents || []).map(documentDTO),
+  documents: await Promise.all((guest.documents || []).map(documentDTO)),
   createdAt: guest.createdAt,
   ...extra,
 });
