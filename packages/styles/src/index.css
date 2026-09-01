@@ -1,0 +1,15 @@
+/*
+ * @hotelos/styles — full theme entry.
+ *
+ * Self-bootstraps Tailwind v4 and applies the centralized tokens, base
+ * defaults, and utilities. Apps import this (or the individual layers):
+ *
+ *   @import "@hotelos/styles";
+ *
+ * Tailwind v4 dedupes repeated `@import "tailwindcss"`, so existing apps can
+ * also keep their own import and add the package entry after it.
+ */
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./base/base.css";
+@import "./base/utilities.css";

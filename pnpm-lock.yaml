@@ -177,6 +177,18 @@ importers:
 
   packages/api: {}
 
+  packages/styles:
+    devDependencies:
+      '@tailwindcss/postcss':
+        specifier: ^4.3.3
+        version: 4.3.3
+      postcss:
+        specifier: ^8.5.26
+        version: 8.5.26
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
+
 packages:
 
   '@alloc/quick-lru@5.2.0':

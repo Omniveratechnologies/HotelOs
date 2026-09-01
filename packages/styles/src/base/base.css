@@ -1,0 +1,42 @@
+/*
+ * @hotelos/styles — global base layer.
+ *
+ * Framework-agnostic defaults that any app can opt into via
+ * `@import "@hotelos/styles/base/base.css";` (imported automatically by the
+ * package entry `@import "@hotelos/styles";`).
+ */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border, currentColor);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: var(--color-primary-200);
+    color: var(--color-brand-900);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}

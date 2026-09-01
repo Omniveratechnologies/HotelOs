@@ -1,0 +1,74 @@
+/*
+ * @hotelos/styles — theme utilities.
+ *
+ * Importable standalone via `@import "@hotelos/styles/base/utilities.css";`
+ * (imported automatically by the package entry `@import "@hotelos/styles";`).
+ */
+@utility scrollbar-thin {
+  &::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-primary-400);
+    border-radius: 2px;
+  }
+}
+
+@utility bg-brand-gradient {
+  background-image: linear-gradient(
+    to right,
+    var(--color-brand-900),
+    var(--color-brand-700)
+  );
+}
+
+@utility text-brand-gradient {
+  background-image: linear-gradient(
+    to right,
+    var(--color-brand-700),
+    var(--color-primary-500)
+  );
+  background-clip: text;
+  color: transparent;
+}
+
+@utility card-surface {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xs);
+}
+
+@utility surface-elevated {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lg);
+}
+
+@utility surface-muted {
+  background-color: var(--color-muted);
+}
+
+@utility border-default {
+  border-color: var(--color-border);
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility no-print {
+  @media print {
+    display: none !important;
+  }
+}
