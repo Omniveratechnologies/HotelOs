@@ -1,15 +1,24 @@
 import { Inbox, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
-import { ProgressTrack } from "./ProgressTrack";
-import { SERVICE_ICON } from "./service-icons";
 import { useGuestDashboard } from "@/context/GuestDashboardContext";
-import { SERVICE_LABEL } from "@/constants/service-flows";
 import { formatMoney, relTime } from "@/utils/format";
-import { isTerminal } from "@/utils/status";
+import type { Order, ServiceRequest } from "@/types/guest-dashboard";
+
+const ORDER_TERMINAL = ["DELIVERED", "REJECTED", "CANCELLED"];
+const REQUEST_TERMINAL = ["COMPLETED", "CANCELLED"];
+
+type ActivityItem =
+  | { type: "order"; data: Order }
+  | { type: "request"; data: ServiceRequest };
 
 export function OrdersList() {
-  const { requests, refreshing, refreshStatus } = useGuestDashboard();
+  const { orders, requests, refreshing, refreshAll } = useGuestDashboard();
+
+  const activity: ActivityItem[] = [
+    ...orders.map((o) => ({ type: "order" as const, data: o })),
+    ...requests.map((r) => ({ type: "request" as const, data: r })),
+  ].sort((a, b) => new Date(b.data.createdAt).getTime() - new Date(a.data.createdAt).getTime());
 
   return (
     <section aria-labelledby="orders">
@@ -21,7 +30,7 @@ export function OrdersList() {
           variant="outline"
           size="sm"
           className="min-h-11 shrink-0 rounded-full transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          onClick={() => void refreshStatus()}
+          onClick={() => void refreshAll()}
           disabled={refreshing}
         >
           <RefreshCw className={refreshing ? "animate-spin" : ""} aria-hidden="true" />
@@ -30,7 +39,7 @@ export function OrdersList() {
       </div>
 
       <ul className="mt-4 space-y-3" aria-live="polite" aria-relevant="additions text">
-        {requests.length === 0 ? (
+        {activity.length === 0 ? (
           <li className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-border bg-card/60 px-6 py-10 text-center">
             <span className="grid size-16 place-items-center rounded-full bg-muted/70 text-muted-foreground">
               <Inbox className="size-8" strokeWidth={1.5} aria-hidden="true" />
@@ -40,40 +49,43 @@ export function OrdersList() {
             </p>
           </li>
         ) : (
-          requests.map((request) => {
-            const done = isTerminal(request.kind, request.status);
-            const Icon = SERVICE_ICON[request.kind];
+          activity.map((item) => {
+            if (item.type === "order") {
+              const o = item.data;
+              const done = ORDER_TERMINAL.includes(o.status);
+              return (
+                <li key={o.id} className="animate-fade-in rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">Food Order</p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {o.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+                      </p>
+                    </div>
+                    <StatusBadge status={o.status} terminal={done} failed={false} />
+                  </div>
+                 <p className="mt-3 text-xs text-muted-foreground">
+  {relTime(new Date(o.createdAt).getTime())} · {formatMoney(o.totalAmount)} ·{" "}
+  {o.paymentMethod === "COD" ? "Cash on Delivery" : `Online — ${o.paymentStatus}`}
+</p>
+                </li>
+              );
+            }
+
+            const r = item.data;
+            const done = REQUEST_TERMINAL.includes(r.status);
             return (
-              <li
-                key={request.id}
-                className="animate-fade-in rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-raised)]"
-              >
-                <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-accent-foreground">
-                    <Icon className="size-5" aria-hidden="true" />
-                  </span>
+              <li key={r.id} className="animate-fade-in rounded-3xl border border-border bg-card p-5 shadow-[var(--shadow-card)]">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold">{SERVICE_LABEL[request.kind]}</p>
+                    <p className="truncate font-semibold">{r.type.charAt(0) + r.type.slice(1).toLowerCase()}</p>
                     <p className="truncate text-sm text-muted-foreground">
-                      {request.items.map((item) => `${item.name} ×${item.qty}`).join(", ")}
+                      {r.items.length > 0 ? r.items.join(", ") : r.description}
                     </p>
                   </div>
-                  <StatusBadge status={request.status} terminal={done} failed={!!request.failed} />
+                  <StatusBadge status={r.status} terminal={done} failed={false} />
                 </div>
-
-                <ProgressTrack
-                  kind={request.kind}
-                  status={request.status}
-                  failed={!!request.failed}
-                />
-
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {relTime(request.createdAt)}
-                  {request.total ? ` · ${formatMoney(request.total)}` : ""}
-                  {request.payment
-                    ? ` · ${request.payment === "cod" ? "Cash on Delivery" : "Online Payment"}`
-                    : ""}
-                </p>
+                <p className="mt-3 text-xs text-muted-foreground">{relTime(new Date(r.createdAt).getTime())}</p>
               </li>
             );
           })

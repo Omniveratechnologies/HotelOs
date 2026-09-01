@@ -9,7 +9,3 @@ export function relTime(timestamp: number) {
   if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
   return `${Math.floor(seconds / 3600)} hr ago`;
 }
-
-export function createRequestId() {
-  return Math.random().toString(36).slice(2, 9);
-}

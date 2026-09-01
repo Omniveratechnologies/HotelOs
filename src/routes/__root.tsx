@@ -10,6 +10,9 @@ import {
 import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { GuestDashboardProvider } from "@/context/GuestDashboardContext";
+import { LoginPage } from "@/components/auth/LoginPage";
 
 function NotFoundComponent() {
   return (
@@ -56,12 +59,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             Try again
           </button>
-          <a
-            href="/"
+
+          <Link
+            to="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
             Go home
-          </a>
+          </Link>
         </div>
       </div>
     </div>
@@ -93,10 +97,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap",
       },
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
     ],
   }),
@@ -111,6 +112,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script src="https://checkout.razorpay.com/v1/checkout.js" />
       </head>
       <body>
         {children}
@@ -120,13 +122,34 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function AppGate() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  if (!user) return <LoginPage />;
+
+  return (
+    <GuestDashboardProvider>
+      <Outlet />
+    </GuestDashboardProvider>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AuthProvider>
+        <AppGate />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

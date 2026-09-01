@@ -3,10 +3,10 @@ import { RefreshStatusCard } from "./RefreshStatusCard";
 import { SERVICE_ICON } from "./service-icons";
 import { useGuestDashboard } from "@/context/GuestDashboardContext";
 import { cn } from "@/lib/utils";
-import type { ServiceKind } from "@/types/guest-dashboard";
+import type { ServiceRequestType } from "@/types/guest-dashboard";
 
 type ServiceAction = {
-  kind: ServiceKind;
+  kind: ServiceRequestType | "food" | "amenities";
   label: string;
   description: string;
   run: () => void;
@@ -19,41 +19,28 @@ export function ServicesGrid({
   onOpenFood: () => void;
   onOpenAmenities: () => void;
 }) {
-  const {
-    dnd,
-    pendingKind,
-    refreshing,
-    refreshed,
-    hasPendingUpdate,
-    refreshStatus,
-    sendServiceRequest,
-  } = useGuestDashboard();
+  const { dnd, refreshing, refreshAll, sendServiceRequest } = useGuestDashboard();
 
   const actions: ServiceAction[] = [
     { kind: "food", label: "Order Food", description: "24h in-room dining", run: onOpenFood },
+    { kind: "amenities", label: "Order Amenities", description: "Towels, pillows & more", run: onOpenAmenities },
     {
-      kind: "amenities",
-      label: "Order Amenities",
-      description: "Towels, pillows & more",
-      run: onOpenAmenities,
-    },
-    {
-      kind: "restaurant",
+      kind: "RESTAURANT",
       label: "Call Restaurant",
       description: "Speak to the maître d'",
-      run: () => void sendServiceRequest("restaurant", [{ name: "Restaurant callback", qty: 1 }]),
+      run: () => void sendServiceRequest("RESTAURANT", "Restaurant callback"),
     },
     {
-      kind: "reception",
+      kind: "RECEPTION",
       label: "Contact Reception",
       description: "Front desk assistance",
-      run: () => void sendServiceRequest("reception", [{ name: "Reception callback", qty: 1 }]),
+      run: () => void sendServiceRequest("RECEPTION", "Reception callback"),
     },
     {
-      kind: "housekeeping",
+      kind: "HOUSEKEEPING",
       label: "Request Housekeeping",
       description: "Clean my suite",
-      run: () => void sendServiceRequest("housekeeping", [{ name: "Room cleaning", qty: 1 }]),
+      run: () => void sendServiceRequest("HOUSEKEEPING", "Room cleaning"),
     },
   ];
 
@@ -69,27 +56,24 @@ export function ServicesGrid({
         )}
       >
         {dnd ? (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -inset-2 rounded-[2rem] bg-warning/8"
-          />
+          <div aria-hidden="true" className="pointer-events-none absolute -inset-2 rounded-[2rem] bg-warning/8" />
         ) : null}
         {actions.map((action) => (
           <ServiceCard
             key={action.kind}
             label={action.label}
             description={action.description}
-            icon={SERVICE_ICON[action.kind]}
-            pending={pendingKind === action.kind}
+            icon={SERVICE_ICON[action.kind as keyof typeof SERVICE_ICON]}
+            pending={false}
             onSelect={action.run}
           />
         ))}
 
         <RefreshStatusCard
           refreshing={refreshing}
-          refreshed={refreshed}
-          hasPendingUpdate={hasPendingUpdate}
-          onRefresh={() => void refreshStatus()}
+          refreshed={false}
+          hasPendingUpdate={false}
+          onRefresh={() => void refreshAll()}
         />
       </div>
     </section>

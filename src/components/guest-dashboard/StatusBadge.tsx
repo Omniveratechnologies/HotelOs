@@ -1,7 +1,6 @@
 import { CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { statusTone, type StatusTone } from "@/utils/status";
-import type { Status } from "@/types/guest-dashboard";
 
 const TONE_CLASS: Record<StatusTone, string> = {
   neutral: "bg-muted text-muted-foreground",
@@ -16,7 +15,7 @@ export function StatusBadge({
   terminal,
   failed,
 }: {
-  status: Status;
+  status: string;
   terminal: boolean;
   failed?: boolean;
 }) {
@@ -30,7 +29,7 @@ export function StatusBadge({
       )}
     >
       <Icon className={cn("size-3.5", !terminal && !failed && "animate-spin")} aria-hidden="true" />
-      {status}
+      {status.replaceAll("_", " ")}
     </span>
   );
 }

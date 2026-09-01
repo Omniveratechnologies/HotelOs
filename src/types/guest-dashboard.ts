@@ -1,68 +1,85 @@
 /**
  * Shared domain types for the hotel service platform.
- * The Kitchen, Reception and Housekeeping dashboards are expected to reuse
- * these exact shapes, so keep them free of UI concerns.
  */
 
 export type ServiceKind = "food" | "amenities" | "restaurant" | "reception" | "housekeeping";
 
-/** A stage name inside a service's status flow (see constants/service-flows). */
 export type Status = string;
 
 export type PaymentMethod = "cod" | "online";
-
-export interface RequestItem {
-  name: string;
-  qty: number;
-  price?: number | undefined;
-}
-
-export interface MenuItem {
-  name: string;
-  price: number;
-  note: string;
-}
-
-export interface MenuCategory {
-  category: string;
-  items: MenuItem[];
-}
 
 export interface AmenityItem {
   name: string;
   note: string;
 }
 
-export interface GuestInfo {
-  name: string;
-  tier: string;
-}
+export type GuestStatus = "ACTIVE" | "CHECKED_OUT";
 
-export interface Room {
+export interface RoomInfo {
+  id: string;
   roomNumber: string;
-  guestName: string;
-  tier: string;
-  checkIn: string;
-  checkOut: string;
+  type: string;
+  status: string;
 }
 
-/** Any guest-initiated service request tracked on the dashboard. */
+export interface GuestInfo {
+  id: string;
+  name: string;
+  username: string;
+  role: string;
+  hotelId: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  dndEnabled: boolean;
+  room: RoomInfo | null;
+}
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category: string;
+  isAvailable: boolean;
+}
+
+export interface OrderItem {
+  foodItemId: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  items: OrderItem[];
+  totalAmount: number;
+  paymentMethod: "COD" | "ONLINE";
+  status: "NEW" | "PREPARING" | "READY" | "OUT_FOR_DELIVERY" | "DELIVERED" | "REJECTED" | "CANCELLED";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RazorpayData {
+  keyId: string;
+  amount: number;
+  currency: string;
+  orderId: string;
+}
+
+export interface RazorpayOrderResponse {
+  id: string;
+  razorpay?: RazorpayData | undefined;
+}
+
+export type ServiceRequestType = "AMENITY" | "HOUSEKEEPING" | "RESTAURANT" | "RECEPTION" | "MAINTENANCE";
+
 export interface ServiceRequest {
   id: string;
-  kind: ServiceKind;
-  items: RequestItem[];
-  status: Status;
-  /** Set when the last server sync for this request failed. */
-  failed?: string | undefined;
-  total?: number | undefined;
-  payment?: PaymentMethod | undefined;
-  createdAt: number;
-  updatedAt: number;
+  type: ServiceRequestType;
+  description?: string;
+  items: string[];
+  status: "REQUESTED" | "ACKNOWLEDGED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  createdAt: string;
+  updatedAt: string;
 }
-
-/** A food request always carries a total and a payment method. */
-export type Order = ServiceRequest & {
-  kind: "food";
-  total: number;
-  payment: PaymentMethod;
-};

@@ -7,20 +7,11 @@ import { ServicesGrid } from "@/components/guest-dashboard/ServicesGrid";
 import { OrdersList } from "@/components/guest-dashboard/OrdersList";
 import { OrderFoodModal } from "@/components/guest-dashboard/OrderFoodModal";
 import { OrderAmenitiesModal } from "@/components/guest-dashboard/OrderAmenitiesModal";
-import { GuestDashboardProvider, useGuestDashboard } from "@/context/GuestDashboardContext";
 
 export const Route = createFileRoute("/")({
-  /** `?room=204` stands in for the room identifier encoded in the in-room QR code. */
-  validateSearch: (search: Record<string, unknown>): { room?: string | number } => {
-    const room = search["room"];
-    // Numeric-looking params arrive parsed as numbers; keep the raw value here
-    // and normalise to a string where the room is looked up.
-    if (typeof room === "string" || typeof room === "number") return { room };
-    return {};
-  },
   head: () => ({
     meta: [
-      { title: "Guest Dashboard — Suite 1204 | The Meridian" },
+      { title: "Guest Dashboard — The Meridian" },
       {
         name: "description",
         content:
@@ -36,21 +27,10 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: GuestDashboardRoute,
+  component: GuestDashboard,
 });
 
-function GuestDashboardRoute() {
-  const { room } = Route.useSearch();
-  return (
-    <GuestDashboardProvider roomNumber={room === undefined ? undefined : String(room)}>
-      <GuestDashboard />
-    </GuestDashboardProvider>
-  );
-}
-
 function GuestDashboard() {
-  const { pendingKind, submitError, clearSubmitError, placeOrder, sendAmenityRequest } =
-    useGuestDashboard();
   const [foodOpen, setFoodOpen] = useState(false);
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
 
@@ -60,7 +40,6 @@ function GuestDashboard() {
       <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
         <DashboardHeader />
         <ErrorBanner />
-
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
           <ServicesGrid
             onOpenFood={() => setFoodOpen(true)}
@@ -69,27 +48,8 @@ function GuestDashboard() {
           <OrdersList />
         </div>
       </main>
-
-      <OrderFoodModal
-        open={foodOpen}
-        onOpenChange={(open) => {
-          setFoodOpen(open);
-          if (!open) clearSubmitError();
-        }}
-        pending={pendingKind === "food"}
-        error={submitError}
-        onSubmit={placeOrder}
-      />
-      <OrderAmenitiesModal
-        open={amenitiesOpen}
-        onOpenChange={(open) => {
-          setAmenitiesOpen(open);
-          if (!open) clearSubmitError();
-        }}
-        pending={pendingKind === "amenities"}
-        error={submitError}
-        onSubmit={sendAmenityRequest}
-      />
+      <OrderFoodModal open={foodOpen} onOpenChange={setFoodOpen} />
+      <OrderAmenitiesModal open={amenitiesOpen} onOpenChange={setAmenitiesOpen} />
     </div>
   );
 }
