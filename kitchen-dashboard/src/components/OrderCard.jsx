@@ -32,7 +32,7 @@ const OrderCard = ({ order, updateStatus }) => {
       <div className="flex justify-between items-center px-3 py-2 border-b border-[#3a3a3a]">
         <div>
           <h2 className="text-lg font-bold tracking-wide text-white">
-            ROOM {order.room}
+            ROOM {order.roomNumber}
           </h2>
         </div>
 
@@ -47,14 +47,14 @@ const OrderCard = ({ order, updateStatus }) => {
         </p>
 
         <div className="space-y-1">
-          {order.items.map((item, index) => (
-            <p key={index} className="text-sm text-gray-200 truncate">
-              • {item}
-            </p>
-          ))}
+          {order.items.map((item) => (
+  <p key={item._id} className="text-sm text-gray-200 truncate">
+    • {item.name} × {item.quantity}
+  </p>
+))}
 
           <p className="text-[11px] uppercase tracking-widest text-gray-500">
-            Payment : {order.payment}
+            Payment : {order.paymentMethod}
           </p>
         </div>
       </div>
@@ -70,7 +70,7 @@ const OrderCard = ({ order, updateStatus }) => {
               {actions.buttons.map((button) => (
                 <button
                   key={button.label}
-                  onClick={() => updateStatus(order.id, button.nextStatus)}
+                  onClick={() => updateStatus(order._id, button.nextStatus)}
                   className={`py-2 text-xs font-bold rounded transition ${button.className}`}
                 >
                   {button.label}

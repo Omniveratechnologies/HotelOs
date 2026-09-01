@@ -39,8 +39,8 @@ const Actions = {
     buttons: [
       {
         label: "MARK DELIVERED",
-        nextStatus: "OUT FOR DELIVERY",
-        className: "bg-yellow-600 text-black cursor-default diabled",
+        nextStatus: "Delivered",
+        className: "bg-yellow-600 text-black cursor-default disabled",
       },
     ],
   },

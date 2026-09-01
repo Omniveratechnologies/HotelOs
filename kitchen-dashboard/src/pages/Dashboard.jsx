@@ -1,21 +1,40 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import API_BASE_URL from "../config/api.js";
 import { AnimatePresence } from "framer-motion";
 
 import Navbar from "../components/Navbar";
 import StatusColumn from "../components/StatusColumn";
 import OrderCard from "../components/OrderCard";
 
-import initialOrders from "../utils/order";
+//import initialOrders from "../utils/order";
 
 const Dashboard = () => {
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState([]);
 
-  const updateStatus = (id, newStatus) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === id ? { ...order, status: newStatus } : order,
-      ),
-    );
+  const updateStatus = async (id, newStatus) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update order status");
+      }
+
+      const updatedOrder = await response.json();
+
+      setOrders((prev) =>
+        prev.map((order) => (order._id === id ? updatedOrder : order)),
+      );
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
   };
 
   const statuses = useMemo(() => {
@@ -38,6 +57,26 @@ const Dashboard = () => {
     return base;
   }, [orders]);
 
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/orders`);
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch orders");
+        }
+
+        const data = await response.json();
+
+        setOrders(data);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
   return (
     <div className="h-screen bg-[#0f0f0f] text-white flex flex-col overflow-hidden">
       <div className="flex-1 overflow-x-auto">
@@ -49,11 +88,7 @@ const Dashboard = () => {
               className={`grid gap-4
   grid-cols-1
   md:grid-cols-2
-  ${
-    statuses.length === 4
-      ? "lg:grid-cols-4"
-      : "lg:grid-cols-5"
-  }
+  ${statuses.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-5"}
 `}
             >
               <AnimatePresence mode="popLayout">
