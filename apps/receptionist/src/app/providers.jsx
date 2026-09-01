@@ -28,6 +28,7 @@ const normalizeRoom = (room) => ({
   checkOut: room.checkOut ? String(room.checkOut).split("T")[0] : null,
 });
 
+// Initial mock data for service requests and food orders. In a real application, these would be fetched from the backend.
 const initialServiceRequests = [
   {
     id: 1,
@@ -76,6 +77,7 @@ const initialServiceRequests = [
   },
 ];
 
+// Initial mock data for food orders. In a real application, these would be fetched from the backend.
 const initialFoodOrders = [
   {
     id: 1,
