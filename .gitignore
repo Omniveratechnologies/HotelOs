@@ -20,6 +20,9 @@ coverage/
 # ⚡ Next.js / Build Output
 # ------------------------------------------------------
 .next/
+.output/
+.vinxi/
+.tanstack/
 out/
 build/
 dist/

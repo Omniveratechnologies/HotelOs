@@ -21,6 +21,8 @@ import {
   validateDocument,
 } from "../middleware/upload.middleware.js";
 
+import { guestProfileDTO } from "../dto/guest.dto.js";
+
 // =====================================================
 // HELPERS
 // =====================================================
@@ -344,6 +346,8 @@ export const registerGuest = async (req, res) => {
       role: "GUEST",
       hotelId: req.user.hotelId,
       roomId: room._id,
+      checkIn: checkIn ? new Date(checkIn) : undefined,
+      checkOut: new Date(checkOut),
       isActive: true,
       mustChangePassword: false,
     });
@@ -840,5 +844,53 @@ export const deleteGuest = async (req, res) => {
       success: false,
       message: "Failed to delete guest",
     });
+  }
+};
+
+// =====================================================
+// GUEST SELF-SERVICE (role GUEST)
+// =====================================================
+
+export const getMyProfile = async (req, res) => {
+  try {
+    const user = req.user;
+    let room = null;
+
+    if (user.roomId) {
+      room = await Room.findById(user.roomId);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: guestProfileDTO(user, room),
+    });
+  } catch (error) {
+    console.error("Get guest profile error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch guest profile" });
+  }
+};
+
+export const updateDND = async (req, res) => {
+  try {
+    const { enabled } = req.body;
+    if (typeof enabled !== "boolean") {
+      return res
+        .status(400)
+        .json({ success: false, message: "enabled (boolean) is required" });
+    }
+
+    req.user.dndEnabled = enabled;
+    await req.user.save();
+
+    return res
+      .status(200)
+      .json({ success: true, data: { dndEnabled: req.user.dndEnabled } });
+  } catch (error) {
+    console.error("Update DND error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to update Do Not Disturb" });
   }
 };

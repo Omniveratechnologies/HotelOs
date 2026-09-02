@@ -8,12 +8,20 @@ import {
   updateGuestCredentials,
   deleteGuestDocument,
   deleteGuest,
+  getMyProfile,
+  updateDND,
 } from "../controllers/guest.controller.js";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { authorize } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
+// Guest self-service endpoints (role GUEST). Declared before the admin guard
+// below because they do NOT share the SUB_ADMIN/RECEPTIONIST restriction.
+router.get("/me", authenticate, authorize("GUEST"), getMyProfile);
+router.patch("/me/dnd", authenticate, authorize("GUEST"), updateDND);
+
+// Admin-scoped guest management
 router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
 
 router.get("/", getGuests);
