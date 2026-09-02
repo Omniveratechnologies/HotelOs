@@ -6,22 +6,23 @@ import Navbar from "../components/Navbar";
 import StatusColumn from "../components/StatusColumn";
 import OrderCard from "../components/OrderCard";
 
-//import initialOrders from "../utils/order";
-
 const Dashboard = () => {
   const [orders, setOrders] = useState([]);
 
   const updateStatus = async (id, newStatus) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/orders/${id}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${API_BASE_URL}/kitchen/orders/${id}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: newStatus,
+          }),
         },
-        body: JSON.stringify({
-          status: newStatus,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error("Failed to update order status");
@@ -60,7 +61,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/orders`);
+        const response = await fetch(`${API_BASE_URL}/kitchen/orders`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch orders");

@@ -60,6 +60,21 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    checkIn: {
+      type: Date,
+      default: null,
+    },
+
+    checkOut: {
+      type: Date,
+      default: null,
+    },
+
+    dndEnabled: {
+      type: Boolean,
+      default: false,
+    },
+
     isActive: {
       type: Boolean,
       default: true,

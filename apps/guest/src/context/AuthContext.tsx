@@ -31,8 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("hotelos_token");
-    const storedUser = localStorage.getItem("hotelos_user");
+    const storedToken = localStorage.getItem("auth_token");
+    const storedUser = localStorage.getItem("auth_user");
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
@@ -47,8 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.user.role !== "GUEST") {
         throw new Error("This login is for guests only");
       }
-      localStorage.setItem("hotelos_token", result.token);
-      localStorage.setItem("hotelos_user", JSON.stringify(result.user));
+      localStorage.setItem("auth_token", result.token);
+      localStorage.setItem("auth_user", JSON.stringify(result.user));
       setToken(result.token);
       setUser(result.user);
     } catch (err) {
@@ -63,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore network errors on logout
     }
-    localStorage.removeItem("hotelos_token");
-    localStorage.removeItem("hotelos_user");
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_user");
     setToken(null);
     setUser(null);
   };

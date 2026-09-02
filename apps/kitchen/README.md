@@ -44,7 +44,7 @@ column:
 | `REJECTED`         | Shown dynamically only when an order is rejected |
 
 The order status updates are sent to the backend with
-`PATCH /orders/:id/status`.
+`PATCH /kitchen/orders/:id/status`.
 
 ---
 
@@ -54,10 +54,10 @@ This app calls the backend directly with the browser `fetch` API (it does
 **not** use the shared `@hotelos/api` client). The base URL is read from
 `VITE_API_BASE_URL` in `src/config/api.js`.
 
-| Purpose             | Method & path              | Backend                        |
-| ------------------- | -------------------------- | ------------------------------ |
-| List orders         | `GET /orders`              | `GET /api/orders`              |
-| Update order status | `PATCH /orders/:id/status` | `PATCH /api/orders/:id/status` |
+| Purpose             | Method & path                      | Backend                                |
+| ------------------- | ---------------------------------- | -------------------------------------- |
+| List orders         | `GET /kitchen/orders`              | `GET /api/kitchen/orders`              |
+| Update order status | `PATCH /kitchen/orders/:id/status` | `PATCH /api/kitchen/orders/:id/status` |
 
 ---
 
@@ -132,8 +132,7 @@ src/
 │   └── AppRoutes.jsx       Route definitions (single `/` route)
 │
 └── utils/
-    ├── Actions.jsx         Status → action button definitions
-    └── order.js            Sample/fallback order data
+    └── Actions.jsx         Status → action button definitions
 ```
 
 ---

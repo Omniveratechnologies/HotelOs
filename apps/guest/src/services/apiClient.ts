@@ -9,12 +9,12 @@ export class ApiError extends Error {
 }
 
 function getToken(): string | null {
-  return localStorage.getItem("hotelos_token");
+  return localStorage.getItem("auth_token");
 }
 
 function handleUnauthorized() {
-  localStorage.removeItem("hotelos_token");
-  localStorage.removeItem("hotelos_user");
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("auth_user");
   // Full reload forces AuthContext to re-check localStorage and show LoginPage
   window.location.href = "/";
 }
