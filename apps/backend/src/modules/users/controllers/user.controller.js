@@ -9,6 +9,7 @@ import {
 } from "#/shared/utils/generateCredentials.js";
 
 import { userResponseDTO } from "../dto/user.dto.js";
+import logger from "#/utils/logger.js";
 
 export const createUser = async (req, res) => {
   try {
@@ -86,7 +87,7 @@ export const createUser = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Create User Error:", error);
+    logger.error(error, "Create User Error");
 
     return res.status(500).json({
       success: false,
@@ -125,7 +126,7 @@ export const getUsers = async (req, res) => {
       data: users.map(userResponseDTO),
     });
   } catch (error) {
-    console.error("Get users error:", error);
+    logger.error(error, "Get users error");
 
     return res.status(500).json({
       success: false,
@@ -196,7 +197,7 @@ export const deleteUser = async (req, res) => {
       message: "User deleted successfully",
     });
   } catch (error) {
-    console.error("Delete user error:", error);
+    logger.error(error, "Delete user error");
 
     return res.status(500).json({
       success: false,

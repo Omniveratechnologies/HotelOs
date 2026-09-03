@@ -5,6 +5,7 @@ import {
   sendUsernameReminderEmail,
   sendPasswordResetEmail,
 } from "#/shared/services/email.service.js";
+import logger from "#/utils/logger.js";
 
 export const login = async (req, res) => {
   try {
@@ -61,7 +62,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    logger.error(error, "Login failed");
 
     res.status(500).json({
       success: false,
@@ -114,7 +115,7 @@ export const createSubAdmin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Create Sub Admin Error:", error);
+    logger.error(error, "Create Sub Admin Error");
 
     return res.status(500).json({
       success: false,
@@ -168,14 +169,14 @@ export const forgotUsername = async (req, res) => {
       username: user.username,
     });
 
-    console.log("USERNAME REMINDER SENT TO:", user.email);
+    logger.info({ email: user.email }, "Username reminder sent");
 
     return res.status(200).json({
       success: true,
       message,
     });
   } catch (error) {
-    console.error("Forgot Username Error:", error);
+    logger.error(error, "Forgot Username Error");
 
     return res.status(500).json({
       success: false,
@@ -233,14 +234,14 @@ export const forgotPassword = async (req, res) => {
       resetUrl,
     });
 
-    console.log("PASSWORD RESET EMAIL SENT TO:", user.email);
+    logger.info({ email: user.email }, "Password reset email sent");
 
     return res.status(200).json({
       success: true,
       message,
     });
   } catch (error) {
-    console.error("Forgot Password Error:", error);
+    logger.error(error, "Forgot Password Error");
 
     return res.status(500).json({
       success: false,
@@ -291,14 +292,14 @@ export const resetPassword = async (req, res) => {
 
     await user.save();
 
-    console.log("PASSWORD RESET FOR USER:", user._id);
+    logger.info({ userId: user._id }, "Password reset");
 
     return res.status(200).json({
       success: true,
       message: "Your password has been reset successfully",
     });
   } catch (error) {
-    console.error("Reset Password Error:", error);
+    logger.error(error, "Reset Password Error");
 
     return res.status(500).json({
       success: false,

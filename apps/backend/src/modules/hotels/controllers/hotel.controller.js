@@ -1,4 +1,5 @@
 import Hotel from "../models/Hotel.js";
+import logger from "#/utils/logger.js";
 
 // =====================================================
 // GENERATE UNIQUE HOTEL CODE
@@ -134,7 +135,7 @@ export const createHotel = async (req, res) => {
       data: hotel,
     });
   } catch (error) {
-    console.error("Create hotel error:", error);
+    logger.error(error, "Create hotel error");
 
     return res.status(500).json({
       success: false,
@@ -159,7 +160,7 @@ export const getHotels = async (req, res) => {
       data: hotels,
     });
   } catch (error) {
-    console.error("Get hotels error:", error);
+    logger.error(error, "Get hotels error");
 
     return res.status(500).json({
       success: false,
@@ -191,7 +192,7 @@ export const getHotelById = async (req, res) => {
       data: hotel,
     });
   } catch (error) {
-    console.error("Get hotel by ID error:", error);
+    logger.error(error, "Get hotel by ID error");
 
     return res.status(500).json({
       success: false,
@@ -247,7 +248,7 @@ export const updateHotelStatus = async (req, res) => {
       data: hotel,
     });
   } catch (error) {
-    console.error("Update hotel status error:", error);
+    logger.error(error, "Update hotel status error");
 
     return res.status(500).json({
       success: false,
@@ -407,7 +408,7 @@ export const updateHotel = async (req, res) => {
       data: hotel,
     });
   } catch (error) {
-    console.error("Update hotel error:", error);
+    logger.error(error, "Update hotel error");
 
     return res.status(500).json({
       success: false,
@@ -446,7 +447,7 @@ export const getMyHotel = async (req, res) => {
       data: hotel,
     });
   } catch (error) {
-    console.error("Get my hotel error:", error);
+    logger.error(error, "Get my hotel error");
 
     return res.status(500).json({
       success: false,
@@ -529,7 +530,7 @@ export const updateMyHotel = async (req, res) => {
       data: hotel,
     });
   } catch (error) {
-    console.error("Update my hotel error:", error);
+    logger.error(error, "Update my hotel error");
 
     return res.status(500).json({
       success: false,
@@ -562,7 +563,7 @@ export const deleteHotel = async (req, res) => {
       message: "Hotel deleted successfully",
     });
   } catch (error) {
-    console.error("Delete hotel error:", error);
+    logger.error(error, "Delete hotel error");
 
     return res.status(500).json({
       success: false,

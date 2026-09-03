@@ -86,6 +86,9 @@ src/
 │   ├── r2.js               Cloudflare R2 (presigned URLs)
 │   └── razorpay.js         Razorpay client (lazy-init)
 │
+├── utils/
+│   └── logger.js           Centralized Pino logger (singleton)
+│
 ├── shared/                 Reusable code across all modules
 │   ├── middleware/
 │   │   ├── auth.middleware.js      JWT authentication
@@ -321,6 +324,8 @@ Required variables (validated in `src/config/env.js`):
 | `SUB_ADMIN_FRONTEND_URL`                                                   | No       | Base URL for invite / reset links (default `http://localhost:5175`) |
 | `SUPER_ADMIN_PASSWORD`                                                     | No       | Used by the seed script                                             |
 | `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD` | No       | SMTP config for transactional emails                                |
+| `NODE_ENV`                                                                 | No       | `development` (default) or `production`. Controls log formatting    |
+| `LOG_LEVEL`                                                                | No       | Minimum log level (default `info`). e.g. `debug`, `warn`, `error`   |
 
 > **Note:** the port default is `5001` in `src/server.js`. Make sure your
 > `.env` sets `PORT=5001` (or leaves it unset) so the frontends, which
@@ -1174,6 +1179,7 @@ Keep controllers thin — validate input, call models, return responses.
 ```js
 import MyModel from "../models/my.model.js";
 import { myModelDTO } from "../dto/my.dto.js";
+import logger from "#/utils/logger.js";
 
 export const getItems = async (req, res) => {
   try {
@@ -1184,7 +1190,7 @@ export const getItems = async (req, res) => {
       data: items.map(myModelDTO),
     });
   } catch (error) {
-    console.error("Get items error:", error);
+    logger.error(error, "Get items error");
     return res.status(500).json({
       success: false,
       message: "Failed to fetch items",
@@ -1300,6 +1306,64 @@ protected requests.
 
 ---
 
+## Logging
+
+Logging is handled by **Pino** with a single, centralized logger defined in
+`src/utils/logger.js`. Request logging is wired in automatically by
+**pino-http** as the first Express middleware in `src/app.js`, so every
+incoming request and response is logged with status code and latency.
+
+### Output format by environment
+
+| `NODE_ENV`    | Output                                                         |
+| ------------- | -------------------------------------------------------------- |
+| `development` | Human-readable, pretty-printed, colorized logs (`pino-pretty`) |
+| `production`  | JSON lines (one object per line) for log aggregation tools     |
+
+### Log levels
+
+The minimum level comes from `LOG_LEVEL` and defaults to `info`. Levels
+available: `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
+
+### Using the logger
+
+Import the singleton from the `#/` alias. Prefer **structured metadata**
+(objects) over string concatenation, and pass `Error` objects **first** when
+logging errors so stack traces are preserved:
+
+```js
+import logger from "#/utils/logger.js";
+
+logger.info("Server started");
+
+logger.info({ userId: user.id, email: user.email }, "User registered");
+
+logger.warn({ ip: req.ip }, "Rate limit exceeded");
+
+logger.error(error, "Failed to process payment");
+```
+
+### Request logging
+
+`pino-http` is registered globally in `src/app.js`, so every request is
+logged automatically with method, URL, status code, and response time. The
+request-scoped logger is also available as `req.log` inside controllers:
+
+```js
+req.log.info({ userId: req.user?._id }, "Handling request");
+```
+
+### Error handling
+
+- Controllers log their own errors with `logger.error(error, "context")`
+  inside their `try/catch` blocks.
+- Any error that reaches the global Express error handler (the last
+  middleware in `src/app.js`) is logged with
+  `logger.error(err, "Unhandled application error")` and answered with a
+  `500`.
+
+---
+
 ## Production improvements
 
 The initial backend intentionally keeps authentication simple. For a
@@ -1310,18 +1374,15 @@ production-grade deployment, these hardening items should be added
 - Session / device tracking + token revocation
 - Rate limiting
 - Request validation (e.g. Zod/Joi)
-- Centralized error handling
 - Audit logs
 - Email verification
 - Stronger credential delivery
 - Security headers
-- Request logging
 - Database indexes
 - Pagination
 - API documentation / OpenAPI
 - Automated tests
 - Automated deployment
-- Environment-specific configuration
 
 ---
 
@@ -1347,6 +1408,9 @@ Implemented and documented:
 - Guest orders (COD + Razorpay online payments)
 - Kitchen-facing order display and status updates
 - Service requests (amenity, housekeeping, restaurant, reception, maintenance)
+- Structured logging (Pino) + automatic HTTP request logging (pino-http) and
+  a centralized logger (`src/utils/logger.js`)
+- Centralized error handling middleware that logs uncaught errors
 - DTO-based responses, standard `{ success, message, data }` envelope
 - Feature-based modular architecture (`shared/` + `modules/`)
 
@@ -1355,7 +1419,6 @@ Roadmap (not yet implemented):
 - Billing / payment dashboard metrics
 - Advanced session management (refresh tokens, revocation)
 - Request validation library integration
-- Centralized error handling
 - Pagination
 - API documentation / OpenAPI
 - Automated tests

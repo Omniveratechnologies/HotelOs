@@ -67,7 +67,7 @@ navigation only and are never a security boundary.
 
 - **Monorepo tooling** — pnpm workspaces, Turborepo
 - **Backend** — Node.js, Express 5, MongoDB / Mongoose, JWT, bcrypt, Multer,
-  Nodemailer
+  Nodemailer, Pino (struct/log + HTTP request logging)
 - **Frontend** — React 19, Vite, Tailwind CSS v4, React Router
 - **Shared client** — `@hotelos/api` (fetch wrapper)
 - **Quality** — oxlint, Prettier, Husky + lint-staged
@@ -113,6 +113,8 @@ Required backend variables (see `apps/backend/.env.example`):
 - `CLIENT_URL` — allowed frontend origin
 - `SUB_ADMIN_FRONTEND_URL` — base URL used when building invite / password
   reset links (defaults to `http://localhost:5175`)
+- `NODE_ENV` — `development` (default) or `production`; controls log formatting
+- `LOG_LEVEL` — minimum log level, defaults to `info` (e.g. `debug`, `warn`)
 
 Never commit real `.env` files. The repository's `.gitignore` ignores `.env`
 and keeps `.env.example` versions.

@@ -12,6 +12,7 @@ import {
 import { sendInvitationEmail } from "#/shared/services/email.service.js";
 
 import { ROLES } from "#/shared/constants/roles.js";
+import logger from "#/utils/logger.js";
 
 // =====================================================
 // SEND INVITATION
@@ -19,11 +20,10 @@ import { ROLES } from "#/shared/constants/roles.js";
 
 export const sendInvite = async (req, res) => {
   try {
-    console.log("======================================");
-    console.log("SEND INVITE REQUEST");
-    console.log("DATABASE:", User.db.name);
-    console.log("BODY:", req.body);
-    console.log("======================================");
+    logger.info(
+      { database: User.db.name, body: req.body },
+      "Send invite request",
+    );
 
     const { name, username, email, role, hotelId } = req.body;
 
@@ -159,16 +159,16 @@ export const sendInvite = async (req, res) => {
       ],
     });
 
-    console.log(
-      "EXISTING USER:",
+    logger.info(
       existingUser
         ? {
-            id: existingUser._id,
+            userId: existingUser._id,
             email: existingUser.email,
             username: existingUser.username,
             isActive: existingUser.isActive,
           }
-        : null,
+        : { existingUser: null },
+      "Existing user check",
     );
 
     // =================================================
@@ -180,7 +180,7 @@ export const sendInvite = async (req, res) => {
         existingUser.isActive === false &&
         existingUser.mustChangePassword === true
       ) {
-        console.log("Removing old pending user:", existingUser._id);
+        logger.info({ userId: existingUser._id }, "Removing old pending user");
 
         await UserInvite.deleteMany({
           userId: existingUser._id,
@@ -237,7 +237,7 @@ export const sendInvite = async (req, res) => {
       mustChangePassword: true,
     });
 
-    console.log("NEW USER CREATED:", user._id);
+    logger.info({ userId: user._id }, "New user created");
 
     // =================================================
     // CREATE INVITATION
@@ -261,7 +261,7 @@ export const sendInvite = async (req, res) => {
       status: "PENDING",
     });
 
-    console.log("NEW INVITE CREATED:", invite._id);
+    logger.info({ inviteId: invite._id }, "New invite created");
 
     // =================================================
     // FRONTEND URL
@@ -272,7 +272,7 @@ export const sendInvite = async (req, res) => {
 
     const inviteUrl = `${frontendUrl}/accept-invitation?token=${token}`;
 
-    console.log("INVITATION URL:", inviteUrl);
+    logger.info({ inviteUrl }, "Invitation URL");
 
     // =================================================
     // SEND EMAIL
@@ -290,7 +290,7 @@ export const sendInvite = async (req, res) => {
       hotelName: hotel.name,
     });
 
-    console.log("INVITATION EMAIL SENT TO:", user.email);
+    logger.info({ email: user.email }, "Invitation email sent");
 
     // =================================================
     // SUCCESS
@@ -320,7 +320,7 @@ export const sendInvite = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("SEND INVITE ERROR:", error);
+    logger.error(error, "Send invite error");
 
     if (error.code === 11000) {
       return res.status(409).json({
@@ -425,7 +425,7 @@ export const verifyInvite = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("VERIFY INVITATION ERROR:", error);
+    logger.error(error, "Verify invitation error");
 
     return res.status(500).json({
       success: false,
@@ -542,7 +542,7 @@ export const acceptInvite = async (req, res) => {
 
     await user.save();
 
-    console.log("INVITED USER ACTIVATED:", user._id);
+    logger.info({ userId: user._id }, "Invited user activated");
 
     // =================================================
     // MARK INVITE AS ACCEPTED
@@ -552,14 +552,14 @@ export const acceptInvite = async (req, res) => {
 
     await invite.save();
 
-    console.log("INVITATION ACCEPTED:", invite._id);
+    logger.info({ inviteId: invite._id }, "Invitation accepted");
 
     // =================================================
     // JWT SECRET CHECK
     // =================================================
 
     if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET is missing from environment variables");
+      logger.error("JWT_SECRET is missing from environment variables");
 
       return res.status(500).json({
         success: false,
@@ -615,7 +615,7 @@ export const acceptInvite = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("ACCEPT INVITATION ERROR:", error);
+    logger.error(error, "Accept invitation error");
 
     if (error.code === 11000) {
       return res.status(409).json({

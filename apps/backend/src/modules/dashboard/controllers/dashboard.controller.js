@@ -2,6 +2,7 @@ import User from "#/modules/users/models/User.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Room from "#/modules/rooms/models/Room.js";
 import Guest from "#/modules/guests/models/Guest.js";
+import logger from "#/utils/logger.js";
 
 // =====================================================
 // DASHBOARD STATS (hotel-scoped)
@@ -146,7 +147,7 @@ export const getDashboardStats = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Get dashboard stats error:", error);
+    logger.error(error, "Get dashboard stats error");
 
     return res.status(500).json({
       success: false,

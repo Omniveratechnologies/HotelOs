@@ -22,6 +22,7 @@ import {
 } from "#/shared/middleware/upload.middleware.js";
 
 import { guestProfileDTO } from "../dto/guest.dto.js";
+import logger from "#/utils/logger.js";
 
 // =====================================================
 // HELPERS
@@ -116,7 +117,7 @@ async function sendCredentialsQuietly({
 
     return true;
   } catch (error) {
-    console.error("GUEST CREDENTIALS EMAIL FAILED:", error.message);
+    logger.error(error, "Guest credentials email failed");
 
     return false;
   }
@@ -190,7 +191,7 @@ export const getDocumentUploadUrls = async (req, res) => {
       data: uploads,
     });
   } catch (error) {
-    console.error("Generate Upload URLs Error:", error);
+    logger.error(error, "Generate Upload URLs Error");
 
     return res.status(500).json({
       success: false,
@@ -399,13 +400,13 @@ export const registerGuest = async (req, res) => {
       hotelName: hotel.name,
     });
 
-    console.log(
-      "GUEST REGISTERED:",
-      guest._id,
-      "| USERNAME:",
-      username,
-      "| EMAIL SENT:",
-      credentialsEmailSent,
+    logger.info(
+      {
+        guestId: guest._id,
+        username,
+        credentialsEmailSent,
+      },
+      "Guest registered",
     );
 
     return res.status(201).json({
@@ -421,7 +422,7 @@ export const registerGuest = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Register Guest Error:", error);
+    logger.error(error, "Register Guest Error");
 
     // Roll back partial data
     if (createdUser) {
@@ -490,7 +491,7 @@ export const getGuests = async (req, res) => {
       data,
     });
   } catch (error) {
-    console.error("Get Guests Error:", error);
+    logger.error(error, "Get Guests Error");
 
     return res.status(500).json({
       success: false,
@@ -533,7 +534,7 @@ export const getGuestById = async (req, res) => {
       }),
     });
   } catch (error) {
-    console.error("Get Guest Error:", error);
+    logger.error(error, "Get Guest Error");
 
     return res.status(500).json({
       success: false,
@@ -646,7 +647,7 @@ export const updateGuest = async (req, res) => {
       }),
     });
   } catch (error) {
-    console.error("Update Guest Error:", error);
+    logger.error(error, "Update Guest Error");
 
     await removeFilesQuietly(uploadedPaths);
 
@@ -715,7 +716,7 @@ export const updateGuestCredentials = async (req, res) => {
       });
     }
 
-    console.log("GUEST CREDENTIALS UPDATED:", guest._id);
+    logger.info({ guestId: guest._id }, "Guest credentials updated");
 
     return res.status(200).json({
       success: true,
@@ -730,7 +731,7 @@ export const updateGuestCredentials = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Update Guest Credentials Error:", error);
+    logger.error(error, "Update Guest Credentials Error");
 
     return res.status(500).json({
       success: false,
@@ -778,7 +779,7 @@ export const deleteGuestDocument = async (req, res) => {
       data: { id: guest._id, documents: guest.documents },
     });
   } catch (error) {
-    console.error("Delete Guest Document Error:", error);
+    logger.error(error, "Delete Guest Document Error");
 
     return res.status(500).json({
       success: false,
@@ -831,14 +832,14 @@ export const deleteGuest = async (req, res) => {
       }
     }
 
-    console.log("GUEST DELETED:", guest._id);
+    logger.info({ guestId: guest._id }, "Guest deleted");
 
     return res.status(200).json({
       success: true,
       message: "Guest deleted successfully",
     });
   } catch (error) {
-    console.error("Delete Guest Error:", error);
+    logger.error(error, "Delete Guest Error");
 
     return res.status(500).json({
       success: false,
@@ -865,7 +866,7 @@ export const getMyProfile = async (req, res) => {
       data: guestProfileDTO(user, room),
     });
   } catch (error) {
-    console.error("Get guest profile error:", error);
+    logger.error(error, "Get guest profile error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to fetch guest profile" });
@@ -888,7 +889,7 @@ export const updateDND = async (req, res) => {
       .status(200)
       .json({ success: true, data: { dndEnabled: req.user.dndEnabled } });
   } catch (error) {
-    console.error("Update DND error:", error);
+    logger.error(error, "Update DND error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to update Do Not Disturb" });

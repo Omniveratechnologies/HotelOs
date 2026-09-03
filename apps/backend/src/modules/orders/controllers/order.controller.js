@@ -4,6 +4,7 @@ import FoodItem from "#/modules/food-items/models/FoodItem.js";
 import Room from "#/modules/rooms/models/Room.js";
 import getRazorpay from "#/config/razorpay.js";
 import { orderDTO } from "../dto/order.dto.js";
+import logger from "#/utils/logger.js";
 
 // Normalize a kitchen-facing status value (spaces / display casing) into the
 // canonical Order enum stored on the model.
@@ -157,7 +158,7 @@ export const createOrder = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Create order error:", error);
+    logger.error(error, "Create order error");
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to create order",
@@ -215,7 +216,7 @@ export const verifyPayment = async (req, res) => {
       data: orderDTO(order),
     });
   } catch (error) {
-    console.error("Verify payment error:", error);
+    logger.error(error, "Verify payment error");
     return res
       .status(500)
       .json({ success: false, message: "Payment verification failed" });
@@ -229,7 +230,7 @@ export const getMyOrders = async (req, res) => {
     });
     return res.status(200).json({ success: true, data: orders.map(orderDTO) });
   } catch (error) {
-    console.error("Get my orders error:", error);
+    logger.error(error, "Get my orders error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to fetch orders" });
@@ -248,7 +249,7 @@ export const getOrderById = async (req, res) => {
         .json({ success: false, message: "Order not found" });
     return res.status(200).json({ success: true, data: orderDTO(order) });
   } catch (error) {
-    console.error("Get order error:", error);
+    logger.error(error, "Get order error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to fetch order" });
@@ -279,7 +280,7 @@ export const getAllOrders = async (req, res) => {
 
     return res.status(200).json(data);
   } catch (error) {
-    console.error("Get all orders error:", error);
+    logger.error(error, "Get all orders error");
     return res.status(500).json({
       message: "Failed to fetch orders",
     });
@@ -313,7 +314,7 @@ export const updateOrderStatus = async (req, res) => {
 
     return res.status(200).json(kitchenOrderDTO(order, room));
   } catch (error) {
-    console.error("Update order status error:", error);
+    logger.error(error, "Update order status error");
     return res.status(500).json({
       message: "Failed to update order status",
       error: error.message,

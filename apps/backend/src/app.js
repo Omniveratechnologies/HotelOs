@@ -1,5 +1,8 @@
 import express from "express";
 import cors from "cors";
+import pinoHttp from "pino-http";
+
+import logger from "#/utils/logger.js";
 
 import hotelRoutes from "#/modules/hotels/index.js";
 import authRoutes from "#/modules/auth/index.js";
@@ -13,6 +16,8 @@ import { orderRouter, kitchenOrdersRouter } from "#/modules/orders/index.js";
 import serviceRequestRoutes from "#/modules/service-requests/index.js";
 
 const app = express();
+
+app.use(pinoHttp({ logger }));
 
 app.use(
   cors({
@@ -42,5 +47,13 @@ app.use("/api/v1/food-items", foodItemRoutes);
 app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/service-requests", serviceRequestRoutes);
 app.use("/api/kitchen/orders", kitchenOrdersRouter);
+
+app.use((err, req, res, _next) => {
+  logger.error(err, "Unhandled application error");
+  res.status(500).json({
+    success: false,
+    message: "Internal server error",
+  });
+});
 
 export default app;

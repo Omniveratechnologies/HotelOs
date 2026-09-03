@@ -1,5 +1,6 @@
 import Room from "../models/Room.js";
 import { roomResponseDTO } from "../dto/room.dto.js";
+import logger from "#/utils/logger.js";
 
 const ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
 
@@ -21,7 +22,7 @@ export const getRooms = async (req, res) => {
       data: rooms.map(roomResponseDTO),
     });
   } catch (error) {
-    console.error("Get Rooms Error:", error);
+    logger.error(error, "Get Rooms Error");
 
     return res.status(500).json({
       success: false,
@@ -54,7 +55,7 @@ export const getRoomById = async (req, res) => {
       data: roomResponseDTO(room),
     });
   } catch (error) {
-    console.error("Get Room Error:", error);
+    logger.error(error, "Get Room Error");
 
     return res.status(500).json({
       success: false,
@@ -113,7 +114,7 @@ export const createRoom = async (req, res) => {
       data: roomResponseDTO(room),
     });
   } catch (error) {
-    console.error("Create Room Error:", error);
+    logger.error(error, "Create Room Error");
 
     if (error.code === 11000) {
       return res.status(409).json({
@@ -222,7 +223,7 @@ export const updateRoom = async (req, res) => {
       data: roomResponseDTO(room),
     });
   } catch (error) {
-    console.error("Update Room Error:", error);
+    logger.error(error, "Update Room Error");
 
     return res.status(500).json({
       success: false,
@@ -254,7 +255,7 @@ export const deleteRoom = async (req, res) => {
       message: "Room deleted successfully",
     });
   } catch (error) {
-    console.error("Delete Room Error:", error);
+    logger.error(error, "Delete Room Error");
 
     return res.status(500).json({
       success: false,

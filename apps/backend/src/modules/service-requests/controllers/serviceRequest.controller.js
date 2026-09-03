@@ -1,5 +1,6 @@
 import ServiceRequest from "../models/ServiceRequest.js";
 import { serviceRequestDTO } from "../dto/serviceRequest.dto.js";
+import logger from "#/utils/logger.js";
 
 export const createServiceRequest = async (req, res) => {
   try {
@@ -25,7 +26,7 @@ export const createServiceRequest = async (req, res) => {
       data: serviceRequestDTO(request),
     });
   } catch (error) {
-    console.error("Create service request error:", error);
+    logger.error(error, "Create service request error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to create service request" });
@@ -41,7 +42,7 @@ export const getMyServiceRequests = async (req, res) => {
       .status(200)
       .json({ success: true, data: requests.map(serviceRequestDTO) });
   } catch (error) {
-    console.error("Get service requests error:", error);
+    logger.error(error, "Get service requests error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to fetch service requests" });

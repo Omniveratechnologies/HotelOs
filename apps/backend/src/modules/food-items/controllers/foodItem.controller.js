@@ -1,5 +1,6 @@
 import FoodItem from "../models/FoodItem.js";
 import { foodItemDTO } from "../dto/foodItem.dto.js";
+import logger from "#/utils/logger.js";
 
 // GET /api/v1/food-items — any authenticated role can view
 export const getFoodItems = async (req, res) => {
@@ -12,7 +13,7 @@ export const getFoodItems = async (req, res) => {
       .status(200)
       .json({ success: true, data: items.map(foodItemDTO) });
   } catch (error) {
-    console.error("Get food items error:", error);
+    logger.error(error, "Get food items error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to fetch food items" });
@@ -46,7 +47,7 @@ export const createFoodItem = async (req, res) => {
       data: foodItemDTO(item),
     });
   } catch (error) {
-    console.error("Create food item error:", error);
+    logger.error(error, "Create food item error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to create food item" });
