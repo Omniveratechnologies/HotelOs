@@ -1,17 +1,17 @@
 import jwt from "jsonwebtoken";
 
-import User from "../../users/models/User.js";
-import Hotel from "../../hotels/models/Hotel.js";
+import User from "#/modules/users/models/User.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
 import UserInvite from "../models/UserInvite.js";
 
 import {
   generateInviteToken,
   getInviteExpiry,
-} from "../../../shared/utils/invitation.js";
+} from "#/shared/utils/invitation.js";
 
-import { sendInvitationEmail } from "../../../shared/services/email.service.js";
+import { sendInvitationEmail } from "#/shared/services/email.service.js";
 
-import { ROLES } from "../../../shared/constants/roles.js";
+import { ROLES } from "#/shared/constants/roles.js";
 
 // =====================================================
 // SEND INVITATION

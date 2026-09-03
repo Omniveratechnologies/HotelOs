@@ -1,10 +1,10 @@
-import User from "../../users/models/User.js";
-import { generateToken } from "../../../shared/utils/jwt.js";
-import { generateInviteToken } from "../../../shared/utils/invitation.js";
+import User from "#/modules/users/models/User.js";
+import { generateToken } from "#/shared/utils/jwt.js";
+import { generateInviteToken } from "#/shared/utils/invitation.js";
 import {
   sendUsernameReminderEmail,
   sendPasswordResetEmail,
-} from "../../../shared/services/email.service.js";
+} from "#/shared/services/email.service.js";
 
 export const login = async (req, res) => {
   try {

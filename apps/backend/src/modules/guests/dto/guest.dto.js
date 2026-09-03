@@ -1,4 +1,4 @@
-import { generateDownloadUrl } from "../../../config/r2.js";
+import { generateDownloadUrl } from "#/config/r2.js";
 
 const documentDTO = async (doc) => {
   const key = String(doc.path || "");

@@ -1,8 +1,8 @@
 import crypto from "crypto";
 import Order from "../models/Order.js";
-import FoodItem from "../../food-items/models/FoodItem.js";
-import Room from "../../rooms/models/Room.js";
-import getRazorpay from "../../../config/razorpay.js";
+import FoodItem from "#/modules/food-items/models/FoodItem.js";
+import Room from "#/modules/rooms/models/Room.js";
+import getRazorpay from "#/config/razorpay.js";
 import { orderDTO } from "../dto/order.dto.js";
 
 // Normalize a kitchen-facing status value (spaces / display casing) into the

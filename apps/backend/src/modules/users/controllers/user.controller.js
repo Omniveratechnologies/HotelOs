@@ -1,12 +1,12 @@
 import User from "../models/User.js";
-import UserInvite from "../../bookings/models/UserInvite.js";
+import UserInvite from "#/modules/bookings/models/UserInvite.js";
 
-import { ROLES } from "../../../shared/constants/roles.js";
+import { ROLES } from "#/shared/constants/roles.js";
 
 import {
   generateUsername,
   generateTemporaryPassword,
-} from "../../../shared/utils/generateCredentials.js";
+} from "#/shared/utils/generateCredentials.js";
 
 import { userResponseDTO } from "../dto/user.dto.js";
 

@@ -11,9 +11,9 @@ import {
   updateMyHotel,
 } from "../controllers/hotel.controller.js";
 
-import { authenticate } from "../../../shared/middleware/auth.middleware.js";
+import { authenticate } from "#/shared/middleware/auth.middleware.js";
 
-import { authorize } from "../../../shared/middleware/role.middleware.js";
+import { authorize } from "#/shared/middleware/role.middleware.js";
 
 const router = express.Router();
 

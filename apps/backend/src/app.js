@@ -1,16 +1,16 @@
 import express from "express";
 import cors from "cors";
 
-import hotelRoutes from "./modules/hotels/index.js";
-import authRoutes from "./modules/auth/index.js";
-import userRoutes from "./modules/users/index.js";
-import inviteRoutes from "./modules/bookings/index.js";
-import dashboardRoutes from "./modules/dashboard/index.js";
-import roomRoutes from "./modules/rooms/index.js";
-import guestRoutes from "./modules/guests/index.js";
-import foodItemRoutes from "./modules/food-items/index.js";
-import { orderRouter, kitchenOrdersRouter } from "./modules/orders/index.js";
-import serviceRequestRoutes from "./modules/service-requests/index.js";
+import hotelRoutes from "#/modules/hotels/index.js";
+import authRoutes from "#/modules/auth/index.js";
+import userRoutes from "#/modules/users/index.js";
+import inviteRoutes from "#/modules/bookings/index.js";
+import dashboardRoutes from "#/modules/dashboard/index.js";
+import roomRoutes from "#/modules/rooms/index.js";
+import guestRoutes from "#/modules/guests/index.js";
+import foodItemRoutes from "#/modules/food-items/index.js";
+import { orderRouter, kitchenOrdersRouter } from "#/modules/orders/index.js";
+import serviceRequestRoutes from "#/modules/service-requests/index.js";
 
 const app = express();
 

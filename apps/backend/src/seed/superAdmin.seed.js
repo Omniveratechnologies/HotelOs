@@ -1,6 +1,6 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import User from "../modules/users/models/User.js";
+import User from "#/modules/users/models/User.js";
 
 const createSuperAdmin = async () => {
   try {

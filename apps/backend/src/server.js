@@ -2,10 +2,10 @@ import "dotenv/config";
 
 console.log("SERVER: starting");
 
-const appModule = await import("./app.js");
+const appModule = await import("#/app.js");
 console.log("SERVER: app.js loaded");
 
-const dbModule = await import("./config/db.js");
+const dbModule = await import("#/config/db.js");
 console.log("SERVER: db.js loaded");
 
 const app = appModule.default;

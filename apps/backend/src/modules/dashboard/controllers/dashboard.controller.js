@@ -1,7 +1,7 @@
-import User from "../../users/models/User.js";
-import Hotel from "../../hotels/models/Hotel.js";
-import Room from "../../rooms/models/Room.js";
-import Guest from "../../guests/models/Guest.js";
+import User from "#/modules/users/models/User.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
+import Room from "#/modules/rooms/models/Room.js";
+import Guest from "#/modules/guests/models/Guest.js";
 
 // =====================================================
 // DASHBOARD STATS (hotel-scoped)

@@ -2,24 +2,24 @@ import crypto from "crypto";
 
 import Guest from "../models/Guest.js";
 import { guestResponseDTO } from "../dto/guest.dto.js";
-import Room from "../../rooms/models/Room.js";
-import Hotel from "../../hotels/models/Hotel.js";
-import User from "../../users/models/User.js";
-import UserInvite from "../../bookings/models/UserInvite.js";
+import Room from "#/modules/rooms/models/Room.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
+import User from "#/modules/users/models/User.js";
+import UserInvite from "#/modules/bookings/models/UserInvite.js";
 
 import {
   generateUsername,
   generateTemporaryPassword,
-} from "../../../shared/utils/generateCredentials.js";
+} from "#/shared/utils/generateCredentials.js";
 
-import { sendGuestCredentialsEmail } from "../../../shared/services/email.service.js";
+import { sendGuestCredentialsEmail } from "#/shared/services/email.service.js";
 
-import { generateUploadUrl, deleteObjects } from "../../../config/r2.js";
+import { generateUploadUrl, deleteObjects } from "#/config/r2.js";
 
 import {
   MAX_FILES,
   validateDocument,
-} from "../../../shared/middleware/upload.middleware.js";
+} from "#/shared/middleware/upload.middleware.js";
 
 import { guestProfileDTO } from "../dto/guest.dto.js";
 
