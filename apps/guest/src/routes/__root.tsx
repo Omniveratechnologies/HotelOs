@@ -1,3 +1,4 @@
+// oxlint-disable react/only-export-components
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -10,7 +11,8 @@ import {
 import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import { GuestDashboardProvider } from "@/context/GuestDashboardContext";
 import { LoginPage } from "@/components/auth/LoginPage";
 

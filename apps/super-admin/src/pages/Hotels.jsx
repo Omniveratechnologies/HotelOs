@@ -20,6 +20,20 @@ import CreateHotelModal from "../components/hotels/CreateHotelModal.jsx";
 
 import { getHotels, updateHotelStatus } from "../services/hotel.service.js";
 
+function formatDate(date) {
+  if (!date) {
+    return "—";
+  }
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "—";
+  }
+
+  return parsedDate.toLocaleDateString();
+}
+
 export default function Hotels() {
   const { onMenuClick } = useOutletContext();
 
@@ -43,10 +57,6 @@ export default function Hotels() {
   // LOAD HOTELS
   // =====================================================
 
-  useEffect(() => {
-    loadHotels();
-  }, []);
-
   async function loadHotels() {
     setLoading(true);
 
@@ -62,6 +72,12 @@ export default function Hotels() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- fetch and load hotels once on mount, which updates loading/toast state synchronously
+    loadHotels();
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- intentionally run only once on mount; `loadHotels` is stable and reads current state via setState setters
+  }, []);
 
   // =====================================================
   // AUTO HIDE TOAST
@@ -162,24 +178,6 @@ export default function Hotels() {
     setMenuOpenId(null);
 
     setToast(`Resend invite for ${hotel.name} will be added next.`);
-  }
-
-  // =====================================================
-  // FORMAT DATE
-  // =====================================================
-
-  function formatDate(date) {
-    if (!date) {
-      return "—";
-    }
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleDateString();
   }
 
   // =====================================================

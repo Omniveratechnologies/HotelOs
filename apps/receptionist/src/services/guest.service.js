@@ -56,9 +56,11 @@ export const registerGuest = async (data) => {
     );
 
     // 2. Upload each file directly to R2.
-    for (const [index, upload] of uploads.entries()) {
-      await uploadToR2(upload.uploadUrl, data.files[index]);
-    }
+    await Promise.all(
+      uploads.map((upload, index) =>
+        uploadToR2(upload.uploadUrl, data.files[index]),
+      ),
+    );
 
     // 3. Pass the uploaded object keys back as document metadata.
     documents.push(

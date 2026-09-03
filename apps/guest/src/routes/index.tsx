@@ -1,3 +1,4 @@
+// oxlint-disable react/only-export-components
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Toaster } from "@/components/ui/sonner";

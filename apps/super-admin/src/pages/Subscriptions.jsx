@@ -117,7 +117,36 @@ export default function Subscriptions() {
   };
 
   useEffect(() => {
-    loadSubscriptions();
+    let cancelled = false;
+
+    async function load() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await fetchSubscriptions();
+
+        if (!cancelled) {
+          setSubs(data);
+        }
+      } catch (err) {
+        console.error("Failed to load subscriptions:", err);
+
+        if (!cancelled) {
+          setError(err.message || "Failed to load subscriptions.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // =====================================================

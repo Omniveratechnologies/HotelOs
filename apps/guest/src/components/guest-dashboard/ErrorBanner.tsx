@@ -1,4 +1,4 @@
-import { useGuestDashboard } from "@/context/GuestDashboardContext";
+import { useGuestDashboard } from "@/context/useGuestDashboard";
 
 /** Dashboard-level failure notice with an optional retry action. */
 export function ErrorBanner() {

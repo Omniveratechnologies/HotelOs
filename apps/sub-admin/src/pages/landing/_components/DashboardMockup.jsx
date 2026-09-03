@@ -1,11 +1,12 @@
 export default function DashboardMockup({
   label = "Front Desk",
   greeting = "Welcome back, Aria",
-  stats = [],
+  stats,
   chart = null,
   list = null,
   className = "",
 }) {
+  const displayStats = stats ?? [];
   return (
     <div
       className={`border-beige-border bg-cream shadow-soft overflow-hidden rounded-2xl border ${className}`}
@@ -23,9 +24,9 @@ export default function DashboardMockup({
       <div className="p-4">
         <p className="text-muted mb-3 text-xs">{greeting}</p>
 
-        {stats.length > 0 && (
+        {displayStats.length > 0 && (
           <div className="mb-3 grid grid-cols-4 gap-2">
-            {stats.map((s) => (
+            {displayStats.map((s) => (
               <div
                 key={s.label}
                 className="border-beige-border bg-ivory rounded-lg border px-2 py-2"

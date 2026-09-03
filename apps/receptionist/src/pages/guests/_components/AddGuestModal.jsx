@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHotelOS } from "../../../app/providers.jsx";
+import { useHotelOS } from "../../../app/useHotelOS.js";
 
 const ID_TYPES = [
   "Aadhaar",

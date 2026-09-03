@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useHotelOS } from "../app/providers.jsx";
+import { useHotelOS } from "../app/useHotelOS.js";
 
 const quickReplies = [
   "How many rooms are occupied?",
@@ -43,6 +43,7 @@ export default function Chatbot({
   const hotelName = stats?.hotelName;
   const [messages, setMessages] = useState([
     {
+      id: "welcome",
       role: "assistant",
       content:
         "Hello! I'm your HotelOS AI assistant. I can help you check room status, manage requests, and answer any hotel operations questions. How can I help you today?",
@@ -54,6 +55,7 @@ export default function Chatbot({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- `messages` intentionally triggers auto-scroll but is not read inside the effect body
   }, [messages]);
 
   const send = async (text) => {
@@ -61,7 +63,7 @@ export default function Chatbot({
     if (!msg || loading) return;
     setInput("");
 
-    const userMsg = { role: "user", content: msg };
+    const userMsg = { id: crypto.randomUUID(), role: "user", content: msg };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setLoading(true);
@@ -93,11 +95,15 @@ export default function Chatbot({
       const data = await response.json();
       const reply =
         data.content?.[0]?.text || "Sorry, I could not get a response.";
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "assistant", content: reply },
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,
         {
+          id: crypto.randomUUID(),
           role: "assistant",
           content: "Sorry, I'm having trouble connecting. Please try again.",
         },
@@ -171,9 +177,9 @@ export default function Chatbot({
 
           {/* Messages */}
           <div className="flex-1 scrollbar-thin space-y-3 overflow-y-auto p-3">
-            {messages.map((m, i) => (
+            {messages.map((m) => (
               <div
-                key={i}
+                key={m.id}
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {m.role === "assistant" && (

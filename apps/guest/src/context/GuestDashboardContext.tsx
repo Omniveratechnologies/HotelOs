@@ -1,13 +1,12 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
+import { GuestDashboardContext } from "./guest-dashboard-context";
 import { fetchMyProfile } from "@/services/guestApi";
 import { fetchFoodItems } from "@/services/foodApi";
 import {
@@ -33,7 +32,7 @@ type LoadState = "loading" | "success" | "error";
 
 type Failure = { message: string; retry: (() => void) | null };
 
-type GuestDashboardValue = {
+export type GuestDashboardValue = {
   guest: GuestInfo | null;
   guestState: LoadState;
   refetchGuest: () => void;
@@ -68,8 +67,6 @@ type GuestDashboardValue = {
   runFailureRetry: () => void;
   clearFailure: () => void;
 };
-
-const GuestDashboardContext = createContext<GuestDashboardValue | null>(null);
 
 export function GuestDashboardProvider({ children }: { children: ReactNode }) {
   const [guest, setGuest] = useState<GuestInfo | null>(null);
@@ -168,6 +165,7 @@ export function GuestDashboardProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- intentionally trigger the initial async data fetch on mount, which sets loading state synchronously
     loadGuest();
     loadMenu();
     loadOrders();
@@ -221,11 +219,13 @@ export function GuestDashboardProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         reportFailure(
           err instanceof Error ? err.message : "Failed to place order",
+          // oxlint-disable-next-line react/immutability -- recursive self-reference so the failed attempt can be retried
           () => placeOrder(items, paymentMethod),
         );
         throw err;
       }
     },
+    // oxlint-disable-next-line react/memo-dependencies -- `guest` is not read directly; only its changing identity should invalidate this memo
     [loadOrders, reportFailure, guest],
   );
 
@@ -241,11 +241,13 @@ export function GuestDashboardProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         reportFailure(
           err instanceof Error ? err.message : "Failed to send request",
+          // oxlint-disable-next-line react/immutability -- recursive self-reference so the failed attempt can be retried
           () => sendServiceRequest(type, description, items),
         );
         throw err;
       }
     },
+    // oxlint-disable-next-line react/memo-dependencies -- all referenced helpers are stable useCallback functions with [] deps
     [loadRequests, reportFailure],
   );
 
@@ -261,6 +263,7 @@ export function GuestDashboardProvider({ children }: { children: ReactNode }) {
     } finally {
       setRefreshing(false);
     }
+    // oxlint-disable-next-line react/memo-dependencies -- all four loaders are stable useCallback functions whose identities never change
   }, [loadGuest, loadMenu, loadOrders, loadRequests]);
 
   const runFailureRetry = useCallback(() => {
@@ -322,14 +325,4 @@ export function GuestDashboardProvider({ children }: { children: ReactNode }) {
       {children}
     </GuestDashboardContext.Provider>
   );
-}
-
-export function useGuestDashboard() {
-  const context = useContext(GuestDashboardContext);
-  if (!context) {
-    throw new Error(
-      "useGuestDashboard must be used inside a GuestDashboardProvider",
-    );
-  }
-  return context;
 }

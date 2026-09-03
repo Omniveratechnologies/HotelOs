@@ -27,17 +27,46 @@ export default function MembersPage() {
       const data = await fetchMembers();
 
       setMembers(data);
-    } catch (error) {
-      console.error("Failed to load members:", error);
+    } catch (err) {
+      console.error("Failed to load members:", err);
 
-      setError(error.message || "Failed to load members");
+      setError(err.message || "Failed to load members");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadMembers();
+    let cancelled = false;
+
+    async function load() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await fetchMembers();
+
+        if (!cancelled) {
+          setMembers(data);
+        }
+      } catch (err) {
+        console.error("Failed to load members:", err);
+
+        if (!cancelled) {
+          setError(err.message || "Failed to load members");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // =====================================================
@@ -63,10 +92,10 @@ export default function MembersPage() {
       );
 
       setMemberToDelete(null);
-    } catch (error) {
-      console.error("Delete member error:", error);
+    } catch (err) {
+      console.error("Delete member error:", err);
 
-      setError(error.message || "Failed to delete account");
+      setError(err.message || "Failed to delete account");
     } finally {
       setDeleting(false);
     }

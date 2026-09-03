@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHotelOS } from "../../app/providers.jsx";
+import { useHotelOS } from "../../app/useHotelOS.js";
 
 const statusConfig = {
   preparing: { color: "bg-orange-100 text-orange-700", label: "Preparing" },

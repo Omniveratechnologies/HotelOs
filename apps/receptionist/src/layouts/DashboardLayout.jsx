@@ -2,7 +2,8 @@ import React from "react";
 import { Outlet } from "react-router";
 import Sidebar from "../components/Sidebar.jsx";
 import Chatbot from "../components/Chatbot.jsx";
-import { HotelOSProvider, useHotelOS } from "../app/providers.jsx";
+import { HotelOSProvider } from "../app/providers.jsx";
+import { useHotelOS } from "../app/useHotelOS.js";
 
 function DashboardShell() {
   const { rooms, serviceRequests, foodOrders, chatOpen, setChatOpen } =

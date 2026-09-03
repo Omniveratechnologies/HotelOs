@@ -1,7 +1,7 @@
 import { ServiceCard } from "./ServiceCard";
 import { RefreshStatusCard } from "./RefreshStatusCard";
 import { SERVICE_ICON } from "./service-icons";
-import { useGuestDashboard } from "@/context/GuestDashboardContext";
+import { useGuestDashboard } from "@/context/useGuestDashboard";
 import { cn } from "@/lib/utils";
 import type { ServiceRequestType } from "@/types/guest-dashboard";
 

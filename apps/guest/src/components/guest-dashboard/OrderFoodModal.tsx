@@ -11,7 +11,7 @@ import { QtyStepper } from "./QtyStepper";
 import { PaymentChoice } from "./PaymentChoice";
 import { ModalSuccessOverlay } from "./ModalSuccessOverlay";
 import { SHEET_CONTENT } from "./card-classes";
-import { useGuestDashboard } from "@/context/GuestDashboardContext";
+import { useGuestDashboard } from "@/context/useGuestDashboard";
 import { MODAL_SUCCESS_MS } from "@/constants/service-flows";
 import { formatMoney } from "@/utils/format";
 

@@ -64,6 +64,7 @@ export interface Order {
     | "DELIVERED"
     | "REJECTED"
     | "CANCELLED";
+  paymentStatus: "PENDING" | "PAID" | "FAILED" | "REFUNDED";
   createdAt: string;
   updatedAt: string;
 }

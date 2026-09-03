@@ -25,8 +25,8 @@ export default function RecentActivity({ recentActivity, statsError }) {
         ) : recentActivity.length === 0 ? (
           <div className="text-xs text-white/40">No recent activity yet.</div>
         ) : (
-          recentActivity.map((a, i) => (
-            <div key={i} className="flex items-start gap-2">
+          recentActivity.map((a) => (
+            <div key={a._id || a.createdAt} className="flex items-start gap-2">
               <div className="bg-gold-400 mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-xs text-white/80">{a.text}</div>

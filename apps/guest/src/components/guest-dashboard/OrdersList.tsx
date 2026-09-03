@@ -1,12 +1,12 @@
 import { Inbox, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
-import { useGuestDashboard } from "@/context/GuestDashboardContext";
+import { useGuestDashboard } from "@/context/useGuestDashboard";
 import { formatMoney, relTime } from "@/utils/format";
 import type { Order, ServiceRequest } from "@/types/guest-dashboard";
 
 const ORDER_TERMINAL = new Set(["DELIVERED", "REJECTED", "CANCELLED"]);
-const REQUEST_TERMINAL = ["COMPLETED", "CANCELLED"];
+const REQUEST_TERMINAL = new Set(["COMPLETED", "CANCELLED"]);
 
 type ActivityItem =
   { type: "order"; data: Order } | { type: "request"; data: ServiceRequest };
@@ -17,7 +17,7 @@ export function OrdersList() {
   const activity: ActivityItem[] = [
     ...orders.map((o) => ({ type: "order" as const, data: o })),
     ...requests.map((r) => ({ type: "request" as const, data: r })),
-  ].sort(
+  ].toSorted(
     (a, b) =>
       new Date(b.data.createdAt).getTime() -
       new Date(a.data.createdAt).getTime(),
@@ -99,7 +99,7 @@ export function OrdersList() {
             }
 
             const r = item.data;
-            const done = REQUEST_TERMINAL.includes(r.status);
+            const done = REQUEST_TERMINAL.has(r.status);
             return (
               <li
                 key={r.id}

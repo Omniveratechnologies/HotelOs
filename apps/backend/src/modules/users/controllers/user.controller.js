@@ -57,6 +57,7 @@ export const createUser = async (req, res) => {
         String(number).padStart(3, "0"),
       );
 
+      // oxlint-disable-next-line no-await-in-loop -- sequential uniqueness check; each iteration depends on the previous query result
       const existingUser = await User.findOne({ username });
 
       if (!existingUser) {

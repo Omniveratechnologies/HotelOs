@@ -1,7 +1,7 @@
 import { Clock, ShieldCheck, AlertCircle } from "lucide-react";
 import { DNDToggle } from "./DNDToggle";
 import { useRoomClock } from "@/hooks/useRoomClock";
-import { useGuestDashboard } from "@/context/GuestDashboardContext";
+import { useGuestDashboard } from "@/context/useGuestDashboard";
 
 export function DashboardHeader() {
   const { guest, guestState, refetchGuest, dnd, dndPending, toggleDND } =

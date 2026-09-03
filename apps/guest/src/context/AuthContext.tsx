@@ -1,10 +1,5 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { AuthContext } from "./auth-context";
 import {
   login as loginApi,
   logout as logoutApi,
@@ -13,7 +8,7 @@ import {
 
 type AuthUser = LoginResponse["user"];
 
-type AuthState = {
+export type AuthState = {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
@@ -22,23 +17,23 @@ type AuthState = {
   logout: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthState | null>(null);
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem("auth_token");
-    const storedUser = localStorage.getItem("auth_user");
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const initialUser = localStorage.getItem("auth_user");
+    if (initialUser) {
+      try {
+        return JSON.parse(initialUser);
+      } catch {
+        return null;
+      }
     }
-    setLoading(false);
-  }, []);
+    return null;
+  });
+  const [token, setToken] = useState<string | null>(() =>
+    localStorage.getItem("auth_token"),
+  );
+  const [loading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const login = async (username: string, password: string) => {
     setError(null);
@@ -69,17 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  return (
-    <AuthContext.Provider
-      value={{ user, token, loading, error, login, logout }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthState>(
+    () => ({ user, token, loading, error, login, logout }),
+    // oxlint-disable-next-line react/memo-dependencies -- `login`/`logout` are plain async closures recreated each render; guarding on the state they depend on keeps the memo correct
+    [user, token, loading, error],
   );
-}
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
-  return ctx;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

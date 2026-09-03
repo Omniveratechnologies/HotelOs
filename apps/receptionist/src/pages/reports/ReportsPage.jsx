@@ -1,5 +1,5 @@
 import React from "react";
-import { useHotelOS } from "../../app/providers.jsx";
+import { useHotelOS } from "../../app/useHotelOS.js";
 
 const ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
 

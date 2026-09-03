@@ -20,10 +20,15 @@ export function TableSkeleton({ rows = 5, cols = 4 }) {
     <div className="border-line overflow-hidden rounded-2xl border bg-white">
       <div className="divide-line divide-y">
         {Array.from({ length: rows }).map((_, r) => (
-          <div key={r} className="flex items-center gap-4 px-5 py-4">
+          <div
+            // oxlint-disable-next-line react/no-array-index-key -- skeleton rows are purely decorative placeholders with no data identity
+            key={`row-${r}`}
+            className="flex items-center gap-4 px-5 py-4"
+          >
             {Array.from({ length: cols }).map((__, c) => (
               <div
-                key={c}
+                // oxlint-disable-next-line react/no-array-index-key -- skeleton columns are decorative placeholders with no data identity
+                key={`col-${c}`}
                 className="bg-ink-950/5 h-3.5 flex-1 animate-pulse rounded"
                 style={{ maxWidth: c === 0 ? "180px" : "120px" }}
               />

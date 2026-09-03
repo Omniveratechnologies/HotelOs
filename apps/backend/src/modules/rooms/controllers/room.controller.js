@@ -4,7 +4,12 @@ import logger from "#/utils/logger.js";
 
 const ROOM_TYPES = new Set(["Standard", "Deluxe", "Suite"]);
 
-const ROOM_STATUSES = ["available", "occupied", "reserved", "cleaning"];
+const ROOM_STATUSES = new Set([
+  "available",
+  "occupied",
+  "reserved",
+  "cleaning",
+]);
 
 // =====================================================
 // GET ALL ROOMS (hotel-scoped)
@@ -142,7 +147,7 @@ export const updateRoom = async (req, res) => {
       req.body;
 
     if (status !== undefined) {
-      if (!ROOM_STATUSES.includes(status)) {
+      if (!ROOM_STATUSES.has(status)) {
         return res.status(400).json({
           success: false,
           message: "Invalid room status",

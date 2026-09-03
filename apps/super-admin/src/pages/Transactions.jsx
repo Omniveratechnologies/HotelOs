@@ -29,13 +29,12 @@ export default function Transactions() {
   }, []);
 
   const filtered = useMemo(() => {
-    let list = rows.filter((r) =>
+    const filteredRows = rows.filter((r) =>
       r.hotelName.toLowerCase().includes(query.toLowerCase()),
     );
-    list = [...list].sort((a, b) =>
+    return filteredRows.toSorted((a, b) =>
       sortDesc ? b.amount - a.amount : a.amount - b.amount,
     );
-    return list;
   }, [rows, query, sortDesc]);
 
   const total = rows.reduce((sum, r) => sum + r.amount, 0);

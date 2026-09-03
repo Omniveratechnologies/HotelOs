@@ -17,6 +17,7 @@ const generateHotelCode = async (name) => {
 
   // Make sure hotel code is unique
   while (
+    // oxlint-disable-next-line no-await-in-loop -- ensure a unique code by re-querying after each increment
     await Hotel.findOne({
       hotelCode,
     })

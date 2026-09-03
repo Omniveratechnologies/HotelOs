@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Send } from "lucide-react";
 
 import Modal from "../ui/Modal.jsx";
-import Field, { inputClass } from "../ui/Field.jsx";
+import Field from "../ui/Field.jsx";
+import { inputClass } from "../ui/inputClass.js";
 import Button from "../ui/Button.jsx";
 
 import {

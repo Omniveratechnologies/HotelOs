@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import RoomModal from "../../components/RoomModal.jsx";
 import AddRoomModal from "./AddRoomModal.jsx";
-import { useHotelOS } from "../../app/providers.jsx";
+import { useHotelOS } from "../../app/useHotelOS.js";
 
 export default function RoomsPage() {
   const { rooms, updateRoomStatus, addRoom, roomsLoading, roomsError } =
