@@ -14,7 +14,7 @@ for (const variable of requiredEnvVariables) {
 // payments) only take effect when their credentials are provided; the rest of
 // the backend keeps working without them.
 export default {
-  port: process.env.PORT || 5000,
+  port: process.env.PORT || 5001,
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
