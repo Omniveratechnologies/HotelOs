@@ -21,6 +21,7 @@
     "turbo": "^2.10.12"
   },
   "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs}": "oxlint --fix",
     "*.{ts,tsx,js,jsx,mjs,json,md,css}": "prettier --write"
   },
   "packageManager": "pnpm@11.1.1",
