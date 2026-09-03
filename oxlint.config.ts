@@ -9,7 +9,22 @@ export default defineConfig({
   },
   rules: {
     "react/react-in-jsx-scope": "off",
+    "react/rules-of-hooks": "warn",
+    "react/exhaustive-deps": "warn",
+    "react/only-export-components": ["warn", { allowConstantExport: true }],
     "eslint/no-underscore-dangle": ["error", { allow: ["_id"] }], // allow _id for MongoDB documents
+    "eslint/no-restricted-imports": [
+      "error",
+      {
+        paths: [
+          {
+            name: "server-only",
+            message:
+              "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
+          },
+        ],
+      },
+    ],
   },
   env: {
     browser: true,

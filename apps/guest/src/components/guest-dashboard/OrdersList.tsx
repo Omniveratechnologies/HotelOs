@@ -5,7 +5,7 @@ import { useGuestDashboard } from "@/context/GuestDashboardContext";
 import { formatMoney, relTime } from "@/utils/format";
 import type { Order, ServiceRequest } from "@/types/guest-dashboard";
 
-const ORDER_TERMINAL = ["DELIVERED", "REJECTED", "CANCELLED"];
+const ORDER_TERMINAL = new Set(["DELIVERED", "REJECTED", "CANCELLED"]);
 const REQUEST_TERMINAL = ["COMPLETED", "CANCELLED"];
 
 type ActivityItem =
@@ -66,7 +66,7 @@ export function OrdersList() {
           activity.map((item) => {
             if (item.type === "order") {
               const o = item.data;
-              const done = ORDER_TERMINAL.includes(o.status);
+              const done = ORDER_TERMINAL.has(o.status);
               return (
                 <li
                   key={o.id}

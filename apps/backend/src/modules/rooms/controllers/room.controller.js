@@ -2,7 +2,7 @@ import Room from "../models/Room.js";
 import { roomResponseDTO } from "../dto/room.dto.js";
 import logger from "#/utils/logger.js";
 
-const ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
+const ROOM_TYPES = new Set(["Standard", "Deluxe", "Suite"]);
 
 const ROOM_STATUSES = ["available", "occupied", "reserved", "cleaning"];
 
@@ -86,7 +86,7 @@ export const createRoom = async (req, res) => {
       });
     }
 
-    if (!ROOM_TYPES.includes(type)) {
+    if (!ROOM_TYPES.has(type)) {
       return res.status(400).json({
         success: false,
         message: "Room type must be Standard, Deluxe or Suite",
@@ -153,7 +153,7 @@ export const updateRoom = async (req, res) => {
     }
 
     if (type !== undefined) {
-      if (!ROOM_TYPES.includes(type)) {
+      if (!ROOM_TYPES.has(type)) {
         return res.status(400).json({
           success: false,
           message: "Invalid room type",
