@@ -1,9 +1,9 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import Hotel from "../models/Hotel.js";
-import Room from "../models/Room.js";
-import User from "../models/User.js";
-import FoodItem from "../models/FoodItem.js";
+import Hotel from "../modules/hotels/models/Hotel.js";
+import Room from "../modules/rooms/models/Room.js";
+import User from "../modules/users/models/User.js";
+import FoodItem from "../modules/food-items/models/FoodItem.js";
 
 const seed = async () => {
   await mongoose.connect(process.env.MONGODB_URI);

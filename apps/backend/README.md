@@ -3,7 +3,8 @@
 The backend REST API for **HotelOS**, a multi-role, multi-tenant hotel
 management platform. It provides authentication, role-based authorization,
 hotel (tenant) isolation, user management, invitations, rooms, guests,
-dashboard metrics, and credential/email flows.
+dashboard metrics, food orders, service requests, and credential/email
+flows.
 
 This document is the authoritative **API reference and handoff guide** for
 frontend developers building on HotelOS.
@@ -27,14 +28,147 @@ The backend is designed to serve multiple role-specific frontends:
 | Kitchen Dashboard     | `KITCHEN`      |
 | Guest Dashboard       | `GUEST`        |
 
-The repository currently ships the Super Admin, Sub Admin, and Receptionist
-apps (see the root `README.md`).
+The repository currently ships the Super Admin, Sub Admin, Receptionist,
+Kitchen, and Guest apps (see the root `README.md`).
+
+---
+
+## Architecture
+
+This project follows a **Feature-Based Modular Architecture**. The primary
+goals are:
+
+- Reduce merge conflicts
+- Enable multiple developers to work independently
+- Keep business logic close to the feature it belongs to
+- Improve scalability and maintainability
+- Make onboarding easier for new developers
+
+### Core principles
+
+#### 1. Features own their code
+
+Every feature is self-contained. Each module contains its own controllers,
+models, routes, and DTOs. A developer working on one feature should rarely
+need to modify files in another feature.
+
+#### 2. Shared code lives in `shared/`
+
+Only reusable code belongs inside `shared/`:
+
+- Authentication middleware
+- Role middleware
+- Email service
+- Common utilities (JWT, credentials, invitation tokens, password helpers)
+- Global constants (roles)
+
+Do not place feature-specific logic inside `shared/`.
+
+#### 3. Feature isolation
+
+Features are treated as independent modules. Global folders like
+`controllers/`, `models/`, `routes/` force multiple developers to edit the
+same locations and increase merge conflicts.
+
+---
+
+### Project structure
+
+```
+src/
+│
+├── app.js                  Express app, route mounting
+├── server.js               Entry point (connects DB, starts server)
+│
+├── config/                 Shared infrastructure
+│   ├── db.js               MongoDB connection
+│   ├── env.js              Loads & validates env vars
+│   ├── r2.js               Cloudflare R2 (presigned URLs)
+│   └── razorpay.js         Razorpay client (lazy-init)
+│
+├── shared/                 Reusable code across all modules
+│   ├── middleware/
+│   │   ├── auth.middleware.js      JWT authentication
+│   │   ├── role.middleware.js      Role-based authorization
+│   │   └── upload.middleware.js    Document validation rules
+│   ├── services/
+│   │   └── email.service.js        Nodemailer transports
+│   ├── utils/
+│   │   ├── jwt.js                  Token generation
+│   │   ├── generateCredentials.js  Usernames & temp passwords
+│   │   ├── invitation.js           Invite tokens & expiry
+│   │   └── password.js             Password helpers
+│   └── constants/
+│       └── roles.js                Role constants
+│
+├── modules/                Feature modules (each is self-contained)
+│   ├── auth/               Authentication (login, logout, password reset)
+│   ├── users/              User management (create/list/delete staff)
+│   ├── hotels/             Hotel CRUD + status + self-service
+│   ├── rooms/              Room management (hotel-scoped)
+│   ├── guests/             Guest registration, check-in/out, documents
+│   ├── bookings/           Invitation flow (send/verify/accept)
+│   ├── dashboard/          Dashboard stats
+│   ├── food-items/         Food menu management
+│   ├── orders/             Guest orders + kitchen-facing endpoints
+│   └── service-requests/   Guest service requests
+│
+└── seed/
+    ├── superAdmin.seed.js  Create the first SUPER_ADMIN
+    └── testGuest.seed.js   Create test hotel, room, guest, food items
+```
+
+### Module structure
+
+Each module follows this layout:
+
+```
+modules/
+└── <module-name>/
+    ├── controllers/        HTTP request handlers (thin — call services/models)
+    ├── models/             Mongoose schemas + indexes
+    ├── routes/             Express routers with auth/role guards
+    ├── dto/                Data Transfer Objects (shape API responses)
+    └── index.js            Exports the router for mounting in app.js
+```
+
+**Example — `rooms` module:**
+
+```
+modules/rooms/
+├── controllers/
+│   └── room.controller.js     getRooms, createRoom, updateRoom, deleteRoom
+├── models/
+│   └── Room.js                Room schema (pure — no business logic)
+├── routes/
+│   └── room.routes.js         Router with authenticate + authorize guards
+├── dto/
+│   └── room.dto.js            roomResponseDTO
+└── index.js                   export default roomRouter
+```
+
+### Dependency rules
+
+**Allowed:**
+
+```
+Controller → Service/Model
+Service → Shared Service
+Route → Middleware
+```
+
+**Avoid:**
+
+```
+Controller → Another feature's Controller
+Route → Another feature's Model (use services instead)
+```
 
 ---
 
 ## Roles
 
-Defined in `src/constants/roles.js`:
+Defined in `src/shared/constants/roles.js`:
 
 | Role           | Scope                                        |
 | -------------- | -------------------------------------------- |
@@ -110,25 +244,25 @@ A typical protected request travels through the following stages:
         │
         │ HTTP request (Authorization: Bearer <JWT>)
         ▼
-      Express Route                    (routes/*.js)
+      Express Route                    (modules/<feature>/routes/*.js)
         │
         ▼
-      authenticate middleware          (verifies JWT, loads user → req.user)
+      authenticate middleware          (shared/middleware — verifies JWT, loads user)
         │
         ▼
-      authorize middleware             (checks role against allowed roles)
+      authorize middleware             (shared/middleware — checks role)
         │
         ▼
-      Controller                       (controllers/*.js)
+      Controller                       (modules/<feature>/controllers/*.js)
         │
         ▼
-      Service / Model                  (services/*.js, models/*.js)
+      Model                            (modules/<feature>/models/*.js)
         │
         ▼
       MongoDB
         │
         ▼
-      DTO                              (dto/*.js — shapes the response)
+      DTO                              (modules/<feature>/dto/*.js)
         │
         ▼
       JSON response                    { success, message, data }
@@ -139,71 +273,6 @@ A typical protected request travels through the following stages:
 
 This separation matters: frontends should never bypass authentication or
 role checks, and the backend stays the single source of truth for both.
-
----
-
-## Project structure
-
-```
-src/
-│
-├── app.js                  Express app, route mounting, static /uploads
-├── server.js               Entry point (connects DB, starts server)
-│
-├── config/
-│   ├── db.js               MongoDB connection
-│   └── env.js              Loads & validates env vars
-│
-├── constants/
-│   └── roles.js            Role constants
-│
-├── controllers/
-│   ├── auth.controller.js      login, logout, forgot/reset password
-│   ├── hotel.controller.js     hotel CRUD + status + self-service /me
-│   ├── user.controller.js      create / list / delete users
-│   ├── invite.controller.js    send / verify / accept invitations
-│   ├── room.controller.js      room CRUD
-│   ├── guest.controller.js     guest register / CRUD / documents / credentials
-│   └── dashboard.controller.js dashboard stats
-│
-├── dto/
-│   └── user.dto.js         userResponseDTO
-│
-├── middleware/
-│   ├── auth.middleware.js  authenticate (JWT)
-│   ├── role.middleware.js  authorize(...roles)
-│   └── upload.middleware.js Multer guest document upload + error handler
-│
-├── models/
-│   ├── Hotel.js            Hotel schema
-│   ├── User.js             User schema (+ bcrypt hashing)
-│   ├── UserInvite.js       Invitation tokens
-│   ├── Room.js             Room schema (+ roomResponseDTO)
-│   └── Guest.js            Guest schema (+ guestResponseDTO)
-│
-├── routes/
-│   ├── auth.routes.js      /api/v1/auth/*
-│   ├── hotel.routes.js     /api/v1/hotels/*
-│   ├── user.routes.js      /api/v1/users*
-│   ├── invite.routes.js    /api/v1/invites/*
-│   ├── room.routes.js      /api/v1/rooms/*
-│   ├── guest.routes.js     /api/v1/guests/*
-│   └── dashboard.routes.js /api/v1/dashboard/*
-│
-├── seed/
-│   └── superAdmin.seed.js  Create the first SUPER_ADMIN
-│
-├── services/
-│   └── email.service.js    Nodemailer transports (invite, credentials, reset)
-│
-└── utils/
-    ├── jwt.js              Token generation
-    ├── generateCredentials.js  Usernames & temporary passwords
-    ├── invitation.js       Invite tokens & expiry
-    └── password.js         Password helpers
-
-.env / .env.example         Environment configuration
-```
 
 ---
 
@@ -417,22 +486,25 @@ the frontend removes the token locally.
 
 ## Middleware
 
-### `authenticate` (`middleware/auth.middleware.js`)
+All middleware lives in `src/shared/middleware/`.
+
+### `authenticate` (`shared/middleware/auth.middleware.js`)
 
 - Requires `Authorization: Bearer <token>`.
 - Verifies the JWT and loads the user from the DB.
 - Rejects if the token is missing/expired or the user is inactive.
 - Populates `req.user`.
 
-### `authorize(...allowedRoles)` (`middleware/role.middleware.js`)
+### `authorize(...allowedRoles)` (`shared/middleware/role.middleware.js`)
 
 - Returns `401` if not authenticated.
 - Returns `403` if the user's role is not in the allowed list.
 
-### Document upload (`middleware/upload.middleware.js`)
+### Document validation (`shared/middleware/upload.middleware.js`)
 
-Multer middleware for guest documents (`uploadGuestDocuments` +
-`handleUploadError`). See [Guest documents](#guest-documents).
+Validation rules for guest documents (MIME type, file size, max files). Used
+by the guests module for document upload validation. Documents are uploaded
+directly to Cloudflare R2 via presigned URLs.
 
 ---
 
@@ -654,32 +726,38 @@ Room response DTO fields:
 Scoped to the authenticated user's hotel. Accessible by `SUB_ADMIN` and
 `RECEPTIONIST` (router-level authorization).
 
-| Method | Endpoint                       | Auth | Roles                   | Description                     |
-| ------ | ------------------------------ | ---- | ----------------------- | ------------------------------- |
-| GET    | `/guests`                      | Yes  | SUB_ADMIN, RECEPTIONIST | List guests (`?status=`)        |
-| GET    | `/guests/:id`                  | Yes  | SUB_ADMIN, RECEPTIONIST | Get a guest                     |
-| POST   | `/guests`                      | Yes  | SUB_ADMIN, RECEPTIONIST | Register a guest (multipart)    |
-| PATCH  | `/guests/:id`                  | Yes  | SUB_ADMIN, RECEPTIONIST | Update guest / check-out        |
-| PATCH  | `/guests/:id/credentials`      | Yes  | SUB_ADMIN, RECEPTIONIST | Update / regenerate credentials |
-| DELETE | `/guests/:id/documents/:docId` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete one document             |
-| DELETE | `/guests/:id`                  | Yes  | SUB_ADMIN, RECEPTIONIST | Delete a guest                  |
+| Method | Endpoint                            | Auth | Roles                   | Description                     |
+| ------ | ----------------------------------- | ---- | ----------------------- | ------------------------------- |
+| GET    | `/guests`                           | Yes  | SUB_ADMIN, RECEPTIONIST | List guests (`?status=`)        |
+| GET    | `/guests/me`                        | Yes  | GUEST                   | Guest self-service profile      |
+| PATCH  | `/guests/me/dnd`                    | Yes  | GUEST                   | Toggle Do Not Disturb           |
+| GET    | `/guests/:id`                       | Yes  | SUB_ADMIN, RECEPTIONIST | Get a guest                     |
+| POST   | `/guests`                           | Yes  | SUB_ADMIN, RECEPTIONIST | Register a guest (multipart)    |
+| PATCH  | `/guests/:id`                       | Yes  | SUB_ADMIN, RECEPTIONIST | Update guest / check-out        |
+| PATCH  | `/guests/:id/credentials`           | Yes  | SUB_ADMIN, RECEPTIONIST | Update / regenerate credentials |
+| POST   | `/guests/documents/upload-urls`     | Yes  | SUB_ADMIN, RECEPTIONIST | Get presigned upload URLs       |
+| DELETE | `/guests/:guestId/documents/:docId` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete one document             |
+| DELETE | `/guests/:id`                       | Yes  | SUB_ADMIN, RECEPTIONIST | Delete a guest                  |
 
-**Register guest** (`POST /guests`) — sent as `multipart/form-data`:
+**Register guest** (`POST /guests`) — sent as `application/json`:
 
-| Field       | Type         | Notes                                          |
-| ----------- | ------------ | ---------------------------------------------- |
-| `name`      | string       | Required                                       |
-| `email`     | string       | Required, must be unique                       |
-| `phone`     | string       | Optional                                       |
-| `address`   | string       | Optional                                       |
-| `idType`    | string       | Default `Aadhaar`                              |
-| `idNumber`  | string       | Optional                                       |
-| `roomId`    | string       | Required; must belong to the hotel and be free |
-| `checkIn`   | string       | Required when `status` is `checked-in`         |
-| `checkOut`  | string       | Required, must be after `checkIn`              |
-| `status`    | string       | `checked-in` (default) or `reserved`           |
-| `documents` | files[]      | Up to 5 files (`documents` field)              |
-| `docTypes`  | string(json) | Optional JSON array parallel to files          |
+| Field       | Type   | Notes                                                      |
+| ----------- | ------ | ---------------------------------------------------------- |
+| `name`      | string | Required                                                   |
+| `email`     | string | Required, must be unique                                   |
+| `phone`     | string | Optional                                                   |
+| `address`   | string | Optional                                                   |
+| `idType`    | string | Default `Aadhaar`                                          |
+| `idNumber`  | string | Optional                                                   |
+| `roomId`    | string | Required; must belong to the hotel and be free             |
+| `checkIn`   | string | Required when `status` is `checked-in`                     |
+| `checkOut`  | string | Required, must be after `checkIn`                          |
+| `status`    | string | `checked-in` (default) or `reserved`                       |
+| `documents` | array  | JSON array of `{ key, filename, docType, mimeType, size }` |
+
+Documents are uploaded directly to Cloudflare R2 via presigned URLs. First
+call `POST /guests/documents/upload-urls` to get upload URLs, upload files
+directly to R2, then reference the keys in the registration request.
 
 On success the backend:
 
@@ -733,9 +811,8 @@ Guest response DTO includes `id`, `name`, `email`, `phone`, `address`,
 - Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`,
   `application/pdf` (`400` otherwise).
 - Max **5 MB** per file, max **5 files** per request.
-- Stored on disk under `uploads/guests/<hotelId>/` and served statically at
-  `/uploads/...` (the `documentDTO` rewrites paths to absolute URLs).
-- Document objects contain `id`, `docType`, `filename`, `url`, `uploadedAt`.
+- Stored on Cloudflare R2 (presigned URL flow). Document objects contain
+  `id`, `docType`, `filename`, `url` (presigned download URL), `uploadedAt`.
 
 ### Dashboard — `/api/v1/dashboard`
 
@@ -774,12 +851,94 @@ Guest response DTO includes `id`, `name`, `email`, `phone`, `address`,
 `pendingReservations`, `pendingServiceRequests`, and `revenueToday` are
 still neutral (`0`) pending future modules.
 
+### Food Items — `/api/v1/food-items`
+
+| Method | Endpoint      | Auth | Roles                  | Description      |
+| ------ | ------------- | ---- | ---------------------- | ---------------- |
+| GET    | `/food-items` | Yes  | Any authenticated role | List menu items  |
+| POST   | `/food-items` | Yes  | SUB_ADMIN, KITCHEN     | Create menu item |
+
+**Create food item** (`POST /food-items`):
+
+```json
+{
+  "name": "Butter Chicken",
+  "description": "Creamy tomato-based curry",
+  "price": 680,
+  "category": "Main Course"
+}
+```
+
+Response DTO: `{ id, name, description, price, category, isAvailable }`.
+
+### Orders — `/api/v1/orders`
+
+Guest-facing endpoints (GUEST role only).
+
+| Method | Endpoint                 | Auth | Roles | Description                  |
+| ------ | ------------------------ | ---- | ----- | ---------------------------- |
+| POST   | `/orders`                | Yes  | GUEST | Create an order (COD/ONLINE) |
+| POST   | `/orders/verify-payment` | Yes  | GUEST | Verify Razorpay payment      |
+| GET    | `/orders`                | Yes  | GUEST | List my orders               |
+| GET    | `/orders/:id`            | Yes  | GUEST | Get a specific order         |
+
+**Create order** (`POST /orders`):
+
+```json
+{
+  "items": [
+    { "foodItemId": "...", "quantity": 2 },
+    { "foodItemId": "...", "quantity": 1 }
+  ],
+  "paymentMethod": "COD"
+}
+```
+
+For `ONLINE` payments, the response includes Razorpay checkout details.
+For `COD` orders, the order is created immediately.
+
+Response DTO: `{ id, items, totalAmount, paymentMethod, paymentStatus, status, createdAt, updatedAt }`.
+
+### Kitchen Orders — `/api/kitchen/orders`
+
+Public endpoints (no auth) for the kitchen display.
+
+| Method | Endpoint                     | Auth | Description         |
+| ------ | ---------------------------- | ---- | ------------------- |
+| GET    | `/kitchen/orders`            | —    | List all orders     |
+| PATCH  | `/kitchen/orders/:id/status` | —    | Update order status |
+
+Status values: `NEW`, `PREPARING`, `READY`, `OUT FOR DELIVERY`, `DELIVERED`, `REJECTED`, `CANCELLED`.
+
+### Service Requests — `/api/v1/service-requests`
+
+Guest-facing endpoints (GUEST role only).
+
+| Method | Endpoint            | Auth | Roles | Description              |
+| ------ | ------------------- | ---- | ----- | ------------------------ |
+| POST   | `/service-requests` | Yes  | GUEST | Create a service request |
+| GET    | `/service-requests` | Yes  | GUEST | List my service requests |
+
+**Create service request** (`POST /service-requests`):
+
+```json
+{
+  "type": "HOUSEKEEPING",
+  "description": "Need extra towels",
+  "items": ["towels", "pillows"]
+}
+```
+
+Valid types: `AMENITY`, `HOUSEKEEPING`, `RESTAURANT`, `RECEPTION`, `MAINTENANCE`.
+
+Response DTO: `{ id, type, description, items, status, createdAt, updatedAt }`.
+
 ---
 
 ## Email flows
 
-All email is sent by `src/services/email.service.js` via Nodemailer using
-`EMAIL_*` env vars. Four email types:
+All email is sent by `src/shared/services/email.service.js` via Nodemailer
+using `EMAIL_*` env vars. Four email types:
 
 | Trigger                                    | Email                       |
 | ------------------------------------------ | --------------------------- |
@@ -857,23 +1016,6 @@ Frontend receives token + user
 These role checks are for navigation/UI only — the backend remains
 responsible for security.
 
-### Recommended frontend structure
-
-Keep API calls in a service layer rather than inside UI components:
-
-```
-src/
-├── components/
-├── pages/
-├── services/            <- domain API calls (auth, users, rooms, guests, ...)
-├── context/             <- e.g. AuthContext
-├── config/              <- e.g. api.js (base URL, shared helpers)
-└── App.jsx
-```
-
-The apps in this repo already follow this pattern via `src/services/*` and
-the shared `@hotelos/api` client.
-
 ### Token handling
 
 For every protected request:
@@ -919,8 +1061,8 @@ app.use("/api/v1/users", userRoutes);
 | Super Admin | Authentication, Hotels, Sub Admin management, global administration                        |
 | Sub Admin   | Authentication, own hotel info, Rooms, staff management (Kitchen / Reception), hotel users |
 | Reception   | Authentication, Guests, check-in / check-out, room assignment, guest info & credentials    |
-| Kitchen     | Authentication, food items, orders, order status, kitchen queue (roadmap)                  |
-| Guest       | Authentication, guest profile, room info, food menu, orders, service requests (roadmap)    |
+| Kitchen     | Authentication, food items, orders, order status, kitchen queue                            |
+| Guest       | Authentication, guest profile, room info, food menu, orders, service requests              |
 
 Guests are created as part of the Reception/check-in workflow — never mix
 guest provisioning with staff user creation.
@@ -968,17 +1110,18 @@ curl -X POST http://localhost:5001/api/v1/users \
 
 When implementing a new backend feature:
 
-1. Define the database model
-2. Define the request/response contract
-3. Create the DTO
-4. Create the controller / service
-5. Add authentication (`authenticate`)
-6. Add authorization (`authorize(...)`)
-7. Add the route
-8. Mount the route in `app.js`
-9. Test with curl / an API client
-10. Hand the API contract to the frontend developer
-11. Build the frontend integration
+1. Create the module directory: `modules/<feature>/`
+2. Create the model: `modules/<feature>/models/<name>.model.js`
+3. Create the DTO: `modules/<feature>/dto/<name>.dto.js`
+4. Create the controller: `modules/<feature>/controllers/<name>.controller.js`
+5. Create the route: `modules/<feature>/routes/<name>.routes.js`
+6. Add authentication (`authenticate` from `shared/middleware/`)
+7. Add authorization (`authorize(...)` from `shared/middleware/`)
+8. Create the module index: `modules/<feature>/index.js` (exports the router)
+9. Mount the route in `app.js`
+10. Test with curl / an API client
+11. Document the endpoint in this README
+12. Hand the API contract to the frontend developer
 
 Do not build the frontend API integration before the backend contract is
 clear.
@@ -987,28 +1130,111 @@ clear.
 
 ## Adding a new module
 
-A new feature follows the existing pattern. For example, adding a module:
+### 1. Create the module structure
 
-```text
-src/models/MyModule.js              model + DTO
-src/controllers/myModule.controller.js
-src/routes/myModule.routes.js
-src/dto/myModule.dto.js
+```bash
+mkdir -p src/modules/<feature>/{controllers,models,routes,dto}
 ```
 
-Then mount it in `app.js`:
+### 2. Create the model (`models/<name>.model.js`)
+
+Define the Mongoose schema. Keep it pure — no business logic, no DTOs.
 
 ```js
-app.use("/api/v1/my-module", myModuleRoutes);
+import mongoose from "mongoose";
+
+const mySchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    hotelId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Hotel",
+      required: true,
+    },
+  },
+  { timestamps: true },
+);
+
+export default mongoose.model("MyModel", mySchema);
 ```
+
+### 3. Create the DTO (`dto/<name>.dto.js`)
+
+```js
+export const myModelDTO = (doc) => ({
+  id: doc._id,
+  name: doc.name,
+});
+```
+
+### 4. Create the controller (`controllers/<name>.controller.js`)
+
+Keep controllers thin — validate input, call models, return responses.
+
+```js
+import MyModel from "../models/my.model.js";
+import { myModelDTO } from "../dto/my.dto.js";
+
+export const getItems = async (req, res) => {
+  try {
+    const items = await MyModel.find({ hotelId: req.user.hotelId });
+    return res.status(200).json({
+      success: true,
+      message: "Items fetched successfully",
+      data: items.map(myModelDTO),
+    });
+  } catch (error) {
+    console.error("Get items error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch items",
+    });
+  }
+};
+```
+
+### 5. Create the route (`routes/<name>.routes.js`)
+
+```js
+import express from "express";
+import { getItems } from "../controllers/my.controller.js";
+import { authenticate } from "../../../shared/middleware/auth.middleware.js";
+import { authorize } from "../../../shared/middleware/role.middleware.js";
+
+const router = express.Router();
+
+router.get("/", authenticate, authorize("SUB_ADMIN"), getItems);
+
+export default router;
+```
+
+### 6. Create the module index (`index.js`)
+
+```js
+import myRouter from "./routes/my.routes.js";
+
+export default myRouter;
+```
+
+### 7. Mount in `app.js`
+
+```js
+import myRoutes from "./modules/my-feature/index.js";
+
+app.use("/api/v1/my-feature", myRoutes);
+```
+
+### 8. Document the endpoint
+
+Add the endpoint to the "Endpoint reference" section of this README.
 
 Frontends can then use the standard CRUD verbs:
 
 ```text
-GET    /api/v1/my-module
-POST   /api/v1/my-module
-PATCH  /api/v1/my-module/:id
-DELETE /api/v1/my-module/:id
+GET    /api/v1/my-feature
+POST   /api/v1/my-feature
+PATCH  /api/v1/my-feature/:id
+DELETE /api/v1/my-feature/:id
 ```
 
 Only implement operations that are actually required and authorized.
@@ -1018,11 +1244,8 @@ Only implement operations that are actually required and authorized.
 ## Do not assume an endpoint exists
 
 Frontend developers should not invent API URLs. For example, do not assume
-`/api/v1/guest/login` or `/api/v1/orders` exist unless they have been
-implemented and documented here. Namespaces such as `rooms`, `orders`,
-`service-requests`, and `food-items` are part of the planned architecture
-and should be treated as available only after their backend implementation
-is complete. Check the backend routes first.
+`/api/v1/guest/login` or `/api/v1/billing` exist unless they have been
+implemented and documented here. Check the backend routes first.
 
 ---
 
@@ -1030,12 +1253,14 @@ is complete. Check the backend routes first.
 
 1. Read this README completely.
 2. Run the backend locally and test `/api/v1/health`.
-3. Test Super Admin login, then Sub Admin login.
-4. Copy a valid JWT and hit one protected endpoint.
-5. Understand the role hierarchy and hotel isolation.
-6. Read the relevant controller and route for the feature you're building.
-7. Test the API in an API client (see below).
-8. Only then start the frontend integration.
+3. Understand the [architecture](#architecture) — `shared/` for reusable
+   code, `modules/` for feature-specific code.
+4. Test Super Admin login, then Sub Admin login.
+5. Copy a valid JWT and hit one protected endpoint.
+6. Understand the role hierarchy and hotel isolation.
+7. Read the relevant controller and route for the feature you're building.
+8. Test the API in an API client (see below).
+9. Only then start the frontend integration.
 
 Do not start by guessing API URLs — the backend routes and controller
 contracts are the source of truth.
@@ -1063,7 +1288,10 @@ HotelOS
 ├── Invites
 ├── Rooms
 ├── Guests
-└── Dashboard
+├── Dashboard
+├── Food Items
+├── Orders
+└── Service Requests
 ```
 
 The base URL is `http://localhost:5001/api/v1`. Store the login token in the
@@ -1081,7 +1309,7 @@ production-grade deployment, these hardening items should be added
 - Refresh tokens + refresh-token rotation
 - Session / device tracking + token revocation
 - Rate limiting
-- Request validation
+- Request validation (e.g. Zod/Joi)
 - Centralized error handling
 - Audit logs
 - Email verification
@@ -1111,69 +1339,23 @@ Implemented and documented:
   Kitchen
 - Forgot username / forgot password / reset password (email-based)
 - Rooms CRUD (hotel-scoped)
-- Guest registration, check-in/out, documents (multipart upload), and
+- Guest registration, check-in/out, documents (R2 presigned URLs), and
   credentials
+- Guest self-service profile and Do Not Disturb
 - Dashboard stats (rooms, guests, occupancy, staff, activity)
+- Food items management
+- Guest orders (COD + Razorpay online payments)
+- Kitchen-facing order display and status updates
+- Service requests (amenity, housekeeping, restaurant, reception, maintenance)
 - DTO-based responses, standard `{ success, message, data }` envelope
-- Static `/uploads` serving for guest documents
+- Feature-based modular architecture (`shared/` + `modules/`)
 
 Roadmap (not yet implemented):
 
-- Held-back `pendingReservations` / `pendingServiceRequests` / `billing`
-  metrics
-- Orders / food items / kitchen queue
-- Service requests
+- Billing / payment dashboard metrics
 - Advanced session management (refresh tokens, revocation)
-
-Add new modules following the existing pattern: model → DTO → controller →
-service → route (with `authenticate` + `authorize`) → mount in `app.js` →
-document the endpoint here.
-
----
-
-## API documentation checklist
-
-### For backend developers
-
-When adding an endpoint, record:
-
-1. HTTP method & URL
-2. Authentication requirement
-3. Allowed roles
-4. Request body
-5. Path / query parameters
-6. Success response
-7. Error responses
-8. Example frontend request
-
-Keep the API contract stable where possible.
-
-### For frontend developers
-
-Before building a frontend feature, identify the same contract points — for
-example, "Create Kitchen User":
-
-- **Method:** `POST`
-- **URL:** `/api/v1/users`
-- **Authentication:** required
-- **Roles:** `SUB_ADMIN`
-- **Body:**
-  ```json
-  {
-    "name": "Kitchen Operator",
-    "role": "KITCHEN"
-  }
-  ```
-- **Hotel ID:** not provided by the frontend — the backend uses
-  `req.user.hotelId`
-- **Response:**
-  ```json
-  {
-    "success": true,
-    "message": "User created successfully",
-    "data": {}
-  }
-  ```
-
-Follow this format for every new endpoint so the backend handoff stays clean
-for every frontend developer.
+- Request validation library integration
+- Centralized error handling
+- Pagination
+- API documentation / OpenAPI
+- Automated tests
