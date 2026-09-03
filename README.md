@@ -35,16 +35,19 @@ authenticated user's JWT (`req.user.hotelId`).
 This is a **pnpm + Turborepo** monorepo. Workspaces are defined in
 `pnpm-workspace.yaml` (`apps/*` and `packages/*`).
 
-| Path                | Name           | Description                                           | Dev port |
-| ------------------- | -------------- | ----------------------------------------------------- | -------- |
-| `apps/backend`      | `backend`      | Express + MongoDB REST API                            | `5001`   |
-| `apps/super-admin`  | `super-admin`  | Platform operator dashboard (React + Vite)            | `5173`   |
-| `apps/sub-admin`    | `sub-admin`    | Hotel admin dashboard + marketing site (React + Vite) | `5174`   |
-| `apps/receptionist` | `receptionist` | Front-desk dashboard (React + Vite)                   | `5175`   |
-| `packages/api`      | `@hotelos/api` | Shared fetch client used by all frontends             | —        |
+| Path                | Name              | Description                                              | Dev port |
+| ------------------- | ----------------- | -------------------------------------------------------- | -------- |
+| `apps/backend`      | `backend`         | Express + MongoDB REST API                               | `5001`   |
+| `apps/super-admin`  | `super-admin`     | Platform operator dashboard (React + Vite)               | `5173`   |
+| `apps/sub-admin`    | `sub-admin`       | Hotel admin dashboard + marketing site (React + Vite)    | `5174`   |
+| `apps/receptionist` | `receptionist`    | Front-desk dashboard (React + Vite)                      | `5175`   |
+| `apps/kitchen`      | `kitchen`         | Kitchen display system & live order board (React + Vite) | `5176`   |
+| `apps/guest`        | `guest`           | Hotel room guest dashboard & portal (React + Vite)       | `5177`   |
+| `packages/api`      | `@hotelos/api`    | Shared fetch client used by frontends                    | —        |
+| `packages/styles`   | `@hotelos/styles` | Shared Tailwind CSS v4 design tokens and theme styles    | —        |
 
 The `packages/auth`, `packages/lib`, `packages/ui`, and `packages/utils`
-directories are reserved workspaces that have not been implemented yet.
+directories are reserved workspaces for future modularization.
 
 ---
 
@@ -52,11 +55,11 @@ directories are reserved workspaces that have not been implemented yet.
 
 | Role           | Scope     | Responsibilities                                                  |
 | -------------- | --------- | ----------------------------------------------------------------- |
-| `SUPER_ADMIN`  | Platform  | Create/manage hotels and Sub Admins, platform admin               |
+| `SUPER_ADMIN`  | Platform  | Create/manage hotels and Sub Admins, platform administration      |
 | `SUB_ADMIN`    | One hotel | Manage rooms, invite staff (Receptionist/Kitchen), hotel settings |
 | `RECEPTIONIST` | One hotel | Register guests, assign rooms, check-in/check-out                 |
-| `KITCHEN`      | One hotel | Kitchen operations (food orders — roadmap)                        |
-| `GUEST`        | One hotel | Guest-facing features (roadmap)                                   |
+| `KITCHEN`      | One hotel | Kitchen operations (live food orders, order lifecycle & KDS)      |
+| `GUEST`        | One hotel | Guest room dashboard, amenity booking, and food ordering          |
 
 Every role is validated on the backend. Frontend role checks are for UI
 navigation only and are never a security boundary.
@@ -66,10 +69,10 @@ navigation only and are never a security boundary.
 ## Technology stack
 
 - **Monorepo tooling** — pnpm workspaces, Turborepo
-- **Backend** — Node.js, Express 5, MongoDB / Mongoose, JWT, bcrypt, Multer,
-  Nodemailer, Pino (struct/log + HTTP request logging)
-- **Frontend** — React 19, Vite, Tailwind CSS v4, React Router
-- **Shared client** — `@hotelos/api` (fetch wrapper)
+- **Backend** — Node.js, Express 5, MongoDB / Mongoose, JWT, bcryptjs, Multer,
+  Nodemailer, Pino (struct/log + HTTP request logging), Cloudflare R2, Razorpay
+- **Frontend** — React 19, Vite, Tailwind CSS v4, React Router / TanStack Router
+- **Shared packages** — `@hotelos/api` (fetch client), `@hotelos/styles` (Tailwind v4 tokens)
 - **Quality** — oxlint, Prettier, Husky + lint-staged
 
 ---
@@ -102,6 +105,8 @@ cp apps/backend/.env.example apps/backend/.env
 cp apps/super-admin/.env.example apps/super-admin/.env
 cp apps/sub-admin/.env.example apps/sub-admin/.env
 cp apps/receptionist/.env.example apps/receptionist/.env
+cp apps/kitchen/.env.example apps/kitchen/.env
+cp apps/guest/.env.example apps/guest/.env
 ```
 
 Required backend variables (see `apps/backend/.env.example`):
@@ -134,7 +139,18 @@ pnpm dev
 ```
 
 This starts all apps via Turborepo in parallel. Each app is served on its
-own port (see the table above). The backend health check is available at:
+own port:
+
+| App            | Scope / Role                | Local URL               |
+| -------------- | --------------------------- | ----------------------- |
+| `backend`      | Express 5 API & MongoDB     | `http://localhost:5001` |
+| `super-admin`  | Platform Operator Dashboard | `http://localhost:5173` |
+| `sub-admin`    | Hotel Admin Dashboard       | `http://localhost:5174` |
+| `receptionist` | Front-Desk Operations       | `http://localhost:5175` |
+| `kitchen`      | Kitchen Display System      | `http://localhost:5176` |
+| `guest`        | Guest Harmony Portal        | `http://localhost:5177` |
+
+The backend health check is available at:
 
 ```text
 GET http://localhost:5001/api/v1/health
@@ -213,18 +229,22 @@ the repository root.
 
 ## Frontend <> backend wiring
 
-All frontends talk to the backend through the shared **`@hotelos/api`**
-package (`packages/api`). It:
+Frontends talk to the backend using either the shared `@hotelos/api` client or
+role-specific fetch wrappers:
 
-- reads `VITE_API_URL` from the app's `.env` (falls back to
-  `http://localhost:5001`),
-- attaches `Authorization: Bearer <token>` when you pass `{ auth: true }`
-  (reading `auth_token` from `localStorage`),
-- parses the standard `{ success, message, data }` response envelope and
-  throws `ApiError` on failure,
-- logs the user out automatically when a request returns `401`.
+- **`super-admin`**, **`sub-admin`**, and **`receptionist`** use the shared
+  **`@hotelos/api`** package (`packages/api`). It reads `VITE_API_URL` (falls
+  back to `http://localhost:5001`), attaches `Authorization: Bearer <token>`,
+  unwraps responses, and handles automatic 401 logout.
+- **`kitchen`** connects directly via `src/config/api.js` using
+  `VITE_API_BASE_URL` (defaults to `http://localhost:5001/api`).
+- **`guest`** connects via `src/config/api.ts` using `VITE_API_URL` (defaults to
+  `http://localhost:5001/api/v1`).
+- **`@hotelos/styles`** (`packages/styles`) provides centralized Tailwind CSS v4
+  design tokens (brand, primary, surface color scales and semantic aliases)
+  shared across frontends.
 
-See `packages/api/README.md` for the full client API.
+See `packages/api/README.md` and `packages/styles/README.md` for package details.
 
 ---
 
@@ -273,25 +293,29 @@ examples live in [`apps/backend/README.md`](apps/backend/README.md).
 
 ## Learning path for a new developer
 
-1. Read this README to understand the monorepo and roles.
-2. Read `apps/backend/README.md` for the full API contract.
-3. Start the backend, hit `/api/v1/health`, then login and test a protected
+1. Read this README to understand the monorepo, roles, and architecture.
+2. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for branch strategy, PR workflow, and commit rules.
+3. Read `apps/backend/README.md` for the full API contract.
+4. Start the backend, hit `/api/v1/health`, then login and test a protected
    endpoint.
-4. Open the app you own (super-admin, sub-admin, or receptionist) and read
-   its README.
-5. Read `packages/api/README.md` before writing any API call.
+5. Open the app you own (`super-admin`, `sub-admin`, `receptionist`, `kitchen`, or `guest`) and read its README.
+6. Read `packages/api/README.md` before writing API calls and `packages/styles/README.md` for design tokens.
 
 The backend routes and controller contracts are the source of truth for
 what is actually implemented — never guess an endpoint exists.
 
 ---
 
-## Contributors
+## Contributors & Documentation
 
 Each app and package documents its own setup and scope:
 
+- [Contributing Guidelines](CONTRIBUTING.md)
 - [Backend](apps/backend/README.md)
 - [Super Admin](apps/super-admin/README.md)
 - [Sub Admin](apps/sub-admin/README.md)
 - [Receptionist](apps/receptionist/README.md)
+- [Kitchen](apps/kitchen/README.md)
+- [Guest](apps/guest/README.md)
 - [@hotelos/api](packages/api/README.md)
+- [@hotelos/styles](packages/styles/README.md)
