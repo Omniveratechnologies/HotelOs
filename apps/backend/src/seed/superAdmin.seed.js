@@ -1,18 +1,22 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import User from "../models/User.js";
+import User from "#/modules/users/models/User.js";
+import logger from "#/utils/logger.js";
 
 const createSuperAdmin = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    console.log("MongoDB connected");
+    logger.info("MongoDB connected");
 
     const existingAdmin = await User.findOne({
       role: "SUPER_ADMIN",
     });
 
     if (existingAdmin) {
-      console.log("Super Admin already exists:", existingAdmin.username);
+      logger.info(
+        { username: existingAdmin.username },
+        "Super Admin already exists",
+      );
       process.exit(0);
     }
 
@@ -26,13 +30,13 @@ const createSuperAdmin = async () => {
       isActive: true,
       mustChangePassword: false,
     });
-    console.log("Super Admin created successfully!");
-    console.log("Username:", superAdmin.username);
-    console.log("Email:", superAdmin.email);
+    logger.info("Super Admin created successfully!");
+    logger.info({ username: superAdmin.username }, "Username");
+    logger.info({ email: superAdmin.email }, "Email");
 
     process.exit(0);
   } catch (error) {
-    console.error("Failed to create Super Admin:", error);
+    logger.error(error, "Failed to create Super Admin");
     process.exit(1);
   }
 };

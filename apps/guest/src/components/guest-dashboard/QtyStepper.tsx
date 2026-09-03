@@ -24,6 +24,7 @@ export function QtyStepper({
       return;
     }
     setBump((b) => b + 1);
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies -- `value` is the trigger that intentionally re-runs this effect even though it is not read inside the body
   }, [value]);
 
   const buttonClass =

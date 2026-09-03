@@ -4,6 +4,7 @@
   "globalEnv": [
     "PORT",
     "NODE_ENV",
+    "LOG_LEVEL",
     "MONGODB_URI",
     "JWT_SECRET",
     "JWT_EXPIRES_IN",
@@ -35,7 +36,6 @@
     "preview": {
       "cache": false,
       "persistent": true
-    },
-    "format": {}
+    }
   }
 }

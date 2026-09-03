@@ -1,30 +1,31 @@
 import "dotenv/config";
+import logger from "#/utils/logger.js";
 
-console.log("SERVER: starting");
+logger.info("SERVER: starting");
 
-const appModule = await import("./app.js");
-console.log("SERVER: app.js loaded");
+const appModule = await import("#/app.js");
+logger.info("SERVER: app.js loaded");
 
-const dbModule = await import("./config/db.js");
-console.log("SERVER: db.js loaded");
+const dbModule = await import("#/config/db.js");
+logger.info("SERVER: db.js loaded");
 
 const app = appModule.default;
 const connectDB = dbModule.default;
 
 const PORT = process.env.PORT || 5001;
 
-console.log("SERVER: connecting to MongoDB...");
+logger.info("SERVER: connecting to MongoDB...");
 
 try {
   await connectDB();
 
-  console.log("SERVER: MongoDB connected");
+  logger.info("SERVER: MongoDB connected");
 
   app.listen(PORT, () => {
-    console.log(`SERVER: running on port ${PORT}`);
-    console.log(`http://localhost:${PORT}`);
+    logger.info({ port: PORT }, "SERVER: running");
+    logger.info(`http://localhost:${PORT}`);
   });
 } catch (error) {
-  console.error("SERVER ERROR:", error);
+  logger.error(error, "SERVER ERROR");
   process.exit(1);
 }

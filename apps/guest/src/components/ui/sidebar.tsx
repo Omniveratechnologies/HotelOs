@@ -96,8 +96,8 @@ const SidebarProvider = React.forwardRef<
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
       return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open);
+        ? setOpenMobile((prev) => !prev)
+        : setOpen((prev) => !prev);
     }, [isMobile, setOpen, setOpenMobile]);
 
     // Adds a keyboard shortcut to toggle the sidebar.
@@ -668,6 +668,7 @@ const SidebarMenuSkeleton = React.forwardRef<
 >(({ className, showIcon = false, ...props }, ref) => {
   // Random width between 50 to 90%.
   const width = React.useMemo(() => {
+    // oxlint-disable-next-line react/purity -- decorative randomized skeleton width, computed once per mount
     return `${Math.floor(Math.random() * 40) + 50}%`;
   }, []);
 
@@ -775,5 +776,4 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
-  useSidebar,
 };

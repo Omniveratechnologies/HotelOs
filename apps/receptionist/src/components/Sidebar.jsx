@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { clearAuth, getStoredUser } from "../services/auth.service.js";
-import { useHotelOS } from "../app/providers.jsx";
+import { useHotelOS } from "../app/useHotelOS.js";
 
 const icons = {
   dashboard: (

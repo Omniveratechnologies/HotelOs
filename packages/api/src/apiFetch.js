@@ -63,17 +63,16 @@ export async function apiFetch(
   let response;
 
   try {
-    response = await fetch(url, {
+    const fetchOptions = {
       method,
       headers: requestHeaders,
-      body:
-        body === undefined
-          ? undefined
-          : body instanceof FormData
-            ? body
-            : JSON.stringify(body),
       signal: finalSignal,
-    });
+    };
+    if (body !== undefined && method !== "GET") {
+      fetchOptions.body =
+        body instanceof FormData ? body : JSON.stringify(body);
+    }
+    response = await fetch(url, fetchOptions);
   } catch (error) {
     clearTimeout(timeoutId);
 

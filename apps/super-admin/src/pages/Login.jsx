@@ -28,9 +28,9 @@ export default function Login() {
       console.log("Super Admin login successful:", data);
 
       navigate("/dashboard", { replace: true });
-    } catch (error) {
-      console.error("Login failed:", error);
-      setError(error.message || "Login failed");
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }

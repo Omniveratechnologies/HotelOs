@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+
+import { HotelOSContext } from "./hotelOSContext.js";
 
 import {
   getRooms as fetchRoomsApi,
@@ -12,8 +14,6 @@ import {
   deleteGuest as deleteGuestApi,
 } from "../services/guest.service.js";
 import { getDashboardStats as fetchStatsApi } from "../services/dashboard.service.js";
-
-const HotelOSContext = createContext(null);
 
 // Map a backend room DTO onto the shape the UI expects
 const normalizeRoom = (room) => ({
@@ -330,44 +330,57 @@ export function HotelOSProvider({ children }) {
     );
   };
 
+  const contextValue = useMemo(
+    () => ({
+      chatOpen,
+      setChatOpen,
+      rooms,
+      setRooms,
+      roomsLoading,
+      roomsError,
+      serviceRequests,
+      setServiceRequests,
+      foodOrders,
+      setFoodOrders,
+      guests,
+      setGuests,
+      guestsLoading,
+      guestsError,
+      stats,
+      setStats,
+      statsLoading,
+      statsError,
+      refreshStats,
+      updateRoomStatus,
+      addRoom,
+      removeRoom,
+      addGuest,
+      removeGuest,
+      refreshData,
+      acknowledgeRequest,
+      completeRequest,
+      updateOrderStatus,
+    }),
+    // oxlint-disable-next-line react/memo-dependencies -- remaining deps are stable setters/callbacks (setState + useCallback) whose identities never change, so they are intentionally omitted
+    [
+      chatOpen,
+      rooms,
+      roomsLoading,
+      roomsError,
+      serviceRequests,
+      foodOrders,
+      guests,
+      guestsLoading,
+      guestsError,
+      stats,
+      statsLoading,
+      statsError,
+    ],
+  );
+
   return (
-    <HotelOSContext.Provider
-      value={{
-        chatOpen,
-        setChatOpen,
-        rooms,
-        setRooms,
-        roomsLoading,
-        roomsError,
-        serviceRequests,
-        setServiceRequests,
-        foodOrders,
-        setFoodOrders,
-        guests,
-        setGuests,
-        guestsLoading,
-        guestsError,
-        stats,
-        setStats,
-        statsLoading,
-        statsError,
-        refreshStats,
-        updateRoomStatus,
-        addRoom,
-        removeRoom,
-        addGuest,
-        removeGuest,
-        refreshData,
-        acknowledgeRequest,
-        completeRequest,
-        updateOrderStatus,
-      }}
-    >
+    <HotelOSContext.Provider value={contextValue}>
       {children}
     </HotelOSContext.Provider>
   );
-}
-
-export function useHotelOS() {
-  return useContext(HotelOSContext);
 }

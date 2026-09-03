@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.next/
+.output/
+.vinxi/
+.tanstack/
+.turbo/
+coverage/
+pnpm-lock.yaml
+**/routeTree.gen.ts

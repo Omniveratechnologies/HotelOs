@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHotelOS } from "../../app/providers.jsx";
+import { useHotelOS } from "../../app/useHotelOS.js";
 import AddGuestModal from "./_components/AddGuestModal.jsx";
 import GuestDetailsModal from "./_components/GuestDetailsModal.jsx";
 import EditGuestModal from "./_components/EditGuestModal.jsx";

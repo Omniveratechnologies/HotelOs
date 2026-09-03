@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import RoomModal from "../../components/RoomModal.jsx";
-import { useHotelOS } from "../../app/providers.jsx";
+import { useHotelOS } from "../../app/useHotelOS.js";
 import { getStoredUser } from "../../services/auth.service.js";
 import DashboardHeader from "./_components/DashboardHeader.jsx";
 import StatCards from "./_components/StatCards.jsx";

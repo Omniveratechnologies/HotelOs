@@ -16,7 +16,7 @@ interface RazorpayOptions {
     razorpay_payment_id: string;
     razorpay_signature: string;
   }) => void;
-  prefill?: { name?: string };
+  prefill?: { name?: string | undefined };
   theme?: { color?: string };
   modal?: { ondismiss?: () => void };
 }
@@ -26,7 +26,7 @@ export function openRazorpayCheckout(options: {
   amount: number;
   currency: string;
   orderId: string;
-  guestName?: string;
+  guestName?: string | undefined;
   onSuccess: (response: {
     razorpay_order_id: string;
     razorpay_payment_id: string;
@@ -48,7 +48,7 @@ export function openRazorpayCheckout(options: {
     description: "Food order payment",
     order_id: options.orderId,
     handler: options.onSuccess,
-    prefill: { name: options.guestName },
+    prefill: { name: options.guestName ?? "Guest" },
     theme: { color: "#0f4a3c" },
     modal: { ondismiss: options.onDismiss },
   });

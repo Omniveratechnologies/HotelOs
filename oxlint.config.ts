@@ -1,36 +1,69 @@
 import { defineConfig } from "oxlint";
 
 export default defineConfig({
-  plugins: ["react", "oxc", "unicorn"],
+  plugins: ["react", "typescript", "oxc", "unicorn", "import"],
   categories: {
-    correctness: "warn", // currently set to warn, but will be set to error in the future
+    correctness: "error",
     suspicious: "warn",
     perf: "warn",
   },
   rules: {
+    // React rules
     "react/react-in-jsx-scope": "off",
-    "eslint/no-underscore-dangle": ["error", { allow: ["_id"] }], // allow _id for MongoDB documents
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "react/only-export-components": ["warn", { allowConstantExport: true }],
+
+    // TypeScript rules
+    "typescript/no-explicit-any": "warn",
+
+    // Import rules (pragmatic, production-ready ESM/CommonJS setup)
+    "import/no-cycle": "error",
+    "import/no-self-import": "error",
+    "import/no-unassigned-import": "off", // allow CSS, dotenv, and side-effect imports
+    "import/no-named-as-default-member": "off", // allow standard CJS/ESM interop (e.g., bcrypt.hash)
+    "import/no-named-as-default": "off",
+
+    // General code quality & project conventions
+    "no-underscore-dangle": ["error", { allow: ["_id"] }],
+    "no-restricted-imports": [
+      "error",
+      {
+        paths: [
+          {
+            name: "server-only",
+            message:
+              "TanStack Start does not use the Next.js `server-only` package. Rename the module to `*.server.ts` or mark it with `@tanstack/react-start/server-only`.",
+          },
+        ],
+      },
+    ],
   },
+  overrides: [
+    {
+      files: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**"],
+      rules: {
+        "no-console": "off",
+        "typescript/no-explicit-any": "off",
+      },
+    },
+  ],
   env: {
     browser: true,
     node: true,
-    es2022: true,
+    es2024: true,
   },
   ignorePatterns: [
     "**/dist/**",
     "**/build/**",
     "**/node_modules/**",
     "**/.next/**",
+    "**/.output/**",
+    "**/.vinxi/**",
+    "**/.tanstack/**",
+    "**/.turbo/**",
     "**/coverage/**",
+    "**/routeTree.gen.ts",
+    "**/*.tsbuildinfo",
   ],
 });
-
-/*
-  Note: after the app becomes more stable, we will change the rules to error instead of warn. This is to ensure that the code is of high quality and maintainable.
-  also add the lint-staged package to the project to ensure that the code is linted before committing.
-  Add the following to the package.json file's lint-staged section before the format command:
-  ```
-    "*.{ts,tsx,js,jsx,mjs}": "oxlint --fix --deny-warnings"
-  ```
-  The above command will lint the code and fix any issues that can be fixed automatically. It will also deny any warnings, which means that the commit will fail if there are any warnings. This is to ensure that the code is of high quality and maintainable.
-*/

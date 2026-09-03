@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Save, Bell, ShieldCheck, User } from "lucide-react";
 import Topbar from "../components/layout/Topbar.jsx";
-import Field, { inputClass } from "../components/ui/Field.jsx";
+import Field from "../components/ui/Field.jsx";
+import { inputClass } from "../components/ui/inputClass.js";
 import Button from "../components/ui/Button.jsx";
 import { currentAdmin } from "../data/mockData.js";
 

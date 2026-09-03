@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import StatCard from "../../components/StatCard.jsx";
 import AddMembers from "../../components/AddMembers.jsx";
@@ -129,13 +129,13 @@ function formatRelativeTime(date) {
 }
 
 export default function Dashboard() {
-  const user = useMemo(() => {
+  const [user] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user")) || {};
     } catch {
       return {};
     }
-  }, []);
+  });
 
   const firstName = user.name?.trim().split(" ")[0] || "Admin";
 
