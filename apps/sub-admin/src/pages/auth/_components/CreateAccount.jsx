@@ -110,48 +110,54 @@ export default function CreateAccount({ token, invitation }) {
   }
 
   return (
-    <div className="bg-ivory flex min-h-screen items-center justify-center px-6 py-16">
-      <div className="border-beige-border bg-cream shadow-soft w-full max-w-md rounded-2xl border px-8 py-10">
+    <div className="bg-background-50 flex min-h-screen items-center justify-center px-6 py-16">
+      <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white px-8 py-10 shadow-lg">
         {/* LOGO */}
 
         <Link to="/" className="mb-8 flex items-center gap-2.5">
-          <span className="bg-navy flex h-9 w-9 items-center justify-center rounded-full">
+          <span className="bg-brand-900 flex h-9 w-9 items-center justify-center rounded-full">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 21V9l8-5 8 5v12"
-                stroke="#F4F4E4"
+                stroke="var(--color-surface-50)"
                 strokeWidth="1.6"
                 strokeLinejoin="round"
               />
 
-              <path d="M9 21v-6h6v6" stroke="#766242" strokeWidth="1.6" />
+              <path
+                d="M9 21v-6h6v6"
+                stroke="var(--color-primary-400)"
+                strokeWidth="1.6"
+              />
             </svg>
           </span>
 
-          <span className="font-display text-navy text-xl font-semibold">
+          <span className="font-display text-brand-900 text-xl font-semibold">
             Hotel
-            <span className="text-gold">OS</span>
+            <span className="text-primary-400">OS</span>
           </span>
         </Link>
 
         {/* HEADING */}
 
-        <h1 className="font-display text-navy mb-1.5 text-3xl leading-tight font-semibold">
+        <h1 className="font-display text-brand-900 mb-1.5 text-3xl leading-tight font-semibold">
           Welcome to HotelOS.
         </h1>
 
-        <p className="text-navy/60 mb-8">Create your administrative account.</p>
+        <p className="text-brand-900/60 mb-8">
+          Create your administrative account.
+        </p>
 
         {/* HOTEL */}
 
-        <div className="border-beige-border bg-ivory mb-6 rounded-lg border px-4 py-3">
-          <p className="text-navy/60 text-xs">Hotel</p>
+        <div className="bg-background-100 mb-6 rounded-lg border border-gray-100 px-4 py-3">
+          <p className="text-brand-900/60 text-xs">Hotel</p>
 
-          <p className="text-navy mt-1 font-medium">
+          <p className="text-brand-900 mt-1 font-medium">
             {invitation?.hotelName || "Hotel"}
           </p>
 
-          <p className="text-navy/60 mt-1 text-sm">{invitation?.email}</p>
+          <p className="text-brand-900/60 mt-1 text-sm">{invitation?.email}</p>
         </div>
 
         {/* ERROR */}
@@ -178,7 +184,7 @@ export default function CreateAccount({ token, invitation }) {
           {/* FULL NAME */}
 
           <div>
-            <label className="text-navy mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Full Name
             </label>
 
@@ -188,14 +194,14 @@ export default function CreateAccount({ token, invitation }) {
               disabled={creating}
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="border-beige-border bg-ivory text-navy focus:border-gold w-full rounded-lg border px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
+              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
             />
           </div>
 
           {/* USERNAME */}
 
           <div>
-            <label className="text-navy mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Username
             </label>
 
@@ -205,14 +211,14 @@ export default function CreateAccount({ token, invitation }) {
               disabled={creating}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="border-beige-border bg-ivory text-navy focus:border-gold w-full rounded-lg border px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
+              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
             />
           </div>
 
           {/* EMAIL */}
 
           <div>
-            <label className="text-navy mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Email
             </label>
 
@@ -220,14 +226,14 @@ export default function CreateAccount({ token, invitation }) {
               type="email"
               disabled
               value={invitation?.email || ""}
-              className="border-beige-border bg-ivory text-navy w-full rounded-lg border px-4 py-2.5 opacity-70"
+              className="bg-background-50 text-brand-900 w-full rounded-lg border border-gray-200 px-4 py-2.5 opacity-70"
             />
           </div>
 
           {/* PASSWORD */}
 
           <div>
-            <label className="text-navy mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Password
             </label>
 
@@ -238,14 +244,14 @@ export default function CreateAccount({ token, invitation }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="border-beige-border bg-ivory text-navy focus:border-gold w-full rounded-lg border px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
+              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
             />
           </div>
 
           {/* CONFIRM PASSWORD */}
 
           <div>
-            <label className="text-navy mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Confirm Password
             </label>
 
@@ -256,7 +262,7 @@ export default function CreateAccount({ token, invitation }) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              className="border-beige-border bg-ivory text-navy focus:border-gold w-full rounded-lg border px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
+              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
             />
           </div>
 
@@ -265,7 +271,7 @@ export default function CreateAccount({ token, invitation }) {
           <button
             type="submit"
             disabled={creating || !!success}
-            className="bg-navy text-cream hover:bg-navy-dark mt-2 w-full rounded-lg px-5 py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-brand-900 hover:bg-brand-800 mt-2 w-full rounded-lg px-5 py-3 font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
             {creating ? "Creating Account..." : "Create Account"}
           </button>

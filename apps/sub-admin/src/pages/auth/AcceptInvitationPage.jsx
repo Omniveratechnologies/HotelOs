@@ -44,21 +44,21 @@ export default function AcceptInvitationPage() {
 
   if (loading) {
     return (
-      <div className="bg-ivory flex min-h-screen items-center justify-center">
-        <p className="text-navy">Verifying your invitation...</p>
+      <div className="bg-background-50 flex min-h-screen items-center justify-center">
+        <p className="text-brand-900">Verifying your invitation...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-ivory flex min-h-screen items-center justify-center px-6">
-        <div className="border-beige-border bg-cream w-full max-w-md rounded-2xl border px-8 py-10 text-center">
-          <h1 className="font-display text-navy text-2xl font-semibold">
+      <div className="bg-background-50 flex min-h-screen items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-2xl border border-gray-100 bg-white px-8 py-10 text-center">
+          <h1 className="font-display text-brand-900 text-2xl font-semibold">
             Invitation Invalid
           </h1>
 
-          <p className="text-navy/60 mt-3">{error}</p>
+          <p className="text-brand-900/60 mt-3">{error}</p>
         </div>
       </div>
     );

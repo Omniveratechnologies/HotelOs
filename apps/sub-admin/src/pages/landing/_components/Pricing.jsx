@@ -38,13 +38,13 @@ const plans = [
 
 export default function Pricing() {
   return (
-    <section id="pricing" className="bg-ivory py-24">
+    <section id="pricing" className="bg-background-50 py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="mx-auto mb-14 max-w-xl text-center">
-          <h2 className="font-display text-navy mb-3 text-4xl font-semibold">
+          <h2 className="font-display text-brand-900 mb-3 text-4xl font-semibold">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-navy/60">
+          <p className="text-brand-900/60">
             Choose the plan that fits the size and pace of your property.
           </p>
         </div>
@@ -55,13 +55,11 @@ export default function Pricing() {
               key={p.name}
               className={`rounded-2xl border p-8 ${
                 p.featured
-                  ? "border-navy bg-navy text-cream shadow-soft scale-[1.02]"
-                  : "border-beige-border bg-cream text-navy"
+                  ? "border-brand-900 bg-brand-900 scale-[1.02] text-white shadow-md"
+                  : "text-brand-900 border-gray-100 bg-white"
               }`}
             >
-              <p
-                className={`mb-2 text-sm font-medium ${p.featured ? "text-gold" : "text-gold"}`}
-              >
+              <p className="text-primary-400 mb-2 text-sm font-medium">
                 {p.name}
               </p>
               <div className="mb-3 flex items-baseline gap-1">
@@ -70,14 +68,16 @@ export default function Pricing() {
                 </span>
                 <span
                   className={
-                    p.featured ? "text-cream/50 text-sm" : "text-muted text-sm"
+                    p.featured
+                      ? "text-sm text-white/50"
+                      : "text-sm text-gray-500"
                   }
                 >
                   {p.period}
                 </span>
               </div>
               <p
-                className={`mb-6 text-sm ${p.featured ? "text-cream/60" : "text-navy/60"}`}
+                className={`mb-6 text-sm ${p.featured ? "text-white/60" : "text-brand-900/60"}`}
               >
                 {p.desc}
               </p>
@@ -87,14 +87,20 @@ export default function Pricing() {
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                       <path
                         d="M5 12l4 4 10-10"
-                        stroke={p.featured ? "#F4F4E4" : "#766242"}
+                        stroke={
+                          p.featured
+                            ? "var(--color-surface-50)"
+                            : "var(--color-primary-400)"
+                        }
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                     </svg>
                     <span
-                      className={p.featured ? "text-cream/80" : "text-navy/70"}
+                      className={
+                        p.featured ? "text-white/80" : "text-brand-900/70"
+                      }
                     >
                       {f}
                     </span>
@@ -105,8 +111,8 @@ export default function Pricing() {
                 href="#demo"
                 className={`block rounded-full px-5 py-3 text-center font-medium transition-colors ${
                   p.featured
-                    ? "bg-gold text-cream hover:bg-gold-hover"
-                    : "border-beige-border text-navy hover:border-gold hover:text-gold border"
+                    ? "bg-primary-400 hover:bg-primary-500 text-white"
+                    : "text-brand-900 hover:border-primary-400 hover:text-primary-400 border border-gray-200"
                 }`}
               >
                 Get Started

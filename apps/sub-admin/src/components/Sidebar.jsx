@@ -119,13 +119,13 @@ export default function Sidebar({ open, onClose }) {
       {/* Mobile overlay */}
       {open && (
         <div
-          className="bg-navy/40 fixed inset-0 z-30 lg:hidden"
+          className="bg-brand-900/40 fixed inset-0 z-30 lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`bg-navy fixed top-0 z-40 flex h-screen w-64 shrink-0 flex-col transition-transform duration-200 lg:sticky ${
+        className={`bg-brand-900 fixed top-0 z-40 flex h-screen w-64 shrink-0 flex-col transition-transform duration-200 lg:sticky ${
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
@@ -135,26 +135,26 @@ export default function Sidebar({ open, onClose }) {
           onClick={onClose}
           className="flex h-20 shrink-0 items-center gap-2.5 px-6"
         >
-          <span className="bg-cream/10 flex h-9 w-9 items-center justify-center rounded-full">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 21V9l8-5 8 5v12"
-                stroke="#F4F4E4"
+                stroke="var(--color-surface-50)"
                 strokeWidth="1.6"
                 strokeLinejoin="round"
               />
 
               <path
                 d="M9 21v-6h6v6"
-                stroke="#766242"
+                stroke="var(--color-primary-400)"
                 strokeWidth="1.6"
                 strokeLinejoin="round"
               />
             </svg>
           </span>
 
-          <span className="font-display text-cream text-xl font-semibold">
-            Hotel<span className="text-gold">OS</span>
+          <span className="font-display text-xl font-semibold text-white">
+            Hotel<span className="text-primary-400">OS</span>
           </span>
         </Link>
 
@@ -169,8 +169,8 @@ export default function Sidebar({ open, onClose }) {
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm transition-colors ${
                     isActive
-                      ? "bg-gold/15 text-gold font-medium"
-                      : "text-cream/60 hover:bg-cream/5 hover:text-cream"
+                      ? "bg-primary-400/15 text-primary-400 font-medium"
+                      : "text-white/60 hover:bg-white/5 hover:text-white"
                   }`
                 }
               >
@@ -192,18 +192,18 @@ export default function Sidebar({ open, onClose }) {
         </nav>
 
         {/* Logged-in user */}
-        <div className="border-cream/10 border-t px-4 py-3">
+        <div className="border-t border-white/10 px-4 py-3">
           <div className="flex items-center gap-2.5 px-3.5">
-            <span className="bg-gold/20 font-display text-gold flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold">
+            <span className="bg-primary-400/20 font-display text-primary-400 flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold">
               {(user?.name || "A").charAt(0).toUpperCase()}
             </span>
 
             <div className="min-w-0">
-              <p className="text-cream truncate text-sm font-medium">
+              <p className="truncate text-sm font-medium text-white">
                 {user?.name || "Sub Admin"}
               </p>
 
-              <p className="text-cream/50 truncate text-xs capitalize">
+              <p className="truncate text-xs text-white/50 capitalize">
                 {(user?.role || "sub admin").toLowerCase()}
               </p>
             </div>
@@ -211,12 +211,12 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         {/* Logout */}
-        <div className="border-cream/10 border-t px-4 py-5">
+        <div className="border-t border-white/10 px-4 py-5">
           <button
             type="button"
             onClick={handleLogout}
             disabled={loggingOut}
-            className="text-cream/60 hover:bg-cream/5 hover:text-cream flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm transition-colors disabled:opacity-60"
+            className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-60"
           >
             <svg
               width="18"

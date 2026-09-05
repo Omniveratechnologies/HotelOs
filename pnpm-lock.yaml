@@ -351,6 +351,9 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/styles':
+        specifier: workspace:*
+        version: link:../../packages/styles
       react:
         specifier: ^19.2.8
         version: 19.2.8

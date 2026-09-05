@@ -106,7 +106,7 @@ export default function MembersPage() {
   // =====================================================
 
   return (
-    <div className="bg-ivory font-body min-h-screen">
+    <div className="bg-background-50 min-h-screen">
       <div className="px-6 py-8 lg:px-10">
         {/* =================================================
             HEADER
@@ -114,11 +114,11 @@ export default function MembersPage() {
 
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-display text-navy text-3xl font-semibold">
+            <h1 className="font-display text-brand-900 text-3xl font-semibold">
               Members
             </h1>
 
-            <p className="text-muted mt-1 text-sm">
+            <p className="mt-1 text-sm text-gray-500">
               Manage the staff members of your hotel.
             </p>
           </div>
@@ -154,13 +154,13 @@ export default function MembersPage() {
             MEMBERS CARD
         ================================================= */}
 
-        <div className="border-beige-border bg-cream shadow-card overflow-hidden rounded-2xl border">
-          <div className="border-beige-border border-b px-6 py-5">
-            <h2 className="font-display text-navy text-xl font-semibold">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs">
+          <div className="border-b border-gray-100 px-6 py-5">
+            <h2 className="font-display text-brand-900 text-xl font-semibold">
               Hotel Members
             </h2>
 
-            <p className="text-muted mt-1 text-sm">
+            <p className="mt-1 text-sm text-gray-500">
               Receptionists and staff accounts associated with your hotel.
             </p>
           </div>
@@ -170,7 +170,7 @@ export default function MembersPage() {
           ================================================= */}
 
           {loading && (
-            <div className="text-muted px-6 py-12 text-center">
+            <div className="px-6 py-12 text-center text-gray-500">
               Loading members...
             </div>
           )}
@@ -183,11 +183,11 @@ export default function MembersPage() {
             <div className="px-6 py-12 text-center">
               <div className="mb-3 text-4xl">👥</div>
 
-              <h3 className="font-display text-navy text-lg font-semibold">
+              <h3 className="font-display text-brand-900 text-lg font-semibold">
                 No members yet
               </h3>
 
-              <p className="text-muted mt-1 text-sm">
+              <p className="mt-1 text-sm text-gray-500">
                 Add a receptionist to your hotel to get started.
               </p>
             </div>
@@ -198,7 +198,7 @@ export default function MembersPage() {
           ================================================= */}
 
           {!loading && members.length > 0 && (
-            <div className="divide-beige-border divide-y">
+            <div className="divide-y divide-gray-100">
               {members.map((member) => (
                 <div
                   key={member.id}
@@ -207,25 +207,25 @@ export default function MembersPage() {
                   {/* MEMBER INFO */}
 
                   <div className="flex items-center gap-4">
-                    <div className="bg-navy font-display text-cream flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold">
+                    <div className="bg-brand-900 font-display flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-white">
                       {(member.name || member.email || "M")
                         .charAt(0)
                         .toUpperCase()}
                     </div>
 
                     <div>
-                      <h3 className="text-navy font-semibold">
+                      <h3 className="text-brand-900 font-semibold">
                         {member.name || "Unnamed Member"}
                       </h3>
 
-                      <p className="text-muted text-sm">{member.email}</p>
+                      <p className="text-sm text-gray-500">{member.email}</p>
 
                       <div className="mt-1 flex items-center gap-2">
-                        <span className="text-gold text-xs font-semibold tracking-wide uppercase">
+                        <span className="text-primary-400 text-xs font-semibold tracking-wide uppercase">
                           {member.role}
                         </span>
 
-                        <span className="text-muted">•</span>
+                        <span className="text-gray-500">•</span>
 
                         <span
                           className={`text-xs font-medium ${
@@ -266,7 +266,7 @@ export default function MembersPage() {
           {/* OVERLAY */}
 
           <div
-            className="bg-navy/50 absolute inset-0 backdrop-blur-xs"
+            className="bg-brand-900/50 absolute inset-0 backdrop-blur-xs"
             onClick={() => {
               if (!deleting) {
                 setMemberToDelete(null);
@@ -276,26 +276,26 @@ export default function MembersPage() {
 
           {/* MODAL */}
 
-          <div className="bg-cream relative w-full max-w-md rounded-2xl p-6 shadow-2xl">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-50 text-xl text-red-600">
                 !
               </div>
 
               <div>
-                <h2 className="font-display text-navy text-xl font-semibold">
+                <h2 className="font-display text-brand-900 text-xl font-semibold">
                   Delete Account?
                 </h2>
 
-                <p className="text-muted mt-2 text-sm leading-6">
+                <p className="mt-2 text-sm leading-6 text-gray-500">
                   Are you sure you want to delete{" "}
-                  <strong className="text-navy">
+                  <strong className="text-brand-900">
                     {memberToDelete.name || memberToDelete.email}
                   </strong>
                   's account?
                 </p>
 
-                <p className="text-muted mt-2 text-xs">
+                <p className="mt-2 text-xs text-gray-500">
                   They will no longer be able to log in to HotelOS.
                 </p>
               </div>
@@ -308,7 +308,7 @@ export default function MembersPage() {
                 type="button"
                 disabled={deleting}
                 onClick={() => setMemberToDelete(null)}
-                className="border-beige-border text-navy hover:bg-ivory rounded-lg border px-5 py-2.5 text-sm font-medium transition"
+                className="text-brand-900 rounded-lg border border-gray-200 px-5 py-2.5 text-sm font-medium transition hover:bg-gray-50"
               >
                 Cancel
               </button>

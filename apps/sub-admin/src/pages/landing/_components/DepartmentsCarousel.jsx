@@ -100,13 +100,13 @@ export default function DepartmentsCarousel() {
   };
 
   return (
-    <section id="product" className="bg-cream py-24">
+    <section id="product" className="bg-white py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="mx-auto mb-14 max-w-xl text-center">
-          <h2 className="font-display text-navy mb-3 text-4xl font-semibold">
+          <h2 className="font-display text-brand-900 mb-3 text-4xl font-semibold">
             All Departments. One Platform.
           </h2>
-          <p className="text-navy/60">
+          <p className="text-brand-900/60">
             An all-in-one software designed for modern hotels, built for
             real-world hospitality.
           </p>
@@ -116,7 +116,7 @@ export default function DepartmentsCarousel() {
           <button
             onClick={() => shift(-1)}
             aria-label="Previous"
-            className="border-beige-border bg-cream text-navy shadow-soft hover:border-gold hover:text-gold absolute top-1/2 -left-5 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border transition-colors md:flex"
+            className="text-brand-900 hover:border-primary-400 hover:text-primary-400 absolute top-1/2 -left-5 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-100 bg-white shadow-md transition-colors md:flex"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path
@@ -141,7 +141,7 @@ export default function DepartmentsCarousel() {
                 <DashboardMockup {...d} />
                 <p
                   className={`mt-4 text-center text-sm font-medium transition-colors ${
-                    i === active ? "text-gold" : "text-navy/70"
+                    i === active ? "text-primary-400" : "text-brand-900/70"
                   }`}
                 >
                   {d.name}
@@ -153,7 +153,7 @@ export default function DepartmentsCarousel() {
           <button
             onClick={() => shift(1)}
             aria-label="Next"
-            className="border-beige-border bg-cream text-navy shadow-soft hover:border-gold hover:text-gold absolute top-1/2 -right-5 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border transition-colors md:flex"
+            className="text-brand-900 hover:border-primary-400 hover:text-primary-400 absolute top-1/2 -right-5 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-100 bg-white shadow-md transition-colors md:flex"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path
@@ -174,7 +174,7 @@ export default function DepartmentsCarousel() {
               aria-label={`Go to ${d.name}`}
               onClick={() => scrollToIndex(i)}
               className={`h-1.5 rounded-full transition-all ${
-                i === active ? "bg-gold w-6" : "bg-beige-border w-1.5"
+                i === active ? "bg-primary-400 w-6" : "w-1.5 bg-gray-200"
               }`}
             />
           ))}
