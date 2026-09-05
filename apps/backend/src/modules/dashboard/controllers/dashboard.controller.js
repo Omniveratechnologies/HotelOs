@@ -1,7 +1,7 @@
 import User from "#/modules/users/models/User.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Room from "#/modules/rooms/models/Room.js";
-import Guest from "#/modules/guests/models/Guest.js";
+import Booking from "#/modules/bookings/models/Booking.js";
 import logger from "#/utils/logger.js";
 
 // =====================================================
@@ -71,12 +71,12 @@ export const getDashboardStats = async (req, res) => {
     endOfToday.setDate(endOfToday.getDate() + 1);
 
     const [checkedIn, arrivalsToday, departuresToday] = await Promise.all([
-      Guest.countDocuments({ hotelId, status: "checked-in" }),
-      Guest.countDocuments({
+      Booking.countDocuments({ hotelId, status: "checked-in" }),
+      Booking.countDocuments({
         hotelId,
         checkIn: { $gte: startOfToday, $lt: endOfToday },
       }),
-      Guest.countDocuments({
+      Booking.countDocuments({
         hotelId,
         checkOut: { $gte: startOfToday, $lt: endOfToday },
         status: { $ne: "checked-out" },
@@ -103,31 +103,33 @@ export const getDashboardStats = async (req, res) => {
     // RECENT ACTIVITY FEED (latest guest events)
     // =================================================
 
-    const recentGuests = await Guest.find({ hotelId })
+    const recentGuests = await Booking.find({ hotelId })
       .sort({ updatedAt: -1 })
       .limit(6)
-      .populate("roomId", "roomNumber");
+      .populate("roomId", "roomNumber")
+      .populate("guestId", "name");
 
-    const recentActivities = recentGuests.map((g) => {
+    const recentActivities = recentGuests.map((b) => {
+      const guestName = b.guestId?.name || "Guest";
       let text;
 
-      if (g.status === "checked-out") {
-        text = `${g.name} checked out`;
-      } else if (g.status === "reserved") {
-        text = `Reservation for ${g.name}`;
+      if (b.status === "checked-out") {
+        text = `${guestName} checked out`;
+      } else if (b.status === "reserved") {
+        text = `Reservation for ${guestName}`;
       } else {
-        text = `${g.name} checked in`;
+        text = `${guestName} checked in`;
       }
 
-      if (g.roomId?.roomNumber) {
-        text += ` — Room ${g.roomId.roomNumber}`;
+      if (b.roomId?.roomNumber) {
+        text += ` — Room ${b.roomId.roomNumber}`;
       }
 
       return {
-        id: g._id,
+        id: b._id,
         text,
-        tone: g.status === "checked-in" ? "gold" : "default",
-        createdAt: g.updatedAt,
+        tone: b.status === "checked-in" ? "gold" : "default",
+        createdAt: b.updatedAt,
       };
     });
 

@@ -59,34 +59,43 @@ exercised in this app:
 All API calls go through the shared **`@hotelos/api`** package
 (`packages/api`), reading `VITE_API_URL` and attaching the
 `Authorization` header from `localStorage.auth_token` when `{ auth: true }`
-is passed. Guest document uploads are sent as `multipart/form-data`.
+is passed. Guest documents are uploaded directly to Cloudflare R2 via
+presigned URLs.
 
 Domain service files in `src/services/`:
 
-| File                    | Purpose                                       | Backend                                                                                    |
-| ----------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `auth.service.js`       | Login, session helpers, forgot/reset password | `POST /auth/login`, `/auth/forgot-*`                                                       |
-| `invitation.service.js` | Verify / accept invitation                    | `POST /invites/verify`, `/invites/accept`                                                  |
-| `dashboard.service.js`  | Dashboard stats                               | `GET /dashboard/stats`                                                                     |
-| `room.service.js`       | Room CRUD                                     | `GET/POST/PATCH/DELETE /rooms`                                                             |
-| `guest.service.js`      | Guest CRUD, documents, credentials            | `GET/POST/PATCH/DELETE /guests`, `/guests/:id/credentials`, `/guests/:id/documents/:docId` |
-| `settings.service.js`   | My hotel + staff                              | `GET/PATCH /hotels/me`, `GET /users`                                                       |
+| File                    | Purpose                                        | Backend                                                                                                                                                 |
+| ----------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.service.js`       | Login, session helpers, forgot/reset password  | `POST /auth/login`, `/auth/forgot-*`                                                                                                                    |
+| `invitation.service.js` | Verify / accept invitation                     | `POST /invites/verify`, `/invites/accept`                                                                                                               |
+| `dashboard.service.js`  | Dashboard stats                                | `GET /dashboard/stats`                                                                                                                                  |
+| `room.service.js`       | Room CRUD                                      | `GET/POST/PATCH/DELETE /rooms`                                                                                                                          |
+| `guest.service.js`      | Guest stays + profiles, documents, credentials | `GET/POST/PATCH/DELETE /bookings`, `PATCH /guests/:id`, `/guests/:id/credentials`, `/guests/documents/upload-urls`, `/guests/:guestId/documents/:docId` |
+| `settings.service.js`   | My hotel + staff                               | `GET/PATCH /hotels/me`, `GET /users`                                                                                                                    |
 
 ---
 
 ## Guest registration & documents
 
-Guest registration uses `POST /api/v1/guests` with a `FormData` body so ID
-documents can be uploaded alongside guest details. See
-`packages/api/README.md` for the FormData pattern.
+Registering a guest creates a **stay** (a `Booking`) and a fresh `GUEST`
+login account for that stay. Use `POST /api/v1/bookings` with a JSON body.
+
+ID documents are uploaded directly to Cloudflare R2 via presigned URLs:
+
+1. Call `POST /api/v1/guests/documents/upload-urls` with the files'
+   metadata to get upload URLs.
+2. PUT each file to its returned `uploadUrl`.
+3. Include the returned keys (`{ key, filename, docType, size, mimeType }`)
+   as the `documents` field of the registration request.
 
 Document upload constraints (enforced by the backend):
 
 - Allowed types: `image/jpeg`, `image/png`, `image/webp`, `application/pdf`
 - Max file size: **5 MB** each
 - Max **5 files** per request
-- Documents are stored per hotel under `uploads/guests/<hotelId>/` and
-  served at `/uploads/...`
+
+> Each stay creates its own guest login with a unique username; the same
+> email may be reused across stays (e.g. a returning guest books again).
 
 ---
 

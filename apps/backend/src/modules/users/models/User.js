@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 import { ROLES } from "#/shared/constants/roles.js";
+import { GUEST_ID_TYPES } from "#/shared/constants/guest.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -54,25 +55,29 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    roomId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Room",
-      default: null,
+    // Guest profile (identity) — only meaningful for role GUEST
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
-    checkIn: {
-      type: Date,
-      default: null,
+    address: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
-    checkOut: {
-      type: Date,
-      default: null,
+    idType: {
+      type: String,
+      enum: GUEST_ID_TYPES,
+      default: "Aadhaar",
     },
 
-    dndEnabled: {
-      type: Boolean,
-      default: false,
+    idNumber: {
+      type: String,
+      default: "",
+      trim: true,
     },
 
     isActive: {
@@ -84,6 +89,28 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    documents: [
+      {
+        docType: {
+          type: String,
+          enum: GUEST_ID_TYPES,
+          required: true,
+        },
+        filename: {
+          type: String,
+          required: true,
+        },
+        path: {
+          type: String,
+          required: true,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
 
     // Password recovery
     resetPasswordToken: {

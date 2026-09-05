@@ -35,7 +35,7 @@ export default function EditGuestModal({ guest, onClose, onSaved }) {
 
     try {
       setSaving(true);
-      await updateGuest(guest.id, form);
+      await updateGuest(guest.guestId, form);
       await refreshData();
       onSaved?.();
       onClose();

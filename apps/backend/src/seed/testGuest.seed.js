@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
+import Booking from "#/modules/bookings/models/Booking.js";
 import FoodItem from "#/modules/food-items/models/FoodItem.js";
 import logger from "#/utils/logger.js";
 
@@ -39,11 +40,23 @@ const seed = async () => {
       password: "Guest@123",
       role: "GUEST",
       hotelId: hotel._id,
+      email: "aditya@test.com",
+      phone: "9876543210",
+      address: "12, Residency Road",
+      idType: "Aadhaar",
+      idNumber: "1234-5678-9012",
+      mustChangePassword: false,
+    });
+
+    await Booking.create({
+      guestId: guest._id,
+      hotelId: hotel._id,
       roomId: room._id,
       checkIn: new Date(),
       checkOut: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      mustChangePassword: false,
+      status: "checked-in",
     });
+
     logger.info("Guest created — username: test-guest / password: Guest@123");
   }
 

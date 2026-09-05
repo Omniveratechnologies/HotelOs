@@ -75,7 +75,7 @@ api.put("/api/v1/resource/:id", { name });
 ### `api.patch(url, body?, options)`
 
 ```js
-api.patch(`/api/v1/guests/${id}`, { status: "checked-out" }, { auth: true });
+api.patch(`/api/v1/bookings/${id}`, { status: "checked-out" }, { auth: true });
 ```
 
 ### `api.delete(url, options)`
@@ -131,22 +131,46 @@ localStorage.setItem("auth_user", JSON.stringify(result.data.user));
 ## FormData / multipart uploads
 
 When the body is a `FormData` instance, the client sends it as
-`multipart/form-data` and does not set a JSON `Content-Type`. This is how
-guest document uploads work:
+`multipart/form-data` and does not set a JSON `Content-Type`.
+
+Guest documents no longer use multipart — registering a guest stay is a
+JSON call to `/api/v1/bookings`. The document binary is uploaded directly
+to Cloudflare R2 via a presigned URL obtained from the backend:
 
 ```js
 import { api } from "@hotelos/api";
 
-const form = new FormData();
-form.append("name", "Ada Lovelace");
-form.append("email", "ada@example.com");
-form.append("roomId", roomId);
-form.append("checkOut", "2026-10-01");
-form.append("status", "checked-in");
-form.append("documents", fileInput.files[0]);
-form.append("docTypes", JSON.stringify(["Passport"]));
+// 1. get presigned upload URLs for the files' metadata
+const { data: uploads } = await api.post(
+  "/api/v1/guests/documents/upload-urls",
+  {
+    files: [
+      {
+        filename: "passport.jpg",
+        mimeType: "image/jpeg",
+        docType: "Passport",
+        size: 12345,
+      },
+    ],
+  },
+  { auth: true },
+);
 
-const result = await api.post("/api/v1/guests", form, { auth: true });
+// 2. PUT each file directly to its R2 uploadUrl (plain fetch, no auth header)
+await fetch(uploads[0].uploadUrl, { method: "PUT", body: fileBlob });
+
+// 3. register the stay, referencing the returned R2 keys
+const result = await api.post(
+  "/api/v1/bookings",
+  {
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    roomId,
+    checkOut: "2026-10-01",
+    documents: uploads,
+  },
+  { auth: true },
+);
 ```
 
 ---

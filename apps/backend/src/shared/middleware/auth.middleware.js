@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "#/modules/users/models/User.js";
+import Booking from "#/modules/bookings/models/Booking.js";
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -26,6 +27,15 @@ export const authenticate = async (req, res, next) => {
     }
 
     req.user = user;
+
+    // Attach the guest's active stay so stay-scoped fields (room, DND) can be
+    // resolved from the Booking model instead of denormalized onto User.
+    if (user.role === "GUEST") {
+      req.currentBooking = await Booking.findOne({
+        guestId: user._id,
+        status: { $in: ["reserved", "checked-in"] },
+      }).sort({ createdAt: -1 });
+    }
 
     next();
   } catch {

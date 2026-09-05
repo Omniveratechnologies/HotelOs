@@ -1,5 +1,5 @@
 import User from "../models/User.js";
-import UserInvite from "#/modules/bookings/models/UserInvite.js";
+import UserInvite from "#/modules/invites/models/UserInvite.js";
 
 import { ROLES } from "#/shared/constants/roles.js";
 

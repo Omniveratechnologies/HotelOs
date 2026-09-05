@@ -1,3 +1,3 @@
-import inviteRouter from "./routes/invite.routes.js";
+import bookingRouter from "./routes/booking.routes.js";
 
-export default inviteRouter;
+export default bookingRouter;

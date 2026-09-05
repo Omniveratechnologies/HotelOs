@@ -37,7 +37,7 @@ const roomSchema = new mongoose.Schema(
     },
 
     // Quick display info for who is currently in the room.
-    // Full guest records live in the Guest model (Phase B2).
+    // Full guest stay details live in the Booking model.
     currentGuest: {
       type: String,
       default: null,
