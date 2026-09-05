@@ -4,16 +4,19 @@ import { useHotelOS } from "../../app/useHotelOS.js";
 export default function HousekeepingPage() {
   const {
     serviceRequests,
-    setServiceRequests,
     rooms,
     acknowledgeRequest,
     completeRequest,
+    addRequest,
+    requestsLoading,
+    requestsError,
   } = useHotelOS();
   const [filter, setFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [newReq, setNewReq] = useState({
     room: "",
-    type: "Housekeeping request",
+    type: "HOUSEKEEPING",
     detail: "",
     priority: "normal",
   });
@@ -28,6 +31,7 @@ export default function HousekeepingPage() {
     acknowledged: "bg-blue-100 text-blue-700",
     "in-progress": "bg-purple-100 text-purple-700",
     completed: "bg-green-100 text-green-700",
+    cancelled: "bg-gray-100 text-gray-600",
   };
 
   const typeIcon = {
@@ -35,31 +39,43 @@ export default function HousekeepingPage() {
     "Amenity request": "🛁",
     Maintenance: "🔧",
     "Call restaurant": "📞",
+    "Reception request": "🗣",
     Laundry: "👕",
     Other: "📝",
   };
 
-  const addRequest = () => {
+  // Backend type enums -> display labels
+  const requestTypes = [
+    { value: "HOUSEKEEPING", label: "Housekeeping request" },
+    { value: "AMENITY", label: "Amenity request" },
+    { value: "MAINTENANCE", label: "Maintenance" },
+    { value: "RESTAURANT", label: "Call restaurant" },
+    { value: "RECEPTION", label: "Reception request" },
+  ];
+
+  const addRequestHandler = async () => {
     if (!newReq.room || !newReq.detail) return;
-    setServiceRequests((prev) => [
-      {
-        id: Date.now(),
-        ...newReq,
-        status: "requested",
-        time: new Date().toLocaleTimeString("en-IN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
-      ...prev,
-    ]);
-    setShowNew(false);
-    setNewReq({
-      room: "",
-      type: "Housekeeping request",
-      detail: "",
-      priority: "normal",
-    });
+
+    setCreating(true);
+    try {
+      await addRequest({
+        roomId: newReq.room,
+        type: newReq.type,
+        description: newReq.detail,
+        priority: newReq.priority,
+      });
+      setShowNew(false);
+      setNewReq({
+        room: "",
+        type: "HOUSEKEEPING",
+        detail: "",
+        priority: "normal",
+      });
+    } catch (err) {
+      console.error("Failed to create request:", err);
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -67,7 +83,7 @@ export default function HousekeepingPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-navy-900 text-2xl font-bold">
-            Housekeeping & Requests
+            Housekeeping & Service Requests
           </h1>
           <p className="text-sm text-gray-500">
             {serviceRequests.filter((r) => r.status === "requested").length}{" "}
@@ -140,7 +156,7 @@ export default function HousekeepingPage() {
                   key={r.id}
                   className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700"
                 >
-                  Room {r.id}
+                  Room {r.roomNumber}
                 </span>
               ))}
           </div>
@@ -148,13 +164,13 @@ export default function HousekeepingPage() {
       )}
 
       {/* Filter */}
-      <div className="mb-4 flex w-fit gap-1 rounded-xl bg-gray-100 p-1">
+      <div className="mb-4 flex w-fit gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1">
         {["all", "requested", "acknowledged", "in-progress", "completed"].map(
           (s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
             >
               {s.replace("-", " ")}
             </button>
@@ -178,7 +194,7 @@ export default function HousekeepingPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-navy-900 font-bold">
-                        Room {req.room}
+                        {req.room ? `Room ${req.room}` : "-"}
                       </span>
                       <span className="text-gray-400">·</span>
                       <span className="text-navy-900 text-sm font-semibold">
@@ -191,6 +207,18 @@ export default function HousekeepingPage() {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-600">{req.detail}</p>
+                    {req.items.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {req.items.map((item) => (
+                          <span
+                            key={item}
+                            className="rounded-md bg-yellow-100 px-2 py-0.5 text-[10px] font-semibold text-yellow-700"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div className="mt-1 text-xs text-gray-400">{req.time}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -221,7 +249,17 @@ export default function HousekeepingPage() {
             </div>
           </div>
         ))}
-        {filtered.length === 0 && (
+        {requestsLoading && (
+          <div className="py-16 text-center text-sm text-gray-400">
+            Loading requests…
+          </div>
+        )}
+        {!requestsLoading && requestsError && (
+          <div className="py-16 text-center text-sm text-red-500">
+            {requestsError}
+          </div>
+        )}
+        {!requestsLoading && !requestsError && filtered.length === 0 && (
           <div className="py-16 text-center text-gray-400">
             No requests found
           </div>
@@ -257,7 +295,7 @@ export default function HousekeepingPage() {
                     .filter((r) => r.status === "occupied")
                     .map((r) => (
                       <option key={r.id} value={r.id}>
-                        Room {r.id} – {r.guest}
+                        Room {r.roomNumber} – {r.guest || "Guest"}
                       </option>
                     ))}
                 </select>
@@ -273,8 +311,10 @@ export default function HousekeepingPage() {
                   }
                   className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                 >
-                  {Object.keys(typeIcon).map((t) => (
-                    <option key={t}>{t}</option>
+                  {requestTypes.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -319,10 +359,11 @@ export default function HousekeepingPage() {
                 Cancel
               </button>
               <button
-                onClick={addRequest}
-                className="bg-navy-900 hover:bg-navy-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+                onClick={addRequestHandler}
+                disabled={creating}
+                className="bg-navy-900 hover:bg-navy-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
               >
-                Create Request
+                {creating ? "Creating…" : "Create Request"}
               </button>
             </div>
           </div>

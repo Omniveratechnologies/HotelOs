@@ -14,6 +14,18 @@ import {
   deleteGuest as deleteGuestApi,
 } from "../services/guest.service.js";
 import { getDashboardStats as fetchStatsApi } from "../services/dashboard.service.js";
+import {
+  getStaffOrders as fetchOrdersApi,
+  createDeskOrder as createDeskOrderApi,
+  updateOrderStatusApi,
+  getFoodItems as fetchFoodItemsApi,
+} from "../services/order.service.js";
+import {
+  getStaffRequests as fetchRequestsApi,
+  createDeskRequest as createDeskRequestApi,
+  updateRequestStatusApi,
+} from "../services/serviceRequest.service.js";
+import { subscribeRealtime } from "../services/realtime.service.js";
 
 // Map a backend room DTO onto the shape the UI expects
 const normalizeRoom = (room) => ({
@@ -27,95 +39,6 @@ const normalizeRoom = (room) => ({
   checkIn: room.checkIn ? String(room.checkIn).split("T")[0] : null,
   checkOut: room.checkOut ? String(room.checkOut).split("T")[0] : null,
 });
-
-// Initial mock data for service requests and food orders. In a real application, these would be fetched from the backend.
-const initialServiceRequests = [
-  {
-    id: 1,
-    room: "204",
-    type: "Amenity request",
-    detail: "1× Extra towels, 1× Extra pillows, 1× Toiletries kit",
-    status: "requested",
-    time: "09:15 AM",
-    priority: "normal",
-  },
-  {
-    id: 2,
-    room: "204",
-    type: "Housekeeping request",
-    detail: "Request housekeeping",
-    status: "requested",
-    time: "09:22 AM",
-    priority: "normal",
-  },
-  {
-    id: 3,
-    room: "204",
-    type: "Call restaurant",
-    detail: "Call restaurant",
-    status: "requested",
-    time: "09:30 AM",
-    priority: "normal",
-  },
-  {
-    id: 4,
-    room: "106",
-    type: "Maintenance",
-    detail: "AC not cooling properly",
-    status: "in-progress",
-    time: "08:45 AM",
-    priority: "high",
-  },
-  {
-    id: 5,
-    room: "205",
-    type: "Amenity request",
-    detail: "2× Bath robes, 1× Extra blanket",
-    status: "completed",
-    time: "07:30 AM",
-    priority: "normal",
-  },
-];
-
-// Initial mock data for food orders. In a real application, these would be fetched from the backend.
-const initialFoodOrders = [
-  {
-    id: 1,
-    room: "204",
-    items: "1× Gulab Jamun",
-    payment: "COD",
-    status: "out-for-delivery",
-    time: "09:10 AM",
-    amount: 120,
-  },
-  {
-    id: 2,
-    room: "204",
-    items: "1× Cold Coffee",
-    payment: "COD",
-    status: "delivered",
-    time: "08:55 AM",
-    amount: 180,
-  },
-  {
-    id: 3,
-    room: "106",
-    items: "2× Paneer Butter Masala, 3× Roti",
-    payment: "UPI",
-    status: "preparing",
-    time: "09:35 AM",
-    amount: 640,
-  },
-  {
-    id: 4,
-    room: "205",
-    items: "1× Masala Chai, 1× Samosa",
-    payment: "Room Charge",
-    status: "delivered",
-    time: "08:20 AM",
-    amount: 95,
-  },
-];
 
 // Map a backend guest DTO onto the shape the UI expects
 const normalizeGuest = (g) => ({
@@ -136,15 +59,98 @@ const normalizeGuest = (g) => ({
   documents: g.documents || [],
 });
 
+const ORDER_STATUS_MAP = {
+  NEW: "new",
+  PREPARING: "preparing",
+  READY: "ready",
+  OUT_FOR_DELIVERY: "out-for-delivery",
+  DELIVERED: "delivered",
+  REJECTED: "rejected",
+  CANCELLED: "cancelled",
+};
+
+const UI_TO_ORDER_STATUS = {
+  new: "NEW",
+  preparing: "PREPARING",
+  ready: "READY",
+  "out-for-delivery": "OUT_FOR_DELIVERY",
+  delivered: "DELIVERED",
+  rejected: "REJECTED",
+  cancelled: "CANCELLED",
+};
+
+const REQUEST_STATUS_MAP = {
+  REQUESTED: "requested",
+  ACKNOWLEDGED: "acknowledged",
+  IN_PROGRESS: "in-progress",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+};
+
+const REQUEST_TYPE_MAP = {
+  AMENITY: "Amenity request",
+  HOUSEKEEPING: "Housekeeping request",
+  RESTAURANT: "Call restaurant",
+  RECEPTION: "Reception request",
+  MAINTENANCE: "Maintenance",
+};
+
+const formatTime = (value) => {
+  if (!value) return "";
+
+  return new Date(value).toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+// Backend staff order DTO -> the shape the receptionist UI already expects
+const normalizeFoodOrder = (order) => ({
+  id: order.id,
+  room: order.roomNumber || null,
+  items: (order.items || []).map((i) => `${i.quantity}× ${i.name}`).join(", "),
+  payment: order.paymentMethod,
+  status: ORDER_STATUS_MAP[order.status] || String(order.status).toLowerCase(),
+  time: formatTime(order.createdAt),
+  amount: order.totalAmount,
+});
+
+// Backend staff service-request DTO -> the shape the UI already expects
+const normalizeRequest = (request) => ({
+  id: request.id,
+  room: request.roomNumber || null,
+  type: REQUEST_TYPE_MAP[request.type] || request.type,
+  detail: request.description || "",
+  items: Array.isArray(request.items) ? request.items : [],
+  status:
+    REQUEST_STATUS_MAP[request.status] || String(request.status).toLowerCase(),
+  time: formatTime(request.createdAt),
+  priority: request.priority || "normal",
+});
+
+const upsert = (list, item) => {
+  const index = list.findIndex((entry) => entry.id === item.id);
+
+  if (index === -1) return [item, ...list];
+
+  const copy = [...list];
+  copy[index] = item;
+  return copy;
+};
+
 export function HotelOSProvider({ children }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [roomsError, setRoomsError] = useState("");
-  const [serviceRequests, setServiceRequests] = useState(
-    initialServiceRequests,
-  );
-  const [foodOrders, setFoodOrders] = useState(initialFoodOrders);
+  const [serviceRequests, setServiceRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [requestsError, setRequestsError] = useState("");
+  const [foodOrders, setFoodOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [ordersError, setOrdersError] = useState("");
+  const [foodItems, setFoodItems] = useState([]);
+  const [foodItemsLoading, setFoodItemsLoading] = useState(true);
   const [guests, setGuests] = useState([]);
   const [guestsLoading, setGuestsLoading] = useState(true);
   const [guestsError, setGuestsError] = useState("");
@@ -226,6 +232,115 @@ export function HotelOSProvider({ children }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Live food orders for the hotel (also on the kitchen board)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const data = await fetchOrdersApi();
+        if (!cancelled) {
+          setFoodOrders(data.map(normalizeFoodOrder));
+          setOrdersError("");
+        }
+      } catch (err) {
+        console.error("Failed to load food orders:", err);
+        if (!cancelled)
+          setOrdersError(err.message || "Failed to load food orders");
+      } finally {
+        if (!cancelled) setOrdersLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Live service requests for the hotel
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const data = await fetchRequestsApi();
+        if (!cancelled) {
+          setServiceRequests(data.map(normalizeRequest));
+          setRequestsError("");
+        }
+      } catch (err) {
+        console.error("Failed to load service requests:", err);
+        if (!cancelled)
+          setRequestsError(err.message || "Failed to load service requests");
+      } finally {
+        if (!cancelled) setRequestsLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Food items for the new-order menu
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const data = await fetchFoodItemsApi();
+        if (!cancelled) {
+          setFoodItems(data);
+          setFoodItemsLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to load food items:", err);
+        if (!cancelled) setFoodItemsLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Realtime: merge order / service-request events broadcast over Socket.IO.
+  // Covers this tab, other receptionist tabs, guest-created activity, and
+  // kitchen status changes. On (re)connect the full lists are refetched so no
+  // events emitted while the socket was down are permanently missed.
+  useEffect(() => {
+    const refreshLiveLists = async () => {
+      try {
+        const [ordersData, requestsData] = await Promise.all([
+          fetchOrdersApi(),
+          fetchRequestsApi(),
+        ]);
+        setFoodOrders(ordersData.map(normalizeFoodOrder));
+        setServiceRequests(requestsData.map(normalizeRequest));
+      } catch (err) {
+        console.error("Failed to refresh live lists:", err);
+      }
+    };
+
+    const unsubscribe = subscribeRealtime({
+      onConnect: refreshLiveLists,
+      order: (data) => {
+        setFoodOrders((prev) => upsert(prev, normalizeFoodOrder(data)));
+      },
+      serviceRequest: (data) => {
+        setServiceRequests((prev) => upsert(prev, normalizeRequest(data)));
+      },
+    });
+
+    return unsubscribe;
   }, []);
 
   const refreshStats = async () => {
@@ -313,22 +428,56 @@ export function HotelOSProvider({ children }) {
     }
   };
 
-  const acknowledgeRequest = (id) => {
-    setServiceRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "acknowledged" } : r)),
-    );
+  // Food order actions (idempotent — the socket event confirms/merges too)
+  const updateOrderStatus = async (id, status) => {
+    try {
+      const updated = await updateOrderStatusApi(
+        id,
+        UI_TO_ORDER_STATUS[status] || status,
+      );
+      setFoodOrders((prev) => upsert(prev, normalizeFoodOrder(updated)));
+    } catch (err) {
+      console.error("Failed to update order status:", err);
+      throw err;
+    }
   };
 
-  const completeRequest = (id) => {
-    setServiceRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "completed" } : r)),
-    );
+  const addOrder = async ({ roomId, items }) => {
+    const created = await createDeskOrderApi({ roomId, items });
+    setFoodOrders((prev) => upsert(prev, normalizeFoodOrder(created)));
+    return created;
   };
 
-  const updateOrderStatus = (id, status) => {
-    setFoodOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status } : o)),
-    );
+  // Service request actions
+  const acknowledgeRequest = async (id) => {
+    try {
+      const updated = await updateRequestStatusApi(id, "ACKNOWLEDGED");
+      setServiceRequests((prev) => upsert(prev, normalizeRequest(updated)));
+    } catch (err) {
+      console.error("Failed to acknowledge request:", err);
+      throw err;
+    }
+  };
+
+  const completeRequest = async (id) => {
+    try {
+      const updated = await updateRequestStatusApi(id, "COMPLETED");
+      setServiceRequests((prev) => upsert(prev, normalizeRequest(updated)));
+    } catch (err) {
+      console.error("Failed to complete request:", err);
+      throw err;
+    }
+  };
+
+  const addRequest = async ({ roomId, type, description, priority }) => {
+    const created = await createDeskRequestApi({
+      roomId,
+      type,
+      description,
+      priority: priority || "normal",
+    });
+    setServiceRequests((prev) => upsert(prev, normalizeRequest(created)));
+    return created;
   };
 
   const contextValue = useMemo(
@@ -341,8 +490,14 @@ export function HotelOSProvider({ children }) {
       roomsError,
       serviceRequests,
       setServiceRequests,
+      requestsLoading,
+      requestsError,
       foodOrders,
       setFoodOrders,
+      ordersLoading,
+      ordersError,
+      foodItems,
+      foodItemsLoading,
       guests,
       setGuests,
       guestsLoading,
@@ -358,18 +513,26 @@ export function HotelOSProvider({ children }) {
       addGuest,
       removeGuest,
       refreshData,
+      updateOrderStatus,
+      addOrder,
       acknowledgeRequest,
       completeRequest,
-      updateOrderStatus,
+      addRequest,
     }),
-    // oxlint-disable-next-line react/memo-dependencies -- remaining deps are stable setters/callbacks (setState + useCallback) whose identities never change, so they are intentionally omitted
+    // oxlint-disable-next-line react/memo-dependencies -- remaining deps are stable setters/callbacks (setState + function declarations) whose identities never change, so they are intentionally omitted
     [
       chatOpen,
       rooms,
       roomsLoading,
       roomsError,
       serviceRequests,
+      requestsLoading,
+      requestsError,
       foodOrders,
+      ordersLoading,
+      ordersError,
+      foodItems,
+      foodItemsLoading,
       guests,
       guestsLoading,
       guestsError,

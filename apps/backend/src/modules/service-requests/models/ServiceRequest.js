@@ -26,6 +26,7 @@ const serviceRequestSchema = new mongoose.Schema(
     },
     description: { type: String, trim: true },
     items: { type: [String], default: [] },
+    priority: { type: String, enum: ["normal", "high"], default: "normal" },
     status: {
       type: String,
       enum: [
@@ -40,5 +41,7 @@ const serviceRequestSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+serviceRequestSchema.index({ hotelId: 1, createdAt: -1 });
 
 export default mongoose.model("ServiceRequest", serviceRequestSchema);

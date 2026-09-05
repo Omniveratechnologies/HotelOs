@@ -24,6 +24,18 @@ export default function ServiceRequestsList({
                   <div className="mt-0.5 truncate text-xs text-gray-500">
                     {req.detail}
                   </div>
+                  {req.items.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {req.items.map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-md bg-yellow-100 px-1.5 py-0.5 text-[9px] font-semibold text-yellow-700"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {req.priority === "high" && (
                   <span className="shrink-0 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-600">

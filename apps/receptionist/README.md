@@ -64,14 +64,42 @@ presigned URLs.
 
 Domain service files in `src/services/`:
 
-| File                    | Purpose                                        | Backend                                                                                                                                                 |
-| ----------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auth.service.js`       | Login, session helpers, forgot/reset password  | `POST /auth/login`, `/auth/forgot-*`                                                                                                                    |
-| `invitation.service.js` | Verify / accept invitation                     | `POST /invites/verify`, `/invites/accept`                                                                                                               |
-| `dashboard.service.js`  | Dashboard stats                                | `GET /dashboard/stats`                                                                                                                                  |
-| `room.service.js`       | Room CRUD                                      | `GET/POST/PATCH/DELETE /rooms`                                                                                                                          |
-| `guest.service.js`      | Guest stays + profiles, documents, credentials | `GET/POST/PATCH/DELETE /bookings`, `PATCH /guests/:id`, `/guests/:id/credentials`, `/guests/documents/upload-urls`, `/guests/:guestId/documents/:docId` |
-| `settings.service.js`   | My hotel + staff                               | `GET/PATCH /hotels/me`, `GET /users`                                                                                                                    |
+| File                        | Purpose                                        | Backend                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auth.service.js`           | Login, session helpers, forgot/reset password  | `POST /auth/login`, `/auth/forgot-*`                                                                                                                    |
+| `invitation.service.js`     | Verify / accept invitation                     | `POST /invites/verify`, `/invites/accept`                                                                                                               |
+| `dashboard.service.js`      | Dashboard stats                                | `GET /dashboard/stats`                                                                                                                                  |
+| `room.service.js`           | Room CRUD                                      | `GET/POST/PATCH/DELETE /rooms`                                                                                                                          |
+| `guest.service.js`          | Guest stays + profiles, documents, credentials | `GET/POST/PATCH/DELETE /bookings`, `PATCH /guests/:id`, `/guests/:id/credentials`, `/guests/documents/upload-urls`, `/guests/:guestId/documents/:docId` |
+| `settings.service.js`       | My hotel + staff                               | `GET/PATCH /hotels/me`, `GET /users`                                                                                                                    |
+| `order.service.js`          | Food orders + menu                             | `GET /orders/staff`, `POST /orders/desk`, `PATCH /orders/:id/status`, `GET /food-items`                                                                 |
+| `serviceRequest.service.js` | Service requests                               | `GET /service-requests/staff`, `POST /service-requests/desk`, `PATCH /service-requests/:id/status`                                                      |
+| `realtime.service.js`       | Socket.IO client for live events               | WebSocket (`socket.io`) on the backend port                                                                                                             |
+
+---
+
+## Realtime data (WebSocket)
+
+Food Orders and Housekeeping (Service Requests) pages show **live backend
+data**, not local mocks. The app connects to the backend's Socket.IO server
+with `{ auth: { token } }`, the backend joins the socket to the hotel's room,
+and the app merges these events into its lists:
+
+| Event                    | Effect                                            |
+| ------------------------ | ------------------------------------------------- |
+| `order:created`          | New prepend / update in the Food Orders feed      |
+| `order:updated`          | Live status change (incl. kitchen updates)        |
+| `serviceRequest:created` | New prepend / update in the Service Requests feed |
+| `serviceRequest:updated` | Live status change                                |
+
+The lists are also refetched whenever the socket (re)connects so events emitted
+while offline are never permanently missed. Sidebar badges and dashboard panels
+derive from the same live state, so they update automatically.
+
+New orders placed from the modal use `POST /orders/desk` (COD-only, billed to
+the room), and new service requests use `POST /service-requests/desk` — the
+backend resolves the guest from the room's active stay; the frontend never
+sends a `hotelId` or `guestId`.
 
 ---
 
@@ -194,3 +222,4 @@ src/
 - React Router
 - lucide-react icons
 - `@hotelos/api` shared client
+- `socket.io-client` for realtime food-order / service-request events

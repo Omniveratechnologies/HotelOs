@@ -911,14 +911,18 @@ Response DTO: `{ id, name, description, price, category, isAvailable }`.
 
 ### Orders — `/api/v1/orders`
 
-Guest-facing endpoints (GUEST role only).
+Guest-facing endpoints (GUEST role only) plus staff-facing endpoints
+(`SUB_ADMIN`, `RECEPTIONIST`) that power the front-desk realtime board.
 
-| Method | Endpoint                 | Auth | Roles | Description                  |
-| ------ | ------------------------ | ---- | ----- | ---------------------------- |
-| POST   | `/orders`                | Yes  | GUEST | Create an order (COD/ONLINE) |
-| POST   | `/orders/verify-payment` | Yes  | GUEST | Verify Razorpay payment      |
-| GET    | `/orders`                | Yes  | GUEST | List my orders               |
-| GET    | `/orders/:id`            | Yes  | GUEST | Get a specific order         |
+| Method | Endpoint                 | Auth | Roles                   | Description                   |
+| ------ | ------------------------ | ---- | ----------------------- | ----------------------------- |
+| POST   | `/orders`                | Yes  | GUEST                   | Create an order (COD/ONLINE)  |
+| POST   | `/orders/verify-payment` | Yes  | GUEST                   | Verify Razorpay payment       |
+| GET    | `/orders`                | Yes  | GUEST                   | List my orders                |
+| GET    | `/orders/:id`            | Yes  | GUEST                   | Get a specific order          |
+| GET    | `/orders/staff`          | Yes  | SUB_ADMIN, RECEPTIONIST | List all orders for the hotel |
+| POST   | `/orders/desk`           | Yes  | SUB_ADMIN, RECEPTIONIST | Place a COD order for a room  |
+| PATCH  | `/orders/:id/status`     | Yes  | SUB_ADMIN, RECEPTIONIST | Update order status           |
 
 **Create order** (`POST /orders`):
 
@@ -937,6 +941,20 @@ For `COD` orders, the order is created immediately.
 
 Response DTO: `{ id, items, totalAmount, paymentMethod, paymentStatus, status, createdAt, updatedAt }`.
 
+**Hotel orders** (`GET /orders/staff`) — hotel-scoped via the authenticated
+user's JWT, sorted newest first. Response DTO adds `roomNumber` and `guestName`.
+
+**Desk order** (`POST /orders/desk`) — COD-only order placed by front-desk
+staff on behalf of a guest. The guest is resolved from the room's active stay
+(`reserved`/`checked-in`), so the frontend never sends a guest id:
+
+```json
+{
+  "roomId": "...",
+  "items": [{ "foodItemId": "...", "quantity": 2 }]
+}
+```
+
 ### Kitchen Orders — `/api/kitchen/orders`
 
 Public endpoints (no auth) for the kitchen display.
@@ -950,12 +968,16 @@ Status values: `NEW`, `PREPARING`, `READY`, `OUT FOR DELIVERY`, `DELIVERED`, `RE
 
 ### Service Requests — `/api/v1/service-requests`
 
-Guest-facing endpoints (GUEST role only).
+Guest-facing endpoints (GUEST role only) plus staff-facing endpoints
+(`SUB_ADMIN`, `RECEPTIONIST`) for the housekeeping / service board.
 
-| Method | Endpoint            | Auth | Roles | Description              |
-| ------ | ------------------- | ---- | ----- | ------------------------ |
-| POST   | `/service-requests` | Yes  | GUEST | Create a service request |
-| GET    | `/service-requests` | Yes  | GUEST | List my service requests |
+| Method | Endpoint                       | Auth | Roles                   | Description                     |
+| ------ | ------------------------------ | ---- | ----------------------- | ------------------------------- |
+| POST   | `/service-requests`            | Yes  | GUEST                   | Create a service request        |
+| GET    | `/service-requests`            | Yes  | GUEST                   | List my service requests        |
+| GET    | `/service-requests/staff`      | Yes  | SUB_ADMIN, RECEPTIONIST | List all requests for the hotel |
+| POST   | `/service-requests/desk`       | Yes  | SUB_ADMIN, RECEPTIONIST | Create a request for a room     |
+| PATCH  | `/service-requests/:id/status` | Yes  | SUB_ADMIN, RECEPTIONIST | Update request status           |
 
 **Create service request** (`POST /service-requests`):
 
@@ -970,6 +992,33 @@ Guest-facing endpoints (GUEST role only).
 Valid types: `AMENITY`, `HOUSEKEEPING`, `RESTAURANT`, `RECEPTION`, `MAINTENANCE`.
 
 Response DTO: `{ id, type, description, items, status, createdAt, updatedAt }`.
+
+**Staff requests** (`GET /service-requests/staff`) — hotel-scoped, sorted newest
+first. Response DTO adds `roomNumber`, `guestName`, and `priority`
+(`normal`/`high`). Requests created via `/desk` resolve the guest from the
+room's active stay, same as desk orders.
+
+Valid status updates: `ACKNOWLEDGED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`.
+
+---
+
+## Realtime events (WebSocket)
+
+The backend exposes a **Socket.IO** server on the same port as the HTTP API.
+Clients authenticate with `{ auth: { token: "<jwt>" } }` in the handshake and
+are joined to their hotel's room. Guests and other hotels never receive another
+hotel's events.
+
+| Event                    | Payload           | Emitted when                           |
+| ------------------------ | ----------------- | -------------------------------------- |
+| `order:created`          | Staff order DTO   | A guest or desk order is created       |
+| `order:updated`          | Staff order DTO   | Order status or payment status changes |
+| `serviceRequest:created` | Staff request DTO | A guest or desk request is created     |
+| `serviceRequest:updated` | Staff request DTO | A request status changes               |
+
+The receptionist dashboard subscribes to these events and merges them into its
+live lists, so front-desk, guest, and kitchen activity stay in sync across
+every open tab.
 
 ---
 

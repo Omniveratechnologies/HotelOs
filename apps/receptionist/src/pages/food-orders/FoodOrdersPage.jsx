@@ -2,38 +2,48 @@ import React, { useState } from "react";
 import { useHotelOS } from "../../app/useHotelOS.js";
 
 const statusConfig = {
+  new: { color: "bg-gray-100 text-gray-700", label: "New" },
   preparing: { color: "bg-orange-100 text-orange-700", label: "Preparing" },
+  ready: { color: "bg-purple-100 text-purple-700", label: "Ready" },
   "out-for-delivery": {
     color: "bg-blue-100 text-blue-700",
     label: "Out for Delivery",
   },
   delivered: { color: "bg-green-100 text-green-700", label: "Delivered" },
+  rejected: { color: "bg-red-100 text-red-700", label: "Rejected" },
   cancelled: { color: "bg-red-100 text-red-700", label: "Cancelled" },
 };
 
-const menu = [
-  { name: "Masala Chai", price: 60, category: "Beverages" },
-  { name: "Cold Coffee", price: 180, category: "Beverages" },
-  { name: "Fresh Lime Soda", price: 80, category: "Beverages" },
-  { name: "Gulab Jamun", price: 120, category: "Desserts" },
-  { name: "Rasgulla", price: 100, category: "Desserts" },
-  { name: "Paneer Butter Masala", price: 280, category: "Main Course" },
-  { name: "Dal Makhani", price: 220, category: "Main Course" },
-  { name: "Roti (3 pcs)", price: 60, category: "Breads" },
-  { name: "Samosa (2 pcs)", price: 80, category: "Snacks" },
-  { name: "Veg Sandwich", price: 120, category: "Snacks" },
+const filterTabs = [
+  "all",
+  "new",
+  "preparing",
+  "ready",
+  "out-for-delivery",
+  "delivered",
+  "rejected",
+  "cancelled",
 ];
 
 export default function FoodOrdersPage() {
-  const { foodOrders, setFoodOrders, updateOrderStatus, rooms } = useHotelOS();
+  const {
+    foodOrders,
+    addOrder,
+    updateOrderStatus,
+    rooms,
+    foodItems,
+    ordersLoading,
+    ordersError,
+  } = useHotelOS();
   const [showNew, setShowNew] = useState(false);
   const [filter, setFilter] = useState("all");
   const [newOrder, setNewOrder] = useState({
     room: "",
     items: [],
-    payment: "COD",
+    payment: "Room Charge",
   });
   const [cart, setCart] = useState([]);
+  const [placing, setPlacing] = useState(false);
 
   const filtered =
     filter === "all"
@@ -45,37 +55,35 @@ export default function FoodOrdersPage() {
 
   const addToCart = (item) => {
     setCart((prev) => {
-      const ex = prev.find((c) => c.name === item.name);
+      const ex = prev.find((c) => c.foodItemId === item.id);
       if (ex)
         return prev.map((c) =>
-          c.name === item.name ? { ...c, qty: c.qty + 1 } : c,
+          c.foodItemId === item.id ? { ...c, qty: c.qty + 1 } : c,
         );
-      return [...prev, { ...item, qty: 1 }];
+      return [
+        ...prev,
+        { foodItemId: item.id, name: item.name, price: item.price, qty: 1 },
+      ];
     });
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     if (!newOrder.room || cart.length === 0) return;
-    const itemStr = cart.map((c) => `${c.qty}× ${c.name}`).join(", ");
-    const amount = cart.reduce((s, c) => s + c.price * c.qty, 0);
-    setFoodOrders((prev) => [
-      {
-        id: Date.now(),
-        room: newOrder.room,
-        items: itemStr,
-        payment: newOrder.payment,
-        status: "preparing",
-        time: new Date().toLocaleTimeString("en-IN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        amount,
-      },
-      ...prev,
-    ]);
-    setShowNew(false);
-    setCart([]);
-    setNewOrder({ room: "", items: [], payment: "COD" });
+
+    setPlacing(true);
+    try {
+      await addOrder({
+        roomId: newOrder.room,
+        items: cart.map((c) => ({ foodItemId: c.foodItemId, quantity: c.qty })),
+      });
+      setShowNew(false);
+      setCart([]);
+      setNewOrder({ room: "", items: [], payment: "Room Charge" });
+    } catch (err) {
+      console.error("Failed to place order:", err);
+    } finally {
+      setPlacing(false);
+    }
   };
 
   return (
@@ -103,6 +111,7 @@ export default function FoodOrdersPage() {
       {/* Quick Stats */}
       <div className="mb-6 grid grid-cols-4 gap-3">
         {[
+          ["New", "new", "bg-gray-50 text-gray-600", "🆕"],
           ["Preparing", "preparing", "bg-orange-50 text-orange-600", "👨‍🍳"],
           [
             "Out for Delivery",
@@ -111,14 +120,11 @@ export default function FoodOrdersPage() {
             "🛵",
           ],
           ["Delivered", "delivered", "bg-green-50 text-green-600", "✅"],
-          ["Total Orders", "all", "bg-purple-50 text-purple-600", "📋"],
         ].map(([label, key, cls, icon]) => (
           <div key={label} className={`rounded-2xl p-4 ${cls.split(" ")[0]}`}>
             <div className="mb-1 text-2xl">{icon}</div>
             <div className={`text-2xl font-bold ${cls.split(" ")[1]}`}>
-              {key === "all"
-                ? foodOrders.length
-                : foodOrders.filter((o) => o.status === key).length}
+              {foodOrders.filter((o) => o.status === key).length}
             </div>
             <div className="mt-0.5 text-xs text-gray-500">{label}</div>
           </div>
@@ -126,12 +132,12 @@ export default function FoodOrdersPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="mb-4 flex w-fit gap-1 rounded-xl bg-gray-100 p-1">
-        {["all", "preparing", "out-for-delivery", "delivered"].map((s) => (
+      <div className="mb-4 flex w-fit gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1">
+        {filterTabs.map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
           >
             {s.replace("-", " ")}
           </button>
@@ -170,7 +176,7 @@ export default function FoodOrdersPage() {
             {filtered.map((order) => (
               <tr key={order.id} className="transition-colors hover:bg-gray-50">
                 <td className="text-navy-900 px-4 py-3 font-bold">
-                  {order.room}
+                  {order.room ? `Room ${order.room}` : "-"}
                 </td>
                 <td className="max-w-xs truncate px-4 py-3 text-sm text-gray-700">
                   {order.items}
@@ -199,17 +205,28 @@ export default function FoodOrdersPage() {
                     }
                     className="focus:border-gold-400 rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-hidden"
                   >
-                    <option value="preparing">Preparing</option>
-                    <option value="out-for-delivery">Out for Delivery</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
+                    {Object.entries(statusConfig).map(([value, config]) => (
+                      <option key={value} value={value}>
+                        {config.label}
+                      </option>
+                    ))}
                   </select>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && (
+        {ordersLoading && (
+          <div className="py-12 text-center text-sm text-gray-400">
+            Loading orders…
+          </div>
+        )}
+        {!ordersLoading && ordersError && (
+          <div className="py-12 text-center text-sm text-red-500">
+            {ordersError}
+          </div>
+        )}
+        {!ordersLoading && !ordersError && filtered.length === 0 && (
           <div className="py-12 text-center text-gray-400">No orders found</div>
         )}
       </div>
@@ -245,7 +262,7 @@ export default function FoodOrdersPage() {
                       .filter((r) => r.status === "occupied")
                       .map((r) => (
                         <option key={r.id} value={r.id}>
-                          Room {r.id} – {r.guest}
+                          Room {r.roomNumber} – {r.guest || "Guest"}
                         </option>
                       ))}
                   </select>
@@ -254,18 +271,9 @@ export default function FoodOrdersPage() {
                   <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                     Payment
                   </label>
-                  <select
-                    value={newOrder.payment}
-                    onChange={(e) =>
-                      setNewOrder((p) => ({ ...p, payment: e.target.value }))
-                    }
-                    className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
-                  >
-                    <option>COD</option>
-                    <option>UPI</option>
-                    <option>Room Charge</option>
-                    <option>Card</option>
-                  </select>
+                  <div className="mt-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-700">
+                    Room Charge (COD)
+                  </div>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-3">
                   <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -276,7 +284,7 @@ export default function FoodOrdersPage() {
                   ) : (
                     cart.map((c) => (
                       <div
-                        key={c.name}
+                        key={c.foodItemId}
                         className="flex justify-between border-b border-gray-100 py-1 text-sm last:border-0"
                       >
                         <span>
@@ -299,9 +307,10 @@ export default function FoodOrdersPage() {
                 </div>
                 <button
                   onClick={placeOrder}
-                  className="bg-navy-900 hover:bg-navy-800 mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+                  disabled={placing}
+                  className="bg-navy-900 hover:bg-navy-800 mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
                 >
-                  Place Order
+                  {placing ? "Placing Order…" : "Place Order"}
                 </button>
               </div>
               <div>
@@ -309,30 +318,36 @@ export default function FoodOrdersPage() {
                   Menu
                 </div>
                 <div className="max-h-80 scrollbar-thin space-y-1 overflow-y-auto">
-                  {menu.map((item) => (
-                    <button
-                      key={item.name}
-                      onClick={() => addToCart(item)}
-                      className="flex w-full items-center justify-between rounded-xl border border-gray-100 px-3 py-2.5 text-left transition-colors hover:bg-gray-50"
-                    >
-                      <div>
-                        <div className="text-navy-900 text-sm font-medium">
-                          {item.name}
+                  {foodItems.length === 0 ? (
+                    <div className="text-xs text-gray-400">
+                      {foodItemsLoading ? "Loading menu…" : "No menu items"}
+                    </div>
+                  ) : (
+                    foodItems.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => addToCart(item)}
+                        className="flex w-full items-center justify-between rounded-xl border border-gray-100 px-3 py-2.5 text-left transition-colors hover:bg-gray-50"
+                      >
+                        <div>
+                          <div className="text-navy-900 text-sm font-medium">
+                            {item.name}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {item.category}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          {item.category}
+                        <div className="flex items-center gap-2">
+                          <span className="text-gold-400 text-sm font-semibold">
+                            ₹{item.price}
+                          </span>
+                          <span className="text-navy-900 text-lg leading-none">
+                            +
+                          </span>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gold-400 text-sm font-semibold">
-                          ₹{item.price}
-                        </span>
-                        <span className="text-navy-900 text-lg leading-none">
-                          +
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
