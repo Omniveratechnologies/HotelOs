@@ -19,6 +19,7 @@ export type AuthState = {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
+    if (typeof window === "undefined") return null;
     const initialUser = localStorage.getItem("auth_user");
     if (initialUser) {
       try {
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
   const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("auth_token"),
+    typeof window === "undefined" ? null : localStorage.getItem("auth_token"),
   );
   const [loading] = useState(false);
   const [error, setError] = useState<string | null>(null);
