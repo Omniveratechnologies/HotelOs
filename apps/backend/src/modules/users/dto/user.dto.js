@@ -5,6 +5,6 @@ export const userResponseDTO = (user) => ({
   email: user.email,
   role: user.role,
   hotelId: user.hotelId,
-  roomId: user.roomId,
+  roomId: user.roomId ?? null,
   isActive: user.isActive,
 });

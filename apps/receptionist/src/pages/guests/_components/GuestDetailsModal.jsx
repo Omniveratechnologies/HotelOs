@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useHotelOS } from "../../../app/useHotelOS.js";
 import {
-  updateGuest,
+  updateBooking,
   updateGuestCredentials,
 } from "../../../services/guest.service.js";
 
@@ -18,7 +18,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
     setError("");
     setBusy(true);
     try {
-      await updateGuest(guest.id, { status: "checked-out" });
+      await updateBooking(guest.id, { status: "checked-out" });
       await refreshData();
       onClose();
     } catch (err) {
@@ -32,7 +32,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
     setError("");
     setBusy(true);
     try {
-      const result = await updateGuestCredentials(guest.id, {
+      const result = await updateGuestCredentials(guest.guestId, {
         action: "regenerate",
       });
       setCredentials(result.data || null);
@@ -52,7 +52,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
     setError("");
     setBusy(true);
     try {
-      await updateGuestCredentials(guest.id, { password: newPassword });
+      await updateGuestCredentials(guest.guestId, { password: newPassword });
       setNewPassword("");
       setShowNewPassword(false);
     } catch (err) {

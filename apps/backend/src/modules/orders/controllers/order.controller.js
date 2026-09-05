@@ -98,7 +98,7 @@ export const createOrder = async (req, res) => {
       const order = await Order.create({
         guestId: req.user._id,
         hotelId: req.user.hotelId,
-        roomId: req.user.roomId,
+        roomId: req.currentBooking?.roomId ?? null,
         items: orderItems,
         totalAmount,
         paymentMethod: "COD",
@@ -135,7 +135,7 @@ export const createOrder = async (req, res) => {
     const order = await Order.create({
       guestId: req.user._id,
       hotelId: req.user.hotelId,
-      roomId: req.user.roomId,
+      roomId: req.currentBooking?.roomId ?? null,
       items: orderItems,
       totalAmount,
       paymentMethod: "ONLINE",

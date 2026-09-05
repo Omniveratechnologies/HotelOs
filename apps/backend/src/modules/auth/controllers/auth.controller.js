@@ -1,4 +1,5 @@
 import User from "#/modules/users/models/User.js";
+import Booking from "#/modules/bookings/models/Booking.js";
 import { generateToken } from "#/shared/utils/jwt.js";
 import { generateInviteToken } from "#/shared/utils/invitation.js";
 import {
@@ -45,6 +46,18 @@ export const login = async (req, res) => {
 
     const token = generateToken(user);
 
+    // Guests are tied to a stay via Booking; resolve their current room from it
+    let roomId = null;
+
+    if (user.role === "GUEST") {
+      const currentBooking = await Booking.findOne({
+        guestId: user._id,
+        status: { $in: ["reserved", "checked-in"] },
+      }).sort({ createdAt: -1 });
+
+      roomId = currentBooking?.roomId ?? null;
+    }
+
     return res.status(200).json({
       success: true,
       message: "Login successful",
@@ -56,7 +69,7 @@ export const login = async (req, res) => {
           username: user.username,
           role: user.role,
           hotelId: user.hotelId,
-          roomId: user.roomId,
+          roomId,
           mustChangePassword: user.mustChangePassword,
         },
       },

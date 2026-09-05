@@ -25,8 +25,9 @@ export const uploadToR2 = async (uploadUrl, file) => {
   }
 };
 
+// Stays (bookings) — list / detail / create / update / delete
 export const getGuests = async (status) => {
-  const result = await api.get("/api/v1/guests", {
+  const result = await api.get("/api/v1/bookings", {
     auth: true,
     ...(status && status !== "all" ? { query: { status } } : {}),
   });
@@ -34,8 +35,8 @@ export const getGuests = async (status) => {
   return result.data || [];
 };
 
-export const getGuest = async (guestId) => {
-  const result = await api.get(`/api/v1/guests/${guestId}`, { auth: true });
+export const getGuest = async (bookingId) => {
+  const result = await api.get(`/api/v1/bookings/${bookingId}`, { auth: true });
 
   return result.data;
 };
@@ -91,11 +92,21 @@ export const registerGuest = async (data) => {
     body.documents = documents;
   }
 
-  const result = await api.post("/api/v1/guests", body, { auth: true });
+  const result = await api.post("/api/v1/bookings", body, { auth: true });
 
   return result.data;
 };
 
+// Stay field updates (status change, room/dates) — booking id
+export const updateBooking = async (bookingId, updates) => {
+  const result = await api.patch(`/api/v1/bookings/${bookingId}`, updates, {
+    auth: true,
+  });
+
+  return result.data;
+};
+
+// Guest profile updates (name/email/phone/address/id/ID docs) — guest user id
 export const updateGuest = async (guestId, updates) => {
   const result = await api.patch(`/api/v1/guests/${guestId}`, updates, {
     auth: true,
@@ -116,6 +127,8 @@ export const deleteGuestDocument = async (guestId, docId) => {
   });
 };
 
-export const deleteGuest = async (guestId) => {
-  return api.delete(`/api/v1/guests/${guestId}`, { auth: true });
+// Delete a stay (booking) — cascades the stay's own guest account, documents
+// and frees the room
+export const deleteGuest = async (bookingId) => {
+  return api.delete(`/api/v1/bookings/${bookingId}`, { auth: true });
 };

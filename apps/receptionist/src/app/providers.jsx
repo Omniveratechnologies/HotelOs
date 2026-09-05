@@ -120,6 +120,7 @@ const initialFoodOrders = [
 // Map a backend guest DTO onto the shape the UI expects
 const normalizeGuest = (g) => ({
   id: g.id,
+  guestId: g.guestId,
   name: g.name,
   email: g.email,
   phone: g.phone,
@@ -300,7 +301,7 @@ export function HotelOSProvider({ children }) {
     return created;
   };
 
-  // Delete a guest (cascades to their login account and frees the room)
+  // Delete a stay (booking) — cascades to the stay's own guest account
   const removeGuest = async (guestId) => {
     await deleteGuestApi(guestId);
     setGuests((prev) => prev.filter((g) => g.id !== guestId));

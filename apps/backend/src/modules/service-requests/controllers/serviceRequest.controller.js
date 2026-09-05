@@ -13,7 +13,7 @@ export const createServiceRequest = async (req, res) => {
     const request = await ServiceRequest.create({
       guestId: req.user._id,
       hotelId: req.user.hotelId,
-      roomId: req.user.roomId,
+      roomId: req.currentBooking?.roomId ?? null,
       type,
       description,
       items: items || [],

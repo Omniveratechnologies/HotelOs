@@ -102,15 +102,17 @@ src/
 │   │   ├── invitation.js           Invite tokens & expiry
 │   │   └── password.js             Password helpers
 │   └── constants/
+│       ├── guest.js                Guest ID types & stay statuses
 │       └── roles.js                Role constants
 │
 ├── modules/                Feature modules (each is self-contained)
 │   ├── auth/               Authentication (login, logout, password reset)
 │   ├── users/              User management (create/list/delete staff)
+│   ├── invites/            Invitation flow (send/verify/accept)
 │   ├── hotels/             Hotel CRUD + status + self-service
 │   ├── rooms/              Room management (hotel-scoped)
-│   ├── guests/             Guest registration, check-in/out, documents
-│   ├── bookings/           Invitation flow (send/verify/accept)
+│   ├── guests/             Guest identity, profile, documents, self-service
+│   ├── bookings/           Guest stays (register, check-in/out, room claim)
 │   ├── dashboard/          Dashboard stats
 │   ├── food-items/         Food menu management
 │   ├── orders/             Guest orders + kitchen-facing endpoints
@@ -726,30 +728,28 @@ Room response DTO fields:
 }
 ```
 
-### Guests — `/api/v1/guests`
+### Stays (Bookings) — `/api/v1/bookings`
 
 Scoped to the authenticated user's hotel. Accessible by `SUB_ADMIN` and
 `RECEPTIONIST` (router-level authorization).
 
-| Method | Endpoint                            | Auth | Roles                   | Description                     |
-| ------ | ----------------------------------- | ---- | ----------------------- | ------------------------------- |
-| GET    | `/guests`                           | Yes  | SUB_ADMIN, RECEPTIONIST | List guests (`?status=`)        |
-| GET    | `/guests/me`                        | Yes  | GUEST                   | Guest self-service profile      |
-| PATCH  | `/guests/me/dnd`                    | Yes  | GUEST                   | Toggle Do Not Disturb           |
-| GET    | `/guests/:id`                       | Yes  | SUB_ADMIN, RECEPTIONIST | Get a guest                     |
-| POST   | `/guests`                           | Yes  | SUB_ADMIN, RECEPTIONIST | Register a guest (multipart)    |
-| PATCH  | `/guests/:id`                       | Yes  | SUB_ADMIN, RECEPTIONIST | Update guest / check-out        |
-| PATCH  | `/guests/:id/credentials`           | Yes  | SUB_ADMIN, RECEPTIONIST | Update / regenerate credentials |
-| POST   | `/guests/documents/upload-urls`     | Yes  | SUB_ADMIN, RECEPTIONIST | Get presigned upload URLs       |
-| DELETE | `/guests/:guestId/documents/:docId` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete one document             |
-| DELETE | `/guests/:id`                       | Yes  | SUB_ADMIN, RECEPTIONIST | Delete a guest                  |
+A **booking** represents one guest stay. Registering a stay creates a fresh
+`GUEST` login account (`User`) plus a `Booking`:
 
-**Register guest** (`POST /guests`) — sent as `application/json`:
+| Method | Endpoint        | Auth | Roles                   | Description                     |
+| ------ | --------------- | ---- | ----------------------- | ------------------------------- |
+| GET    | `/bookings`     | Yes  | SUB_ADMIN, RECEPTIONIST | List stays (`?status=`)         |
+| POST   | `/bookings`     | Yes  | SUB_ADMIN, RECEPTIONIST | Register a stay (creates login) |
+| GET    | `/bookings/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Get one stay                    |
+| PATCH  | `/bookings/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Update stay / check-out         |
+| DELETE | `/bookings/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete a stay                   |
+
+**Register stay** (`POST /bookings`) — sent as `application/json`:
 
 | Field       | Type   | Notes                                                      |
 | ----------- | ------ | ---------------------------------------------------------- |
 | `name`      | string | Required                                                   |
-| `email`     | string | Required, must be unique                                   |
+| `email`     | string | Required; may be reused by later stays                     |
 | `phone`     | string | Optional                                                   |
 | `address`   | string | Optional                                                   |
 | `idType`    | string | Default `Aadhaar`                                          |
@@ -758,22 +758,27 @@ Scoped to the authenticated user's hotel. Accessible by `SUB_ADMIN` and
 | `checkIn`   | string | Required when `status` is `checked-in`                     |
 | `checkOut`  | string | Required, must be after `checkIn`                          |
 | `status`    | string | `checked-in` (default) or `reserved`                       |
-| `documents` | array  | JSON array of `{ key, filename, docType, mimeType, size }` |
+| `documents` | array  | JSON array of `{ key, filename, docType, size, mimeType }` |
 
 Documents are uploaded directly to Cloudflare R2 via presigned URLs. First
 call `POST /guests/documents/upload-urls` to get upload URLs, upload files
-directly to R2, then reference the keys in the registration request.
+directly to R2, then reference the returned keys in the registration request.
 
 On success the backend:
 
-1. Generates a guest `username` (e.g. `GRAND-GST-001`) and temporary
-   password,
-2. creates a `GUEST` login account (`User`),
-3. creates the `Guest` profile with documents,
+1. Generates a unique stay `username` (e.g. `GRAND-GST-001`; a new `GST`
+   sequence number is appended on collision) and a temporary password,
+2. creates a **fresh `GUEST` login account** (`User`) — one per stay,
+3. creates the `Booking` for the stay, with the guest profile and documents
+   stored on the linked `User`,
 4. claims the room (sets it to `occupied` or `reserved` with display info),
 5. emails the guest credentials (non-blocking on failure).
 
-Response includes the guest DTO plus the generated credentials:
+> **Why is the account per stay?** A return customer who books again gets a
+> new `GUEST` login with its own username, so the same email address may
+> appear across several stays. There is no global "one guest per email" rule.
+
+Response includes the booking DTO plus the generated credentials:
 
 ```json
 {
@@ -782,7 +787,7 @@ Response includes the guest DTO plus the generated credentials:
   "data": {
     "id": "...",
     "name": "Ada Lovelace",
-    "...": "guest DTO fields...",
+    "...": "booking DTO fields...",
     "credentials": {
       "username": "grand-gst-001",
       "temporaryPassword": "...",
@@ -792,8 +797,43 @@ Response includes the guest DTO plus the generated credentials:
 }
 ```
 
-**Check-out** — `PATCH /guests/:id` with `{ "status": "checked-out" }`
-frees the room (sets it back to `cleaning`).
+**Check-out** — `PATCH /bookings/:id` with `{ "status": "checked-out" }`
+frees the room (sets it back to `cleaning`); setting the status back to
+`checked-in` / `reserved` reclaims it. The same endpoint also accepts a new
+`roomId` (reassign to a free room) and updated `checkIn` / `checkOut`.
+
+**Delete a stay** (`DELETE /bookings/:id`) — removes the booking **and** that
+stay's own `GUEST` account, its invitations and stored R2 documents, then
+frees the room if no other active booking holds it.
+
+**List stays** — supports `?status=reserved|checked-in|checked-out`.
+Populates room details (`roomNumber`, `type`, `rate`, `floor`).
+
+Booking response DTO (see `modules/bookings/dto/booking.dto.js`): `id`,
+`guestId`, `name`, `email`, `phone`, `address`, `idType`, `idNumber`,
+`roomId`, `room`, `hotelId`, `checkIn`, `checkOut`, `status`, `nights`,
+`dndEnabled`, `documents`, `createdAt`, `updatedAt`.
+
+#### Guest profiles & documents — `/api/v1/guests`
+
+There is no separate `Guest` model — a guest is the `GUEST` `User` created
+by its stay. These endpoints manage that profile and its credentials
+(hotel-scoped, `SUB_ADMIN` / `RECEPTIONIST`, except the self-service
+routes):
+
+| Method | Endpoint                            | Auth | Roles                   | Description                     |
+| ------ | ----------------------------------- | ---- | ----------------------- | ------------------------------- |
+| GET    | `/guests/me`                        | Yes  | GUEST                   | Guest self-service profile      |
+| PATCH  | `/guests/me/dnd`                    | Yes  | GUEST                   | Toggle Do Not Disturb           |
+| PATCH  | `/guests/:id`                       | Yes  | SUB_ADMIN, RECEPTIONIST | Update guest profile            |
+| PATCH  | `/guests/:id/credentials`           | Yes  | SUB_ADMIN, RECEPTIONIST | Update / regenerate credentials |
+| POST   | `/guests/documents/upload-urls`     | Yes  | SUB_ADMIN, RECEPTIONIST | Get presigned upload URLs       |
+| DELETE | `/guests/:guestId/documents/:docId` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete one document             |
+
+**Update guest profile** (`PATCH /guests/:id`) — accepts `name`, `phone`,
+`address`, `idType`, `idNumber`, `email`, and optional `documents`
+(appended). The email clash check only blocks non-`GUEST` accounts, so
+different stays may share an email.
 
 **Update credentials** (`PATCH /guests/:id/credentials`) — regenerate and
 email new credentials, or set a specific password:
@@ -804,14 +844,7 @@ email new credentials, or set a specific password:
 { "password": "newPassword123", "reveal": true }
 ```
 
-**List guests** — supports `?status=reserved|checked-in|checked-out`.
-Populates room details (`roomNumber`, `type`, `rate`, `floor`).
-
-Guest response DTO includes `id`, `name`, `email`, `phone`, `address`,
-`idType`, `idNumber`, `roomId`, `room`, `hotelId`, `userId`, `checkIn`,
-`checkOut`, `status`, `nights`, `documents`, `createdAt`.
-
-#### Guest documents
+**Guest documents**:
 
 - Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`,
   `application/pdf` (`400` otherwise).
@@ -975,8 +1008,12 @@ const rooms = await api.get("/api/v1/rooms", { auth: true });
 // JSON body
 const user = await api.post("/api/v1/users", { name, role }, { auth: true });
 
-// multipart uploads (FormData)
-const result = await api.post("/api/v1/guests", formData, { auth: true });
+// register a guest stay (JSON; documents via R2 presigned URLs)
+const stay = await api.post(
+  "/api/v1/bookings",
+  { name, email, roomId, checkOut, documents },
+  { auth: true },
+);
 ```
 
 Golden rules:
@@ -1061,13 +1098,13 @@ app.use("/api/v1/users", userRoutes);
 
 ## Frontend ownership by dashboard
 
-| Dashboard   | Main backend areas                                                                         |
-| ----------- | ------------------------------------------------------------------------------------------ |
-| Super Admin | Authentication, Hotels, Sub Admin management, global administration                        |
-| Sub Admin   | Authentication, own hotel info, Rooms, staff management (Kitchen / Reception), hotel users |
-| Reception   | Authentication, Guests, check-in / check-out, room assignment, guest info & credentials    |
-| Kitchen     | Authentication, food items, orders, order status, kitchen queue                            |
-| Guest       | Authentication, guest profile, room info, food menu, orders, service requests              |
+| Dashboard   | Main backend areas                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| Super Admin | Authentication, Hotels, Sub Admin management, global administration                               |
+| Sub Admin   | Authentication, own hotel info, Rooms, staff management (Kitchen / Reception), hotel users        |
+| Reception   | Authentication, Stays (bookings), check-in / check-out, room assignment, guest info & credentials |
+| Kitchen     | Authentication, food items, orders, order status, kitchen queue                                   |
+| Guest       | Authentication, guest profile, room info, food menu, orders, service requests                     |
 
 Guests are created as part of the Reception/check-in workflow — never mix
 guest provisioning with staff user creation.
@@ -1107,7 +1144,7 @@ curl -X POST http://localhost:5001/api/v1/users \
 - **Never hard-code or commit secrets** (`JWT_SECRET`, `MONGODB_URI`, SMTP
   passwords, real tokens).
 - **Keep staff and guest provisioning separate** — staff via invites /
-  `/users`; guests via the reception `/guests` flow.
+  `/users`; guests via the reception `/bookings` flow.
 
 ---
 
@@ -1293,6 +1330,7 @@ HotelOS
 │   └── Get Users
 ├── Invites
 ├── Rooms
+├── Bookings
 ├── Guests
 ├── Dashboard
 ├── Food Items
@@ -1400,9 +1438,10 @@ Implemented and documented:
   Kitchen
 - Forgot username / forgot password / reset password (email-based)
 - Rooms CRUD (hotel-scoped)
-- Guest registration, check-in/out, documents (R2 presigned URLs), and
-  credentials
-- Guest self-service profile and Do Not Disturb
+- Bookings (guest stays): registration, check-in/out, room claim, and
+  per-stay guest login accounts
+- Guest profiles, credentials and documents (R2 presigned URLs), plus
+  self-service profile and Do Not Disturb
 - Dashboard stats (rooms, guests, occupancy, staff, activity)
 - Food items management
 - Guest orders (COD + Razorpay online payments)
