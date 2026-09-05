@@ -165,7 +165,7 @@ export default function AddGuestModal({
   const formDisabled = saving || noRooms;
 
   const inputCls =
-    "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-gold-400";
+    "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-primary-400";
   const labelCls =
     "text-xs font-semibold text-gray-500 uppercase tracking-wide";
 
@@ -187,7 +187,7 @@ export default function AddGuestModal({
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-xl text-green-600">
               ✓
             </div>
-            <h3 className="text-navy-900 text-lg font-bold">
+            <h3 className="text-brand-900 text-lg font-bold">
               Guest Registered
             </h3>
             <p className="mt-1 text-sm text-gray-500">
@@ -201,7 +201,7 @@ export default function AddGuestModal({
             <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
               <div>
                 <div className={labelCls}>Username</div>
-                <div className="text-navy-900 font-bold">
+                <div className="text-brand-900 font-bold">
                   {credentials.username}
                 </div>
               </div>
@@ -218,7 +218,7 @@ export default function AddGuestModal({
             <div className="flex items-center justify-between rounded-xl bg-amber-50 px-4 py-3">
               <div>
                 <div className={labelCls}>Temporary Password</div>
-                <div className="text-navy-900 font-mono font-bold">
+                <div className="text-brand-900 font-mono font-bold">
                   {credentials.temporaryPassword}
                 </div>
               </div>
@@ -242,7 +242,7 @@ export default function AddGuestModal({
 
           <button
             onClick={onClose}
-            className="bg-navy-900 hover:bg-navy-800 mt-5 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+            className="bg-brand-900 hover:bg-brand-800 mt-5 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
           >
             Done
           </button>
@@ -261,9 +261,9 @@ export default function AddGuestModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-navy-900 flex shrink-0 items-center justify-between rounded-t-2xl p-5">
+        <div className="bg-brand-900 flex shrink-0 items-center justify-between rounded-t-2xl p-5">
           <div>
-            <div className="text-gold-400 text-xs font-semibold tracking-widest uppercase">
+            <div className="text-primary-400 text-xs font-semibold tracking-widest uppercase">
               Register Guest
             </div>
             <div className="mt-0.5 text-lg font-bold text-white">
@@ -442,7 +442,7 @@ export default function AddGuestModal({
               className={`mt-1 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors ${
                 docs.length >= MAX_FILES || formDisabled
                   ? "border-gray-200 bg-gray-50 opacity-60"
-                  : "hover:border-gold-400 hover:bg-gold-50/40 border-gray-300 bg-gray-50/50"
+                  : "hover:border-primary-400 hover:bg-primary-50/40 border-gray-300 bg-gray-50/50"
               }`}
             >
               <svg
@@ -547,7 +547,7 @@ export default function AddGuestModal({
           <button
             onClick={handleSubmit}
             disabled={formDisabled}
-            className="bg-navy-900 hover:bg-navy-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-brand-900 hover:bg-brand-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? "Registering..." : "Register Guest"}
           </button>

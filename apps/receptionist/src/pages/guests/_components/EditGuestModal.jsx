@@ -48,7 +48,7 @@ export default function EditGuestModal({ guest, onClose, onSaved }) {
   };
 
   const inputCls =
-    "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-gold-400";
+    "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-primary-400";
   const labelCls =
     "text-xs font-semibold text-gray-500 uppercase tracking-wide";
 
@@ -62,9 +62,9 @@ export default function EditGuestModal({ guest, onClose, onSaved }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-navy-900 flex items-center justify-between rounded-t-2xl p-5">
+        <div className="bg-brand-900 flex items-center justify-between rounded-t-2xl p-5">
           <div>
-            <div className="text-gold-400 text-xs font-semibold tracking-widest uppercase">
+            <div className="text-primary-400 text-xs font-semibold tracking-widest uppercase">
               Edit Guest
             </div>
             <div className="mt-0.5 text-lg font-bold text-white">
@@ -173,7 +173,7 @@ export default function EditGuestModal({ guest, onClose, onSaved }) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="bg-navy-900 hover:bg-navy-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+              className="bg-brand-900 hover:bg-brand-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>

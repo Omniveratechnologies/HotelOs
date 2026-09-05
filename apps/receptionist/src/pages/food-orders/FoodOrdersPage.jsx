@@ -3,8 +3,8 @@ import { useHotelOS } from "../../app/useHotelOS.js";
 
 const statusConfig = {
   new: { color: "bg-gray-100 text-gray-700", label: "New" },
-  preparing: { color: "bg-orange-100 text-orange-700", label: "Preparing" },
-  ready: { color: "bg-purple-100 text-purple-700", label: "Ready" },
+  preparing: { color: "bg-amber-100 text-amber-700", label: "Preparing" },
+  ready: { color: "bg-primary-100 text-primary-700", label: "Ready" },
   "out-for-delivery": {
     color: "bg-blue-100 text-blue-700",
     label: "Out for Delivery",
@@ -90,7 +90,7 @@ export default function FoodOrdersPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-navy-900 text-2xl font-bold">
+          <h1 className="font-display text-brand-900 text-2xl font-bold">
             Food Orders
           </h1>
           <p className="text-sm text-gray-500">
@@ -102,7 +102,7 @@ export default function FoodOrdersPage() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="bg-navy-900 hover:bg-navy-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
+          className="bg-brand-900 hover:bg-brand-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           + New Order
         </button>
@@ -112,7 +112,7 @@ export default function FoodOrdersPage() {
       <div className="mb-6 grid grid-cols-4 gap-3">
         {[
           ["New", "new", "bg-gray-50 text-gray-600", "🆕"],
-          ["Preparing", "preparing", "bg-orange-50 text-orange-600", "👨‍🍳"],
+          ["Preparing", "preparing", "bg-amber-50 text-amber-600", "👨‍🍳"],
           [
             "Out for Delivery",
             "out-for-delivery",
@@ -137,7 +137,7 @@ export default function FoodOrdersPage() {
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap capitalize transition-all ${filter === s ? "text-brand-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
           >
             {s.replace("-", " ")}
           </button>
@@ -175,13 +175,13 @@ export default function FoodOrdersPage() {
           <tbody className="divide-y divide-gray-50">
             {filtered.map((order) => (
               <tr key={order.id} className="transition-colors hover:bg-gray-50">
-                <td className="text-navy-900 px-4 py-3 font-bold">
+                <td className="text-brand-900 px-4 py-3 font-bold">
                   {order.room ? `Room ${order.room}` : "-"}
                 </td>
                 <td className="max-w-xs truncate px-4 py-3 text-sm text-gray-700">
                   {order.items}
                 </td>
-                <td className="text-navy-900 px-4 py-3 font-semibold">
+                <td className="text-brand-900 px-4 py-3 font-semibold">
                   ₹{order.amount}
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600">
@@ -203,7 +203,7 @@ export default function FoodOrdersPage() {
                     onChange={(e) =>
                       updateOrderStatus(order.id, e.target.value)
                     }
-                    className="focus:border-gold-400 rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-hidden"
+                    className="focus:border-primary-400 rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-hidden"
                   >
                     {Object.entries(statusConfig).map(([value, config]) => (
                       <option key={value} value={value}>
@@ -241,7 +241,7 @@ export default function FoodOrdersPage() {
             className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-navy-900 rounded-t-2xl p-5">
+            <div className="bg-brand-900 rounded-t-2xl p-5">
               <h3 className="text-lg font-bold text-white">New Food Order</h3>
             </div>
             <div className="grid grid-cols-2 gap-5 p-5">
@@ -255,7 +255,7 @@ export default function FoodOrdersPage() {
                     onChange={(e) =>
                       setNewOrder((p) => ({ ...p, room: e.target.value }))
                     }
-                    className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
+                    className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                   >
                     <option value="">Select Room</option>
                     {rooms
@@ -299,7 +299,7 @@ export default function FoodOrdersPage() {
                   {cart.length > 0 && (
                     <div className="mt-1 flex justify-between pt-2 text-sm font-bold">
                       <span>Total</span>
-                      <span className="text-navy-900">
+                      <span className="text-brand-900">
                         ₹{cart.reduce((s, c) => s + c.price * c.qty, 0)}
                       </span>
                     </div>
@@ -308,7 +308,7 @@ export default function FoodOrdersPage() {
                 <button
                   onClick={placeOrder}
                   disabled={placing}
-                  className="bg-navy-900 hover:bg-navy-800 mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                  className="bg-brand-900 hover:bg-brand-800 mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
                 >
                   {placing ? "Placing Order…" : "Place Order"}
                 </button>
@@ -330,7 +330,7 @@ export default function FoodOrdersPage() {
                         className="flex w-full items-center justify-between rounded-xl border border-gray-100 px-3 py-2.5 text-left transition-colors hover:bg-gray-50"
                       >
                         <div>
-                          <div className="text-navy-900 text-sm font-medium">
+                          <div className="text-brand-900 text-sm font-medium">
                             {item.name}
                           </div>
                           <div className="text-xs text-gray-400">
@@ -338,10 +338,10 @@ export default function FoodOrdersPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-gold-400 text-sm font-semibold">
+                          <span className="text-primary-400 text-sm font-semibold">
                             ₹{item.price}
                           </span>
-                          <span className="text-navy-900 text-lg leading-none">
+                          <span className="text-brand-900 text-lg leading-none">
                             +
                           </span>
                         </div>

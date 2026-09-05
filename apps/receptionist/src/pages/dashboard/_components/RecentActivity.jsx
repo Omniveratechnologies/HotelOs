@@ -14,9 +14,9 @@ function formatRelativeTime(date) {
 
 export default function RecentActivity({ recentActivity, statsError }) {
   return (
-    <div className="bg-navy-900 rounded-2xl p-5">
+    <div className="bg-brand-900 rounded-2xl p-5">
       <h2 className="mb-3 flex items-center gap-2 font-bold text-white">
-        <span className="bg-gold-400 inline-block h-5 w-1 rounded-full" />
+        <span className="bg-primary-400 inline-block h-5 w-1 rounded-full" />
         Recent Activity
       </h2>
       <div className="space-y-2">
@@ -27,7 +27,7 @@ export default function RecentActivity({ recentActivity, statsError }) {
         ) : (
           recentActivity.map((a) => (
             <div key={a._id || a.createdAt} className="flex items-start gap-2">
-              <div className="bg-gold-400 mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
+              <div className="bg-primary-400 mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-xs text-white/80">{a.text}</div>
                 <div className="text-[10px] text-white/30">

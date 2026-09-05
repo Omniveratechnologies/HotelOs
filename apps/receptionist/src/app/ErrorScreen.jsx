@@ -6,10 +6,10 @@ export default function ErrorScreen() {
   const message = error?.message;
 
   return (
-    <div className="bg-cream-50 flex min-h-screen w-full items-center justify-center p-6">
+    <div className="bg-background-50 flex min-h-screen w-full items-center justify-center p-6">
       <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-gray-100 bg-white p-10 text-center shadow-xs">
         {/* Top Accent */}
-        <div className="bg-navy-900 absolute inset-x-0 top-0 h-1" />
+        <div className="bg-brand-900 absolute inset-x-0 top-0 h-1" />
 
         {/* Decorative Blur */}
         <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-red-50 opacity-60 blur-3xl" />
@@ -20,7 +20,7 @@ export default function ErrorScreen() {
         </div>
 
         {/* Title */}
-        <h1 className="font-display text-navy-900 mb-3 text-3xl font-bold">
+        <h1 className="font-display text-brand-900 mb-3 text-3xl font-bold">
           We couldn't open this page
         </h1>
 
@@ -37,7 +37,7 @@ export default function ErrorScreen() {
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <button
             onClick={() => window.location.reload()}
-            className="bg-navy-900 hover:bg-navy-800 rounded-xl px-6 py-3 font-semibold text-white transition-colors"
+            className="bg-brand-900 hover:bg-brand-800 rounded-xl px-6 py-3 font-semibold text-white transition-colors"
           >
             Reload Page
           </button>
@@ -46,7 +46,7 @@ export default function ErrorScreen() {
             onClick={() => {
               window.location.href = "/";
             }}
-            className="text-navy-900 rounded-xl border border-gray-200 px-6 py-3 font-semibold transition-colors hover:bg-gray-50"
+            className="text-brand-900 rounded-xl border border-gray-200 px-6 py-3 font-semibold transition-colors hover:bg-gray-50"
           >
             Go Home
           </button>
@@ -54,7 +54,7 @@ export default function ErrorScreen() {
 
         {/* Help Section */}
         <div className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 p-5 text-left">
-          <p className="text-navy-900 mb-3 text-sm font-semibold">
+          <p className="text-brand-900 mb-3 text-sm font-semibold">
             Still having trouble?
           </p>
 

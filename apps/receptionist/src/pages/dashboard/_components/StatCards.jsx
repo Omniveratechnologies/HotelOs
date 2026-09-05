@@ -46,15 +46,15 @@ const statCards = (rooms, serviceRequests, foodOrders) => {
       label: "Active Food Orders",
       value: activeOrders,
       icon: "🍽️",
-      color: "text-purple-600",
-      bg: "bg-purple-50",
+      color: "text-blue-600",
+      bg: "bg-blue-50",
     },
     {
       label: "Today's Revenue",
       value: `₹${todayRevenue.toLocaleString()}`,
       icon: "💰",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      color: "text-primary-500",
+      bg: "bg-primary-50",
     },
   ];
 };

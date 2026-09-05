@@ -311,6 +311,9 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/styles':
+        specifier: workspace:*
+        version: link:../../packages/styles
       lucide-react:
         specifier: ^1.37.0
         version: 1.37.0(react@19.2.8)

@@ -11,12 +11,12 @@ const statusBadge = {
 };
 
 const avatarColors = [
-  "bg-purple-500",
+  "bg-brand-500",
   "bg-blue-500",
   "bg-green-500",
   "bg-red-500",
-  "bg-orange-500",
-  "bg-pink-500",
+  "bg-primary-500",
+  "bg-amber-500",
 ];
 
 export default function GuestsPage() {
@@ -68,7 +68,7 @@ export default function GuestsPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-navy-900 text-2xl font-bold">
+          <h1 className="font-display text-brand-900 text-2xl font-bold">
             Guest Directory
           </h1>
           <p className="text-sm text-gray-500">
@@ -78,7 +78,7 @@ export default function GuestsPage() {
         </div>
         <button
           onClick={() => setShowAdd(true)}
-          className="bg-navy-900 hover:bg-navy-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
+          className="bg-brand-900 hover:bg-brand-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           + Add Guest
         </button>
@@ -89,14 +89,14 @@ export default function GuestsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search guests..."
-          className="focus:border-gold-400 w-64 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-hidden"
+          className="focus:border-primary-400 w-64 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-hidden"
         />
         <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
           {["all", "checked-in", "reserved", "checked-out"].map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-brand-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
             >
               {s.replace("-", " ")}
             </button>
@@ -167,7 +167,7 @@ export default function GuestsPage() {
                           {g.name ? g.name[0].toUpperCase() : "?"}
                         </div>
                         <div>
-                          <div className="text-navy-900 text-sm font-semibold">
+                          <div className="text-brand-900 text-sm font-semibold">
                             {g.name}
                           </div>
                           <div className="text-xs text-gray-400">{g.phone}</div>
@@ -175,7 +175,7 @@ export default function GuestsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-navy-900 font-bold">{g.room}</span>
+                      <span className="text-brand-900 font-bold">{g.room}</span>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {g.checkIn || "—"}
@@ -183,7 +183,7 @@ export default function GuestsPage() {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {g.checkOut || "—"}
                     </td>
-                    <td className="text-navy-900 px-4 py-3 text-sm font-medium">
+                    <td className="text-brand-900 px-4 py-3 text-sm font-medium">
                       {g.nights ? `${g.nights}n` : "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -207,13 +207,13 @@ export default function GuestsPage() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => setViewing(g)}
-                          className="text-navy-900 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:bg-gray-50"
+                          className="text-brand-900 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:bg-gray-50"
                         >
                           View
                         </button>
                         <button
                           onClick={() => setEditing(g)}
-                          className="text-gold-400 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:bg-amber-50"
+                          className="text-primary-400 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:bg-amber-50"
                         >
                           Edit
                         </button>
@@ -277,7 +277,7 @@ export default function GuestsPage() {
             className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-navy-900 mb-2 text-lg font-bold">
+            <h3 className="text-brand-900 mb-2 text-lg font-bold">
               Delete Guest Account?
             </h3>
             <p className="mb-1 text-sm text-gray-500">

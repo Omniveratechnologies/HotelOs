@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getMyHotel } from "../../../services/settings.service.js";
 
 const inputClass =
-  "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-gold-400 focus:ring-1 focus:ring-gold-400";
+  "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-primary-400 focus:ring-1 focus:ring-primary-400";
 const disabledInputClass = inputClass + " bg-gray-50 text-gray-400";
 
 export default function HotelInformationSection() {

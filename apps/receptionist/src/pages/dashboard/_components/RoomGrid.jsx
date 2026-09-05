@@ -20,8 +20,8 @@ export default function RoomGrid({ rooms, onSelectRoom }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs xl:col-span-2">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-navy-900 flex items-center gap-2 font-bold">
-          <span className="bg-gold-400 inline-block h-5 w-1 rounded-full" />
+        <h2 className="text-brand-900 flex items-center gap-2 font-bold">
+          <span className="bg-primary-400 inline-block h-5 w-1 rounded-full" />
           Room Grid — Tap a room to manage
         </h2>
       </div>

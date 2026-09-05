@@ -41,7 +41,7 @@ export default function NotificationsSection() {
           className="flex items-center justify-between border-b border-gray-50 py-2 last:border-0"
         >
           <div>
-            <div className="text-navy-900 text-sm font-medium capitalize">
+            <div className="text-brand-900 text-sm font-medium capitalize">
               {k.replace(/([A-Z])/g, " $1").trim()}
             </div>
             <div className="text-xs text-gray-400">
@@ -50,7 +50,7 @@ export default function NotificationsSection() {
           </div>
           <button
             onClick={() => setNotifs((p) => ({ ...p, [k]: !v }))}
-            className={`relative h-6 w-12 rounded-full transition-all duration-200 ${v ? "bg-navy-900" : "bg-gray-200"}`}
+            className={`relative h-6 w-12 rounded-full transition-all duration-200 ${v ? "bg-brand-900" : "bg-gray-200"}`}
           >
             <div
               className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200 ${v ? "left-6" : "left-0.5"}`}

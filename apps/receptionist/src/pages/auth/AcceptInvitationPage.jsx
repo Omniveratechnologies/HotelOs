@@ -36,20 +36,20 @@ export default function AcceptInvitationPage() {
 
   if (loading) {
     return (
-      <div className="bg-cream-50 flex min-h-screen items-center justify-center">
-        <p className="text-navy-900">Verifying your invitation...</p>
+      <div className="bg-background-50 flex min-h-screen items-center justify-center">
+        <p className="text-brand-900">Verifying your invitation...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-cream-50 flex min-h-screen items-center justify-center px-6">
-        <div className="border-navy-900/10 bg-cream-100 w-full max-w-md rounded-2xl border px-8 py-10 text-center">
-          <h1 className="font-display text-navy-900 text-2xl font-semibold">
+      <div className="bg-background-50 flex min-h-screen items-center justify-center px-6">
+        <div className="border-brand-900/10 bg-background-100 w-full max-w-md rounded-2xl border px-8 py-10 text-center">
+          <h1 className="font-display text-brand-900 text-2xl font-semibold">
             Invitation Invalid
           </h1>
-          <p className="text-navy-900/60 mt-3">{error}</p>
+          <p className="text-brand-900/60 mt-3">{error}</p>
         </div>
       </div>
     );
