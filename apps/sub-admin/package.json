@@ -12,9 +12,10 @@
     "@hotelos/api": "workspace:*",
     "@hotelos/styles": "workspace:*",
     "@hotelos/ui": "workspace:*",
+    "@hotelos/utils": "workspace:*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.2"
+    "react-router": "^8.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

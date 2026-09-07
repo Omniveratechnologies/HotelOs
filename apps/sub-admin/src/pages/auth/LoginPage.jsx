@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router";
 
 import RecoveryModal from "./_components/RecoveryModal.jsx";
 import { login } from "../../services/auth.service.js";

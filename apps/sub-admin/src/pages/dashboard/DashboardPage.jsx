@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 
 import StatCard from "../../components/StatCard.jsx";
 import AddMembers from "../../components/AddMembers.jsx";
@@ -130,8 +130,6 @@ function formatRelativeTime(date) {
 }
 
 export default function Dashboard() {
-  const { openSidebar } = useOutletContext() ?? {};
-
   const [user] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("auth_user")) || {};
@@ -188,20 +186,7 @@ export default function Dashboard() {
 
         <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-gray-100 bg-white/95 px-6 backdrop-blur-sm lg:px-10">
           <div className="flex min-w-0 items-center gap-4">
-            <button
-              className="text-brand-900 shrink-0 lg:hidden"
-              onClick={openSidebar}
-              aria-label="Open menu"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M4 7h16M4 12h16M4 17h16"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
+            <SidebarToggle />
 
             <div className="min-w-0">
               <h1 className="font-display text-brand-900 truncate text-2xl font-semibold">

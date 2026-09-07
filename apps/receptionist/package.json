@@ -12,6 +12,7 @@
     "@hotelos/api": "workspace:*",
     "@hotelos/styles": "workspace:*",
     "@hotelos/ui": "workspace:*",
+    "@hotelos/utils": "workspace:*",
     "lucide-react": "^1.37.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

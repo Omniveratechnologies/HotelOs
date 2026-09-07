@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 import { useHotelOS } from "../../app/useHotelOS.js";
 import AddGuestModal from "./_components/AddGuestModal.jsx";
 import GuestDetailsModal from "./_components/GuestDetailsModal.jsx";
@@ -67,14 +68,18 @@ export default function GuestsPage() {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-brand-900 text-2xl font-bold">
-            Guest Directory
-          </h1>
-          <p className="text-sm text-gray-500">
-            {guests.filter((g) => g.status === "checked-in").length} checked in
-            · {guests.filter((g) => g.status === "reserved").length} upcoming
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <SidebarToggle />
+          <div>
+            <h1 className="font-display text-brand-900 text-2xl font-bold">
+              Guest Directory
+            </h1>
+            <p className="text-sm text-gray-500">
+              {guests.filter((g) => g.status === "checked-in").length} checked
+              in · {guests.filter((g) => g.status === "reserved").length}{" "}
+              upcoming
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowAdd(true)}

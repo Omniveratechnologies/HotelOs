@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 import RoomModal from "../../components/RoomModal.jsx";
 import AddRoomModal from "./AddRoomModal.jsx";
 import { useHotelOS } from "../../app/useHotelOS.js";
@@ -34,14 +35,17 @@ export default function RoomsPage() {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-brand-900 text-2xl font-bold">
-            Room Management
-          </h1>
-          <p className="text-sm text-gray-500">
-            {rooms.length} total rooms ·{" "}
-            {rooms.filter((r) => r.status === "available").length} available
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <SidebarToggle />
+          <div>
+            <h1 className="font-display text-brand-900 text-2xl font-bold">
+              Room Management
+            </h1>
+            <p className="text-sm text-gray-500">
+              {rooms.length} total rooms ·{" "}
+              {rooms.filter((r) => r.status === "available").length} available
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowAdd(true)}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router";
 
 import CreateAccount from "./_components/CreateAccount.jsx";
 import { verifyInvitation } from "../../services/invitation.service.js";

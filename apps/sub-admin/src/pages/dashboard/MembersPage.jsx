@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 
 import { fetchMembers, deleteMember } from "../../services/member.service.js";
 
@@ -113,14 +114,17 @@ export default function MembersPage() {
         ================================================= */}
 
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="font-display text-brand-900 text-3xl font-semibold">
-              Members
-            </h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <SidebarToggle />
+            <div>
+              <h1 className="font-display text-brand-900 text-3xl font-semibold">
+                Members
+              </h1>
 
-            <p className="mt-1 text-sm text-gray-500">
-              Manage the staff members of your hotel.
-            </p>
+              <p className="mt-1 text-sm text-gray-500">
+                Manage the staff members of your hotel.
+              </p>
+            </div>
           </div>
         </div>
 

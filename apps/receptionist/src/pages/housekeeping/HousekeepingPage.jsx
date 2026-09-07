@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 import { useHotelOS } from "../../app/useHotelOS.js";
 
 export default function HousekeepingPage() {
@@ -81,16 +82,19 @@ export default function HousekeepingPage() {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-brand-900 text-2xl font-bold">
-            Housekeeping & Service Requests
-          </h1>
-          <p className="text-sm text-gray-500">
-            {serviceRequests.filter((r) => r.status === "requested").length}{" "}
-            pending ·{" "}
-            {serviceRequests.filter((r) => r.status === "completed").length}{" "}
-            completed today
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <SidebarToggle />
+          <div>
+            <h1 className="font-display text-brand-900 text-2xl font-bold">
+              Housekeeping & Service Requests
+            </h1>
+            <p className="text-sm text-gray-500">
+              {serviceRequests.filter((r) => r.status === "requested").length}{" "}
+              pending ·{" "}
+              {serviceRequests.filter((r) => r.status === "completed").length}{" "}
+              completed today
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowNew(true)}

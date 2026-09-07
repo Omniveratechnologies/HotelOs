@@ -1,4 +1,5 @@
 import React from "react";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 import { useHotelOS } from "../../app/useHotelOS.js";
 
 const ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
@@ -50,13 +51,16 @@ export default function ReportsPage() {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-brand-900 text-2xl font-bold">
-            Reports & Analytics
-          </h1>
-          <p className="text-sm text-gray-500">
-            Live snapshot · {reportDate} · {hotelName}
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <SidebarToggle />
+          <div>
+            <h1 className="font-display text-brand-900 text-2xl font-bold">
+              Reports & Analytics
+            </h1>
+            <p className="text-sm text-gray-500">
+              Live snapshot · {reportDate} · {hotelName}
+            </p>
+          </div>
         </div>
         <button className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
           Export PDF

@@ -1,14 +1,18 @@
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 import HotelInformationSection from "./_components/HotelInformationSection.jsx";
 import NotificationsSection from "./_components/NotificationsSection.jsx";
 
 export default function SettingsPage() {
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="font-display text-brand-900 text-2xl font-bold">
-          Settings
-        </h1>
-        <p className="text-sm text-gray-500">Configure your HotelOS</p>
+      <div className="mb-6 flex items-center gap-3">
+        <SidebarToggle />
+        <div>
+          <h1 className="font-display text-brand-900 text-2xl font-bold">
+            Settings
+          </h1>
+          <p className="text-sm text-gray-500">Configure your HotelOS</p>
+        </div>
       </div>
 
       <div className="space-y-5">

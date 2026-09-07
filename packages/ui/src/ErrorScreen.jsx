@@ -1,6 +1,15 @@
 import React from "react";
 import { useRouteError } from "react-router";
 
+/**
+ * Route-level error screen rendered by data routers via `errorElement`.
+ *
+ * Reads the thrown error with `useRouteError()` and shows a friendly message
+ * with "Reload Page" / "Go Home" actions plus a collapsible technical-details
+ * block when a `message` is available.
+ *
+ * @returns {import("react").ReactElement}
+ */
 export function ErrorScreen() {
   const error = useRouteError();
   const message = error?.message;

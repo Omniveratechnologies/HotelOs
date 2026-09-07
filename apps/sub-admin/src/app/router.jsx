@@ -1,8 +1,9 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router";
 
 import AuthLayout from "./AuthLayout.jsx";
 import HotelLayout from "../layouts/HotelLayout.jsx";
 import { ErrorScreen } from "@hotelos/ui/ErrorScreen";
+import { LoadingScreen } from "@hotelos/ui/components/LoadingScreen";
 
 export function lazyPage(importer) {
   return async () => {
@@ -17,6 +18,7 @@ export function lazyPage(importer) {
 export const router = createBrowserRouter([
   {
     errorElement: <ErrorScreen />,
+    HydrateFallback: LoadingScreen,
     children: [
       {
         path: "/",
