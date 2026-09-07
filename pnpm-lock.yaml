@@ -314,6 +314,9 @@ importers:
       '@hotelos/styles':
         specifier: workspace:*
         version: link:../../packages/styles
+      '@hotelos/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       lucide-react:
         specifier: ^1.37.0
         version: 1.37.0(react@19.2.8)
@@ -354,6 +357,9 @@ importers:
       '@hotelos/styles':
         specifier: workspace:*
         version: link:../../packages/styles
+      '@hotelos/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -442,6 +448,18 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
+
+  packages/ui:
+    dependencies:
+      '@hotelos/styles':
+        specifier: workspace:*
+        version: link:../styles
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-router:
+        specifier: ^8.3.1
+        version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
 
 packages:
 

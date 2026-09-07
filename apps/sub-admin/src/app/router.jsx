@@ -2,7 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 
 import AuthLayout from "./AuthLayout.jsx";
 import HotelLayout from "../layouts/HotelLayout.jsx";
-import ErrorScreen from "./ErrorScreen.jsx";
+import { ErrorScreen } from "@hotelos/ui/ErrorScreen";
 
 export function lazyPage(importer) {
   return async () => {
@@ -55,6 +55,14 @@ export const router = createBrowserRouter([
             ],
           },
         ],
+      },
+      {
+        path: "*",
+        lazy: async () => {
+          const { NotFound } = await import("@hotelos/ui/pages/NotFound");
+
+          return { Component: NotFound };
+        },
       },
     ],
   },

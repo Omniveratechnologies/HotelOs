@@ -1,7 +1,7 @@
 import React from "react";
-import { useRouteError } from "react-router-dom";
+import { useRouteError } from "react-router";
 
-export default function ErrorScreen() {
+export function ErrorScreen() {
   const error = useRouteError();
   const message = error?.message;
 
