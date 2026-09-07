@@ -107,8 +107,14 @@ export async function apiFetch(
   }
 
   if (response.status === 401) {
+    const hadToken = !!localStorage.getItem("auth_token");
     localStorage.removeItem("auth_token");
     localStorage.removeItem("auth_user");
+
+    if (hadToken && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("hotelos:unauthorized"));
+    }
+
     throw new ApiError(
       data?.message || "Session expired. Please login again.",
       401,
