@@ -1,10 +1,11 @@
 import crypto from "crypto";
 import Order from "../models/Order.js";
-import FoodItem from "#/modules/food-items/models/FoodItem.js";
-import Room from "#/modules/rooms/models/Room.js";
-import getRazorpay from "#/config/razorpay.js";
+import FoodItem from "#src/modules/food-items/models/FoodItem.js";
+import Room from "#src/modules/rooms/models/Room.js";
+import getRazorpay from "#src/config/razorpay.js";
 import { orderDTO } from "../dto/order.dto.js";
-import logger from "#/utils/logger.js";
+import logger from "#src/utils/logger.js";
+import { getIo } from "#src/config/socket.js";
 
 // Normalize a kitchen-facing status value (spaces / display casing) into the
 // canonical Order enum stored on the model.
@@ -105,6 +106,10 @@ export const createOrder = async (req, res) => {
         paymentStatus: "PENDING",
         status: "NEW",
       });
+      getIo().to(`guest:${req.user._id}`).emit("order:update", orderDTO(order));
+      getIo()
+        .to(`hotel:${req.user.hotelId}`)
+        .emit("order:update", orderDTO(order));
 
       return res.status(201).json({
         success: true,
@@ -143,6 +148,11 @@ export const createOrder = async (req, res) => {
       status: "NEW",
       razorpayOrderId: razorpayOrder.id,
     });
+
+    getIo().to(`guest:${req.user._id}`).emit("order:update", orderDTO(order));
+    getIo()
+      .to(`hotel:${req.user.hotelId}`)
+      .emit("order:update", orderDTO(order));
 
     return res.status(201).json({
       success: true,
@@ -286,7 +296,19 @@ export const getAllOrders = async (req, res) => {
     });
   }
 };
-
+export const getHotelOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ hotelId: req.user.hotelId }).sort({
+      createdAt: -1,
+    });
+    return res.status(200).json({ success: true, data: orders.map(orderDTO) });
+  } catch (error) {
+    console.error("Get hotel orders error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch hotel orders" });
+  }
+};
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -311,6 +333,9 @@ export const updateOrderStatus = async (req, res) => {
     if (order.roomId) {
       room = await Room.findById(order.roomId).select("roomNumber");
     }
+
+    getIo().to(`guest:${order.guestId}`).emit("order:update", orderDTO(order));
+    getIo().to(`hotel:${order.hotelId}`).emit("order:update", orderDTO(order));
 
     return res.status(200).json(kitchenOrderDTO(order, room));
   } catch (error) {

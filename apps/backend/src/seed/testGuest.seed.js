@@ -1,11 +1,11 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import Hotel from "#/modules/hotels/models/Hotel.js";
-import Room from "#/modules/rooms/models/Room.js";
-import User from "#/modules/users/models/User.js";
-import Booking from "#/modules/bookings/models/Booking.js";
-import FoodItem from "#/modules/food-items/models/FoodItem.js";
-import logger from "#/utils/logger.js";
+import Hotel from "#src/modules/hotels/models/Hotel.js";
+import Room from "#src/modules/rooms/models/Room.js";
+import User from "#src/modules/users/models/User.js";
+import Booking from "#src/modules/bookings/models/Booking.js";
+import FoodItem from "#src/modules/food-items/models/FoodItem.js";
+import logger from "#src/utils/logger.js";
 
 const seed = async () => {
   await mongoose.connect(process.env.MONGODB_URI);
@@ -18,6 +18,13 @@ const seed = async () => {
       email: "test@hotelos.com",
       hotelCode: "TEST",
     });
+  }
+
+  if (!hotel.wifiNetworkName || !hotel.wifiPassword) {
+    hotel.wifiNetworkName = "Grandview_204";
+    hotel.wifiPassword = "Stay@204";
+    await hotel.save();
+    logger.info("WiFi credentials set on test hotel");
   }
 
   let room = await Room.findOne({ roomNumber: "204", hotelId: hotel._id });
@@ -58,6 +65,24 @@ const seed = async () => {
     });
 
     logger.info("Guest created — username: test-guest / password: Guest@123");
+  }
+
+  const activeBooking = await Booking.findOne({
+    guestId: guest._id,
+    status: { $in: ["reserved", "checked-in"] },
+  });
+
+  if (!activeBooking) {
+    await Booking.create({
+      guestId: guest._id,
+      hotelId: hotel._id,
+      roomId: room._id,
+      checkIn: new Date(),
+      checkOut: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      status: "checked-in",
+    });
+
+    logger.info("Active test guest booking created");
   }
 
   const existingItems = await FoodItem.countDocuments({ hotelId: hotel._id });

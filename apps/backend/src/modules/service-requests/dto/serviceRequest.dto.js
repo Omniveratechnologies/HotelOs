@@ -3,6 +3,7 @@ export const serviceRequestDTO = (r) => ({
   type: r.type,
   description: r.description,
   items: r.items,
+  details: r.details,
   status: r.status,
   createdAt: r.createdAt,
   updatedAt: r.updatedAt,

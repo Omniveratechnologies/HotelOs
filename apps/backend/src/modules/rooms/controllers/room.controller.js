@@ -1,6 +1,6 @@
 import Room from "../models/Room.js";
 import { roomResponseDTO } from "../dto/room.dto.js";
-import logger from "#/utils/logger.js";
+import logger from "#src/utils/logger.js";
 
 const ROOM_TYPES = new Set(["Standard", "Deluxe", "Suite"]);
 

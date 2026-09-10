@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import User from "#/modules/users/models/User.js";
-import Booking from "#/modules/bookings/models/Booking.js";
+import User from "#src/modules/users/models/User.js";
+import Booking from "#src/modules/bookings/models/Booking.js";
 
 export const authenticate = async (req, res, next) => {
   try {

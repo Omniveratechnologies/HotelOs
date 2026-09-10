@@ -1,6 +1,6 @@
 import FoodItem from "../models/FoodItem.js";
 import { foodItemDTO } from "../dto/foodItem.dto.js";
-import logger from "#/utils/logger.js";
+import logger from "#src/utils/logger.js";
 
 // GET /api/v1/food-items — any authenticated role can view
 export const getFoodItems = async (req, res) => {

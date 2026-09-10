@@ -8,6 +8,7 @@ import { ServicesGrid } from "@/components/guest-dashboard/ServicesGrid";
 import { OrdersList } from "@/components/guest-dashboard/OrdersList";
 import { OrderFoodModal } from "@/components/guest-dashboard/OrderFoodModal";
 import { OrderAmenitiesModal } from "@/components/guest-dashboard/OrderAmenitiesModal";
+import { WifiCard } from "@/components/guest-dashboard/WifiCard";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,15 +39,18 @@ function GuestDashboard() {
   return (
     <div className="bg-background text-foreground min-h-dvh font-sans">
       <Toaster position="top-right" />
-      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+      <main className="mx-auto max-w-[1440px] px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
         <DashboardHeader />
         <ErrorBanner />
-        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <div className="mt-4">
           <ServicesGrid
             onOpenFood={() => setFoodOpen(true)}
             onOpenAmenities={() => setAmenitiesOpen(true)}
           />
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <OrdersList />
+          <WifiCard />
         </div>
       </main>
       <OrderFoodModal open={foodOpen} onOpenChange={setFoodOpen} />

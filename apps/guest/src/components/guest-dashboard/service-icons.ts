@@ -1,9 +1,19 @@
 import {
+  AlarmClock,
+  AlertTriangle,
   BedDouble,
+  Car,
   ConciergeBell,
+  Compass,
+  Flower2,
+  Lightbulb,
+  MessageSquare,
+  Pill,
   Phone,
+  Shirt,
   Sparkles,
   UtensilsCrossed,
+  Wrench,
 } from "lucide-react";
 
 export const SERVICE_ICON = {
@@ -13,5 +23,14 @@ export const SERVICE_ICON = {
   RESTAURANT: ConciergeBell,
   RECEPTION: Phone,
   HOUSEKEEPING: BedDouble,
-  MAINTENANCE: Phone,
+  MAINTENANCE: Wrench,
+  MEDICINE: Pill,
+  TRANSPORT: Car,
+  SPA: Flower2,
+  EMERGENCY: AlertTriangle,
+  LAUNDRY: Shirt,
+  CONCIERGE: Compass,
+  WAKEUP_CALL: AlarmClock,
+  ROOM_CONTROL: Lightbulb,
+  FEEDBACK: MessageSquare,
 } as const;

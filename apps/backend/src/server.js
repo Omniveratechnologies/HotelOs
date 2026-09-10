@@ -1,12 +1,14 @@
 import "dotenv/config";
-import logger from "#/utils/logger.js";
+import logger from "#src/utils/logger.js";
+import { createServer } from "node:http";
+import { initSocket } from "#src/config/socket.js";
 
 logger.info("SERVER: starting");
 
-const appModule = await import("#/app.js");
+const appModule = await import("#src/app.js");
 logger.info("SERVER: app.js loaded");
 
-const dbModule = await import("#/config/db.js");
+const dbModule = await import("#src/config/db.js");
 logger.info("SERVER: db.js loaded");
 
 const app = appModule.default;
@@ -21,7 +23,9 @@ try {
 
   logger.info("SERVER: MongoDB connected");
 
-  app.listen(PORT, () => {
+  const httpServer = createServer(app);
+  initSocket(httpServer);
+  httpServer.listen(PORT, () => {
     logger.info({ port: PORT }, "SERVER: running");
     logger.info(`http://localhost:${PORT}`);
   });

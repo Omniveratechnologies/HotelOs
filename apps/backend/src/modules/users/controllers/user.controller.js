@@ -1,15 +1,15 @@
 import User from "../models/User.js";
-import UserInvite from "#/modules/invites/models/UserInvite.js";
+import UserInvite from "#src/modules/invites/models/UserInvite.js";
 
-import { ROLES } from "#/shared/constants/roles.js";
+import { ROLES } from "#src/shared/constants/roles.js";
 
 import {
   generateUsername,
   generateTemporaryPassword,
-} from "#/shared/utils/generateCredentials.js";
+} from "#src/shared/utils/generateCredentials.js";
 
 import { userResponseDTO } from "../dto/user.dto.js";
-import logger from "#/utils/logger.js";
+import logger from "#src/utils/logger.js";
 
 export const createUser = async (req, res) => {
   try {
