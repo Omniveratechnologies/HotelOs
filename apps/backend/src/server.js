@@ -1,5 +1,7 @@
 import "dotenv/config";
 import logger from "#/utils/logger.js";
+import { createServer } from "node:http";
+import { initSocket } from "#/config/socket.js";
 
 logger.info("SERVER: starting");
 
@@ -21,7 +23,9 @@ try {
 
   logger.info("SERVER: MongoDB connected");
 
-  app.listen(PORT, () => {
+  const httpServer = createServer(app);
+  initSocket(httpServer);
+  httpServer.listen(PORT, () => {
     logger.info({ port: PORT }, "SERVER: running");
     logger.info(`http://localhost:${PORT}`);
   });

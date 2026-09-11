@@ -234,20 +234,18 @@ export function GuestDashboardProvider({ children }: { children: ReactNode }) {
       type: ServiceRequestType,
       description?: string,
       items?: string[],
+      details?: Record<string, unknown>,
     ) => {
       try {
-        await createServiceRequestApi(type, description, items);
+        await createServiceRequestApi(type, description, items, details);
         await loadRequests();
       } catch (err) {
         reportFailure(
           err instanceof Error ? err.message : "Failed to send request",
-          // oxlint-disable-next-line react/immutability -- recursive self-reference so the failed attempt can be retried
-          () => sendServiceRequest(type, description, items),
         );
         throw err;
       }
     },
-    // oxlint-disable-next-line react/memo-dependencies -- all referenced helpers are stable useCallback functions with [] deps
     [loadRequests, reportFailure],
   );
 

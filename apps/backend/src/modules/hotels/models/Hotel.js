@@ -69,6 +69,16 @@ const hotelSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    wifiNetworkName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    wifiPassword: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   {
     timestamps: true,

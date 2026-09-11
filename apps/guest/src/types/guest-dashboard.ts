@@ -4,11 +4,8 @@
 
 export type ServiceKind =
   "food" | "amenities" | "restaurant" | "reception" | "housekeeping";
-
 export type Status = string;
-
 export type PaymentMethod = "cod" | "online";
-
 export interface AmenityItem {
   name: string;
   note: string;
@@ -33,6 +30,7 @@ export interface GuestInfo {
   checkOut: string | null;
   dndEnabled: boolean;
   room: RoomInfo | null;
+  wifi: { networkName: string | null; password: string | null } | null;
 }
 
 export interface MenuItem {
@@ -82,7 +80,20 @@ export interface RazorpayOrderResponse {
 }
 
 export type ServiceRequestType =
-  "AMENITY" | "HOUSEKEEPING" | "RESTAURANT" | "RECEPTION" | "MAINTENANCE";
+  | "AMENITY"
+  | "HOUSEKEEPING"
+  | "RESTAURANT"
+  | "RECEPTION"
+  | "MAINTENANCE"
+  | "MEDICINE"
+  | "TRANSPORT"
+  | "SPA"
+  | "EMERGENCY"
+  | "LAUNDRY"
+  | "CONCIERGE"
+  | "WAKEUP_CALL"
+  | "ROOM_CONTROL"
+  | "FEEDBACK";
 
 export interface ServiceRequest {
   id: string;
@@ -93,4 +104,5 @@ export interface ServiceRequest {
     "REQUESTED" | "ACKNOWLEDGED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
   createdAt: string;
   updatedAt: string;
+  details?: Record<string, unknown>;
 }

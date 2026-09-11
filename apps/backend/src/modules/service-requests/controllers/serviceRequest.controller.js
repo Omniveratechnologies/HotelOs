@@ -1,10 +1,11 @@
 import ServiceRequest from "../models/ServiceRequest.js";
 import { serviceRequestDTO } from "../dto/serviceRequest.dto.js";
 import logger from "#/utils/logger.js";
+import { getIo } from "#/config/socket.js";
 
 export const createServiceRequest = async (req, res) => {
   try {
-    const { type, description, items } = req.body;
+    const { type, description, items, details } = req.body;
     if (!type)
       return res
         .status(400)
@@ -17,8 +18,17 @@ export const createServiceRequest = async (req, res) => {
       type,
       description,
       items: items || [],
+      details: details || {},
       status: "REQUESTED",
+      priority: type === "EMERGENCY" ? "URGENT" : "NORMAL",
     });
+
+    getIo()
+      .to(`guest:${req.user._id}`)
+      .emit("request:update", serviceRequestDTO(request));
+    getIo()
+      .to(`hotel:${req.user.hotelId}`)
+      .emit("request:update", serviceRequestDTO(request));
 
     return res.status(201).json({
       success: true,
@@ -30,6 +40,23 @@ export const createServiceRequest = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to create service request" });
+  }
+};
+
+// NEW — Reception-only, hotel-wide, all guests, all types
+export const getHotelServiceRequests = async (req, res) => {
+  try {
+    const requests = await ServiceRequest.find({
+      hotelId: req.user.hotelId,
+    }).sort({ priority: -1, createdAt: -1 }); // URGENT first, then newest
+    return res
+      .status(200)
+      .json({ success: true, data: requests.map(serviceRequestDTO) });
+  } catch (error) {
+    console.error("Get hotel service requests error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch requests" });
   }
 };
 

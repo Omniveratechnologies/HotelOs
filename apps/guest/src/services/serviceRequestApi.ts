@@ -2,13 +2,14 @@ import { apiRequest } from "./apiClient";
 import type { ServiceRequest } from "@/types/guest-dashboard";
 
 export async function createServiceRequest(
-  type: "AMENITY" | "HOUSEKEEPING" | "RESTAURANT" | "RECEPTION" | "MAINTENANCE",
+  type: ServiceRequest["type"],
   description?: string,
   items?: string[],
+  details?: Record<string, unknown>,
 ) {
   return apiRequest<ServiceRequest>("/service-requests", {
     method: "POST",
-    body: JSON.stringify({ type, description, items }),
+    body: JSON.stringify({ type, description, items, details }),
   });
 }
 

@@ -20,6 +20,13 @@ const seed = async () => {
     });
   }
 
+  if (!hotel.wifiNetworkName || !hotel.wifiPassword) {
+    hotel.wifiNetworkName = "Grandview_204";
+    hotel.wifiPassword = "Stay@204";
+    await hotel.save();
+    logger.info("WiFi credentials set on test hotel");
+  }
+
   let room = await Room.findOne({ roomNumber: "204", hotelId: hotel._id });
   if (!room) {
     room = await Room.create({
@@ -58,6 +65,24 @@ const seed = async () => {
     });
 
     logger.info("Guest created — username: test-guest / password: Guest@123");
+  }
+
+  const activeBooking = await Booking.findOne({
+    guestId: guest._id,
+    status: { $in: ["reserved", "checked-in"] },
+  });
+
+  if (!activeBooking) {
+    await Booking.create({
+      guestId: guest._id,
+      hotelId: hotel._id,
+      roomId: room._id,
+      checkIn: new Date(),
+      checkOut: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      status: "checked-in",
+    });
+
+    logger.info("Active test guest booking created");
   }
 
   const existingItems = await FoodItem.countDocuments({ hotelId: hotel._id });
