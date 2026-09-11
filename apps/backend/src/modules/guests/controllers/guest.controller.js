@@ -385,14 +385,23 @@ export const getMyProfile = async (req, res) => {
     const user = req.user;
     const booking = req.currentBooking || null;
     let room = null;
+    let hotel = null;
 
     if (booking?.roomId) {
       room = await Room.findById(booking.roomId);
     }
+    hotel = await Hotel.findById(user.hotelId).select(
+      "name wifiNetworkName wifiPassword",
+    );
 
     return res.status(200).json({
       success: true,
-      data: guestProfileDTO(user, booking, room),
+      data: {
+        ...guestProfileDTO(user, booking, room),
+        wifi: hotel
+          ? { networkName: hotel.wifiNetworkName, password: hotel.wifiPassword }
+          : null,
+      },
     });
   } catch (error) {
     logger.error(error, "Get guest profile error");
