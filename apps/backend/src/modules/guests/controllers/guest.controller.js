@@ -1,24 +1,24 @@
 import crypto from "crypto";
 
-import User from "#src/modules/users/models/User.js";
-import Room from "#src/modules/rooms/models/Room.js";
-import Booking from "#src/modules/bookings/models/Booking.js";
+import User from "#/modules/users/models/User.js";
+import Room from "#/modules/rooms/models/Room.js";
+import Booking from "#/modules/bookings/models/Booking.js";
 
-import { generateTemporaryPassword } from "#src/shared/utils/generateCredentials.js";
+import { generateTemporaryPassword } from "#/shared/utils/generateCredentials.js";
 
-import { sendGuestCredentialsEmail } from "#src/shared/services/email.service.js";
+import { sendGuestCredentialsEmail } from "#/shared/services/email.service.js";
 
-import { generateUploadUrl, deleteObjects } from "#src/config/r2.js";
+import { generateUploadUrl, deleteObjects } from "#/config/r2.js";
 
 import {
   MAX_FILES,
   validateDocument,
-} from "#src/shared/middleware/upload.middleware.js";
+} from "#/shared/middleware/upload.middleware.js";
 
 import { guestProfileDTO } from "../dto/guest.dto.js";
 
-import Hotel from "#src/modules/hotels/models/Hotel.js";
-import logger from "#src/utils/logger.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
+import logger from "#/utils/logger.js";
 
 // =====================================================
 // HELPERS

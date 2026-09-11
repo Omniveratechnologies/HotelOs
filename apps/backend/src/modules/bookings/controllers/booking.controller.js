@@ -1,22 +1,22 @@
 import Booking from "../models/Booking.js";
 import { bookingDTO } from "../dto/booking.dto.js";
-import Room from "#src/modules/rooms/models/Room.js";
-import Hotel from "#src/modules/hotels/models/Hotel.js";
-import User from "#src/modules/users/models/User.js";
-import UserInvite from "#src/modules/invites/models/UserInvite.js";
+import Room from "#/modules/rooms/models/Room.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
+import User from "#/modules/users/models/User.js";
+import UserInvite from "#/modules/invites/models/UserInvite.js";
 
 import {
   generateUsername,
   generateTemporaryPassword,
-} from "#src/shared/utils/generateCredentials.js";
+} from "#/shared/utils/generateCredentials.js";
 
-import { sendGuestCredentialsEmail } from "#src/shared/services/email.service.js";
+import { sendGuestCredentialsEmail } from "#/shared/services/email.service.js";
 
-import { deleteObjects } from "#src/config/r2.js";
+import { deleteObjects } from "#/config/r2.js";
 
-import { GUEST_STATUSES } from "#src/shared/constants/guest.js";
+import { GUEST_STATUSES } from "#/shared/constants/guest.js";
 
-import logger from "#src/utils/logger.js";
+import logger from "#/utils/logger.js";
 
 // =====================================================
 // HELPERS

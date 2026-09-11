@@ -65,9 +65,6 @@ importers:
       razorpay:
         specifier: ^2.9.8
         version: 2.9.8
-      socket.io:
-        specifier: ^4.8.3
-        version: 4.8.3
     devDependencies:
       nodemon:
         specifier: ^3.1.14

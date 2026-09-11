@@ -2,19 +2,19 @@ import express from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 
-import logger from "#src/utils/logger.js";
+import logger from "#/utils/logger.js";
 
-import hotelRoutes from "#src/modules/hotels/index.js";
-import authRoutes from "#src/modules/auth/index.js";
-import userRoutes from "#src/modules/users/index.js";
-import inviteRoutes from "#src/modules/invites/index.js";
-import bookingRoutes from "#src/modules/bookings/index.js";
-import dashboardRoutes from "#src/modules/dashboard/index.js";
-import roomRoutes from "#src/modules/rooms/index.js";
-import guestRoutes from "#src/modules/guests/index.js";
-import foodItemRoutes from "#src/modules/food-items/index.js";
-import { orderRouter, kitchenOrdersRouter } from "#src/modules/orders/index.js";
-import serviceRequestRoutes from "#src/modules/service-requests/index.js";
+import hotelRoutes from "#/modules/hotels/index.js";
+import authRoutes from "#/modules/auth/index.js";
+import userRoutes from "#/modules/users/index.js";
+import inviteRoutes from "#/modules/invites/index.js";
+import bookingRoutes from "#/modules/bookings/index.js";
+import dashboardRoutes from "#/modules/dashboard/index.js";
+import roomRoutes from "#/modules/rooms/index.js";
+import guestRoutes from "#/modules/guests/index.js";
+import foodItemRoutes from "#/modules/food-items/index.js";
+import { orderRouter, kitchenOrdersRouter } from "#/modules/orders/index.js";
+import serviceRequestRoutes from "#/modules/service-requests/index.js";
 
 const app = express();
 

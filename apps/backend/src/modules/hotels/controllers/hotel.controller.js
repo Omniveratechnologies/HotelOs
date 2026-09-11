@@ -1,5 +1,5 @@
 import Hotel from "../models/Hotel.js";
-import logger from "#src/utils/logger.js";
+import logger from "#/utils/logger.js";
 
 // =====================================================
 // GENERATE UNIQUE HOTEL CODE

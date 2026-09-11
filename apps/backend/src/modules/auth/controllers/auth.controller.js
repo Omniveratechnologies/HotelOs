@@ -1,12 +1,12 @@
-import User from "#src/modules/users/models/User.js";
-import Booking from "#src/modules/bookings/models/Booking.js";
-import { generateToken } from "#src/shared/utils/jwt.js";
-import { generateInviteToken } from "#src/shared/utils/invitation.js";
+import User from "#/modules/users/models/User.js";
+import Booking from "#/modules/bookings/models/Booking.js";
+import { generateToken } from "#/shared/utils/jwt.js";
+import { generateInviteToken } from "#/shared/utils/invitation.js";
 import {
   sendUsernameReminderEmail,
   sendPasswordResetEmail,
-} from "#src/shared/services/email.service.js";
-import logger from "#src/utils/logger.js";
+} from "#/shared/services/email.service.js";
+import logger from "#/utils/logger.js";
 
 export const login = async (req, res) => {
   try {

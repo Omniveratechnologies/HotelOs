@@ -1,8 +1,8 @@
-import User from "#src/modules/users/models/User.js";
-import Hotel from "#src/modules/hotels/models/Hotel.js";
-import Room from "#src/modules/rooms/models/Room.js";
-import Booking from "#src/modules/bookings/models/Booking.js";
-import logger from "#src/utils/logger.js";
+import User from "#/modules/users/models/User.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
+import Room from "#/modules/rooms/models/Room.js";
+import Booking from "#/modules/bookings/models/Booking.js";
+import logger from "#/utils/logger.js";
 
 // =====================================================
 // DASHBOARD STATS (hotel-scoped)

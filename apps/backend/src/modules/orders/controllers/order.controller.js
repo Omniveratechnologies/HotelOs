@@ -1,11 +1,11 @@
 import crypto from "crypto";
 import Order from "../models/Order.js";
-import FoodItem from "#src/modules/food-items/models/FoodItem.js";
-import Room from "#src/modules/rooms/models/Room.js";
-import getRazorpay from "#src/config/razorpay.js";
+import FoodItem from "#/modules/food-items/models/FoodItem.js";
+import Room from "#/modules/rooms/models/Room.js";
+import getRazorpay from "#/config/razorpay.js";
 import { orderDTO } from "../dto/order.dto.js";
-import logger from "#src/utils/logger.js";
-import { getIo } from "#src/config/socket.js";
+import logger from "#/utils/logger.js";
+import { getIo } from "#/config/socket.js";
 
 // Normalize a kitchen-facing status value (spaces / display casing) into the
 // canonical Order enum stored on the model.

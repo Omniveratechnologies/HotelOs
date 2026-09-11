@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import dns from "node:dns";
-import logger from "#src/utils/logger.js";
+import logger from "#/utils/logger.js";
 
 const connectDB = async () => {
   dns.setServers(["8.8.8.8", "1.1.1.1"]);

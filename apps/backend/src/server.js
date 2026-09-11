@@ -1,14 +1,14 @@
 import "dotenv/config";
-import logger from "#src/utils/logger.js";
+import logger from "#/utils/logger.js";
 import { createServer } from "node:http";
-import { initSocket } from "#src/config/socket.js";
+import { initSocket } from "#/config/socket.js";
 
 logger.info("SERVER: starting");
 
-const appModule = await import("#src/app.js");
+const appModule = await import("#/app.js");
 logger.info("SERVER: app.js loaded");
 
-const dbModule = await import("#src/config/db.js");
+const dbModule = await import("#/config/db.js");
 logger.info("SERVER: db.js loaded");
 
 const app = appModule.default;

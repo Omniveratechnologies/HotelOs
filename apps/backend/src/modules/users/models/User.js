@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-import { ROLES } from "#src/shared/constants/roles.js";
-import { GUEST_ID_TYPES } from "#src/shared/constants/guest.js";
+import { ROLES } from "#/shared/constants/roles.js";
+import { GUEST_ID_TYPES } from "#/shared/constants/guest.js";
 
 const userSchema = new mongoose.Schema(
   {

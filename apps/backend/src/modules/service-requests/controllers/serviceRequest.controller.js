@@ -1,7 +1,7 @@
 import ServiceRequest from "../models/ServiceRequest.js";
 import { serviceRequestDTO } from "../dto/serviceRequest.dto.js";
-import logger from "#src/utils/logger.js";
-import { getIo } from "#src/config/socket.js";
+import logger from "#/utils/logger.js";
+import { getIo } from "#/config/socket.js";
 
 export const createServiceRequest = async (req, res) => {
   try {

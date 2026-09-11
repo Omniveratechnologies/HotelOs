@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-import { GUEST_STATUSES } from "#src/shared/constants/guest.js";
+import { GUEST_STATUSES } from "#/shared/constants/guest.js";
 
 const bookingSchema = new mongoose.Schema(
   {
