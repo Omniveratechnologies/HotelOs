@@ -74,3 +74,6 @@ Thumbs.db
 *.pem
 forIntelliSense.css
 NOTES.md
+
+# Local planning notes (reference only, never commit)
+PLANS.md
