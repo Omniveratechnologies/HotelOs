@@ -81,38 +81,42 @@ export default function CreateAccount({ token, invitation }) {
   }
 
   const inputClass =
-    "w-full bg-cream-50 border border-navy-900/15 rounded-lg px-4 py-2.5 text-navy-900 outline-hidden focus:border-gold-400 transition-colors disabled:opacity-70";
+    "w-full bg-background-50 border border-brand-900/15 rounded-lg px-4 py-2.5 text-brand-900 outline-hidden focus:border-primary-400 transition-colors disabled:opacity-70";
 
   return (
-    <div className="bg-cream-50 flex min-h-screen items-center justify-center px-6 py-16">
-      <div className="border-navy-900/10 w-full max-w-md rounded-2xl border bg-white px-8 py-10 shadow-lg">
+    <div className="bg-background-50 flex min-h-screen items-center justify-center px-6 py-16">
+      <div className="border-brand-900/10 w-full max-w-md rounded-2xl border bg-white px-8 py-10 shadow-lg">
         {/* LOGO */}
         <div className="mb-8 flex items-center gap-2.5">
-          <span className="bg-navy-900 flex h-9 w-9 items-center justify-center rounded-full">
-            <svg viewBox="0 0 24 24" fill="#c9a84c" className="h-4 w-4">
+          <span className="bg-brand-900 flex h-9 w-9 items-center justify-center rounded-full">
+            <svg
+              viewBox="0 0 24 24"
+              fill="var(--color-primary-400)"
+              className="h-4 w-4"
+            >
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
             </svg>
           </span>
-          <span className="font-display text-navy-900 text-xl font-semibold tracking-wide">
-            Hotel<span className="text-gold-400">OS</span>
+          <span className="font-display text-brand-900 text-xl font-semibold tracking-wide">
+            Hotel<span className="text-primary-400">OS</span>
           </span>
         </div>
 
         {/* HEADING */}
-        <h1 className="font-display text-navy-900 mb-1.5 text-3xl leading-tight font-semibold">
+        <h1 className="font-display text-brand-900 mb-1.5 text-3xl leading-tight font-semibold">
           Welcome to HotelOS.
         </h1>
-        <p className="text-navy-900/60 mb-8">
+        <p className="text-brand-900/60 mb-8">
           Set up your receptionist account.
         </p>
 
         {/* HOTEL */}
-        <div className="border-navy-900/10 bg-cream-100 mb-6 rounded-lg border px-4 py-3">
-          <p className="text-navy-900/60 text-xs">Hotel</p>
-          <p className="text-navy-900 mt-1 font-medium">
+        <div className="border-brand-900/10 bg-background-100 mb-6 rounded-lg border px-4 py-3">
+          <p className="text-brand-900/60 text-xs">Hotel</p>
+          <p className="text-brand-900 mt-1 font-medium">
             {invitation?.hotelName || "Hotel"}
           </p>
-          <p className="text-navy-900/60 mt-1 text-sm">{invitation?.email}</p>
+          <p className="text-brand-900/60 mt-1 text-sm">{invitation?.email}</p>
         </div>
 
         {/* ERROR */}
@@ -135,7 +139,7 @@ export default function CreateAccount({ token, invitation }) {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* FULL NAME */}
           <div>
-            <label className="text-navy-900 mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Full Name
             </label>
             <input
@@ -150,7 +154,7 @@ export default function CreateAccount({ token, invitation }) {
 
           {/* USERNAME */}
           <div>
-            <label className="text-navy-900 mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Username
             </label>
             <input
@@ -165,7 +169,7 @@ export default function CreateAccount({ token, invitation }) {
 
           {/* EMAIL */}
           <div>
-            <label className="text-navy-900 mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Email
             </label>
             <input
@@ -178,7 +182,7 @@ export default function CreateAccount({ token, invitation }) {
 
           {/* PASSWORD */}
           <div>
-            <label className="text-navy-900 mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Password
             </label>
             <input
@@ -194,7 +198,7 @@ export default function CreateAccount({ token, invitation }) {
 
           {/* CONFIRM PASSWORD */}
           <div>
-            <label className="text-navy-900 mb-1.5 block text-sm font-medium">
+            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
               Confirm Password
             </label>
             <input
@@ -212,7 +216,7 @@ export default function CreateAccount({ token, invitation }) {
           <button
             type="submit"
             disabled={creating || !!success}
-            className="bg-navy-900 text-cream-50 hover:bg-navy-800 mt-2 w-full rounded-xl px-5 py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-brand-900 text-background-50 hover:bg-brand-800 mt-2 w-full rounded-xl px-5 py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
             {creating ? "Creating Account..." : "Create Account"}
           </button>

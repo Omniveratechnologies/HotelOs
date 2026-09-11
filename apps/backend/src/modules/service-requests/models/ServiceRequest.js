@@ -39,8 +39,8 @@ const serviceRequestSchema = new mongoose.Schema(
     },
     priority: {
       type: String,
-      enum: ["NORMAL", "URGENT"],
-      default: "NORMAL",
+      enum: ["normal", "high"],
+      default: "normal",
     },
     description: { type: String, trim: true },
     items: { type: [String], default: [] },
@@ -58,5 +58,7 @@ const serviceRequestSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+serviceRequestSchema.index({ hotelId: 1, createdAt: -1 });
 
 export default mongoose.model("ServiceRequest", serviceRequestSchema);

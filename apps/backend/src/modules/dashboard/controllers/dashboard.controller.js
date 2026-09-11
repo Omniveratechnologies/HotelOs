@@ -2,6 +2,8 @@ import User from "#/modules/users/models/User.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Room from "#/modules/rooms/models/Room.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import ServiceRequest from "#/modules/service-requests/models/ServiceRequest.js";
+import Order from "#/modules/orders/models/Order.js";
 import logger from "#/utils/logger.js";
 
 // =====================================================
@@ -83,6 +85,31 @@ export const getDashboardStats = async (req, res) => {
       }),
     ]);
 
+    // =================================================
+    // SERVICE REQUESTS & FOOD ORDERS (live counters)
+    // =================================================
+
+    const [pendingServiceRequests, revenueToday] = await Promise.all([
+      ServiceRequest.countDocuments({
+        hotelId,
+        status: { $in: ["REQUESTED", "ACKNOWLEDGED", "IN_PROGRESS"] },
+      }),
+      Order.aggregate([
+        {
+          $match: {
+            hotelId,
+            status: "DELIVERED",
+            createdAt: { $gte: startOfToday, $lt: endOfToday },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+      ]).then((rows) => rows[0]?.total || 0),
+    ]);
+
+    // Reservations share the booking model; pending reservations are tracked by
+    // the "reserved" stay status until a dedicated reservations model lands.
+    const pendingReservations = rooms.reserved;
+
     const guests = {
       checkedIn,
       arrivalsToday,
@@ -91,13 +118,6 @@ export const getDashboardStats = async (req, res) => {
 
     const occupancyPercent =
       rooms.total > 0 ? Math.round((rooms.occupied / rooms.total) * 100) : 0;
-
-    // TODO(Phase B2/B3): derive from reservations & service requests
-    const pendingReservations = 0;
-    const pendingServiceRequests = 0;
-
-    // TODO(Phase B2): compute from billing/payments
-    const revenueToday = 0;
 
     // =================================================
     // RECENT ACTIVITY FEED (latest guest events)

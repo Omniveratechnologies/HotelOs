@@ -65,6 +65,9 @@ importers:
       razorpay:
         specifier: ^2.9.8
         version: 2.9.8
+      socket.io:
+        specifier: ^4.8.3
+        version: 4.8.3
     devDependencies:
       nodemon:
         specifier: ^3.1.14
@@ -210,9 +213,6 @@ importers:
       recharts:
         specifier: ^2.15.4
         version: 2.15.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      socket.io:
-        specifier: ^4.8.3
-        version: 4.8.3
       socket.io-client:
         specifier: ^4.8.3
         version: 4.8.3
@@ -314,6 +314,15 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/styles':
+        specifier: workspace:*
+        version: link:../../packages/styles
+      '@hotelos/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@hotelos/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       lucide-react:
         specifier: ^1.37.0
         version: 1.37.0(react@19.2.8)
@@ -326,6 +335,9 @@ importers:
       react-router:
         specifier: ^8.3.1
         version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.3.3
@@ -348,15 +360,24 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/styles':
+        specifier: workspace:*
+        version: link:../../packages/styles
+      '@hotelos/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@hotelos/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       react:
         specifier: ^19.2.8
         version: 19.2.8
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
-      react-router-dom:
-        specifier: ^7.18.2
-        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-router:
+        specifier: ^8.3.1
+        version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.3.3
@@ -436,6 +457,30 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
+
+  packages/ui:
+    dependencies:
+      '@hotelos/styles':
+        specifier: workspace:*
+        version: link:../styles
+      '@hotelos/utils':
+        specifier: workspace:*
+        version: link:../utils
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-router:
+        specifier: ^8.3.1
+        version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+
+  packages/utils:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
 
 packages:
 

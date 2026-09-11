@@ -1,19 +1,23 @@
 import React, { useState } from "react";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 import { useHotelOS } from "../../app/useHotelOS.js";
 
 export default function HousekeepingPage() {
   const {
     serviceRequests,
-    setServiceRequests,
     rooms,
     acknowledgeRequest,
     completeRequest,
+    addRequest,
+    requestsLoading,
+    requestsError,
   } = useHotelOS();
   const [filter, setFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [newReq, setNewReq] = useState({
     room: "",
-    type: "Housekeeping request",
+    type: "HOUSEKEEPING",
     detail: "",
     priority: "normal",
   });
@@ -24,10 +28,11 @@ export default function HousekeepingPage() {
       : serviceRequests.filter((r) => r.status === filter);
 
   const statusBadge = {
-    requested: "bg-orange-100 text-orange-700",
+    requested: "bg-amber-100 text-amber-700",
     acknowledged: "bg-blue-100 text-blue-700",
-    "in-progress": "bg-purple-100 text-purple-700",
+    "in-progress": "bg-primary-100 text-primary-700",
     completed: "bg-green-100 text-green-700",
+    cancelled: "bg-gray-100 text-gray-600",
   };
 
   const typeIcon = {
@@ -35,50 +40,65 @@ export default function HousekeepingPage() {
     "Amenity request": "🛁",
     Maintenance: "🔧",
     "Call restaurant": "📞",
+    "Reception request": "🗣",
     Laundry: "👕",
     Other: "📝",
   };
 
-  const addRequest = () => {
+  // Backend type enums -> display labels
+  const requestTypes = [
+    { value: "HOUSEKEEPING", label: "Housekeeping request" },
+    { value: "AMENITY", label: "Amenity request" },
+    { value: "MAINTENANCE", label: "Maintenance" },
+    { value: "RESTAURANT", label: "Call restaurant" },
+    { value: "RECEPTION", label: "Reception request" },
+  ];
+
+  const addRequestHandler = async () => {
     if (!newReq.room || !newReq.detail) return;
-    setServiceRequests((prev) => [
-      {
-        id: Date.now(),
-        ...newReq,
-        status: "requested",
-        time: new Date().toLocaleTimeString("en-IN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
-      ...prev,
-    ]);
-    setShowNew(false);
-    setNewReq({
-      room: "",
-      type: "Housekeeping request",
-      detail: "",
-      priority: "normal",
-    });
+
+    setCreating(true);
+    try {
+      await addRequest({
+        roomId: newReq.room,
+        type: newReq.type,
+        description: newReq.detail,
+        priority: newReq.priority,
+      });
+      setShowNew(false);
+      setNewReq({
+        room: "",
+        type: "HOUSEKEEPING",
+        detail: "",
+        priority: "normal",
+      });
+    } catch (err) {
+      console.error("Failed to create request:", err);
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-navy-900 text-2xl font-bold">
-            Housekeeping & Requests
-          </h1>
-          <p className="text-sm text-gray-500">
-            {serviceRequests.filter((r) => r.status === "requested").length}{" "}
-            pending ·{" "}
-            {serviceRequests.filter((r) => r.status === "completed").length}{" "}
-            completed today
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <SidebarToggle />
+          <div>
+            <h1 className="font-display text-brand-900 text-2xl font-bold">
+              Housekeeping & Service Requests
+            </h1>
+            <p className="text-sm text-gray-500">
+              {serviceRequests.filter((r) => r.status === "requested").length}{" "}
+              pending ·{" "}
+              {serviceRequests.filter((r) => r.status === "completed").length}{" "}
+              completed today
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="bg-navy-900 hover:bg-navy-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
+          className="bg-brand-900 hover:bg-brand-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           + New Request
         </button>
@@ -90,7 +110,7 @@ export default function HousekeepingPage() {
           [
             "Pending",
             "requested",
-            "bg-orange-50 border-orange-200 text-orange-600",
+            "bg-amber-50 border-amber-200 text-amber-600",
             "🔔",
           ],
           [
@@ -102,7 +122,7 @@ export default function HousekeepingPage() {
           [
             "In Progress",
             "in-progress",
-            "bg-purple-50 border-purple-200 text-purple-600",
+            "bg-primary-50 border-primary-200 text-primary-600",
             "⚡",
           ],
           [
@@ -140,7 +160,7 @@ export default function HousekeepingPage() {
                   key={r.id}
                   className="rounded-full bg-amber-100 px-3 py-1 text-sm font-bold text-amber-700"
                 >
-                  Room {r.id}
+                  Room {r.roomNumber}
                 </span>
               ))}
           </div>
@@ -148,13 +168,13 @@ export default function HousekeepingPage() {
       )}
 
       {/* Filter */}
-      <div className="mb-4 flex w-fit gap-1 rounded-xl bg-gray-100 p-1">
+      <div className="mb-4 flex w-fit gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1">
         {["all", "requested", "acknowledged", "in-progress", "completed"].map(
           (s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${filter === s ? "text-navy-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap capitalize transition-all ${filter === s ? "text-brand-900 bg-white shadow-xs" : "text-gray-500 hover:text-gray-700"}`}
             >
               {s.replace("-", " ")}
             </button>
@@ -177,11 +197,11 @@ export default function HousekeepingPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-navy-900 font-bold">
-                        Room {req.room}
+                      <span className="text-brand-900 font-bold">
+                        {req.room ? `Room ${req.room}` : "-"}
                       </span>
                       <span className="text-gray-400">·</span>
-                      <span className="text-navy-900 text-sm font-semibold">
+                      <span className="text-brand-900 text-sm font-semibold">
                         {req.type}
                       </span>
                       {req.priority === "high" && (
@@ -191,6 +211,18 @@ export default function HousekeepingPage() {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-600">{req.detail}</p>
+                    {req.items.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {req.items.map((item) => (
+                          <span
+                            key={item}
+                            className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div className="mt-1 text-xs text-gray-400">{req.time}</div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -202,7 +234,7 @@ export default function HousekeepingPage() {
                     {req.status === "requested" && (
                       <button
                         onClick={() => acknowledgeRequest(req.id)}
-                        className="bg-navy-900 hover:bg-navy-800 rounded-lg px-3 py-1.5 text-xs text-white transition-colors"
+                        className="bg-brand-900 hover:bg-brand-800 rounded-lg px-3 py-1.5 text-xs text-white transition-colors"
                       >
                         Acknowledge
                       </button>
@@ -221,7 +253,17 @@ export default function HousekeepingPage() {
             </div>
           </div>
         ))}
-        {filtered.length === 0 && (
+        {requestsLoading && (
+          <div className="py-16 text-center text-sm text-gray-400">
+            Loading requests…
+          </div>
+        )}
+        {!requestsLoading && requestsError && (
+          <div className="py-16 text-center text-sm text-red-500">
+            {requestsError}
+          </div>
+        )}
+        {!requestsLoading && !requestsError && filtered.length === 0 && (
           <div className="py-16 text-center text-gray-400">
             No requests found
           </div>
@@ -237,7 +279,7 @@ export default function HousekeepingPage() {
             className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-navy-900 mb-4 text-lg font-bold">
+            <h3 className="text-brand-900 mb-4 text-lg font-bold">
               New Service Request
             </h3>
             <div className="space-y-3">
@@ -250,14 +292,14 @@ export default function HousekeepingPage() {
                   onChange={(e) =>
                     setNewReq((p) => ({ ...p, room: e.target.value }))
                   }
-                  className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
+                  className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                 >
                   <option value="">Select Room</option>
                   {rooms
                     .filter((r) => r.status === "occupied")
                     .map((r) => (
                       <option key={r.id} value={r.id}>
-                        Room {r.id} – {r.guest}
+                        Room {r.roomNumber} – {r.guest || "Guest"}
                       </option>
                     ))}
                 </select>
@@ -271,10 +313,12 @@ export default function HousekeepingPage() {
                   onChange={(e) =>
                     setNewReq((p) => ({ ...p, type: e.target.value }))
                   }
-                  className="focus:border-gold-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
+                  className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                 >
-                  {Object.keys(typeIcon).map((t) => (
-                    <option key={t}>{t}</option>
+                  {requestTypes.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -288,7 +332,7 @@ export default function HousekeepingPage() {
                     setNewReq((p) => ({ ...p, detail: e.target.value }))
                   }
                   rows={3}
-                  className="focus:border-gold-400 mt-1 w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
+                  className="focus:border-primary-400 mt-1 w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
                   placeholder="Describe the request..."
                 />
               </div>
@@ -303,7 +347,7 @@ export default function HousekeepingPage() {
                       onClick={() =>
                         setNewReq((prev) => ({ ...prev, priority: p }))
                       }
-                      className={`flex-1 rounded-xl border-2 py-2 text-sm font-semibold transition-all ${newReq.priority === p ? (p === "high" ? "border-red-500 bg-red-50 text-red-600" : "border-navy-900 bg-navy-900/5 text-navy-900") : "border-gray-200 text-gray-500"}`}
+                      className={`flex-1 rounded-xl border-2 py-2 text-sm font-semibold transition-all ${newReq.priority === p ? (p === "high" ? "border-red-500 bg-red-50 text-red-600" : "border-brand-900 bg-brand-900/5 text-brand-900") : "border-gray-200 text-gray-500"}`}
                     >
                       {p === "high" ? "🚨 Urgent" : "📋 Normal"}
                     </button>
@@ -319,10 +363,11 @@ export default function HousekeepingPage() {
                 Cancel
               </button>
               <button
-                onClick={addRequest}
-                className="bg-navy-900 hover:bg-navy-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+                onClick={addRequestHandler}
+                disabled={creating}
+                className="bg-brand-900 hover:bg-brand-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50"
               >
-                Create Request
+                {creating ? "Creating…" : "Create Request"}
               </button>
             </div>
           </div>

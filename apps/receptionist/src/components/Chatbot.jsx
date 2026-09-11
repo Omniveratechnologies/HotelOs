@@ -118,7 +118,7 @@ export default function Chatbot({
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-navy-900 hover:bg-navy-800 fixed right-6 bottom-6 z-40 flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all hover:scale-105"
+        className="bg-brand-900 hover:bg-brand-800 fixed right-6 bottom-6 z-40 flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all hover:scale-105"
       >
         {isOpen ? (
           <svg
@@ -147,8 +147,8 @@ export default function Chatbot({
       {isOpen && (
         <div className="fixed right-6 bottom-24 z-40 flex h-[500px] w-96 flex-col rounded-2xl border border-gray-100 bg-white shadow-2xl">
           {/* Header */}
-          <div className="bg-navy-900 flex items-center gap-3 rounded-t-2xl px-4 py-3">
-            <div className="bg-gold-400 flex h-9 w-9 items-center justify-center rounded-xl text-lg">
+          <div className="bg-brand-900 flex items-center gap-3 rounded-t-2xl px-4 py-3">
+            <div className="bg-primary-400 flex h-9 w-9 items-center justify-center rounded-xl text-lg">
               🤖
             </div>
             <div>
@@ -183,14 +183,14 @@ export default function Chatbot({
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {m.role === "assistant" && (
-                  <div className="bg-navy-900 mt-0.5 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm">
+                  <div className="bg-brand-900 mt-0.5 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm">
                     🤖
                   </div>
                 )}
                 <div
                   className={`max-w-[80%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed ${
                     m.role === "user"
-                      ? "bg-navy-900 rounded-br-sm text-white"
+                      ? "bg-brand-900 rounded-br-sm text-white"
                       : "rounded-bl-sm bg-gray-100 text-gray-800"
                   }`}
                 >
@@ -200,7 +200,7 @@ export default function Chatbot({
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-navy-900 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm">
+                <div className="bg-brand-900 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-sm">
                   🤖
                 </div>
                 <div className="flex gap-1 rounded-2xl rounded-bl-sm bg-gray-100 px-4 py-3">
@@ -229,7 +229,7 @@ export default function Chatbot({
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="hover:bg-navy-900 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-600 transition-colors hover:text-white"
+                  className="hover:bg-brand-900 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-600 transition-colors hover:text-white"
                 >
                   {q}
                 </button>
@@ -245,13 +245,13 @@ export default function Chatbot({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 placeholder="Ask about rooms, guests, orders..."
-                className="focus:border-gold-400 focus:ring-gold-400 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:ring-1 focus:outline-hidden"
+                className="focus:border-primary-400 focus:ring-primary-400 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:ring-1 focus:outline-hidden"
                 disabled={loading}
               />
               <button
                 onClick={() => send()}
                 disabled={loading || !input.trim()}
-                className="bg-navy-900 hover:bg-navy-800 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors disabled:opacity-40"
+                className="bg-brand-900 hover:bg-brand-800 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors disabled:opacity-40"
               >
                 <svg
                   viewBox="0 0 24 24"

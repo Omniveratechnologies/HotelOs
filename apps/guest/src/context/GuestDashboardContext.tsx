@@ -27,6 +27,8 @@ import {
   fetchMyOrders,
 } from "@/services/orderApi";
 import { openRazorpayCheckout } from "@/services/razorpayCheckout";
+import { connectGuestSocket, disconnectGuestSocket } from "@/services/socket";
+import type { Socket } from "socket.io-client";
 
 type LoadState = "loading" | "success" | "error";
 
@@ -57,6 +59,7 @@ export type GuestDashboardValue = {
     type: ServiceRequestType,
     description?: string,
     items?: string[],
+    details?: Record<string, unknown>,
   ) => Promise<void>;
   refreshRequests: () => Promise<void>;
 
@@ -171,6 +174,43 @@ export function GuestDashboardProvider({ children }: { children: ReactNode }) {
     loadOrders();
     loadRequests();
   }, [loadGuest, loadMenu, loadOrders, loadRequests]);
+
+  const socketRef = useRef<Socket | null>(null);
+  const hasConnectedRef = useRef(false);
+
+  useEffect(() => {
+    if (!guest?.id) return;
+
+    hasConnectedRef.current = false;
+
+    const socket = connectGuestSocket({
+      onOrderCreated: (order) => setOrders((prev) => [order, ...prev]),
+      onOrderUpdated: (order) =>
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? order : o))),
+      onRequestCreated: (request) => setRequests((prev) => [request, ...prev]),
+      onRequestUpdated: (request) =>
+        setRequests((prev) =>
+          prev.map((r) => (r.id === request.id ? request : r)),
+        ),
+    });
+
+    socket.on("connect", () => {
+      if (hasConnectedRef.current) {
+        // Reconnected — refetch so events missed while offline are recovered.
+        loadOrders();
+        loadRequests();
+      }
+      hasConnectedRef.current = true;
+    });
+
+    socketRef.current = socket;
+
+    return () => {
+      disconnectGuestSocket(socketRef.current);
+      socketRef.current = null;
+      hasConnectedRef.current = false;
+    };
+  }, [guest?.id, loadOrders, loadRequests]);
 
   const placeOrder = useCallback(
     async (

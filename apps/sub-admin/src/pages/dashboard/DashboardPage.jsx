@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 
 import StatCard from "../../components/StatCard.jsx";
 import AddMembers from "../../components/AddMembers.jsx";
@@ -177,35 +178,22 @@ export default function Dashboard() {
   const hotelName = statsData?.hotelName || "your hotel";
 
   return (
-    <div className="bg-ivory font-body flex min-h-screen">
+    <div className="bg-background-50 flex min-h-screen">
       <div className="min-w-0 flex-1">
         {/* =====================================================
             TOPBAR
         ===================================================== */}
 
-        <header className="border-beige-border bg-cream/95 sticky top-0 z-20 flex h-20 items-center justify-between border-b px-6 backdrop-blur-sm lg:px-10">
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-gray-100 bg-white/95 px-6 backdrop-blur-sm lg:px-10">
           <div className="flex min-w-0 items-center gap-4">
-            <button
-              className="text-navy shrink-0 lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M4 7h16M4 12h16M4 17h16"
-                  stroke="#22324E"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
+            <SidebarToggle />
 
             <div className="min-w-0">
-              <h1 className="font-display text-navy truncate text-2xl font-semibold">
+              <h1 className="font-display text-brand-900 truncate text-2xl font-semibold">
                 Welcome, {firstName}
               </h1>
 
-              <p className="text-muted hidden text-sm sm:block">
+              <p className="hidden text-sm text-gray-500 sm:block">
                 Here's what's happening at {hotelName} today.
               </p>
             </div>
@@ -214,27 +202,27 @@ export default function Dashboard() {
           <div className="flex shrink-0 items-center gap-4">
             <button
               aria-label="Notifications"
-              className="border-beige-border bg-ivory text-navy relative flex h-10 w-10 items-center justify-center rounded-full border"
+              className="bg-background-50 text-brand-900 relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"
-                  stroke="#22324E"
+                  stroke="currentColor"
                   strokeWidth="1.6"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </svg>
 
-              <span className="bg-gold absolute top-1.5 right-2 h-2 w-2 rounded-full" />
+              <span className="bg-primary-400 absolute top-1.5 right-2 h-2 w-2 rounded-full" />
             </button>
 
             <div className="flex items-center gap-2.5">
-              <span className="bg-navy font-display text-cream flex h-10 w-10 items-center justify-center rounded-full font-semibold">
+              <span className="bg-brand-900 font-display flex h-10 w-10 items-center justify-center rounded-full font-semibold text-white">
                 {(firstName || "A").charAt(0).toUpperCase()}
               </span>
 
-              <span className="text-navy hidden text-sm font-medium sm:block">
+              <span className="text-brand-900 hidden text-sm font-medium sm:block">
                 {user.name || "Admin"}
               </span>
             </div>
@@ -263,7 +251,7 @@ export default function Dashboard() {
           )}
 
           {statsLoading ? (
-            <div className="border-beige-border bg-cream text-muted shadow-card mb-8 rounded-2xl border p-10 text-center">
+            <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-10 text-center text-gray-500 shadow-xs">
               Loading dashboard stats...
             </div>
           ) : statsData && !statsError ? (
@@ -286,15 +274,15 @@ export default function Dashboard() {
               RECENT ACTIVITIES
           =================================================== */}
 
-          <div className="border-beige-border bg-cream shadow-card rounded-2xl border p-6">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="font-display text-navy text-xl font-semibold">
+              <h2 className="font-display text-brand-900 text-xl font-semibold">
                 Recent Activities
               </h2>
 
               <a
                 href="#"
-                className="text-gold hover:text-gold-hover text-sm font-medium"
+                className="text-primary-400 hover:text-primary-500 text-sm font-medium"
               >
                 View all
               </a>
@@ -305,22 +293,24 @@ export default function Dashboard() {
                 {statsData.recentActivities.map((a) => (
                   <div
                     key={a.id}
-                    className="border-beige-border flex items-center justify-between gap-4 border-b pb-4 last:border-0 last:pb-0"
+                    className="flex items-center justify-between gap-4 border-b border-gray-100 pb-4 last:border-0 last:pb-0"
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="bg-beige-border h-2 w-2 shrink-0 rounded-full" />
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-gray-200" />
 
-                      <p className="text-navy/80 truncate text-sm">{a.text}</p>
+                      <p className="text-brand-900/80 truncate text-sm">
+                        {a.text}
+                      </p>
                     </div>
 
-                    <span className="text-muted shrink-0 text-xs">
+                    <span className="shrink-0 text-xs text-gray-500">
                       {formatRelativeTime(a.createdAt)}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-muted py-8 text-center text-sm">
+              <div className="py-8 text-center text-sm text-gray-500">
                 No recent activity to show yet.
               </div>
             )}

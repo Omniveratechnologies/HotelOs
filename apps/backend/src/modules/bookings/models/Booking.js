@@ -66,5 +66,6 @@ bookingSchema.virtual("nights").get(function () {
 
 bookingSchema.index({ hotelId: 1, status: 1 });
 bookingSchema.index({ guestId: 1, status: 1 });
+bookingSchema.index({ roomId: 1, status: 1 });
 
 export default mongoose.model("Booking", bookingSchema);

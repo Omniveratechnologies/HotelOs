@@ -1,4 +1,5 @@
 import React from "react";
+import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
 import { useHotelOS } from "../../app/useHotelOS.js";
 
 const ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
@@ -50,13 +51,16 @@ export default function ReportsPage() {
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-navy-900 text-2xl font-bold">
-            Reports & Analytics
-          </h1>
-          <p className="text-sm text-gray-500">
-            Live snapshot · {reportDate} · {hotelName}
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <SidebarToggle />
+          <div>
+            <h1 className="font-display text-brand-900 text-2xl font-bold">
+              Reports & Analytics
+            </h1>
+            <p className="text-sm text-gray-500">
+              Live snapshot · {reportDate} · {hotelName}
+            </p>
+          </div>
         </div>
         <button className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
           Export PDF
@@ -86,15 +90,15 @@ export default function ReportsPage() {
             label: "F&B Revenue",
             value: `₹${foodRevenue.toLocaleString()}`,
             sub: `${foodOrders.filter((o) => o.status === "delivered").length} delivered orders`,
-            color: "text-purple-600",
-            bg: "bg-purple-50",
+            color: "text-blue-600",
+            bg: "bg-blue-50",
             icon: "🍽️",
           },
           {
             label: "Avg Daily Rate",
             value: `₹${avgDailyRate.toLocaleString()}`,
             sub: "Per occupied room",
-            color: "text-gold-400",
+            color: "text-primary-400",
             bg: "bg-amber-50",
             icon: "📊",
           },
@@ -120,12 +124,12 @@ export default function ReportsPage() {
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Room Mix by Type */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
-          <h3 className="text-navy-900 mb-4 font-bold">Current Room Mix</h3>
+          <h3 className="text-brand-900 mb-4 font-bold">Current Room Mix</h3>
           <div className="space-y-4">
             {byType.map((t) => (
               <div key={t.type}>
                 <div className="mb-1.5 flex justify-between">
-                  <span className="text-navy-900 text-sm font-semibold">
+                  <span className="text-brand-900 text-sm font-semibold">
                     {t.type}
                   </span>
                   <span className="text-sm text-gray-500">
@@ -134,7 +138,7 @@ export default function ReportsPage() {
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-gray-100">
                   <div
-                    className={`h-full rounded-full transition-all duration-700 ${t.occupied > 0 ? "from-navy-900 to-navy-700 bg-linear-to-r" : "bg-gray-200"}`}
+                    className={`h-full rounded-full transition-all duration-700 ${t.occupied > 0 ? "from-brand-900 to-brand-700 bg-linear-to-r" : "bg-gray-200"}`}
                     style={{
                       width: `${total > 0 ? (t.total / total) * 100 : 0}%`,
                     }}
@@ -152,7 +156,7 @@ export default function ReportsPage() {
 
         {/* Room Status Donut */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
-          <h3 className="text-navy-900 mb-4 font-bold">Current Room Status</h3>
+          <h3 className="text-brand-900 mb-4 font-bold">Current Room Status</h3>
           {total === 0 ? (
             <div className="py-10 text-center text-sm text-gray-400">
               No rooms yet.
@@ -166,7 +170,7 @@ export default function ReportsPage() {
                     cy="18"
                     r="15.9"
                     fill="none"
-                    stroke="#f3f4f6"
+                    className="stroke-gray-100"
                     strokeWidth="3.5"
                   />
                   <circle
@@ -174,7 +178,7 @@ export default function ReportsPage() {
                     cy="18"
                     r="15.9"
                     fill="none"
-                    stroke="#22c55e"
+                    className="stroke-green-500"
                     strokeWidth="3.5"
                     strokeDasharray={`${(available.length / total) * 100} ${100 - (available.length / total) * 100}`}
                     strokeDashoffset="0"
@@ -184,7 +188,7 @@ export default function ReportsPage() {
                     cy="18"
                     r="15.9"
                     fill="none"
-                    stroke="#3b82f6"
+                    className="stroke-blue-500"
                     strokeWidth="3.5"
                     strokeDasharray={`${(occupied.length / total) * 100} ${100 - (occupied.length / total) * 100}`}
                     strokeDashoffset={`${-(available.length / total) * 100}`}
@@ -194,7 +198,7 @@ export default function ReportsPage() {
                     cy="18"
                     r="15.9"
                     fill="none"
-                    stroke="#f59e0b"
+                    className="stroke-amber-500"
                     strokeWidth="3.5"
                     strokeDasharray={`${(reserved.length / total) * 100} ${100 - (reserved.length / total) * 100}`}
                     strokeDashoffset={`${-((available.length + occupied.length) / total) * 100}`}
@@ -204,7 +208,7 @@ export default function ReportsPage() {
                     cy="18"
                     r="15.9"
                     fill="none"
-                    stroke="#9ca3af"
+                    className="stroke-gray-400"
                     strokeWidth="3.5"
                     strokeDasharray={`${(cleaning.length / total) * 100} ${100 - (cleaning.length / total) * 100}`}
                     strokeDashoffset={`${-((available.length + occupied.length + reserved.length) / total) * 100}`}
@@ -212,7 +216,7 @@ export default function ReportsPage() {
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-navy-900 text-2xl font-bold">
+                    <div className="text-brand-900 text-2xl font-bold">
                       {occupancyRate}%
                     </div>
                     <div className="text-xs text-gray-400">Occupied</div>
@@ -229,7 +233,7 @@ export default function ReportsPage() {
                   <div key={l} className="flex items-center gap-3">
                     <div className={`h-3 w-3 rounded-full ${c} shrink-0`} />
                     <div>
-                      <div className="text-navy-900 text-sm font-semibold">
+                      <div className="text-brand-900 text-sm font-semibold">
                         {n} rooms
                       </div>
                       <div className="text-xs text-gray-400">{l}</div>
@@ -248,7 +252,7 @@ export default function ReportsPage() {
           <div className="mb-2 text-xs font-semibold tracking-wide text-blue-600 uppercase">
             Checked In
           </div>
-          <div className="text-navy-900 text-3xl font-bold">
+          <div className="text-brand-900 text-3xl font-bold">
             {checkedInGuests.length}
           </div>
           <div className="mt-1 text-sm text-gray-400">
@@ -262,7 +266,7 @@ export default function ReportsPage() {
           <div className="mb-2 text-xs font-semibold tracking-wide text-amber-600 uppercase">
             Upcoming Reservations
           </div>
-          <div className="text-navy-900 text-3xl font-bold">
+          <div className="text-brand-900 text-3xl font-bold">
             {reservedGuests.length}
           </div>
           <div className="mt-1 text-sm text-gray-400">
@@ -276,7 +280,7 @@ export default function ReportsPage() {
           <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
             Total Guests Registered
           </div>
-          <div className="text-navy-900 text-3xl font-bold">
+          <div className="text-brand-900 text-3xl font-bold">
             {guests.length}
           </div>
           <div className="mt-1 text-sm text-gray-400">
@@ -287,7 +291,7 @@ export default function ReportsPage() {
 
       {/* Revenue by Room Type */}
       <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
-        <h3 className="text-navy-900 mb-4 font-bold">Revenue by Room Type</h3>
+        <h3 className="text-brand-900 mb-4 font-bold">Revenue by Room Type</h3>
         {total === 0 ? (
           <div className="py-6 text-center text-sm text-gray-400">
             No rooms yet.
@@ -300,19 +304,19 @@ export default function ReportsPage() {
               return (
                 <div key={t.type}>
                   <div className="mb-1.5 flex justify-between">
-                    <span className="text-navy-900 text-sm font-medium">
+                    <span className="text-brand-900 text-sm font-medium">
                       {t.type}{" "}
                       <span className="font-normal text-gray-400">
                         ({t.occupied} rooms · ₹{t.avgRate}/night avg)
                       </span>
                     </span>
-                    <span className="text-navy-900 text-sm font-bold">
+                    <span className="text-brand-900 text-sm font-bold">
                       ₹{rev.toLocaleString()}
                     </span>
                   </div>
                   <div className="h-3 overflow-hidden rounded-full bg-gray-100">
                     <div
-                      className="from-navy-900 to-navy-700 h-full rounded-full bg-linear-to-r transition-all duration-700"
+                      className="from-brand-900 to-brand-700 h-full rounded-full bg-linear-to-r transition-all duration-700"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -327,7 +331,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Service Metrics */}
-      <div className="bg-navy-900 rounded-2xl p-5">
+      <div className="bg-brand-900 rounded-2xl p-5">
         <h3 className="mb-4 font-bold text-white">Service Performance</h3>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {[
@@ -335,17 +339,17 @@ export default function ReportsPage() {
             [
               "Pending",
               serviceRequests.filter((r) => r.status === "requested").length,
-              "text-orange-400",
+              "text-amber-400",
             ],
             [
               "Acknowledged",
               serviceRequests.filter((r) => r.status === "acknowledged").length,
-              "text-yellow-400",
+              "text-blue-400",
             ],
             [
               "In Progress",
               serviceRequests.filter((r) => r.status === "in-progress").length,
-              "text-blue-400",
+              "text-primary-400",
             ],
             [
               "Completed",

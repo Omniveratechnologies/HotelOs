@@ -72,9 +72,9 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-navy-900 flex items-center justify-between rounded-t-2xl p-5">
+        <div className="bg-brand-900 flex items-center justify-between rounded-t-2xl p-5">
           <div>
-            <div className="text-gold-400 text-xs font-semibold tracking-widest uppercase">
+            <div className="text-primary-400 text-xs font-semibold tracking-widest uppercase">
               Guest Details
             </div>
             <div className="mt-0.5 text-lg font-bold text-white">
@@ -101,7 +101,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
         <div className="space-y-5 p-5">
           {/* Credentials banner */}
           {credentials && (
-            <div className="text-navy-900 rounded-xl bg-amber-50 px-4 py-3 text-sm">
+            <div className="text-brand-900 rounded-xl bg-amber-50 px-4 py-3 text-sm">
               <span className="font-semibold">New credentials:</span>{" "}
               <span className="font-mono">{credentials.username}</span> /{" "}
               <span className="font-mono">{credentials.temporaryPassword}</span>
@@ -117,7 +117,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
               <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Room
               </div>
-              <div className="text-navy-900 font-semibold">
+              <div className="text-brand-900 font-semibold">
                 {guest.room
                   ? `Room ${guest.room.roomNumber} · ${guest.room.type}`
                   : "—"}
@@ -127,7 +127,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
               <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Status
               </div>
-              <div className="text-navy-900 font-semibold capitalize">
+              <div className="text-brand-900 font-semibold capitalize">
                 {(guest.status || "").replace("-", " ")}
               </div>
             </div>
@@ -185,7 +185,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                       <div className="text-xs font-semibold text-gray-400 uppercase">
                         {doc.docType}
                       </div>
-                      <div className="text-navy-900 truncate text-sm">
+                      <div className="text-brand-900 truncate text-sm">
                         {doc.filename}
                       </div>
                     </div>
@@ -194,7 +194,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="border-gold-400/40 text-gold-400 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:bg-amber-50"
+                        className="border-primary-400/40 text-primary-400 rounded-lg border px-3 py-1.5 text-xs font-semibold hover:bg-amber-50"
                       >
                         View
                       </a>
@@ -238,7 +238,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="New password (min 8 chars)"
-                  className="focus:border-gold-400 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-hidden"
+                  className="focus:border-primary-400 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-hidden"
                 />
                 <button
                   onClick={() => {
@@ -252,7 +252,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
                 <button
                   onClick={handleSetPassword}
                   disabled={busy}
-                  className="bg-navy-900 hover:bg-navy-800 rounded-xl px-3 text-xs text-white disabled:opacity-60"
+                  className="bg-brand-900 hover:bg-brand-800 rounded-xl px-3 text-xs text-white disabled:opacity-60"
                 >
                   {busy ? "..." : "Save"}
                 </button>
@@ -270,7 +270,7 @@ export default function GuestDetailsModal({ guest, onClose, onEdit }) {
           <div className="flex gap-3 border-t pt-4">
             <button
               onClick={onEdit}
-              className="text-navy-900 flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium hover:bg-gray-50"
+              className="text-brand-900 flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium hover:bg-gray-50"
             >
               ✏️ Edit
             </button>

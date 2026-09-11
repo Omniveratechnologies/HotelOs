@@ -11,7 +11,7 @@ import Footer from "./_components/Footer.jsx";
 
 export default function LandingPage() {
   return (
-    <div className="font-body">
+    <div>
       <Header />
       <Hero />
       <DepartmentsCarousel />

@@ -2,10 +2,13 @@ import crypto from "crypto";
 import Order from "../models/Order.js";
 import FoodItem from "#/modules/food-items/models/FoodItem.js";
 import Room from "#/modules/rooms/models/Room.js";
+import Booking from "#/modules/bookings/models/Booking.js";
+import User from "#/modules/users/models/User.js";
 import getRazorpay from "#/config/razorpay.js";
-import { orderDTO } from "../dto/order.dto.js";
+import { orderDTO, staffOrderDTO } from "../dto/order.dto.js";
+import { emitToHotel, emitToGuest } from "#/shared/services/socket.service.js";
+import { SOCKET_EVENTS } from "#/config/socket-events.js";
 import logger from "#/utils/logger.js";
-import { getIo } from "#/config/socket.js";
 
 // Normalize a kitchen-facing status value (spaces / display casing) into the
 // canonical Order enum stored on the model.
@@ -61,6 +64,27 @@ function kitchenOrderDTO(order, room) {
   };
 }
 
+// Enrich an order with its room number and guest name for staff consumers, then
+// broadcast it to the hotel's live room so all desk dashboards stay in sync.
+// The guest's own channel receives the base DTO so the dashboard updates live.
+async function publishOrder(
+  hotelId,
+  order,
+  event = SOCKET_EVENTS.ORDER_CREATED,
+) {
+  const [room, guest] = await Promise.all([
+    Room.findById(order.roomId).select("roomNumber"),
+    User.findById(order.guestId).select("name"),
+  ]);
+
+  const data = staffOrderDTO(order, room, guest);
+
+  emitToHotel(hotelId, event, data);
+  emitToGuest(order.guestId, event, orderDTO(order));
+
+  return data;
+}
+
 export const createOrder = async (req, res) => {
   try {
     const { items, paymentMethod } = req.body;
@@ -106,10 +130,8 @@ export const createOrder = async (req, res) => {
         paymentStatus: "PENDING",
         status: "NEW",
       });
-      getIo().to(`guest:${req.user._id}`).emit("order:update", orderDTO(order));
-      getIo()
-        .to(`hotel:${req.user.hotelId}`)
-        .emit("order:update", orderDTO(order));
+
+      await publishOrder(req.user.hotelId, order);
 
       return res.status(201).json({
         success: true,
@@ -149,10 +171,7 @@ export const createOrder = async (req, res) => {
       razorpayOrderId: razorpayOrder.id,
     });
 
-    getIo().to(`guest:${req.user._id}`).emit("order:update", orderDTO(order));
-    getIo()
-      .to(`hotel:${req.user.hotelId}`)
-      .emit("order:update", orderDTO(order));
+    await publishOrder(req.user.hotelId, order);
 
     return res.status(201).json({
       success: true,
@@ -220,6 +239,8 @@ export const verifyPayment = async (req, res) => {
     order.razorpayPaymentId = razorpay_payment_id;
     await order.save();
 
+    await publishOrder(req.user.hotelId, order, SOCKET_EVENTS.ORDER_UPDATED);
+
     return res.status(200).json({
       success: true,
       message: "Payment verified successfully",
@@ -267,6 +288,176 @@ export const getOrderById = async (req, res) => {
 };
 
 // =====================================================
+// STAFF-FACING (hotel-scoped) ENDPOINTS
+// =====================================================
+
+export const getHotelOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ hotelId: req.user.hotelId }).sort({
+      createdAt: -1,
+    });
+
+    const roomIds = [
+      ...new Set(orders.map((o) => o.roomId && o.roomId.toString())),
+    ].filter(Boolean);
+    const guestIds = [
+      ...new Set(orders.map((o) => o.guestId && o.guestId.toString())),
+    ].filter(Boolean);
+
+    const [rooms, guests] = await Promise.all([
+      roomIds.length
+        ? Room.find({ _id: { $in: roomIds } }).select("roomNumber")
+        : [],
+      guestIds.length
+        ? User.find({ _id: { $in: guestIds } }).select("name")
+        : [],
+    ]);
+
+    const roomMap = new Map(rooms.map((r) => [r._id.toString(), r]));
+    const guestMap = new Map(guests.map((g) => [g._id.toString(), g]));
+
+    const data = orders.map((order) =>
+      staffOrderDTO(
+        order,
+        roomMap.get(order.roomId?.toString()),
+        guestMap.get(order.guestId?.toString()),
+      ),
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Orders fetched successfully",
+      data,
+    });
+  } catch (error) {
+    logger.error(error, "Get hotel orders error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch orders" });
+  }
+};
+
+// Receptionist-created order. COD only — no Razorpay checkout for desk staff.
+// Resolves the guest from the room's active stay so hotel/guest isolation is
+// preserved without the frontend ever sending a guestId.
+export const createDeskOrder = async (req, res) => {
+  try {
+    const { roomId, items } = req.body;
+
+    if (!roomId || !items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "roomId and a non-empty items array are required",
+      });
+    }
+
+    const booking = await Booking.findOne({
+      roomId,
+      hotelId: req.user.hotelId,
+      status: { $in: ["reserved", "checked-in"] },
+    }).sort({ createdAt: -1 });
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "No active stay found for this room",
+      });
+    }
+
+    const foodItems = await FoodItem.find({
+      _id: { $in: items.map((i) => i.foodItemId) },
+      hotelId: req.user.hotelId,
+    });
+
+    let totalAmount = 0;
+    const orderItems = items.map((reqItem) => {
+      const foodItem = foodItems.find(
+        (f) => f._id.toString() === reqItem.foodItemId,
+      );
+
+      if (!foodItem) {
+        throw new Error(`Food item not found: ${reqItem.foodItemId}`);
+      }
+
+      const quantity = reqItem.quantity || 1;
+      totalAmount += foodItem.price * quantity;
+
+      return {
+        foodItemId: foodItem._id,
+        name: foodItem.name,
+        price: foodItem.price,
+        quantity,
+      };
+    });
+
+    const order = await Order.create({
+      guestId: booking.guestId,
+      hotelId: req.user.hotelId,
+      roomId: booking.roomId,
+      items: orderItems,
+      totalAmount,
+      paymentMethod: "COD",
+      paymentStatus: "PENDING",
+      status: "NEW",
+    });
+
+    const data = await publishOrder(req.user.hotelId, order);
+
+    return res.status(201).json({
+      success: true,
+      message: "Order created successfully",
+      data,
+    });
+  } catch (error) {
+    logger.error(error, "Create desk order error");
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to create order",
+    });
+  }
+};
+
+export const updateHotelOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: "status is required" });
+    }
+
+    const normalized = normalizeStatus(status);
+
+    const order = await Order.findOneAndUpdate(
+      { _id: req.params.id, hotelId: req.user.hotelId },
+      { status: normalized },
+      { new: true },
+    );
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const data = await publishOrder(
+      req.user.hotelId,
+      order,
+      SOCKET_EVENTS.ORDER_UPDATED,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Order status updated successfully",
+      data,
+    });
+  } catch (error) {
+    logger.error(error, "Update hotel order status error");
+    return res.status(500).json({
+      message: "Failed to update order status",
+      error: error.message,
+    });
+  }
+};
+
+// =====================================================
 // KITCHEN-FACING (public) ENDPOINTS
 // =====================================================
 
@@ -296,19 +487,7 @@ export const getAllOrders = async (req, res) => {
     });
   }
 };
-export const getHotelOrders = async (req, res) => {
-  try {
-    const orders = await Order.find({ hotelId: req.user.hotelId }).sort({
-      createdAt: -1,
-    });
-    return res.status(200).json({ success: true, data: orders.map(orderDTO) });
-  } catch (error) {
-    console.error("Get hotel orders error:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch hotel orders" });
-  }
-};
+
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -333,9 +512,6 @@ export const updateOrderStatus = async (req, res) => {
     if (order.roomId) {
       room = await Room.findById(order.roomId).select("roomNumber");
     }
-
-    getIo().to(`guest:${order.guestId}`).emit("order:update", orderDTO(order));
-    getIo().to(`hotel:${order.hotelId}`).emit("order:update", orderDTO(order));
 
     return res.status(200).json(kitchenOrderDTO(order, room));
   } catch (error) {
