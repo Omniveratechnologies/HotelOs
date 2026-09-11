@@ -1004,21 +1004,33 @@ Valid status updates: `ACKNOWLEDGED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`.
 
 ## Realtime events (WebSocket)
 
-The backend exposes a **Socket.IO** server on the same port as the HTTP API.
-Clients authenticate with `{ auth: { token: "<jwt>" } }` in the handshake and
-are joined to their hotel's room. Guests and other hotels never receive another
-hotel's events.
+The backend exposes a **Socket.IO** server on the same port as the HTTP API via
+`src/config/socket.js`. All sockets authenticate with
+`{ auth: { token: "<jwt>" } }` in the handshake
+(`src/shared/middleware/socket-auth.middleware.js`), so membership is owned by
+the backend from the verified JWT:
 
-| Event                    | Payload           | Emitted when                           |
-| ------------------------ | ----------------- | -------------------------------------- |
-| `order:created`          | Staff order DTO   | A guest or desk order is created       |
-| `order:updated`          | Staff order DTO   | Order status or payment status changes |
-| `serviceRequest:created` | Staff request DTO | A guest or desk request is created     |
-| `serviceRequest:updated` | Staff request DTO | A request status changes               |
+- Staff roles (`SUB_ADMIN`, `RECEPTIONIST`, `KITCHEN`, `SUPER_ADMIN`) are
+  joined to `hotel:<hotelId>`.
+- `GUEST` sockets are joined to `guest:<userId>`.
+- Guests and staff of other hotels never receive another hotel's events.
+  Client-emitted `join:*` events are never trusted.
+
+Modules emit through `src/shared/services/socket.service.js` (`emitToHotel`,
+`emitToGuest`); event names are shared constants in
+`src/config/socket-events.js` (`SOCKET_EVENTS`).
+
+| Event                    | Payload                   | Emitted when                           | Rooms              |
+| ------------------------ | ------------------------- | -------------------------------------- | ------------------ |
+| `order:created`          | Staff / guest order DTO   | A guest or desk order is created       | `hotel:`, `guest:` |
+| `order:updated`          | Staff / guest order DTO   | Order status or payment status changes | `hotel:`, `guest:` |
+| `serviceRequest:created` | Staff / guest request DTO | A guest or desk request is created     | `hotel:`, `guest:` |
+| `serviceRequest:updated` | Staff / guest request DTO | A request status changes               | `hotel:`, `guest:` |
 
 The receptionist dashboard subscribes to these events and merges them into its
 live lists, so front-desk, guest, and kitchen activity stay in sync across
-every open tab.
+every open tab. Staff rooms receive the enriched staff DTO
+(`roomNumber`, `guestName`); guest rooms receive the base DTO.
 
 ---
 

@@ -122,3 +122,14 @@ To integrate with real backend endpoints:
 
 1. Replace simulated promises in `src/data/mock-api.ts` or `src/hooks/useOrders.ts` with your API client calls (REST, GraphQL, or WebSockets for live status updates).
 2. Configure API base URLs and authentication headers using standard environment variables (e.g. `VITE_API_BASE_URL`).
+
+### Realtime updates (Socket.IO)
+
+Live order / service-request updates use `src/services/socket.ts`
+(`connectGuestSocket`). The socket authenticates with the stored JWT in the
+handshake (`{ auth: { token } }`) and listens to the backend's documented
+events — `order:created`, `order:updated`, `serviceRequest:created`,
+`serviceRequest:updated`. The backend owns room membership (`guest:<userId>`),
+so no `join:*` events are emitted by the client. `GuestDashboardProvider`
+wires this up automatically and refetches lists on reconnect to recover
+missed events.
