@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-function getToken(): string | null {
+export function getStoredToken(): string | null {
   return localStorage.getItem("auth_token");
 }
 
@@ -23,7 +23,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = getToken();
+  const token = getStoredToken();
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,

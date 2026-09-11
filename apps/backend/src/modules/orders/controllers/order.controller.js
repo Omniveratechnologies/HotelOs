@@ -6,7 +6,8 @@ import Booking from "#/modules/bookings/models/Booking.js";
 import User from "#/modules/users/models/User.js";
 import getRazorpay from "#/config/razorpay.js";
 import { orderDTO, staffOrderDTO } from "../dto/order.dto.js";
-import { emitToHotel } from "#/realtime/socket.js";
+import { emitToHotel, emitToGuest } from "#/shared/services/socket.service.js";
+import { SOCKET_EVENTS } from "#/config/socket-events.js";
 import logger from "#/utils/logger.js";
 
 // Normalize a kitchen-facing status value (spaces / display casing) into the
@@ -65,7 +66,12 @@ function kitchenOrderDTO(order, room) {
 
 // Enrich an order with its room number and guest name for staff consumers, then
 // broadcast it to the hotel's live room so all desk dashboards stay in sync.
-async function publishOrder(hotelId, order, event = "order:created") {
+// The guest's own channel receives the base DTO so the dashboard updates live.
+async function publishOrder(
+  hotelId,
+  order,
+  event = SOCKET_EVENTS.ORDER_CREATED,
+) {
   const [room, guest] = await Promise.all([
     Room.findById(order.roomId).select("roomNumber"),
     User.findById(order.guestId).select("name"),
@@ -74,6 +80,7 @@ async function publishOrder(hotelId, order, event = "order:created") {
   const data = staffOrderDTO(order, room, guest);
 
   emitToHotel(hotelId, event, data);
+  emitToGuest(order.guestId, event, orderDTO(order));
 
   return data;
 }
@@ -232,7 +239,7 @@ export const verifyPayment = async (req, res) => {
     order.razorpayPaymentId = razorpay_payment_id;
     await order.save();
 
-    await publishOrder(req.user.hotelId, order, "order:updated");
+    await publishOrder(req.user.hotelId, order, SOCKET_EVENTS.ORDER_UPDATED);
 
     return res.status(200).json({
       success: true,
@@ -430,7 +437,11 @@ export const updateHotelOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    const data = await publishOrder(req.user.hotelId, order, "order:updated");
+    const data = await publishOrder(
+      req.user.hotelId,
+      order,
+      SOCKET_EVENTS.ORDER_UPDATED,
+    );
 
     return res.status(200).json({
       success: true,

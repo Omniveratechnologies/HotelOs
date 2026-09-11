@@ -39,8 +39,8 @@ const serviceRequestSchema = new mongoose.Schema(
     },
     priority: {
       type: String,
-      enum: ["NORMAL", "URGENT"],
-      default: "NORMAL",
+      enum: ["normal", "high"],
+      default: "normal",
     },
     description: { type: String, trim: true },
     items: { type: [String], default: [] },

@@ -6,7 +6,8 @@ import {
   serviceRequestDTO,
   staffServiceRequestDTO,
 } from "../dto/serviceRequest.dto.js";
-import { emitToHotel } from "#/realtime/socket.js";
+import { emitToHotel, emitToGuest } from "#/shared/services/socket.service.js";
+import { SOCKET_EVENTS } from "#/config/socket-events.js";
 import logger from "#/utils/logger.js";
 
 const VALID_REQUEST_STATUSES = new Set([
@@ -18,10 +19,11 @@ const VALID_REQUEST_STATUSES = new Set([
 
 // Enrich a request with its room number and guest name for staff consumers, then
 // broadcast it to the hotel's live room so desk dashboards stay in sync.
+// The guest's own channel receives the base DTO so the dashboard updates live.
 async function publishRequest(
   hotelId,
   request,
-  event = "serviceRequest:created",
+  event = SOCKET_EVENTS.SERVICE_REQUEST_CREATED,
 ) {
   const [room, guest] = await Promise.all([
     Room.findById(request.roomId).select("roomNumber"),
@@ -31,13 +33,14 @@ async function publishRequest(
   const data = staffServiceRequestDTO(request, room, guest);
 
   emitToHotel(hotelId, event, data);
+  emitToGuest(request.guestId, event, serviceRequestDTO(request));
 
   return data;
 }
 
 export const createServiceRequest = async (req, res) => {
   try {
-    const { type, description, items } = req.body;
+    const { type, description, items, details } = req.body;
     if (!type)
       return res
         .status(400)
@@ -50,7 +53,9 @@ export const createServiceRequest = async (req, res) => {
       type,
       description,
       items: items || [],
+      details: details || {},
       status: "REQUESTED",
+      priority: type === "EMERGENCY" ? "high" : "normal",
     });
 
     await publishRequest(req.user.hotelId, request);
@@ -215,7 +220,7 @@ export const updateHotelRequestStatus = async (req, res) => {
     const data = await publishRequest(
       req.user.hotelId,
       request,
-      "serviceRequest:updated",
+      SOCKET_EVENTS.SERVICE_REQUEST_UPDATED,
     );
 
     return res.status(200).json({
