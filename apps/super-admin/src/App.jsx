@@ -11,6 +11,7 @@ import Hotels from "./pages/Hotels.jsx";
 import Transactions from "./pages/Transactions.jsx";
 import Subscriptions from "./pages/Subscriptions.jsx";
 import ServiceRequests from "./pages/ServiceRequests.jsx";
+import ChannelApprovals from "./pages/ChannelApprovals.jsx";
 import Settings from "./pages/Settings.jsx";
 
 export default function App() {
@@ -48,6 +49,9 @@ export default function App() {
 
             {/* Service Requests */}
             <Route path="service-requests" element={<ServiceRequests />} />
+
+            {/* Channel Approvals */}
+            <Route path="channel-approvals" element={<ChannelApprovals />} />
 
             {/* Settings */}
             <Route path="settings" element={<Settings />} />

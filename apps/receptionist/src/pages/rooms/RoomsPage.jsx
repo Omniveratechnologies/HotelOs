@@ -5,8 +5,14 @@ import AddRoomModal from "./AddRoomModal.jsx";
 import { useHotelOS } from "../../app/useHotelOS.js";
 
 export default function RoomsPage() {
-  const { rooms, updateRoomStatus, addRoom, roomsLoading, roomsError } =
-    useHotelOS();
+  const {
+    rooms,
+    updateRoomStatus,
+    updateRoom,
+    addRoom,
+    roomsLoading,
+    roomsError,
+  } = useHotelOS();
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -126,6 +132,11 @@ export default function RoomsPage() {
               >
                 {room.status.toUpperCase()}
               </div>
+              {room.roomCode && room.channelSyncStatus === "under_review" && (
+                <div className="mt-1 inline-block rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                  AIOSELL UNDER REVIEW
+                </div>
+              )}
               {room.guest && (
                 <div className="mt-2 truncate text-xs font-medium text-gray-600">
                   {room.guest}
@@ -149,6 +160,7 @@ export default function RoomsPage() {
           room={selected}
           onClose={() => setSelected(null)}
           updateRoomStatus={updateRoomStatus}
+          updateRoom={updateRoom}
         />
       )}
       {showAdd && (

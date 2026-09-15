@@ -118,3 +118,31 @@ export async function sendSubAdminInvite(inviteData) {
 export async function removeHotel(hotelId) {
   await api.delete(`/api/v1/hotels/${hotelId}`, { auth: true });
 }
+
+// =====================================================
+// CHANNEL CODE APPROVALS (Aiosell sync workflow)
+// =====================================================
+
+export async function getChannelApprovals({ kind, status } = {}) {
+  const params = new URLSearchParams();
+  if (kind) params.set("kind", kind);
+  if (status) params.set("status", status);
+  const query = params.toString();
+
+  const result = await api.get(
+    `/api/v1/hotels/channel-approvals${query ? `?${query}` : ""}`,
+    { auth: true },
+  );
+
+  return result.data;
+}
+
+export async function approveChannelCode(approvalId) {
+  const result = await api.patch(
+    `/api/v1/hotels/channel-approvals/${approvalId}`,
+    {},
+    { auth: true },
+  );
+
+  return result.data;
+}

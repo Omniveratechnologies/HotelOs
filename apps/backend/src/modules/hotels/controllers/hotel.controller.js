@@ -145,6 +145,42 @@ export const createHotel = async (req, res) => {
       status: "ACTIVE",
     });
 
+    // The channel manager is a single global config — provisioning it on the
+    // first hotel creation gives a fresh deployment a working Aiosell setup.
+    // Partner credentials come from env (sandbox in dev, real partner in prod).
+    if (process.env.AIOSELL_PMS_SLUG) {
+      try {
+        const existingConfig = await ChannelManagerConfig.findOne();
+
+        if (!existingConfig) {
+          await ChannelManagerConfig.create({
+            pmsSlug: process.env.AIOSELL_PMS_SLUG,
+            username: process.env.AIOSELL_PARTNER_USERNAME || "aiosell",
+            password: process.env.AIOSELL_PARTNER_PASSWORD || "AIOsell@123",
+            baseUrl:
+              process.env.AIOSELL_BASE_URL ||
+              "https://live.aiosell.com/api/v2/cm",
+            isEnabled: process.env.AIOSELL_ENABLED === "true",
+          });
+
+          // Force the aiosell client to re-read the config on the next call
+          aiosell.invalidateConfigCache();
+        }
+      } catch (error) {
+        // Best-effort — never fail hotel creation because provisioning broke
+        logger.warn(
+          { err: error },
+          "Channel manager auto-provision failed (hotel still created)",
+        );
+      }
+    }
+
+    // Dev convenience: stamp the created hotel with the channel hotel code
+    if (process.env.AIOSELL_HOTEL_CODE) {
+      hotel.aiosellHotelCode = process.env.AIOSELL_HOTEL_CODE.trim();
+      await hotel.save();
+    }
+
     return res.status(201).json({
       success: true,
       message: "Hotel created successfully",

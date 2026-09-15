@@ -6,10 +6,22 @@ export const getRooms = async () => {
   return result.data || [];
 };
 
-export const createRoom = async ({ roomNumber, type, rate, floor }) => {
+export const createRoom = async ({
+  roomNumber,
+  type,
+  rate,
+  floor,
+  roomCode,
+}) => {
   const result = await api.post(
     "/api/v1/rooms",
-    { roomNumber, type, rate: Number(rate), floor: Number(floor) },
+    {
+      roomNumber,
+      type,
+      rate: Number(rate),
+      floor: Number(floor),
+      roomCode: roomCode ? String(roomCode).trim() : undefined,
+    },
     { auth: true },
   );
 

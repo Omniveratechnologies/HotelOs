@@ -5,6 +5,7 @@ export default function AddRoomModal({ onClose, onAdd }) {
   const [floor, setFloor] = useState(1);
   const [type, setType] = useState("Standard");
   const [rate, setRate] = useState("");
+  const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -29,6 +30,7 @@ export default function AddRoomModal({ onClose, onAdd }) {
         type,
         rate: Number(rate),
         floor: Number(floor),
+        roomCode: roomCode.trim() || undefined,
       });
       onClose();
     } catch (err) {
@@ -103,6 +105,23 @@ export default function AddRoomModal({ onClose, onAdd }) {
               disabled={saving}
               className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+              Aiosell Room Code
+            </label>
+            <input
+              value={roomCode}
+              onChange={(e) => setRoomCode(e.target.value)}
+              placeholder="e.g. 101S"
+              disabled={saving}
+              className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
+            />
+            <p className="mt-1 text-[11px] text-gray-400">
+              Linked room uses this code on the channel. Rooms with a code are
+              synced only after a super admin approves it.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
