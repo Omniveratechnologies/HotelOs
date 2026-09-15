@@ -22,6 +22,14 @@ const ratePlanSchema = new Schema(
       required: true,
     },
     isActive: { type: Boolean, default: true },
+    // "under_review" until a SUPER_ADMIN creates + approves the ratePlanCode in
+    // the Aiosell dashboard (see ChannelApproval model); only approved codes
+    // sync.
+    channelSyncStatus: {
+      type: String,
+      enum: ["under_review", "completed"],
+      default: "completed",
+    },
   },
   { timestamps: true },
 );

@@ -35,6 +35,14 @@ const roomSchema = new mongoose.Schema(
     // onboarding (read from Aiosell property_details).
     roomCode: { type: String, trim: true, default: null },
 
+    // "under_review" until a SUPER_ADMIN creates + approves the roomCode in the
+    // Aiosell dashboard (see ChannelApproval model); only approved codes sync.
+    channelSyncStatus: {
+      type: String,
+      enum: ["under_review", "completed"],
+      default: "completed",
+    },
+
     floor: {
       type: Number,
       required: true,

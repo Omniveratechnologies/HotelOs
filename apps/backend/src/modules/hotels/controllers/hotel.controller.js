@@ -1,5 +1,18 @@
 import Hotel from "../models/Hotel.js";
 import ChannelManagerConfig from "#/modules/channel-manager/models/ChannelManagerConfig.js";
+import ChannelApproval from "#/modules/channel-manager/models/ChannelApproval.js";
+import Room from "#/modules/rooms/models/Room.js";
+import RatePlan from "#/modules/rate-plans/models/RatePlan.js";
+import {
+  KIND_ROOM,
+  KIND_RATE_PLAN,
+  getOrCreateApproval,
+  markCodeApproved,
+} from "#/modules/channel-manager/services/approval.service.js";
+import {
+  aiosellSyncInventory,
+  aiosellSyncRates,
+} from "#/shared/services/inventory.service.js";
 import aiosell from "#/shared/services/aiosell.service.js";
 import logger from "#/utils/logger.js";
 
@@ -751,5 +764,169 @@ export const setHotelAiosellCode = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to update" });
+  }
+};
+
+// =====================================================
+// LIST CHANNEL APPROVALS (SUPER_ADMIN)
+// Pending Aiosell codes across all hotels, with hotel info
+// and the number of rooms/rate plans sharing each code.
+// ?kind=ROOM|RATE_PLAN, ?status=under_review|completed
+// =====================================================
+
+export const getChannelApprovals = async (req, res) => {
+  try {
+    const { kind, status } = req.query;
+
+    const match = {};
+    if (kind) match.kind = kind;
+    if (status) match.status = status;
+
+    const approvals = await ChannelApproval.find(match)
+      .sort({ status: 1, createdAt: 1 })
+      .populate("hotelId", "name hotelCode")
+      .populate("approvedBy", "name username");
+
+    const enriched = await Promise.all(
+      approvals.map(async (approval) => {
+        const [roomCount, ratePlanCount] =
+          approval.kind === KIND_ROOM
+            ? [
+                await Room.countDocuments({
+                  hotelId: approval.hotelId,
+                  roomCode: approval.code,
+                }),
+                0,
+              ]
+            : [
+                0,
+                await RatePlan.countDocuments({
+                  hotelId: approval.hotelId,
+                  ratePlanCode: approval.code,
+                }),
+              ];
+
+        return {
+          id: approval._id,
+          hotelId: approval.hotelId?._id,
+          hotelName: approval.hotelId?.name || null,
+          hotelCode: approval.hotelId?.hotelCode || null,
+          kind: approval.kind,
+          code: approval.code,
+          status: approval.status,
+          rooms: roomCount,
+          ratePlans: ratePlanCount,
+          approvedBy: approval.approvedBy
+            ? {
+                id: approval.approvedBy._id,
+                name: approval.approvedBy.name,
+                username: approval.approvedBy.username,
+              }
+            : null,
+          approvedAt: approval.approvedAt,
+          createdAt: approval.createdAt,
+        };
+      }),
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Channel approvals fetched",
+      data: enriched,
+    });
+  } catch (error) {
+    logger.error(error, "Get channel approvals error");
+
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch approvals" });
+  }
+};
+
+// =====================================================
+// APPROVE CHANNEL CODE + FULL HOTEL RE-SYNC (SUPER_ADMIN)
+// Marks the code "completed", flips dependent Room/RatePlan
+// docs to completed, then pushes inventory + rates for the
+// hotel. Returns the sync outcome so the UI can report it.
+// =====================================================
+
+export const approveChannelCode = async (req, res) => {
+  try {
+    const { approvalId } = req.params;
+
+    const approval = await ChannelApproval.findById(approvalId);
+    if (!approval) {
+      return res.status(404).json({
+        success: false,
+        message: "Channel approval not found",
+      });
+    }
+
+    const hotelId = approval.hotelId;
+    const { updatedDocs } = await markCodeApproved(
+      hotelId,
+      approval.kind,
+      approval.code,
+      req.user.id,
+    );
+
+    // When a ROOM type is approved, rate plans whose ratePlanCode is already
+    // approved (but were stuck "under_review" because the room type was not)
+    // become pushable too — unlock them.
+    if (approval.kind === KIND_ROOM) {
+      const stuckPlans = await RatePlan.find({
+        hotelId,
+        roomCode: approval.code,
+        channelSyncStatus: "under_review",
+      });
+
+      for (const ratePlan of stuckPlans) {
+        const codeApproval = await getOrCreateApproval(
+          hotelId,
+          KIND_RATE_PLAN,
+          ratePlan.ratePlanCode,
+        );
+        if (codeApproval.status === "completed") {
+          ratePlan.channelSyncStatus = "completed";
+          await ratePlan.save();
+        }
+      }
+    }
+
+    // Full hotel re-sync (approved codes only — payloads are filtered).
+    const inventorySync = await aiosellSyncInventory(hotelId);
+    const ratesSync = await aiosellSyncRates(hotelId);
+
+    const syncOk = !!(inventorySync.ok || ratesSync.ok);
+    const syncMessage = [
+      inventorySync.ok ? "inventory" : null,
+      ratesSync.ok ? "rates" : null,
+    ]
+      .filter(Boolean)
+      .join(" + ");
+
+    return res.status(200).json({
+      success: syncOk,
+      message: syncOk
+        ? `Code approved and synced (${syncMessage})`
+        : `Code approved, but sync failed: ${inventorySync.error || ratesSync.error}`,
+      data: {
+        approval: {
+          id: approval._id,
+          kind: approval.kind,
+          code: approval.code,
+          status: "completed",
+        },
+        updatedDocs,
+        sync: { inventory: inventorySync, rates: ratesSync },
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Approve channel code error");
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to approve channel code",
+    });
   }
 };

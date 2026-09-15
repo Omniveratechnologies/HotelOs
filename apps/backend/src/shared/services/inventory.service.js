@@ -37,7 +37,13 @@ export async function aiosellCalculateAvailability(
   startDate,
   endDate,
 ) {
-  const rooms = await Room.find({ hotelId, roomCode: { $ne: null } });
+  // Only approved codes are pushed — codes still "under_review" don't exist
+  // in Aiosell yet (super admin must create them manually and approve).
+  const rooms = await Room.find({
+    hotelId,
+    roomCode: { $ne: null },
+    channelSyncStatus: "completed",
+  });
   const dates = datesInRange(startDate, endDate);
 
   const roomTypeCounts = {};
@@ -112,7 +118,11 @@ export async function aiosellBuildInventoryPayload(
 }
 
 export async function aiosellBuildRatePayload(hotelId, startDate, endDate) {
-  const ratePlans = await RatePlan.find({ hotelId, isActive: true });
+  const ratePlans = await RatePlan.find({
+    hotelId,
+    isActive: true,
+    channelSyncStatus: "completed",
+  });
   if (ratePlans.length === 0) return null;
 
   const rates = ratePlans.map((rp) => ({

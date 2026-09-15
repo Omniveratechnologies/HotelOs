@@ -3,6 +3,11 @@
 import RatePlan from "../models/RatePlan.js";
 import { ratePlanDTO } from "../dto/ratePlan.dto.js";
 import { aiosellSyncRates } from "#/shared/services/inventory.service.js";
+import {
+  KIND_ROOM,
+  KIND_RATE_PLAN,
+  resolveChannelStatus,
+} from "#/modules/channel-manager/services/approval.service.js";
 
 import logger from "#/utils/logger.js";
 
@@ -70,25 +75,48 @@ export const createRatePlan = async (req, res) => {
       });
     }
 
+    const code = ratePlanCode.trim().toLowerCase();
+    const roomCodeValue = roomCode.trim().toLowerCase();
+    // A rate plan can only be pushed once BOTH its room type and its own
+    // ratePlanCode exist in Aiosell (both are created manually + approved).
+    const codeStatus = await resolveChannelStatus(
+      req.user.hotelId,
+      KIND_RATE_PLAN,
+      code,
+    );
+    const roomStatus = await resolveChannelStatus(
+      req.user.hotelId,
+      KIND_ROOM,
+      roomCodeValue,
+    );
+    const channelSyncStatus =
+      codeStatus === "completed" && roomStatus === "completed"
+        ? "completed"
+        : "under_review";
+
     const ratePlan = await RatePlan.create({
       name: name.trim(),
-      ratePlanCode: ratePlanCode.trim().toLowerCase(),
-      roomCode: roomCode.trim().toLowerCase(),
+      ratePlanCode: code,
+      roomCode: roomCodeValue,
       roomType,
       rate,
       occupancy,
       mealPlan: mealPlan || "EP",
+      channelSyncStatus,
       hotelId: req.user.hotelId,
     });
 
     // =================================================
     // SYNC RATES TO AIOSELL (non-critical side effect)
+    // Only approved rate plans sync — see ChannelApproval.
     // =================================================
 
-    try {
-      await aiosellSyncRates(req.user.hotelId);
-    } catch (syncError) {
-      logger.error(syncError, "Rate sync after rate plan creation failed");
+    if (ratePlan.channelSyncStatus === "completed") {
+      try {
+        await aiosellSyncRates(req.user.hotelId);
+      } catch (syncError) {
+        logger.error(syncError, "Rate sync after rate plan creation failed");
+      }
     }
 
     return res.status(201).json({
@@ -120,6 +148,7 @@ export const createRatePlan = async (req, res) => {
 export const updateRatePlan = async (req, res) => {
   try {
     const allowedUpdates = {};
+    let mappingChanged = false;
 
     const {
       name,
@@ -150,10 +179,12 @@ export const updateRatePlan = async (req, res) => {
         });
       }
       allowedUpdates.ratePlanCode = ratePlanCode.trim().toLowerCase();
+      mappingChanged = true;
     }
 
     if (roomCode !== undefined) {
       allowedUpdates.roomCode = roomCode.trim().toLowerCase();
+      mappingChanged = true;
     }
 
     if (roomType !== undefined) {
@@ -180,6 +211,33 @@ export const updateRatePlan = async (req, res) => {
 
     if (isActive !== undefined) {
       allowedUpdates.isActive = Boolean(isActive);
+    }
+
+    // Recompute review status when the Aiosell mapping (ratePlanCode or
+    // roomCode) changed — push is only possible once both exist in Aiosell.
+    if (mappingChanged) {
+      const existingRatePlan = await RatePlan.findOne({
+        _id: req.params.id,
+        hotelId: req.user.hotelId,
+      });
+      const finalCode =
+        allowedUpdates.ratePlanCode ?? existingRatePlan.ratePlanCode;
+      const finalRoomCode =
+        allowedUpdates.roomCode ?? existingRatePlan.roomCode;
+      const codeStatus = await resolveChannelStatus(
+        req.user.hotelId,
+        KIND_RATE_PLAN,
+        finalCode,
+      );
+      const roomStatus = await resolveChannelStatus(
+        req.user.hotelId,
+        KIND_ROOM,
+        finalRoomCode,
+      );
+      allowedUpdates.channelSyncStatus =
+        codeStatus === "completed" && roomStatus === "completed"
+          ? "completed"
+          : "under_review";
     }
 
     if (Object.keys(allowedUpdates).length === 0) {
@@ -210,12 +268,15 @@ export const updateRatePlan = async (req, res) => {
 
     // =================================================
     // SYNC RATES TO AIOSELL (non-critical side effect)
+    // Only when the mapping changed AND ended approved.
     // =================================================
 
-    try {
-      await aiosellSyncRates(req.user.hotelId);
-    } catch (syncError) {
-      logger.error(syncError, "Rate sync after rate plan update failed");
+    if (mappingChanged && ratePlan.channelSyncStatus === "completed") {
+      try {
+        await aiosellSyncRates(req.user.hotelId);
+      } catch (syncError) {
+        logger.error(syncError, "Rate sync after rate plan update failed");
+      }
     }
 
     return res.status(200).json({

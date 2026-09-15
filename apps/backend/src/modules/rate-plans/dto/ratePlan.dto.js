@@ -9,6 +9,7 @@ export const ratePlanDTO = (ratePlan) => ({
   mealPlan: ratePlan.mealPlan,
   hotelId: ratePlan.hotelId,
   isActive: ratePlan.isActive,
+  channelSyncStatus: ratePlan.channelSyncStatus,
   createdAt: ratePlan.createdAt,
   updatedAt: ratePlan.updatedAt,
 });

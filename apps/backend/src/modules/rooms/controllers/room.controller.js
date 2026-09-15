@@ -2,6 +2,10 @@ import Room from "../models/Room.js";
 import { roomResponseDTO } from "../dto/room.dto.js";
 import logger from "#/utils/logger.js";
 import { aiosellSyncInventory } from "#/shared/services/inventory.service.js";
+import {
+  KIND_ROOM,
+  resolveChannelStatus,
+} from "#/modules/channel-manager/services/approval.service.js";
 
 const ROOM_TYPES = new Set(["Standard", "Deluxe", "Suite"]);
 
@@ -106,20 +110,28 @@ export const createRoom = async (req, res) => {
       });
     }
 
+    const code = roomCode?.trim() || null;
+    const channelSyncStatus = code
+      ? await resolveChannelStatus(req.user.hotelId, KIND_ROOM, code)
+      : "completed";
+
     const room = await Room.create({
       roomNumber: roomNumber.trim(),
       type,
       rate,
       floor,
-      roomCode: roomCode?.trim() || null,
+      roomCode: code,
+      channelSyncStatus,
       hotelId: req.user.hotelId,
     });
 
     // =================================================
     // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // Only approved codes sync — new codes are "under_review"
+    // until a SUPER_ADMIN creates + approves them in Aiosell.
     // =================================================
 
-    if (room.roomCode) {
+    if (room.roomCode && room.channelSyncStatus === "completed") {
       await aiosellSyncInventory(req.user.hotelId);
     }
 
@@ -202,7 +214,16 @@ export const updateRoom = async (req, res) => {
     }
 
     if (roomCode !== undefined) {
-      allowedUpdates.roomCode = roomCode === "" ? null : roomCode.trim();
+      const code = roomCode === "" ? null : roomCode.trim();
+      // New/changed codes go "under_review" unless the code is already approved
+      // (see ChannelApproval); a cleared code is neutral, so it resets to
+      // "completed" (no review needed — nothing to sync for it).
+      const status = code
+        ? await resolveChannelStatus(req.user.hotelId, KIND_ROOM, code)
+        : "completed";
+
+      allowedUpdates.roomCode = code;
+      allowedUpdates.channelSyncStatus = status;
     }
 
     // Occupancy display fields (guest record linking arrives in Phase B2)
@@ -225,6 +246,14 @@ export const updateRoom = async (req, res) => {
       });
     }
 
+    const previousRoom =
+      "roomCode" in allowedUpdates
+        ? await Room.findOne({
+            _id: req.params.id,
+            hotelId: req.user.hotelId,
+          })
+        : null;
+
     const room = await Room.findOneAndUpdate(
       {
         _id: req.params.id,
@@ -246,10 +275,24 @@ export const updateRoom = async (req, res) => {
 
     // =================================================
     // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // Push only when the final mapping is synced-to-Aiosell:
+    //   - code set to an approved code, or cleared (approved-code group shrank),
+    //   - OR the room moved OFF an approved code (its old count changed) even
+    //     if the new code is still "under_review" (unapproved codes are
+    //     excluded from the payload).
     // =================================================
 
     if ("roomCode" in allowedUpdates) {
-      await aiosellSyncInventory(req.user.hotelId);
+      const needsSync =
+        room.roomCode !== null && room.channelSyncStatus === "completed"
+          ? true
+          : previousRoom?.roomCode &&
+            previousRoom.channelSyncStatus === "completed" &&
+            previousRoom.roomCode !== room.roomCode;
+
+      if (needsSync) {
+        await aiosellSyncInventory(req.user.hotelId);
+      }
     }
 
     return res.status(200).json({

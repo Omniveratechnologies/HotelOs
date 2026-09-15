@@ -13,6 +13,8 @@ import {
   updateChannelManagerConfig,
   getHotelAiosellCode,
   setHotelAiosellCode,
+  getChannelApprovals,
+  approveChannelCode,
 } from "../controllers/hotel.controller.js";
 
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
@@ -49,6 +51,13 @@ router.use(authenticate, authorize("SUPER_ADMIN"));
 // =====================================================
 
 router.route("/").get(getHotels).post(createHotel);
+
+// =====================================================
+// CHANNEL APPROVALS (SUPER_ADMIN) — MUST precede `/:hotelId`
+// =====================================================
+
+router.get("/channel-approvals", getChannelApprovals);
+router.patch("/channel-approvals/:approvalId", approveChannelCode);
 
 // =====================================================
 // GET SINGLE HOTEL
