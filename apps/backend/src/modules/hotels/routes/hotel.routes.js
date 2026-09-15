@@ -9,6 +9,10 @@ import {
   deleteHotel,
   getMyHotel,
   updateMyHotel,
+  getChannelManagerConfig,
+  updateChannelManagerConfig,
+  getHotelAiosellCode,
+  setHotelAiosellCode,
 } from "../controllers/hotel.controller.js";
 
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
@@ -63,5 +67,14 @@ router
 // =====================================================
 
 router.patch("/:hotelId/status", updateHotelStatus);
+
+// =====================================================
+// CHANNEL MANAGER CONFIG (SUPER_ADMIN)
+// =====================================================
+
+router.get("/channel-manager/config", getChannelManagerConfig);
+router.post("/channel-manager/config", updateChannelManagerConfig);
+router.get("/:hotelId/aiosell-code", getHotelAiosellCode);
+router.patch("/:hotelId/aiosell-code", setHotelAiosellCode);
 
 export default router;

@@ -7,7 +7,9 @@ const bookingSchema = new mongoose.Schema(
     guestId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      // Optional — OTA bookings may arrive without any guest data (OTAs do
+      // not always share it). Only direct-stay bookings always have a user.
+      default: null,
     },
 
     hotelId: {
@@ -40,6 +42,55 @@ const bookingSchema = new mongoose.Schema(
     dndEnabled: {
       type: Boolean,
       default: false,
+    },
+
+    // ---- Channel manager / OTA metadata ----
+
+    // Booking source — "DIRECT" for walk-ins/registerStay, OTA name otherwise.
+    channel: {
+      type: String,
+      default: "DIRECT",
+      trim: true,
+    },
+
+    // Aiosell's booking identifier, used to match modify/cancel webhooks.
+    aiosellBookingId: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
+    // When the OTA created the booking.
+    bookedOn: {
+      type: Date,
+      default: null,
+    },
+
+    totalAmountBeforeTax: {
+      type: Number,
+      default: 0,
+    },
+
+    tax: {
+      type: Number,
+      default: 0,
+    },
+
+    commission: {
+      type: Number,
+      default: 0,
+    },
+
+    currency: {
+      type: String,
+      default: "INR",
+      trim: true,
+    },
+
+    specialRequests: {
+      type: String,
+      default: null,
+      trim: true,
     },
   },
   {

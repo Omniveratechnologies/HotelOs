@@ -15,6 +15,7 @@ import { sendGuestCredentialsEmail } from "#/shared/services/email.service.js";
 import { deleteObjects } from "#/config/r2.js";
 
 import { GUEST_STATUSES } from "#/shared/constants/guest.js";
+import { aiosellSyncInventory } from "#/shared/services/inventory.service.js";
 
 import logger from "#/utils/logger.js";
 
@@ -278,6 +279,12 @@ export const registerStay = async (req, res) => {
     });
 
     // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    await aiosellSyncInventory(req.user.hotelId);
+
+    // =================================================
     // EMAIL THE CREDENTIALS (non-blocking failure)
     // =================================================
 
@@ -522,6 +529,12 @@ export const updateBooking = async (req, res) => {
 
     await booking.save();
 
+    // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    await aiosellSyncInventory(req.user.hotelId);
+
     const populated = await Booking.findById(booking._id)
       .populate("guestId")
       .populate("roomId", "roomNumber type rate floor");
@@ -588,6 +601,12 @@ export const deleteBooking = async (req, res) => {
         await freeRoom(roomId);
       }
     }
+
+    // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    await aiosellSyncInventory(req.user.hotelId);
 
     logger.info({ bookingId: booking._id }, "Booking deleted");
 

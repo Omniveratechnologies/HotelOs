@@ -69,6 +69,11 @@ const hotelSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // Maps this hotel to Aiosell's property identifier (hotelCode in API
+    // payloads). Set by SUPER_ADMIN during channel manager onboarding.
+    aiosellHotelCode: { type: String, trim: true, default: null },
+
     wifiNetworkName: {
       type: String,
       trim: true,

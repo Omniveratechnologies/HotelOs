@@ -7,4 +7,9 @@ export const GUEST_ID_TYPES = [
   "Other",
 ];
 
-export const GUEST_STATUSES = ["reserved", "checked-in", "checked-out"];
+export const GUEST_STATUSES = [
+  "reserved",
+  "checked-in",
+  "checked-out",
+  "cancelled",
+];

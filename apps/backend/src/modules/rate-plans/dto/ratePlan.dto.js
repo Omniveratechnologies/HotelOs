@@ -1,0 +1,14 @@
+export const ratePlanDTO = (ratePlan) => ({
+  id: ratePlan._id,
+  name: ratePlan.name,
+  ratePlanCode: ratePlan.ratePlanCode,
+  roomCode: ratePlan.roomCode,
+  roomType: ratePlan.roomType,
+  rate: ratePlan.rate,
+  occupancy: ratePlan.occupancy,
+  mealPlan: ratePlan.mealPlan,
+  hotelId: ratePlan.hotelId,
+  isActive: ratePlan.isActive,
+  createdAt: ratePlan.createdAt,
+  updatedAt: ratePlan.updatedAt,
+});

@@ -1,6 +1,7 @@
 import Room from "../models/Room.js";
 import { roomResponseDTO } from "../dto/room.dto.js";
 import logger from "#/utils/logger.js";
+import { aiosellSyncInventory } from "#/shared/services/inventory.service.js";
 
 const ROOM_TYPES = new Set(["Standard", "Deluxe", "Suite"]);
 
@@ -75,7 +76,7 @@ export const getRoomById = async (req, res) => {
 
 export const createRoom = async (req, res) => {
   try {
-    const { roomNumber, type, rate, floor } = req.body;
+    const { roomNumber, type, rate, floor, roomCode } = req.body;
 
     if (
       !roomNumber?.trim() ||
@@ -110,8 +111,17 @@ export const createRoom = async (req, res) => {
       type,
       rate,
       floor,
+      roomCode: roomCode?.trim() || null,
       hotelId: req.user.hotelId,
     });
+
+    // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    if (room.roomCode) {
+      await aiosellSyncInventory(req.user.hotelId);
+    }
 
     return res.status(201).json({
       success: true,
@@ -143,8 +153,16 @@ export const updateRoom = async (req, res) => {
   try {
     const allowedUpdates = {};
 
-    const { status, type, rate, floor, currentGuest, checkIn, checkOut } =
-      req.body;
+    const {
+      status,
+      type,
+      rate,
+      floor,
+      currentGuest,
+      checkIn,
+      checkOut,
+      roomCode,
+    } = req.body;
 
     if (status !== undefined) {
       if (!ROOM_STATUSES.has(status)) {
@@ -181,6 +199,10 @@ export const updateRoom = async (req, res) => {
 
     if (floor !== undefined) {
       allowedUpdates.floor = floor;
+    }
+
+    if (roomCode !== undefined) {
+      allowedUpdates.roomCode = roomCode === "" ? null : roomCode.trim();
     }
 
     // Occupancy display fields (guest record linking arrives in Phase B2)
@@ -222,6 +244,14 @@ export const updateRoom = async (req, res) => {
       });
     }
 
+    // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    if ("roomCode" in allowedUpdates) {
+      await aiosellSyncInventory(req.user.hotelId);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Room updated successfully",
@@ -253,6 +283,14 @@ export const deleteRoom = async (req, res) => {
         success: false,
         message: "Room not found",
       });
+    }
+
+    // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    if (room.roomCode) {
+      await aiosellSyncInventory(req.user.hotelId);
     }
 
     return res.status(200).json({

@@ -30,6 +30,11 @@ const roomSchema = new mongoose.Schema(
       min: 0,
     },
 
+    // Aiosell room TYPE code (e.g. "executive", "suite").
+    // Shared by all rooms of the same `type`; set during channel manager
+    // onboarding (read from Aiosell property_details).
+    roomCode: { type: String, trim: true, default: null },
+
     floor: {
       type: Number,
       required: true,

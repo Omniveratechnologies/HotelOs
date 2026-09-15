@@ -5,6 +5,7 @@ export const roomResponseDTO = (room) => ({
   type: room.type,
   status: room.status,
   rate: room.rate,
+  roomCode: room.roomCode,
   currentGuest: room.currentGuest,
   checkIn: room.checkIn,
   checkOut: room.checkOut,

@@ -1,4 +1,6 @@
 import Hotel from "../models/Hotel.js";
+import ChannelManagerConfig from "#/modules/channel-manager/models/ChannelManagerConfig.js";
+import aiosell from "#/shared/services/aiosell.service.js";
 import logger from "#/utils/logger.js";
 
 // =====================================================
@@ -274,6 +276,7 @@ export const updateHotel = async (req, res) => {
       city,
       subscriptionStartDate,
       subscriptionEndDate,
+      aiosellHotelCode,
     } = req.body;
 
     const hotel = await Hotel.findById(hotelId);
@@ -395,6 +398,15 @@ export const updateHotel = async (req, res) => {
         success: false,
         message: "Subscription end date must be after the start date",
       });
+    }
+
+    // =================================================
+    // UPDATE AIOSELL HOTEL CODE
+    // =================================================
+
+    if (aiosellHotelCode !== undefined) {
+      hotel.aiosellHotelCode =
+        aiosellHotelCode === "" ? null : aiosellHotelCode.trim();
     }
 
     // =================================================
@@ -570,5 +582,174 @@ export const deleteHotel = async (req, res) => {
       success: false,
       message: "Failed to delete hotel",
     });
+  }
+};
+
+// =====================================================
+// GET CHANNEL MANAGER CONFIG (SUPER_ADMIN)
+// =====================================================
+
+export const getChannelManagerConfig = async (req, res) => {
+  try {
+    const config = await ChannelManagerConfig.findOne();
+
+    if (!config) {
+      return res.status(200).json({
+        success: true,
+        message: "Channel manager config fetched",
+        data: { pmsSlug: null, baseUrl: null, isEnabled: false },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Channel manager config fetched",
+      data: {
+        pmsSlug: config.pmsSlug,
+        baseUrl: config.baseUrl,
+        isEnabled: config.isEnabled,
+        lastSyncAt: config.lastSyncAt,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Get channel manager config error");
+
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch config" });
+  }
+};
+
+// =====================================================
+// UPDATE CHANNEL MANAGER CONFIG (SUPER_ADMIN)
+// password/baseUrl are write-only from the API; never returned.
+// =====================================================
+
+export const updateChannelManagerConfig = async (req, res) => {
+  try {
+    const { pmsSlug, username, password, baseUrl, isEnabled } = req.body;
+
+    let config = await ChannelManagerConfig.findOne();
+
+    if (
+      pmsSlug === undefined &&
+      username === undefined &&
+      password === undefined &&
+      baseUrl === undefined &&
+      isEnabled === undefined
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "No fields to update",
+      });
+    }
+
+    if (config) {
+      if (pmsSlug !== undefined) config.pmsSlug = pmsSlug;
+      if (username !== undefined) config.username = username;
+      if (password !== undefined) config.password = password;
+      if (baseUrl !== undefined) config.baseUrl = baseUrl;
+      if (isEnabled !== undefined) config.isEnabled = isEnabled;
+      await config.save();
+    } else {
+      config = await ChannelManagerConfig.create({
+        pmsSlug,
+        username,
+        password,
+        baseUrl,
+        isEnabled: isEnabled ?? false,
+      });
+    }
+
+    // Force the aiosell service to re-read the config on the next call
+    aiosell.invalidateConfigCache();
+
+    return res.status(200).json({
+      success: true,
+      message: "Channel manager config updated",
+      data: {
+        pmsSlug: config.pmsSlug,
+        baseUrl: config.baseUrl,
+        isEnabled: config.isEnabled,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Update channel manager config error");
+
+    if (error.code === 11000) {
+      return res
+        .status(409)
+        .json({ success: false, message: "PMS slug already exists" });
+    }
+
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to update config" });
+  }
+};
+
+// =====================================================
+// GET HOTEL AIOSELL CODE (SUPER_ADMIN)
+// =====================================================
+
+export const getHotelAiosellCode = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+
+    const hotel = await Hotel.findById(hotelId);
+
+    if (!hotel) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Hotel not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Aiosell hotel code fetched",
+      data: {
+        hotelId: hotel._id,
+        aiosellHotelCode: hotel.aiosellHotelCode || null,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Get hotel aiosell code error");
+
+    return res.status(500).json({ success: false, message: "Failed to fetch" });
+  }
+};
+
+// =====================================================
+// SET HOTEL AIOSELL CODE (SUPER_ADMIN)
+// =====================================================
+
+export const setHotelAiosellCode = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    const { aiosellHotelCode } = req.body;
+
+    const hotel = await Hotel.findByIdAndUpdate(
+      hotelId,
+      { aiosellHotelCode: aiosellHotelCode?.trim() || null },
+      { new: true },
+    );
+
+    if (!hotel) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Hotel not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Aiosell hotel code updated",
+      data: { hotelId: hotel._id, aiosellHotelCode: hotel.aiosellHotelCode },
+    });
+  } catch (error) {
+    logger.error(error, "Set hotel aiosell code error");
+
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to update" });
   }
 };
