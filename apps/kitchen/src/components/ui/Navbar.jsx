@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import Hamburger from "./Hamburger/Hamburger";
+import Hamburger from "../Hamburger/Hamburger";
 import SearchBar from "./SearchBar";
 
 const Navbar = ({
@@ -48,19 +47,14 @@ const Navbar = ({
     <header className="w-full">
       <div className="relative flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
-          <Hamburger
-            isMenuOpen={isMenuOpen}
-            setIsMenuOpen={setIsMenuOpen}
-          />
+          <Hamburger isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
           <div>
             <h1 className="text-xl font-bold tracking-[4px] text-white uppercase md:text-2xl lg:text-3xl">
               {title}
             </h1>
 
-            <h4 className="text-gray-300">
-              {subtitle}
-            </h4>
+            <h4 className="text-gray-300">{subtitle}</h4>
           </div>
         </div>
 
@@ -68,9 +62,10 @@ const Navbar = ({
           <SearchBar
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
+            placeholder="Search order, items,..."
           />
 
-          <div className="leading-tight p-2">
+          <div className="p-2 leading-tight">
             <div className="text-lg font-bold tracking-wider text-yellow-400 md:text-xl lg:text-2xl">
               {time}
             </div>

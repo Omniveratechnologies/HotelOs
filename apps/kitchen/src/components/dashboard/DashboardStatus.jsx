@@ -1,5 +1,5 @@
 import { FiShoppingBag, FiClock, FiCheckCircle, FiTruck } from "react-icons/fi";
-import StatusCard from "../StatusCard";
+import StatusCard from "../ui/StatusCard";
 
 const DashboardStatus = ({ orders }) => {
   const completedOrders = orders.filter(

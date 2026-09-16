@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 
 import API_BASE_URL from "../config/api.js";
 
-import Navbar from "../components/Navbar";
+import Navbar from "../components/ui/Navbar.jsx";
 import Sidebar from "../components/Hamburger/SideBar.jsx";
 import DashboardStatus from "../components/dashboard/DashboardStatus.jsx";
-import OrderBoard from "../components/Dashboard/OrderBoard.jsx";
+import OrderBoard from "../components/dashboard/OrderBoard.jsx";
 
 const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [navbarSearchTerm, setNavbarSearchTerm] = useState("");
 
   const updateStatus = async (id, newStatus) => {
     try {
@@ -34,9 +34,7 @@ const Dashboard = () => {
       const updatedOrder = await response.json();
 
       setOrders((prev) =>
-        prev.map((order) =>
-          order._id === id ? updatedOrder : order,
-        ),
+        prev.map((order) => (order._id === id ? updatedOrder : order)),
       );
     } catch (error) {
       console.error("Error updating order status:", error);
@@ -46,9 +44,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/kitchen/orders`,
-        );
+        const response = await fetch(`${API_BASE_URL}/kitchen/orders`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch orders");
@@ -66,11 +62,11 @@ const Dashboard = () => {
   }, []);
 
   const filteredOrders = orders.filter((order) => {
-    if (!searchTerm.trim()) {
+    if (!navbarSearchTerm.trim()) {
       return true;
     }
 
-    const searchValue = searchTerm.toLowerCase();
+    const searchValue = navbarSearchTerm.toLowerCase();
 
     return Object.values(order).some((value) =>
       String(value).toLowerCase().includes(searchValue),
@@ -79,10 +75,7 @@ const Dashboard = () => {
 
   return (
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
-      <Sidebar
-        isMenuOpen={isMenuOpen}
-        setIsMenuOpen={setIsMenuOpen}
-      />
+      <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
         className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
@@ -94,17 +87,14 @@ const Dashboard = () => {
           subtitle="Real-time orders. Faster service. Happier Customers."
           isMenuOpen={isMenuOpen}
           setIsMenuOpen={setIsMenuOpen}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
+          navbarSearchTerm={navbarSearchTerm}
+          setNavbarSearchTerm={setNavbarSearchTerm}
         />
 
         <main className="mt-3 px-4">
           <DashboardStatus orders={orders} />
 
-          <OrderBoard
-            orders={filteredOrders}
-            updateStatus={updateStatus}
-          />
+          <OrderBoard orders={filteredOrders} updateStatus={updateStatus} />
         </main>
       </div>
     </div>

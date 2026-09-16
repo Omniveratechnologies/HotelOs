@@ -52,7 +52,9 @@ function kitchenOrderDTO(order, room) {
     roomNumber: room ? room.roomNumber : order.roomId || null,
     age: formatAge(order.createdAt),
     status: statusDisplay,
+    totalAmount: order.totalAmount,
     paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
     items: (order.items || []).map((item) => ({
       _id: item._id || item.foodItemId,
       name: item.name,
@@ -287,6 +289,29 @@ export const getOrderById = async (req, res) => {
   }
 };
 
+export const deleteOrder = async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Order deleted successfully",
+      id: req.params.id,
+    });
+  } catch (error) {
+    console.error("Error deleting order:", error);
+
+    res.status(500).json({
+      message: "Failed to delete order",
+    });
+  }
+};
+
 // =====================================================
 // STAFF-FACING (hotel-scoped) ENDPOINTS
 // =====================================================
@@ -484,6 +509,35 @@ export const getAllOrders = async (req, res) => {
     logger.error(error, "Get all orders error");
     return res.status(500).json({
       message: "Failed to fetch orders",
+    });
+  }
+};
+
+export const updateOrder = async (req, res) => {
+  try {
+    const { guestId, roomId, items } = req.body;
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    order.guestId = guestId;
+    order.roomId = roomId;
+    order.items = items;
+
+    await order.save();
+
+    return res.status(200).json(order);
+  } catch (error) {
+    console.error("Error updating order:", error);
+
+    return res.status(500).json({
+      message: "Failed to update order",
+      error: error.message,
     });
   }
 };

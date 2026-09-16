@@ -40,7 +40,7 @@ const Actions = {
     buttons: [
       {
         label: "MARK DELIVERED",
-        nextStatus: "Delivered",
+        nextStatus: "DELIVERED",
         className: "bg-yellow-600 text-black cursor-default disabled",
       },
     ],

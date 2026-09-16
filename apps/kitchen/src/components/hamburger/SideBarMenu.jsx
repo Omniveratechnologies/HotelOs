@@ -32,7 +32,8 @@ const SidebarMenu = () => {
 
     {
       name: "Orders",
-      icon: <FiShoppingBag/>,
+
+      icon: <FiShoppingBag />,
       submenu: [
         { name: "All Orders", path: "/orders/all-orders" },
         { name: "New Orders", path: "/orders/new-orders" },
@@ -45,18 +46,18 @@ const SidebarMenu = () => {
     {
       name: "Kitchen Display",
       path: "/kitchen-display",
-      icon: <FiMonitor/>,
+      icon: <FiMonitor />,
     },
 
     {
       name: "Add Menu",
       path: "/add-menu",
-      icon: <FiPlusCircle/>,
+      icon: <FiPlusCircle />,
     },
 
     {
       name: "Menu Management",
-      icon: <FiGrid/>,
+      icon: <FiGrid />,
       submenu: [
         { name: "Add Menu Item", path: "/menu/add-menu-item" },
         { name: "Manage Menu", path: "/menu/manage-menu" },
@@ -69,7 +70,7 @@ const SidebarMenu = () => {
 
     {
       name: "Inventory",
-      icon: <FiPackage/>,
+      icon: <FiPackage />,
       submenu: [
         { name: "Stock Overview", path: "/inventory/stock-overview" },
         { name: "Add / Receive Stock", path: "/inventory/add-stock" },
@@ -84,7 +85,7 @@ const SidebarMenu = () => {
 
     {
       name: "Manage Staff",
-      icon: <FiUsers/>,
+      icon: <FiUsers />,
       submenu: [
         { name: "All Staff", path: "/manage-staff/all-staff" },
         { name: "Attendance", path: "/manage-staff/attendance" },
@@ -105,7 +106,7 @@ const SidebarMenu = () => {
 
     {
       name: "Billing",
-      icon: <FiCreditCard/>,
+      icon: <FiCreditCard />,
       submenu: [
         { name: "New Bill", path: "/billing/new-bill" },
         { name: "All Bills", path: "/billing/all-bills" },
@@ -120,7 +121,7 @@ const SidebarMenu = () => {
 
     {
       name: "Reports",
-      icon: <FiBarChart2/>,
+      icon: <FiBarChart2 />,
       submenu: [
         { name: "Overview", path: "/reports/overview" },
         { name: "Order Reports", path: "/reports/order" },
@@ -136,7 +137,7 @@ const SidebarMenu = () => {
 
     {
       name: "Suppliers",
-      icon: <FiTruck/>,
+      icon: <FiTruck />,
       submenu: [
         { name: "All Suppliers", path: "/suppliers" },
         { name: "Supplies History", path: "/suppliers/history" },
@@ -150,7 +151,7 @@ const SidebarMenu = () => {
     {
       name: "Settings",
       path: "/settings",
-      icon: <FiSettings/>,
+      icon: <FiSettings />,
     },
   ];
 
@@ -159,13 +160,14 @@ const SidebarMenu = () => {
       {menuItems.map((item) => (
         <div key={item.name}>
           {!item.submenu ? (
-            <a
+            <Link
               to={item.path}
+              onClick={() => console.log("Dashboard clicked")}
               className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm text-gray-300 transition hover:bg-emerald-900 hover:text-white"
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.name}</span>
-            </a>
+            </Link>
           ) : (
             <>
               <button

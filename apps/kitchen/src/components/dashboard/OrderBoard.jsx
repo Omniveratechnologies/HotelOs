@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import StatusColumn from "../StatusColumn";
-import OrderCard from "../OrderCard";
+import StatusColumn from "../ui/StatusColumn";
+import OrderCard from "./OrderCard";
 const OrderBoard = ({ orders, updateStatus }) => {
   const statuses = useMemo(() => {
     const base = [
