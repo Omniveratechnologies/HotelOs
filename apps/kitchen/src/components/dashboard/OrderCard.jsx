@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import Actions from "../utils/Actions";
+import Actions from "../../utils/Actions";
 
 const borderColors = {
   NEW: "border-l-yellow-600",
