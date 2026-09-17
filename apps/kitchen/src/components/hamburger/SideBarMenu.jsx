@@ -59,7 +59,6 @@ const SidebarMenu = () => {
       name: "Menu Management",
       icon: <FiGrid />,
       submenu: [
-        { name: "Add Menu Item", path: "/menu/add-menu-item" },
         { name: "Manage Menu", path: "/menu/manage-menu" },
         { name: "Categories", path: "/menu/categories" },
         { name: "Add-ons / Modifiers", path: "/menu/add-ons" },

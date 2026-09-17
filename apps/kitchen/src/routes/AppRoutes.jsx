@@ -5,6 +5,7 @@ import NewOrders from "../pages/orders/NewOrders";
 import InProgress from "../pages/orders/InProgress";
 import Completed from "../pages/orders/Completed";
 import Cancelled from "../pages/orders/Cancelled";
+import AddMenu from "../pages/AddMenu";
 
 const AppRoutes = () => {
   return (
@@ -15,6 +16,7 @@ const AppRoutes = () => {
       <Route path="/orders/in-progress" element={<InProgress />} />
       <Route path="/orders/completed" element={<Completed />} />
       <Route path="/orders/cancelled" element={<Cancelled />} />
+      <Route path="/add-menu" element={<AddMenu />} />
     </Routes>
   );
 };
