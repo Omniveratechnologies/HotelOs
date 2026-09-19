@@ -4,7 +4,7 @@ import RatePlan from "../models/RatePlan.js";
 import RoomType from "#/modules/room-types/models/RoomType.js";
 import { ratePlanDTO } from "../dto/ratePlan.dto.js";
 import { aiosellSyncRates } from "#/shared/services/inventory.service.js";
-import { deriveRatePlanCode } from "@hotelos/utils/ratePlanCode";
+import { deriveRatePlanCode } from "@hotelos/utils";
 import {
   KIND_RATE_PLAN,
   getRoomTypeStatus,

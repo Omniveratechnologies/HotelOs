@@ -6,6 +6,12 @@
 // mealPlanOf() in channelImport.service.js reverses this when pulling plans,
 // so the two builders must stay in sync.
 
+/**
+ * @fileoverview This file provides utility functions for deriving and parsing Aiosell rate plan codes.
+ * It defines the structure of rate plan codes and offers functions to construct and deconstruct them based on room code, occupancy, and meal plan.
+ *
+ * @module ratePlanCode
+ */
 export const OCCUPANCY_LETTER_BY_TYPE = {
   single: "s",
   double: "d",
@@ -13,15 +19,24 @@ export const OCCUPANCY_LETTER_BY_TYPE = {
   quad: "q",
 };
 
-const OCCUPANCY_TYPE_BY_LETTER = {
+/**
+ * Maps occupancy letters to their corresponding occupancy types.
+ * @type {Object}
+ */
+export const OCCUPANCY_TYPE_BY_LETTER = {
   s: "single",
   d: "double",
   t: "triple",
   q: "quad",
 };
 
-// Builds the Aiosell rate plan code from the room code, occupancy and meal
-// plan. Returns "" when there is no room code to anchor the code to.
+/**
+ * Derives the Aiosell rate plan code from the room code, occupancy, and meal plan.
+ * @param {string} roomCode - The code of the room.
+ * @param {string} occupancy - The occupancy type (single, double, triple, quad).
+ * @param {string} mealPlan - The meal plan.
+ * @returns {string} The derived rate plan code.
+ */
 export function deriveRatePlanCode(roomCode, occupancy, mealPlan) {
   const room = String(roomCode || "")
     .trim()
@@ -36,7 +51,11 @@ export function deriveRatePlanCode(roomCode, occupancy, mealPlan) {
   return `${room}-${letter}-${meal}`;
 }
 
-// Reverses a rate plan code into its pieces (used by the import pipeline).
+/**
+ * Parses the Aiosell rate plan code into its components: room code, occupancy, and meal plan.
+ * @param {string} code - The rate plan code to parse.
+ * @returns {Object} An object containing the room code, occupancy type, and meal plan.
+ */
 export function parseRatePlanCode(code) {
   const parts = String(code || "")
     .trim()

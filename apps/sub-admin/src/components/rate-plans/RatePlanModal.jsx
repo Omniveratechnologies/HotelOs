@@ -9,7 +9,7 @@ import {
   updateRatePlan,
 } from "../../services/ratePlan.service.js";
 import { getAiosellRoomTypes } from "../../services/hotel.service.js";
-import { deriveRatePlanCode } from "../../services/ratePlanCode.js";
+import { deriveRatePlanCode } from "@hotelos/utils";
 
 const OCCUPANCIES = ["single", "double", "triple", "quad"];
 const MEAL_PLANS = ["EP", "CP", "MAP", "AP"];

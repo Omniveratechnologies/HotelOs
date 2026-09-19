@@ -1,35 +1,17 @@
-import { clsx } from "clsx";
-import { twMerge, twJoin } from "tailwind-merge";
-import * as ratePlanCode from "./ratePlanCode.js";
-
-/** @typedef {import("clsx").ClassValue} ClassValue */
-
 /**
- * Merge conditional class names and dedupe conflicting Tailwind utilities.
+ * @fileoverview This file serves as the entry point for the utils package, re-exporting various utility functions and modules.
+ * It provides a centralized location for importing commonly used utilities, making it easier to manage dependencies and maintain code organization.
  *
- * Uses `clsx` for conditional branching (strings, arrays, objects, falsy
- * values) and `tailwind-merge` to resolve conflicting utilities — later
- * values win. The default way to compose `className` strings across HotelOS.
- *
- * @param {...ClassValue} inputs - Class values, typically a mix of template
- *   literals, booleans, and objects keyed by className.
- * @returns {string} A single conflict-free className string for `className`.
- *
- * @example
- * cn("px-2 p-3", isActive && "bg-brand-900", ["rounded-lg"]); // "p-3 bg-brand-900 rounded-lg"
+ * @module utils
  */
-export function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
 
-/** Merge two className strings, deduping conflicting utilities (see {@link cn}). */
-export { twMerge };
+// Re-export utility functions and modules from their respective files
+export { cn, clsx, twMerge, twJoin } from "./cn.js";
 
-/** Join className strings with no deduping of conflicting utilities. */
-export { twJoin };
-
-/** Tiny helper for constructing conditional className strings. */
-export { clsx };
-
-/** Aiosell rate plan code helpers: deriveRatePlanCode, parseRatePlanCode, OCCUPANCY_LETTER_BY_TYPE */
-export { ratePlanCode };
+// Re-export rate plan code utilities from the ratePlanCode.js file
+export {
+  deriveRatePlanCode,
+  parseRatePlanCode,
+  OCCUPANCY_LETTER_BY_TYPE,
+  OCCUPANCY_TYPE_BY_LETTER,
+} from "./ratePlanCode.js";
