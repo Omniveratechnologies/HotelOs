@@ -1,13 +1,21 @@
 // Rate plan CRUD + manual rate sync to Aiosell. Rate changes re-push via
 // aiosellSyncRates as a non-blocking side effect (same pattern as inventory).
 import RatePlan from "../models/RatePlan.js";
+import RoomType from "#/modules/room-types/models/RoomType.js";
 import { ratePlanDTO } from "../dto/ratePlan.dto.js";
 import { aiosellSyncRates } from "#/shared/services/inventory.service.js";
+import { deriveRatePlanCode } from "@hotelos/utils/ratePlanCode";
 import {
-  KIND_ROOM,
   KIND_RATE_PLAN,
+  getRoomTypeStatus,
   resolveChannelStatus,
-} from "#/modules/channel-manager/services/approval.service.js";
+} from "#/modules/channel-manager/approvals/approval.service.js";
+import {
+  recordApprovalChange,
+  detectMappingChange,
+  updateEntitySyncStatus,
+  CHANNEL_RATE_PLAN_FIELDS,
+} from "#/modules/channel-manager/approvals/approval-helpers.js";
 
 import logger from "#/utils/logger.js";
 
@@ -42,29 +50,19 @@ export const getRatePlans = async (req, res) => {
 
 export const createRatePlan = async (req, res) => {
   try {
-    const {
-      name,
-      ratePlanCode,
-      roomCode,
-      roomType,
-      rate,
-      occupancy,
-      mealPlan,
-    } = req.body;
+    const { name, ratePlanCode, roomCode, rate, occupancy, mealPlan } =
+      req.body;
 
     if (
       !name?.trim() ||
-      !ratePlanCode?.trim() ||
       !roomCode?.trim() ||
-      !roomType ||
       rate === undefined ||
       rate === null ||
       !occupancy
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "name, ratePlanCode, roomCode, roomType, rate and occupancy are required",
+        message: "name, roomCode, rate and occupancy are required",
       });
     }
 
@@ -75,8 +73,26 @@ export const createRatePlan = async (req, res) => {
       });
     }
 
-    const code = ratePlanCode.trim().toLowerCase();
     const roomCodeValue = roomCode.trim().toLowerCase();
+    // The room code identifies the room TYPE — every rate plan belongs to a
+    // locally-mirrored RoomType, so the label follows the type's name.
+    const roomTypeDoc = await RoomType.findOne({
+      hotelId: req.user.hotelId,
+      roomCode: roomCodeValue,
+    });
+    if (!roomTypeDoc) {
+      return res.status(400).json({
+        success: false,
+        message: `Room type "${roomCodeValue}" not found — add it under Room Types first`,
+      });
+    }
+    const roomTypeLabel = roomTypeDoc.name;
+
+    // The Aiosell rate plan code is constructive (room + occupancy + meal plan);
+    // clients may omit it and we build it here.
+    const code = ratePlanCode?.trim()
+      ? ratePlanCode.trim().toLowerCase()
+      : deriveRatePlanCode(roomCodeValue, occupancy, mealPlan);
     // A rate plan can only be pushed once BOTH its room type and its own
     // ratePlanCode exist in Aiosell (both are created manually + approved).
     const codeStatus = await resolveChannelStatus(
@@ -84,11 +100,7 @@ export const createRatePlan = async (req, res) => {
       KIND_RATE_PLAN,
       code,
     );
-    const roomStatus = await resolveChannelStatus(
-      req.user.hotelId,
-      KIND_ROOM,
-      roomCodeValue,
-    );
+    const roomStatus = await getRoomTypeStatus(req.user.hotelId, roomCodeValue);
     const channelSyncStatus =
       codeStatus === "completed" && roomStatus === "completed"
         ? "completed"
@@ -98,7 +110,7 @@ export const createRatePlan = async (req, res) => {
       name: name.trim(),
       ratePlanCode: code,
       roomCode: roomCodeValue,
-      roomType,
+      roomType: roomTypeLabel,
       rate,
       occupancy,
       mealPlan: mealPlan || "EP",
@@ -106,18 +118,22 @@ export const createRatePlan = async (req, res) => {
       hotelId: req.user.hotelId,
     });
 
-    // =================================================
-    // SYNC RATES TO AIOSELL (non-critical side effect)
-    // Only approved rate plans sync — see ChannelApproval.
-    // =================================================
-
-    if (ratePlan.channelSyncStatus === "completed") {
-      try {
-        await aiosellSyncRates(req.user.hotelId);
-      } catch (syncError) {
-        logger.error(syncError, "Rate sync after rate plan creation failed");
-      }
-    }
+    // Record an under-review change request so super-admin can verify after
+    // creating the rate plan manually in Aiosell. No automatic push — the
+    // manual flow owns the property.
+    await recordApprovalChange(req.user.hotelId, KIND_RATE_PLAN, code, {
+      requestedBy: req.user.id,
+      before: null,
+      after: {
+        name: ratePlan.name,
+        ratePlanCode: code,
+        roomCode: roomCodeValue,
+        roomType: roomTypeLabel,
+        occupancy,
+        mealPlan: mealPlan || "EP",
+        rate,
+      },
+    });
 
     return res.status(201).json({
       success: true,
@@ -148,7 +164,6 @@ export const createRatePlan = async (req, res) => {
 export const updateRatePlan = async (req, res) => {
   try {
     const allowedUpdates = {};
-    let mappingChanged = false;
 
     const {
       name,
@@ -179,12 +194,40 @@ export const updateRatePlan = async (req, res) => {
         });
       }
       allowedUpdates.ratePlanCode = ratePlanCode.trim().toLowerCase();
-      mappingChanged = true;
     }
 
     if (roomCode !== undefined) {
-      allowedUpdates.roomCode = roomCode.trim().toLowerCase();
-      mappingChanged = true;
+      const nextCode = String(roomCode).trim().toLowerCase();
+
+      if (!nextCode) {
+        return res.status(400).json({
+          success: false,
+          message: "Room code cannot be empty",
+        });
+      }
+
+      const current = await RatePlan.findOne({
+        _id: req.params.id,
+        hotelId: req.user.hotelId,
+      });
+
+      if (current && current.roomCode === nextCode) {
+        // Code unchanged — nothing to re-map.
+        allowedUpdates.roomCode = nextCode;
+      } else {
+        const roomTypeDoc = await RoomType.findOne({
+          hotelId: req.user.hotelId,
+          roomCode: nextCode,
+        });
+        if (!roomTypeDoc) {
+          return res.status(400).json({
+            success: false,
+            message: `Room type "${nextCode}" not found — add it under Room Types first`,
+          });
+        }
+        allowedUpdates.roomCode = nextCode;
+        allowedUpdates.roomType = roomTypeDoc.name;
+      }
     }
 
     if (roomType !== undefined) {
@@ -213,39 +256,21 @@ export const updateRatePlan = async (req, res) => {
       allowedUpdates.isActive = Boolean(isActive);
     }
 
-    // Recompute review status when the Aiosell mapping (ratePlanCode or
-    // roomCode) changed — push is only possible once both exist in Aiosell.
-    if (mappingChanged) {
-      const existingRatePlan = await RatePlan.findOne({
-        _id: req.params.id,
-        hotelId: req.user.hotelId,
-      });
-      const finalCode =
-        allowedUpdates.ratePlanCode ?? existingRatePlan.ratePlanCode;
-      const finalRoomCode =
-        allowedUpdates.roomCode ?? existingRatePlan.roomCode;
-      const codeStatus = await resolveChannelStatus(
-        req.user.hotelId,
-        KIND_RATE_PLAN,
-        finalCode,
-      );
-      const roomStatus = await resolveChannelStatus(
-        req.user.hotelId,
-        KIND_ROOM,
-        finalRoomCode,
-      );
-      allowedUpdates.channelSyncStatus =
-        codeStatus === "completed" && roomStatus === "completed"
-          ? "completed"
-          : "under_review";
-    }
-
     if (Object.keys(allowedUpdates).length === 0) {
       return res.status(400).json({
         success: false,
         message: "No valid fields to update",
       });
     }
+
+    const previousPlan = CHANNEL_RATE_PLAN_FIELDS.some(
+      (field) => allowedUpdates[field] !== undefined,
+    )
+      ? await RatePlan.findOne({
+          _id: req.params.id,
+          hotelId: req.user.hotelId,
+        })
+      : null;
 
     const ratePlan = await RatePlan.findOneAndUpdate(
       {
@@ -266,16 +291,29 @@ export const updateRatePlan = async (req, res) => {
       });
     }
 
-    // =================================================
-    // SYNC RATES TO AIOSELL (non-critical side effect)
-    // Only when the mapping changed AND ended approved.
-    // =================================================
+    // Any edit to the Aiosell mapping/config re-opens the request to
+    // "under_review" — super-admin re-verifies the change in Aiosell.
+    if (previousPlan) {
+      const { changed, before, after } = detectMappingChange(
+        previousPlan,
+        ratePlan,
+        CHANNEL_RATE_PLAN_FIELDS,
+      );
 
-    if (mappingChanged && ratePlan.channelSyncStatus === "completed") {
-      try {
-        await aiosellSyncRates(req.user.hotelId);
-      } catch (syncError) {
-        logger.error(syncError, "Rate sync after rate plan update failed");
+      if (changed) {
+        const approval = await recordApprovalChange(
+          req.user.hotelId,
+          KIND_RATE_PLAN,
+          ratePlan.ratePlanCode,
+          {
+            requestedBy: req.user.id,
+            before,
+            after,
+          },
+        );
+
+        updateEntitySyncStatus(ratePlan, approval);
+        await ratePlan.save();
       }
     }
 
@@ -349,7 +387,10 @@ export const deleteRatePlan = async (req, res) => {
 
 export const syncAllRates = async (req, res) => {
   try {
-    const result = await aiosellSyncRates(req.user.hotelId);
+    const startDate = req.body?.startDate || req.query?.startDate;
+    const endDate = req.body?.endDate || req.query?.endDate;
+
+    const result = await aiosellSyncRates(req.user.hotelId, startDate, endDate);
 
     if (!result.ok) {
       return res.status(400).json({
@@ -360,14 +401,15 @@ export const syncAllRates = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Rates synced to Aiosell successfully",
+      message: `Rates synced to Aiosell successfully (${startDate || "today"} to ${endDate || "+30 days"})`,
+      data: result.data || null,
     });
   } catch (error) {
     logger.error(error, "Sync All Rates Error");
 
     return res.status(500).json({
       success: false,
-      message: "Failed to sync rates",
+      message: error.message || "Failed to sync rates",
     });
   }
 };

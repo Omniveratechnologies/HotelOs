@@ -19,7 +19,6 @@ export default function NotificationsSection() {
     const storedNotifs = localStorage.getItem("notificationPreferences");
     if (storedNotifs) {
       try {
-        console.log("storeNotifs", storedNotifs);
         // oxlint-disable-next-line react/set-state-in-effect -- can be optimized later, but for now we want to load the stored preferences on mount
         setNotifs(JSON.parse(storedNotifs));
       } catch (err) {
@@ -30,7 +29,6 @@ export default function NotificationsSection() {
 
   useEffect(() => {
     localStorage.setItem("notificationPreferences", JSON.stringify(notifs));
-    console.log("notifs", notifs);
   }, [notifs]);
 
   return (

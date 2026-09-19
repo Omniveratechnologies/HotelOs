@@ -1,4 +1,4 @@
-import ChannelManagerConfig from "#/modules/channel-manager/models/ChannelManagerConfig.js";
+import ChannelManagerConfig from "#/modules/channel-manager/config/models/ChannelManagerConfig.js";
 import logger from "#/utils/logger.js";
 
 // Credentials and baseUrl come ONLY from the DB-backed ChannelManagerConfig
@@ -112,6 +112,52 @@ async function markNoShow(hotelCode, bookingId) {
   return request("/marknoshow", { hotelCode, bookingId });
 }
 
+// Pull the FULL property mapping for one hotel from Aiosell. Unlike the POST
+// endpoints, property_details is a GET keyed by the PROPERTY slug in the path
+// with the PARTNER id passed as a query param (the reverse of the push URLs):
+//   GET {baseUrl}/property_details/{hotelCode}?partnerId={pmsSlug}
+// The sandbox currently returns the shape:
+//   { hotel_id, hotel_name, currency, timezone, address, contact,
+//     rooms: [{ room_id, room_name, count, active, min_occ, max_occ,
+//               rateplans: [{ rateplan_id, rateplan_name, occupancy,
+//                             no_of_meals, extra_adult }] }] }
+export async function fetchPropertyDetails(hotelCode) {
+  let resolved;
+  try {
+    resolved = await resolveClient();
+  } catch (error) {
+    logger.error(error, "Aiosell client resolution failed");
+    return { ok: false, error: "Aiosell client resolution failed" };
+  }
+
+  if (!resolved.ok) return resolved;
+
+  const { baseUrl, pmsSlug, authHeader } = resolved.client;
+  const url = `${baseUrl}/property_details/${hotelCode}?partnerId=${pmsSlug}`;
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: authHeader },
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      logger.error(
+        { status: response.status, url, data },
+        "Aiosell property_details error",
+      );
+      return { ok: false, status: response.status, error: data };
+    }
+
+    return { ok: true, data };
+  } catch (error) {
+    logger.error(error, "Aiosell property_details request failed");
+    return { ok: false, error: error.message };
+  }
+}
+
 async function fetchInventory(hotelCode, startDate, endDate) {
   return request("/data", { type: "inventory", hotelCode, startDate, endDate });
 }
@@ -136,6 +182,7 @@ const aiosell = {
   pushInventoryRestrictions,
   pushRateRestrictions,
   markNoShow,
+  fetchPropertyDetails,
   fetchInventory,
   fetchRates,
   fetchReservations,

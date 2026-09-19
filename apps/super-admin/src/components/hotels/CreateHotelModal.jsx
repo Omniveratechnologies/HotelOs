@@ -28,6 +28,12 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
 
   const [subscriptionEndDate, setSubscriptionEndDate] = useState("");
 
+  const [checkInTime, setCheckInTime] = useState("14:00");
+
+  const [checkOutTime, setCheckOutTime] = useState("12:00");
+
+  const [aiosellHotelCode, setAiosellHotelCode] = useState("");
+
   // =====================================================
   // SUB ADMIN STATE
   // =====================================================
@@ -60,6 +66,10 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
 
     setSubscriptionStartDate("");
     setSubscriptionEndDate("");
+
+    setCheckInTime("14:00");
+    setCheckOutTime("12:00");
+    setAiosellHotelCode("");
 
     // Sub Admin
     setAdminName("");
@@ -169,9 +179,10 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
         city: city.trim(),
         subscriptionStartDate,
         subscriptionEndDate,
+        checkInTime: checkInTime.trim() || "14:00",
+        checkOutTime: checkOutTime.trim() || "12:00",
+        aiosellHotelCode: aiosellHotelCode.trim() || undefined,
       });
-
-      console.log("Hotel created:", hotel);
 
       if (!hotel || !hotel._id) {
         throw new Error(
@@ -184,7 +195,7 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
       // CREATE SUB ADMIN + SEND INVITATION
       // =================================================
 
-      const invitation = await sendSubAdminInvite({
+      await sendSubAdminInvite({
         name: adminName.trim(),
 
         username: adminUsername.trim().toLowerCase(),
@@ -197,8 +208,6 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
 
         subscriptionEndDate,
       });
-
-      console.log("Sub Admin invitation sent:", invitation);
 
       // =================================================
       // STEP 3
@@ -333,6 +342,55 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
             />
           </Field>
         </div>
+
+        {/* CHECK-IN / CHECK-OUT TIMES */}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Check-in time">
+            <input
+              type="time"
+              className={inputClass()}
+              value={checkInTime}
+              onChange={(e) => setCheckInTime(e.target.value)}
+            />
+          </Field>
+
+          <Field label="Check-out time">
+            <input
+              type="time"
+              className={inputClass()}
+              value={checkOutTime}
+              onChange={(e) => setCheckOutTime(e.target.value)}
+            />
+          </Field>
+        </div>
+
+        {/* =============================================
+            CHANNEL (AIOSELL)
+        ============================================= */}
+
+        <div className="border-line border-t pt-5">
+          <h3 className="text-ink-body text-sm font-semibold">
+            Channel manager
+          </h3>
+
+          <p className="text-ink-muted mt-1 text-xs">
+            Optional Aiosell property code. Room and rate-plan codes are created
+            manually in Aiosell and approved here later.
+          </p>
+        </div>
+
+        <Field
+          label="Aiosell property code"
+          hint="The hotelCode Aiosell uses for this property (e.g. sandbox-pms)."
+        >
+          <input
+            className={inputClass()}
+            placeholder="e.g. sandbox-pms"
+            value={aiosellHotelCode}
+            onChange={(e) => setAiosellHotelCode(e.target.value)}
+          />
+        </Field>
 
         {/* =============================================
             SUB ADMIN DETAILS

@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 import { twMerge, twJoin } from "tailwind-merge";
+import * as ratePlanCode from "./ratePlanCode.js";
 
 /** @typedef {import("clsx").ClassValue} ClassValue */
 
@@ -29,3 +30,6 @@ export { twJoin };
 
 /** Tiny helper for constructing conditional className strings. */
 export { clsx };
+
+/** Aiosell rate plan code helpers: deriveRatePlanCode, parseRatePlanCode, OCCUPANCY_LETTER_BY_TYPE */
+export { ratePlanCode };

@@ -23,9 +23,7 @@ export default function Login() {
     try {
       setLoading(true);
 
-      const data = await loginSuperAdmin(username, password);
-
-      console.log("Super Admin login successful:", data);
+      await loginSuperAdmin(username, password);
 
       navigate("/dashboard", { replace: true });
     } catch (err) {

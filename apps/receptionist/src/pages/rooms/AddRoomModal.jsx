@@ -1,13 +1,72 @@
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getAiosellRoomTypes } from "../../services/hotel.service.js";
 
 export default function AddRoomModal({ onClose, onAdd }) {
   const [roomNumber, setRoomNumber] = useState("");
   const [floor, setFloor] = useState(1);
-  const [type, setType] = useState("Standard");
+  const [code, setCode] = useState("");
+  const [typeLabel, setTypeLabel] = useState("");
   const [rate, setRate] = useState("");
-  const [roomCode, setRoomCode] = useState("");
+  const [roomTypes, setRoomTypes] = useState([]);
+  const [typesLoading, setTypesLoading] = useState(true);
+  const [typesError, setTypesError] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const data = await getAiosellRoomTypes();
+
+        if (!cancelled) {
+          setRoomTypes(data || []);
+        }
+      } catch (err) {
+        console.error("Failed to load room types:", err);
+
+        if (!cancelled) {
+          setTypesError(err.message || "Could not load room types");
+        }
+      } finally {
+        if (!cancelled) {
+          setTypesLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const options = useMemo(
+    () =>
+      roomTypes.map((t) => ({
+        value: t.code,
+        label: t.name,
+        name: t.name,
+        code: t.code,
+        description: t.description || "",
+        minOccupancy: t.minOccupancy,
+        maxOccupancy: t.maxOccupancy,
+        active: t.active,
+      })),
+    [roomTypes],
+  );
+
+  const selected = options.find((o) => o.value === code) || null;
+  const noTypes = !typesLoading && options.length === 0;
+
+  const handleTypeChange = (nextCode) => {
+    setCode(nextCode);
+
+    const option = options.find((o) => o.value === nextCode);
+    setTypeLabel(option?.name || "");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,6 +74,11 @@ export default function AddRoomModal({ onClose, onAdd }) {
 
     if (!roomNumber.trim()) {
       setError("Room number is required.");
+      return;
+    }
+
+    if (!code || !typeLabel) {
+      setError("Please pick a room type.");
       return;
     }
 
@@ -27,10 +91,10 @@ export default function AddRoomModal({ onClose, onAdd }) {
       setSaving(true);
       await onAdd({
         roomNumber: roomNumber.trim(),
-        type,
+        type: typeLabel,
         rate: Number(rate),
         floor: Number(floor),
-        roomCode: roomCode.trim() || undefined,
+        roomCode: code,
       });
       onClose();
     } catch (err) {
@@ -109,37 +173,41 @@ export default function AddRoomModal({ onClose, onAdd }) {
 
           <div>
             <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              Aiosell Room Code
+              Room type *
             </label>
-            <input
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value)}
-              placeholder="e.g. 101S"
-              disabled={saving}
+            <select
+              value={code}
+              onChange={(e) => handleTypeChange(e.target.value)}
+              disabled={saving || noTypes}
               className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
-            />
-            <p className="mt-1 text-[11px] text-gray-400">
-              Linked room uses this code on the channel. Rooms with a code are
-              synced only after a super admin approves it.
-            </p>
+            >
+              {typesLoading && <option value="">Loading…</option>}
+              {!typesLoading && noTypes && (
+                <option value="">No room types yet</option>
+              )}
+              {options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                  {o.minOccupancy != null
+                    ? ` · ${o.minOccupancy}-${o.maxOccupancy ?? "∞"} guests`
+                    : ""}
+                </option>
+              ))}
+            </select>
+            {selected?.description && (
+              <p className="mt-1 text-[11px] text-gray-400">
+                {selected.description}
+              </p>
+            )}
+            {noTypes && (
+              <p className="mt-1 text-[11px] text-amber-600">
+                {typesError ||
+                  "No room types yet — a super admin must sync the hotel from Aiosell first."}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Type *
-              </label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                disabled={saving}
-                className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
-              >
-                <option>Standard</option>
-                <option>Deluxe</option>
-                <option>Suite</option>
-              </select>
-            </div>
             <div>
               <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Rate / Night *
@@ -154,6 +222,16 @@ export default function AddRoomModal({ onClose, onAdd }) {
                 className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
               />
             </div>
+            {selected && (
+              <div className="mt-0 flex flex-col justify-end rounded-xl bg-gray-50 px-3 py-2.5">
+                <span className="text-[11px] font-medium text-gray-500">
+                  Aiosell code
+                </span>
+                <span className="text-sm font-semibold text-gray-700">
+                  {selected.code}
+                </span>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -173,8 +251,8 @@ export default function AddRoomModal({ onClose, onAdd }) {
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="bg-brand-900 hover:bg-brand-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
+              disabled={saving || noTypes}
+              className="bg-brand-900 hover:bg-brand-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-60"
             >
               {saving ? "Creating..." : "Create Room"}
             </button>

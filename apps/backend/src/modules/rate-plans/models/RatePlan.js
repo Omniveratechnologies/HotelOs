@@ -2,7 +2,6 @@ import { model, Schema } from "mongoose";
 
 const OCCUPANCY_TYPES = ["single", "double", "triple", "quad"];
 const MEAL_PLANS = ["EP", "AP", "MAP", "CP", "BP"];
-const ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
 
 // A sellable rate plan for a room type. ratePlanCode maps 1:1 to Aiosell's
 // rateplanCode (e.g. "executive-s-ep" = Executive, single, room-only), so once
@@ -12,7 +11,8 @@ const ratePlanSchema = new Schema(
     name: { type: String, required: true, trim: true },
     ratePlanCode: { type: String, required: true, trim: true, lowercase: true },
     roomCode: { type: String, required: true, trim: true, lowercase: true },
-    roomType: { type: String, enum: ROOM_TYPES, required: true },
+    // Room type as Aiosell's config calls it (verbatim from property_details).
+    roomType: { type: String, required: true, trim: true },
     rate: { type: Number, required: true, min: 0 },
     occupancy: { type: String, enum: OCCUPANCY_TYPES, required: true },
     mealPlan: { type: String, enum: MEAL_PLANS, default: "EP" },

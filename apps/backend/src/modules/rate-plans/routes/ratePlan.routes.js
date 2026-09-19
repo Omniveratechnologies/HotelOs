@@ -12,20 +12,16 @@ import { authorize } from "#/shared/middleware/role.middleware.js";
 
 const router = express.Router();
 
-// Read — SUB_ADMIN + RECEPTIONIST
-router.get(
-  "/",
-  authenticate,
-  authorize("SUB_ADMIN", "RECEPTIONIST"),
-  getRatePlans,
-);
+// Read + manage — SUB_ADMIN + RECEPTIONIST
+router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
 
 // Sync all rates to Aiosell (before parameterized routes)
-router.post("/sync", authenticate, authorize("SUB_ADMIN"), syncAllRates);
+router.post("/sync", syncAllRates);
 
-// Write — SUB_ADMIN only
-router.post("/", authenticate, authorize("SUB_ADMIN"), createRatePlan);
-router.patch("/:id", authenticate, authorize("SUB_ADMIN"), updateRatePlan);
-router.delete("/:id", authenticate, authorize("SUB_ADMIN"), deleteRatePlan);
+// Read + write (create/update/delete)
+router.get("/", getRatePlans);
+router.post("/", createRatePlan);
+router.patch("/:id", updateRatePlan);
+router.delete("/:id", deleteRatePlan);
 
 export default router;

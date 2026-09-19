@@ -11,25 +11,75 @@ import logger from "#/utils/logger.js";
 
 function datesInRange(start, end) {
   const dates = [];
-  const current = new Date(`${start}T00:00:00Z`);
-  const last = new Date(`${end}T00:00:00Z`);
-  while (current <= last) {
-    dates.push(current.toISOString().slice(0, 10));
-    current.setUTCDate(current.getUTCDate() + 1);
+  const startMs = new Date(`${start}T00:00:00Z`).getTime();
+  const endMs = new Date(`${end}T00:00:00Z`).getTime();
+  for (let ms = startMs; ms <= endMs; ms += 86400000) {
+    dates.push(new Date(ms).toISOString().slice(0, 10));
   }
   return dates;
 }
 
-function defaultDateRange(startDate, endDate) {
-  const start = startDate || new Date().toISOString().slice(0, 10);
-  const end =
-    endDate ||
-    (() => {
-      const d = new Date();
-      d.setUTCDate(d.getUTCDate() + 30);
-      return d.toISOString().slice(0, 10);
-    })();
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+export function validateAndNormalizeDateRange(startDate, endDate) {
+  const today = new Date().toISOString().slice(0, 10);
+  const start = startDate ? String(startDate).trim() : today;
+  let end = endDate ? String(endDate).trim() : null;
+
+  if (!end) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + 30);
+    end = d.toISOString().slice(0, 10);
+  }
+
+  if (!ISO_DATE_REGEX.test(start)) {
+    throw new Error(
+      `Invalid startDate format: "${start}". Expected YYYY-MM-DD.`,
+    );
+  }
+
+  if (!ISO_DATE_REGEX.test(end)) {
+    throw new Error(`Invalid endDate format: "${end}". Expected YYYY-MM-DD.`);
+  }
+
+  if (start > end) {
+    throw new Error(`startDate (${start}) cannot be after endDate (${end}).`);
+  }
+
   return [start, end];
+}
+
+function defaultDateRange(startDate, endDate) {
+  return validateAndNormalizeDateRange(startDate, endDate);
+}
+
+export function calculateSyncDateRange(checkIn, checkOut, baseDays = 30) {
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultEndDate = new Date();
+  defaultEndDate.setUTCDate(defaultEndDate.getUTCDate() + baseDays);
+  const defaultEnd = defaultEndDate.toISOString().slice(0, 10);
+
+  let checkInStr = null;
+  if (checkIn) {
+    checkInStr = new Date(checkIn).toISOString().slice(0, 10);
+  }
+
+  let checkOutStr = null;
+  if (checkOut) {
+    checkOutStr = new Date(checkOut).toISOString().slice(0, 10);
+  }
+
+  // If check-in falls within or overlaps near-term default window:
+  // sync from min(today, checkIn) to max(defaultEnd, checkOut)
+  if (!checkInStr || checkInStr <= defaultEnd) {
+    const start = checkInStr && checkInStr < today ? checkInStr : today;
+    const end =
+      checkOutStr && checkOutStr > defaultEnd ? checkOutStr : defaultEnd;
+    return [start, end];
+  }
+
+  // If booking is beyond the 30-day window, sync the booking's exact dates
+  return [checkInStr, checkOutStr || checkInStr];
 }
 
 export async function aiosellCalculateAvailability(
@@ -39,10 +89,12 @@ export async function aiosellCalculateAvailability(
 ) {
   // Only approved codes are pushed — codes still "under_review" don't exist
   // in Aiosell yet (super admin must create them manually and approve).
+  // Exclude rooms pending deletion.
   const rooms = await Room.find({
     hotelId,
     roomCode: { $ne: null },
     channelSyncStatus: "completed",
+    pendingDelete: { $ne: true },
   });
   const dates = datesInRange(startDate, endDate);
 
@@ -54,24 +106,32 @@ export async function aiosellCalculateAvailability(
   const activeBookings = await Booking.find({
     hotelId,
     status: { $in: ["reserved", "checked-in"] },
-    checkIn: { $lte: new Date(`${endDate}T00:00:00Z`) },
-    checkOut: { $gte: new Date(`${startDate}T00:00:00Z`) },
+    checkIn: { $lte: new Date(`${endDate}T23:59:59.999Z`) },
+    checkOut: { $gt: new Date(`${startDate}T00:00:00.000Z`) },
   }).populate("roomId", "roomCode");
+
+  // Pre-normalize booking dates to ISO YYYY-MM-DD strings for fast, exact night comparisons
+  const normalizedBookings = activeBookings
+    .filter((b) => b.roomId?.roomCode && b.checkIn && b.checkOut)
+    .map((b) => ({
+      roomCode: b.roomId.roomCode,
+      checkInDate: new Date(b.checkIn).toISOString().slice(0, 10),
+      checkOutDate: new Date(b.checkOut).toISOString().slice(0, 10),
+    }));
 
   const availability = {};
   for (const date of dates) {
-    const d = new Date(`${date}T00:00:00Z`);
     availability[date] = {};
 
     for (const [roomCode, totalCount] of Object.entries(roomTypeCounts)) {
       let occupiedCount = 0;
-      for (const booking of activeBookings) {
-        if (booking.roomId?.roomCode === roomCode) {
-          const checkIn = new Date(booking.checkIn);
-          const checkOut = new Date(booking.checkOut);
-          if (d >= checkIn && d < checkOut) {
-            occupiedCount++;
-          }
+      for (const booking of normalizedBookings) {
+        if (
+          booking.roomCode === roomCode &&
+          date >= booking.checkInDate &&
+          date < booking.checkOutDate
+        ) {
+          occupiedCount++;
         }
       }
 
@@ -92,7 +152,7 @@ export async function aiosellBuildInventoryPayload(
     startDate,
     endDate,
   );
-  const dates = Object.keys(availability).sort();
+  const dates = Object.keys(availability).toSorted();
 
   if (dates.length === 0) return null;
 
@@ -104,17 +164,21 @@ export async function aiosellBuildInventoryPayload(
     }
   }
 
-  // One block per roomCode covering the full date range. Aiosell applies the
-  // count to every date in the range, so use the MIN availability across the
-  // range to guarantee we never oversell.
-  const rooms = Object.entries(roomsMap).map(([roomCode, dateAvail]) => ({
-    roomCode,
-    available: Math.min(...Object.values(dateAvail)),
-  }));
+  // Generate date-by-date blocks so each date reflects exact available inventory
+  const updates = [];
+  for (const date of dates) {
+    const rooms = Object.entries(availability[date] || {}).map(
+      ([roomCode, available]) => ({
+        roomCode,
+        available,
+      }),
+    );
+    if (rooms.length > 0) {
+      updates.push({ startDate: date, endDate: date, rooms });
+    }
+  }
 
-  return {
-    updates: [{ startDate, endDate, rooms }],
-  };
+  return updates.length > 0 ? { updates } : null;
 }
 
 export async function aiosellBuildRatePayload(hotelId, startDate, endDate) {

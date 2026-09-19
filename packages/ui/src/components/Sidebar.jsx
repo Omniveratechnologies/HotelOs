@@ -15,6 +15,8 @@ import { useEffect, useRef, useState } from "react";
  * @property {() => void} [onClick] - Called before navigating.
  * @property {boolean} [hr] - Render a divider below the item.
  * @property {SidebarItem[]} [subMenu] - Nested items in an expandable group.
+ * @property {boolean} [defaultOpen] - Start the `subMenu` group expanded
+ *   (uncontrolled; the checkbox keeps its own state afterwards).
  */
 
 /**
@@ -311,7 +313,12 @@ export function SidebarItem({ item, isOpen, onNavigate }) {
     >
       {item.subMenu?.length ? (
         <>
-          <input className="peer hidden" id={id} type="checkbox" />
+          <input
+            className="peer hidden"
+            id={id}
+            type="checkbox"
+            defaultChecked={item.defaultOpen}
+          />
           <label
             htmlFor={id}
             className={cn(

@@ -9,12 +9,14 @@ import {
   deleteHotel,
   getMyHotel,
   updateMyHotel,
+  getAiosellRoomTypes,
   getChannelManagerConfig,
   updateChannelManagerConfig,
   getHotelAiosellCode,
   setHotelAiosellCode,
   getChannelApprovals,
-  approveChannelCode,
+  verifyChannelApproval,
+  syncFromAiosell,
 } from "../controllers/hotel.controller.js";
 
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
@@ -39,6 +41,13 @@ router.get(
 
 router.patch("/me", authenticate, authorize("SUB_ADMIN"), updateMyHotel);
 
+router.get(
+  "/me/aiosell-room-types",
+  authenticate,
+  authorize("SUB_ADMIN", "RECEPTIONIST"),
+  getAiosellRoomTypes,
+);
+
 // =====================================================
 // ALL HOTEL MANAGEMENT IS SUPER ADMIN ONLY
 // =====================================================
@@ -57,7 +66,7 @@ router.route("/").get(getHotels).post(createHotel);
 // =====================================================
 
 router.get("/channel-approvals", getChannelApprovals);
-router.patch("/channel-approvals/:approvalId", approveChannelCode);
+router.patch("/channel-approvals/:approvalId/verify", verifyChannelApproval);
 
 // =====================================================
 // GET SINGLE HOTEL
@@ -85,5 +94,6 @@ router.get("/channel-manager/config", getChannelManagerConfig);
 router.post("/channel-manager/config", updateChannelManagerConfig);
 router.get("/:hotelId/aiosell-code", getHotelAiosellCode);
 router.patch("/:hotelId/aiosell-code", setHotelAiosellCode);
+router.post("/:hotelId/sync-from-aiosell", syncFromAiosell);
 
 export default router;

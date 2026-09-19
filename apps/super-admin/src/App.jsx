@@ -12,6 +12,7 @@ import Transactions from "./pages/Transactions.jsx";
 import Subscriptions from "./pages/Subscriptions.jsx";
 import ServiceRequests from "./pages/ServiceRequests.jsx";
 import ChannelApprovals from "./pages/ChannelApprovals.jsx";
+import ChannelManager from "./pages/ChannelManager.jsx";
 import Settings from "./pages/Settings.jsx";
 
 export default function App() {
@@ -52,6 +53,9 @@ export default function App() {
 
             {/* Channel Approvals */}
             <Route path="channel-approvals" element={<ChannelApprovals />} />
+
+            {/* Channel Manager */}
+            <Route path="channel-manager" element={<ChannelManager />} />
 
             {/* Settings */}
             <Route path="settings" element={<Settings />} />

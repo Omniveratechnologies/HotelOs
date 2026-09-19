@@ -13,6 +13,7 @@ export default function RoomModal({
   const [saving, setSaving] = useState(false);
   const [channelCode, setChannelCode] = useState(room.roomCode || "");
   const [channelSaving, setChannelSaving] = useState(false);
+  const unverified = room.channelVerified === false;
 
   const runUpdate = async (newStatus, guestData) => {
     setError("");
@@ -156,15 +157,16 @@ export default function RoomModal({
                   <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50 p-4">
                     <div className="mb-1 flex items-center justify-between">
                       <span className="text-xs font-semibold tracking-wide text-purple-600 uppercase">
-                        Channel (Aiosell)
+                        Channel
                       </span>
                       <span className="rounded-full bg-purple-200 px-2 py-0.5 text-[10px] font-bold text-purple-800">
                         UNDER REVIEW
                       </span>
                     </div>
                     <p className="text-xs text-purple-600">
-                      Code <b>{room.roomCode}</b> awaits super admin approval
-                      before it syncs to the channel.
+                      Room <b>{room.roomNumber}</b> is waiting for a super admin
+                      to add it (and update the room count) in the property.
+                      Check-in and reservations are blocked until then.
                     </p>
                   </div>
                 )}
@@ -174,7 +176,7 @@ export default function RoomModal({
                     <div className="mb-4 flex items-center justify-between rounded-xl bg-green-50 px-4 py-3">
                       <div>
                         <div className="text-xs font-semibold tracking-wide text-green-600 uppercase">
-                          Channel (Aiosell)
+                          Channel
                         </div>
                         <div className="text-sm font-medium text-green-700">
                           {room.roomCode}
@@ -187,7 +189,7 @@ export default function RoomModal({
                   )}
                 <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
                   <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                    Channel (Aiosell) Code
+                    Channel Code
                   </div>
                   <div className="flex gap-2">
                     <input
@@ -206,9 +208,10 @@ export default function RoomModal({
                     </button>
                   </div>
                   <p className="mt-1.5 text-[11px] text-gray-400">
-                    Changing the code requires a fresh super admin approval
-                    before it is synced to Aiosell. Leave blank for a non-linked
-                    room.
+                    Changing the code puts the room back{" "}
+                    <span className="font-semibold">under review</span> — a
+                    super admin verifies it in the property. Leave blank for a
+                    non-linked room.
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -217,18 +220,24 @@ export default function RoomModal({
                     <>
                       <button
                         onClick={openRegister}
-                        disabled={saving}
+                        disabled={saving || unverified}
                         className="bg-brand-900 hover:bg-brand-800 col-span-2 rounded-xl py-3 font-semibold text-white transition-colors disabled:opacity-60"
                       >
                         ✓ Check In Guest
                       </button>
                       <button
                         onClick={openRegister}
-                        disabled={saving}
+                        disabled={saving || unverified}
                         className="rounded-xl border-2 border-amber-400 py-3 text-sm font-semibold text-amber-600 transition-colors hover:bg-amber-50 disabled:opacity-60"
                       >
                         📅 Reserve Room
                       </button>
+                      {unverified && (
+                        <p className="text-[11px] font-medium text-purple-600">
+                          Blocked until a super admin verifies this room in the
+                          property.
+                        </p>
+                      )}
                       {room.status === "available" && (
                         <button
                           onClick={handleMarkCleaning}
@@ -260,7 +269,7 @@ export default function RoomModal({
                     <>
                       <button
                         onClick={openRegister}
-                        disabled={saving}
+                        disabled={saving || unverified}
                         className="bg-brand-900 hover:bg-brand-800 col-span-2 rounded-xl py-3 font-semibold text-white transition-colors disabled:opacity-60"
                       >
                         ✓ Check In Guest

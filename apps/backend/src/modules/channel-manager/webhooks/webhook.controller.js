@@ -42,8 +42,44 @@ async function generateGuestUsername(hotelCode) {
   return username;
 }
 
-async function findRoomByCode(hotelId, roomCode) {
-  return Room.findOne({ hotelId, roomCode });
+async function findAvailableRoom(
+  hotelId,
+  roomCode,
+  checkIn,
+  checkOut,
+  excludedBookingId = null,
+) {
+  const rooms = await Room.find({ hotelId, roomCode }).sort({ roomNumber: 1 });
+  if (rooms.length === 0) return null;
+
+  const conflicts = await Booking.find({
+    hotelId,
+    roomId: { $in: rooms.map((room) => room._id) },
+    status: { $in: ["reserved", "checked-in"] },
+    // A checkout date is available for the next guest's check-in, so these
+    // bounds must be exclusive rather than inclusive.
+    checkIn: { $lt: checkOut },
+    checkOut: { $gt: checkIn },
+    ...(excludedBookingId ? { _id: { $ne: excludedBookingId } } : {}),
+  }).distinct("roomId");
+
+  const occupiedRoomIds = new Set(conflicts.map(String));
+  return rooms.find((room) => !occupiedRoomIds.has(String(room._id))) || null;
+}
+
+function parseReservationDates(checkin, checkout) {
+  const checkIn = new Date(checkin);
+  const checkOut = new Date(checkout);
+
+  if (
+    Number.isNaN(checkIn.getTime()) ||
+    Number.isNaN(checkOut.getTime()) ||
+    checkOut <= checkIn
+  ) {
+    return null;
+  }
+
+  return { checkIn, checkOut };
 }
 
 async function claimRoom(roomId, { guestName, checkIn, checkOut, reserved }) {
@@ -126,13 +162,41 @@ async function handleBooking(payload) {
     return { success: false, message: "Hotel not found" };
   }
 
-  // Process first room only (multi-room bookings can be extended later).
-  const roomData = rooms?.[0];
-  if (!roomData) {
-    return { success: false, message: "No room data in booking" };
+  // Aiosell may retry a delivery after a network timeout. Treat a repeated
+  // booking ID for the same hotel as a successful no-op so retries cannot
+  // create duplicate reservations or consume inventory twice.
+  const existingDelivery = await Booking.findOne({
+    hotelId: hotel._id,
+    aiosellBookingId: bookingId,
+  });
+  if (existingDelivery) {
+    return { success: true, message: "Reservation Updated Successfully" };
   }
 
-  const room = await findRoomByCode(hotel._id, roomData.roomCode);
+  if (!Array.isArray(rooms) || rooms.length !== 1) {
+    return {
+      success: false,
+      message:
+        "Exactly one room is required; multi-room OTA bookings are not supported yet",
+    };
+  }
+
+  const reservationDates = parseReservationDates(checkin, checkout);
+  if (!reservationDates) {
+    return {
+      success: false,
+      message: "A valid check-in/check-out date range is required",
+    };
+  }
+
+  const roomData = rooms[0];
+
+  const room = await findAvailableRoom(
+    hotel._id,
+    roomData.roomCode,
+    reservationDates.checkIn,
+    reservationDates.checkOut,
+  );
   if (!room) {
     logger.error(
       { hotelCode, roomCode: roomData.roomCode },
@@ -141,26 +205,14 @@ async function handleBooking(payload) {
     return { success: false, message: "Room type not found" };
   }
 
-  // For OTA bookings check date overlap specifically.
-  const existingBooking = await Booking.findOne({
-    roomId: room._id,
-    hotelId: hotel._id,
-    status: { $in: ["reserved", "checked-in"] },
-    checkIn: { $lte: new Date(checkout) },
-    checkOut: { $gte: new Date(checkin) },
-  });
-  if (existingBooking) {
-    return { success: false, message: "Room not available for these dates" };
-  }
-
   const guestUser = await createOtaGuest(hotel, guest, bookingId);
 
   const booking = await Booking.create({
     guestId: guestUser?._id,
     hotelId: hotel._id,
     roomId: room._id,
-    checkIn: new Date(checkin),
-    checkOut: new Date(checkout),
+    checkIn: reservationDates.checkIn,
+    checkOut: reservationDates.checkOut,
     status: "reserved",
     channel: channel || "OTA",
     aiosellBookingId: bookingId,
@@ -222,15 +274,37 @@ async function handleModification(payload) {
     return { success: false, message: "Booking not found" };
   }
 
-  if (checkin) booking.checkIn = new Date(checkin);
-  if (checkout) booking.checkOut = new Date(checkout);
-
-  if (rooms?.[0]?.roomCode) {
-    const room = await findRoomByCode(hotel._id, rooms[0].roomCode);
-    if (room && room._id.toString() !== booking.roomId.toString()) {
-      booking.roomId = room._id;
-    }
+  if (!Array.isArray(rooms) || rooms.length !== 1) {
+    return {
+      success: false,
+      message:
+        "Exactly one room is required; multi-room OTA bookings are not supported yet",
+    };
   }
+
+  const reservationDates = parseReservationDates(checkin, checkout);
+  if (!reservationDates) {
+    return {
+      success: false,
+      message: "A valid check-in/check-out date range is required",
+    };
+  }
+
+  const room = await findAvailableRoom(
+    hotel._id,
+    rooms[0].roomCode,
+    reservationDates.checkIn,
+    reservationDates.checkOut,
+    booking._id,
+  );
+  if (!room) {
+    return { success: false, message: "Room not available for these dates" };
+  }
+
+  const previousRoomId = booking.roomId;
+  booking.checkIn = reservationDates.checkIn;
+  booking.checkOut = reservationDates.checkOut;
+  booking.roomId = room._id;
 
   if (amount) {
     booking.totalAmountBeforeTax =
@@ -245,13 +319,21 @@ async function handleModification(payload) {
     ? await User.findById(booking.guestId)
     : null;
 
-  if (booking.roomId) {
-    await claimRoom(booking.roomId, {
-      guestName: guestUser?.name || "OTA Guest",
-      checkIn: booking.checkIn,
-      checkOut: booking.checkOut,
-      reserved: booking.status === "reserved",
+  await claimRoom(booking.roomId, {
+    guestName: guestUser?.name || "OTA Guest",
+    checkIn: booking.checkIn,
+    checkOut: booking.checkOut,
+    reserved: booking.status === "reserved",
+  });
+
+  if (previousRoomId && String(previousRoomId) !== String(booking.roomId)) {
+    const stillHeld = await Booking.exists({
+      roomId: previousRoomId,
+      hotelId: hotel._id,
+      status: { $in: ["reserved", "checked-in"] },
+      _id: { $ne: booking._id },
     });
+    if (!stillHeld) await freeRoom(previousRoomId);
   }
 
   try {
@@ -335,12 +417,19 @@ async function handleCancellation(payload) {
 
 export const handleWebhook = async (req, res) => {
   try {
-    const { action } = req.body;
+    const { action, hotelCode, bookingId } = req.body;
 
     if (!action || !["book", "modify", "cancel"].includes(action)) {
       return res.status(400).json({
         success: false,
         message: `Invalid action: ${action}`,
+      });
+    }
+
+    if (!hotelCode || !bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: "hotelCode and bookingId are required",
       });
     }
 
@@ -363,6 +452,14 @@ export const handleWebhook = async (req, res) => {
       .status(statusCode)
       .json(result || { success: false, message: "Unhandled action" });
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.aiosellBookingId) {
+      // A concurrent retry may win the idempotency race after the initial
+      // existence check. The unique index makes that outcome a success.
+      return res.status(200).json({
+        success: true,
+        message: "Reservation Updated Successfully",
+      });
+    }
     logger.error(error, "Channel manager webhook error");
     return res.status(500).json({
       success: false,

@@ -1,13 +1,14 @@
 import Room from "../models/Room.js";
+import RoomType from "#/modules/room-types/models/RoomType.js";
+import { refreshRoomTypeCount } from "#/modules/room-types/services/roomType.service.js";
 import { roomResponseDTO } from "../dto/room.dto.js";
 import logger from "#/utils/logger.js";
-import { aiosellSyncInventory } from "#/shared/services/inventory.service.js";
 import {
-  KIND_ROOM,
-  resolveChannelStatus,
-} from "#/modules/channel-manager/services/approval.service.js";
-
-const ROOM_TYPES = new Set(["Standard", "Deluxe", "Suite"]);
+  recordApprovalChange,
+  detectMappingChange,
+  updateEntitySyncStatus,
+  CHANNEL_ROOM_FIELDS,
+} from "#/modules/channel-manager/approvals/approval-helpers.js";
 
 const ROOM_STATUSES = new Set([
   "available",
@@ -84,7 +85,6 @@ export const createRoom = async (req, res) => {
 
     if (
       !roomNumber?.trim() ||
-      !type ||
       rate === undefined ||
       rate === null ||
       floor === undefined ||
@@ -92,14 +92,7 @@ export const createRoom = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "roomNumber, type, rate and floor are required",
-      });
-    }
-
-    if (!ROOM_TYPES.has(type)) {
-      return res.status(400).json({
-        success: false,
-        message: "Room type must be Standard, Deluxe or Suite",
+        message: "roomNumber, rate and floor are required",
       });
     }
 
@@ -111,28 +104,65 @@ export const createRoom = async (req, res) => {
     }
 
     const code = roomCode?.trim() || null;
-    const channelSyncStatus = code
-      ? await resolveChannelStatus(req.user.hotelId, KIND_ROOM, code)
-      : "completed";
+
+    // The room code identifies the room TYPE — every linked room belongs to a
+    // locally-mirrored RoomType, so the display label follows the type's name.
+    let roomTypeLabel = type;
+    if (code) {
+      const roomType = await RoomType.findOne({
+        hotelId: req.user.hotelId,
+        roomCode: code,
+      });
+      if (!roomType) {
+        return res.status(400).json({
+          success: false,
+          message: `Room type "${code}" not found — add it under Room Types first`,
+        });
+      }
+      roomTypeLabel = roomType.name;
+    }
+
+    if (typeof roomTypeLabel !== "string" || !roomTypeLabel.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "A valid room type is required",
+      });
+    }
 
     const room = await Room.create({
       roomNumber: roomNumber.trim(),
-      type,
+      type: roomTypeLabel,
       rate,
       floor,
       roomCode: code,
-      channelSyncStatus,
+      // A staff-added linked room is a per-room request: it stays under review
+      // (and is blocked from check-in) until a super-admin verifies the room
+      // count in Aiosell. Local-only rooms (no code) need no channel review.
+      channelSyncStatus: code ? "under_review" : "completed",
+      channelVerified: !code,
       hotelId: req.user.hotelId,
     });
 
-    // =================================================
-    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
-    // Only approved codes sync — new codes are "under_review"
-    // until a SUPER_ADMIN creates + approves them in Aiosell.
-    // =================================================
+    // Record a per-room under-review request so super-admin can add the room
+    // (bump the type's count) manually in Aiosell. No automatic push.
+    if (code) {
+      await recordApprovalChange(req.user.hotelId, "ROOM", code, {
+        requestedBy: req.user.id,
+        before: null,
+        after: {
+          roomNumber: room.roomNumber,
+          roomCode: code,
+          roomType: room.type,
+          rate,
+          floor,
+        },
+        roomId: room._id,
+        roomNumber: room.roomNumber,
+        action: "create",
+      });
 
-    if (room.roomCode && room.channelSyncStatus === "completed") {
-      await aiosellSyncInventory(req.user.hotelId);
+      // The type's derived count always mirrors the rooms linked to its code.
+      await refreshRoomTypeCount(req.user.hotelId, code);
     }
 
     return res.status(201).json({
@@ -188,7 +218,7 @@ export const updateRoom = async (req, res) => {
     }
 
     if (type !== undefined) {
-      if (!ROOM_TYPES.has(type)) {
+      if (typeof type !== "string" || !type.trim()) {
         return res.status(400).json({
           success: false,
           message: "Invalid room type",
@@ -214,16 +244,22 @@ export const updateRoom = async (req, res) => {
     }
 
     if (roomCode !== undefined) {
-      const code = roomCode === "" ? null : roomCode.trim();
-      // New/changed codes go "under_review" unless the code is already approved
-      // (see ChannelApproval); a cleared code is neutral, so it resets to
-      // "completed" (no review needed — nothing to sync for it).
-      const status = code
-        ? await resolveChannelStatus(req.user.hotelId, KIND_ROOM, code)
-        : "completed";
+      const newCode = roomCode === "" ? null : roomCode.trim();
+      const nextCode = newCode?.toLowerCase() ?? null;
 
-      allowedUpdates.roomCode = code;
-      allowedUpdates.channelSyncStatus = status;
+      if (nextCode) {
+        // The code identifies the room TYPE — when it maps to a local
+        // RoomType, the display label follows the type's name.
+        const roomType = await RoomType.findOne({
+          hotelId: req.user.hotelId,
+          roomCode: nextCode,
+        });
+        if (roomType) {
+          allowedUpdates.type = roomType.name;
+        }
+      }
+
+      allowedUpdates.roomCode = newCode;
     }
 
     // Occupancy display fields (guest record linking arrives in Phase B2)
@@ -246,13 +282,14 @@ export const updateRoom = async (req, res) => {
       });
     }
 
-    const previousRoom =
-      "roomCode" in allowedUpdates
-        ? await Room.findOne({
-            _id: req.params.id,
-            hotelId: req.user.hotelId,
-          })
-        : null;
+    const previousRoom = CHANNEL_ROOM_FIELDS.some(
+      (field) => field in allowedUpdates,
+    )
+      ? await Room.findOne({
+          _id: req.params.id,
+          hotelId: req.user.hotelId,
+        })
+      : null;
 
     const room = await Room.findOneAndUpdate(
       {
@@ -273,25 +310,48 @@ export const updateRoom = async (req, res) => {
       });
     }
 
-    // =================================================
-    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
-    // Push only when the final mapping is synced-to-Aiosell:
-    //   - code set to an approved code, or cleared (approved-code group shrank),
-    //   - OR the room moved OFF an approved code (its old count changed) even
-    //     if the new code is still "under_review" (unapproved codes are
-    //     excluded from the payload).
-    // =================================================
+    // Any edit that changes the Aiosell mapping (code/type/rate/floor) re-opens
+    // this room's per-room request to "under_review" — super-admin re-verifies
+    // it in Aiosell. `channelVerified` is intentionally left untouched so
+    // already-live rooms keep running.
+    if (previousRoom) {
+      const { changed, before, after } = detectMappingChange(
+        previousRoom,
+        room,
+        CHANNEL_ROOM_FIELDS,
+      );
 
-    if ("roomCode" in allowedUpdates) {
-      const needsSync =
-        room.roomCode !== null && room.channelSyncStatus === "completed"
-          ? true
-          : previousRoom?.roomCode &&
-            previousRoom.channelSyncStatus === "completed" &&
-            previousRoom.roomCode !== room.roomCode;
+      if (changed && room.roomCode) {
+        const approval = await recordApprovalChange(
+          req.user.hotelId,
+          "ROOM",
+          room.roomCode,
+          {
+            requestedBy: req.user.id,
+            before,
+            after,
+            roomId: room._id,
+            roomNumber: room.roomNumber,
+            action: "update",
+          },
+        );
 
-      if (needsSync) {
-        await aiosellSyncInventory(req.user.hotelId);
+        updateEntitySyncStatus(room, approval);
+        await room.save();
+      } else if (changed && !room.roomCode) {
+        // Code cleared — nothing in the property to verify.
+        room.channelSyncStatus = "completed";
+        await room.save();
+      }
+
+      // A room moved between types: both types' derived counts change.
+      if (previousRoom.roomCode !== room.roomCode) {
+        if (previousRoom.roomCode) {
+          await refreshRoomTypeCount(req.user.hotelId, previousRoom.roomCode);
+        }
+        if (room.roomCode) {
+          await refreshRoomTypeCount(req.user.hotelId, room.roomCode);
+        }
       }
     }
 
@@ -316,7 +376,7 @@ export const updateRoom = async (req, res) => {
 
 export const deleteRoom = async (req, res) => {
   try {
-    const room = await Room.findOneAndDelete({
+    const room = await Room.findOne({
       _id: req.params.id,
       hotelId: req.user.hotelId,
     });
@@ -328,17 +388,57 @@ export const deleteRoom = async (req, res) => {
       });
     }
 
-    // =================================================
-    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
-    // =================================================
+    // Local-only room (no code): nothing to reconcile in Aiosell, delete now.
+    if (!room.roomCode) {
+      await Room.findByIdAndDelete(room._id);
 
-    if (room.roomCode) {
-      await aiosellSyncInventory(req.user.hotelId);
+      return res.status(200).json({
+        success: true,
+        message: "Room deleted successfully",
+        data: roomResponseDTO(room),
+      });
     }
+
+    // Already queued — keep it idempotent.
+    if (room.pendingDelete) {
+      return res.status(200).json({
+        success: true,
+        message: "This room is already queued for deletion.",
+        data: roomResponseDTO(room),
+      });
+    }
+
+    // =================================================
+    // QUEUE DELETE REQUEST (coded room)
+    // =================================================
+    // A coded room maps to a room type whose count lives in Aiosell. Deleting
+    // it requires a super-admin to drop the count there first, so we queue an
+    // under-review request and mark the room "pendingDelete" (blocked from
+    // check-in). verifyCodeApproval removes it once the count is reduced.
+
+    await recordApprovalChange(req.user.hotelId, "ROOM", room.roomCode, {
+      requestedBy: req.user.id,
+      before: {
+        roomNumber: room.roomNumber,
+        roomCode: room.roomCode,
+        roomType: room.type,
+        rate: room.rate,
+        floor: room.floor,
+      },
+      after: null,
+      roomId: room._id,
+      roomNumber: room.roomNumber,
+      action: "delete",
+    });
+
+    room.pendingDelete = true;
+    await room.save();
 
     return res.status(200).json({
       success: true,
-      message: "Room deleted successfully",
+      message:
+        "Delete request queued — the room will be removed once a super admin reduces the room count in Aiosell and verifies.",
+      data: roomResponseDTO(room),
     });
   } catch (error) {
     logger.error(error, "Delete Room Error");

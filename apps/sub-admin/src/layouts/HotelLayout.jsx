@@ -38,15 +38,48 @@ const items = [
     ),
   },
   {
-    label: "Rooms",
-    path: "/rooms",
+    label: "Inventory",
+    defaultOpen: true,
     icon: icon(
       <path
-        d="M3 21V9l9-6 9 6v12M9 21v-6h6v6"
+        d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
         fill="none"
         strokeLinejoin="round"
       />,
     ),
+    subMenu: [
+      {
+        label: "Rooms",
+        path: "/rooms",
+        icon: icon(
+          <path
+            d="M3 21V9l9-6 9 6v12M9 21v-6h6v6"
+            fill="none"
+            strokeLinejoin="round"
+          />,
+        ),
+      },
+      {
+        label: "Rate Plans",
+        path: "/rate-plans",
+        icon: icon(
+          <path
+            d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"
+            strokeLinecap="round"
+          />,
+        ),
+      },
+      {
+        label: "Room Types",
+        path: "/room-types",
+        icon: icon(
+          <path
+            d="M4 4h7v7H4V4zM13 4h7v4h-7V4zM13 10h7v10h-7V10zM4 13h7v7H4v-7z"
+            strokeLinejoin="round"
+          />,
+        ),
+      },
+    ],
   },
   {
     label: "Guests",

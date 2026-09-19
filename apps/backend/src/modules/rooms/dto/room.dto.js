@@ -7,6 +7,8 @@ export const roomResponseDTO = (room) => ({
   rate: room.rate,
   roomCode: room.roomCode,
   channelSyncStatus: room.channelSyncStatus,
+  channelVerified: room.channelVerified !== false,
+  pendingDelete: room.pendingDelete === true,
   currentGuest: room.currentGuest,
   checkIn: room.checkIn,
   checkOut: room.checkOut,

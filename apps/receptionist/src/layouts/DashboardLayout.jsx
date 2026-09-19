@@ -82,6 +82,32 @@ const icons = {
       <line x1="6" y1="20" x2="6" y2="14" />
     </svg>
   ),
+  ratePlans: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className="h-5 w-5"
+    >
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+    </svg>
+  ),
+  roomTypes: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className="h-5 w-5"
+    >
+      <rect x="4" y="4" width="7" height="7" />
+      <rect x="13" y="4" width="7" height="4" />
+      <rect x="13" y="10" width="7" height="10" />
+      <rect x="4" y="13" width="7" height="7" />
+    </svg>
+  ),
   settings: (
     <svg
       viewBox="0 0 24 24"
@@ -108,6 +134,18 @@ const items = [
     icon: icons.housekeeping,
   },
   { id: "reports", label: "Reports", path: "/reports", icon: icons.reports },
+  {
+    id: "ratePlans",
+    label: "Rate Plans",
+    path: "/rate-plans",
+    icon: icons.ratePlans,
+  },
+  {
+    id: "roomTypes",
+    label: "Room Types",
+    path: "/room-types",
+    icon: icons.roomTypes,
+  },
   {
     id: "settings",
     label: "Settings",

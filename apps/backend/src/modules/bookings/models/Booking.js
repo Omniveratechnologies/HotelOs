@@ -118,5 +118,12 @@ bookingSchema.virtual("nights").get(function () {
 bookingSchema.index({ hotelId: 1, status: 1 });
 bookingSchema.index({ guestId: 1, status: 1 });
 bookingSchema.index({ roomId: 1, status: 1 });
+bookingSchema.index(
+  { hotelId: 1, aiosellBookingId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { aiosellBookingId: { $type: "string" } },
+  },
+);
 
 export default mongoose.model("Booking", bookingSchema);

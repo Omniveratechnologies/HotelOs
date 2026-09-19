@@ -1,4 +1,4 @@
-import ChannelManagerConfig from "../models/ChannelManagerConfig.js";
+import ChannelManagerConfig from "#/modules/channel-manager/config/models/ChannelManagerConfig.js";
 
 import logger from "#/utils/logger.js";
 

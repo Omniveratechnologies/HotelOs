@@ -134,7 +134,7 @@ export default function RoomsPage() {
               </div>
               {room.roomCode && room.channelSyncStatus === "under_review" && (
                 <div className="mt-1 inline-block rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700">
-                  AIOSELL UNDER REVIEW
+                  UNDER REVIEW
                 </div>
               )}
               {room.guest && (

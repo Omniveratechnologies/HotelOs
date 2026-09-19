@@ -40,6 +40,7 @@ const normalizeRoom = (room) => ({
   checkOut: room.checkOut ? String(room.checkOut).split("T")[0] : null,
   roomCode: room.roomCode || null,
   channelSyncStatus: room.channelSyncStatus || "completed",
+  channelVerified: room.channelVerified !== false,
 });
 
 // Map a backend guest DTO onto the shape the UI expects
