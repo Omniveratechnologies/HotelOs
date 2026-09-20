@@ -105,23 +105,3 @@ export const markNoShowBodySchema = z.object({
   bookingId: z.string().min(1, "bookingId is required"),
   hotelId: z.string().optional(),
 });
-
-// Validation middleware factory
-export function validate(schema, source = "body") {
-  return (req, res, next) => {
-    const data = req[source];
-    const result = schema.safeParse(data);
-
-    if (!result.success) {
-      const errors = result.error.flatten().fieldErrors;
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors,
-      });
-    }
-
-    req[source] = result.data;
-    next();
-  };
-}

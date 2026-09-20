@@ -23,18 +23,24 @@ function getDatesInRange(start, end) {
 // GET /distribution/rates?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&hotelId=...
 export const getLiveRates = async (req, res) => {
   try {
-    const hotelId =
+    const {
+      hotelId,
+      startDate: queryStartDate,
+      endDate: queryEndDate,
+    } = req.validated?.query || {};
+
+    const hotelIdResolved =
       req.user?.role === "SUPER_ADMIN"
-        ? req.query.hotelId || req.user.hotelId
+        ? hotelId || req.user.hotelId
         : req.user.hotelId;
 
-    if (!hotelId) {
+    if (!hotelIdResolved) {
       return res
         .status(400)
         .json({ success: false, message: "Hotel ID required" });
     }
 
-    const hotel = await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelIdResolved);
     if (!hotel || !hotel.aiosellHotelCode) {
       return res
         .status(404)
@@ -46,8 +52,8 @@ export const getLiveRates = async (req, res) => {
       .toISOString()
       .slice(0, 10);
     const [startDate, endDate] = validateAndNormalizeDateRange(
-      req.query.startDate || today,
-      req.query.endDate || tenDaysLater,
+      queryStartDate || today,
+      queryEndDate || tenDaysLater,
     );
 
     const dates = getDatesInRange(startDate, endDate);
@@ -97,25 +103,26 @@ export const getLiveRates = async (req, res) => {
 // POST /distribution/rates
 export const updateRates = async (req, res) => {
   try {
-    const hotelId =
+    const { hotelId, updates } = req.validated?.body || {};
+
+    const hotelIdResolved =
       req.user?.role === "SUPER_ADMIN"
-        ? req.body.hotelId || req.user.hotelId
+        ? hotelId || req.user.hotelId
         : req.user.hotelId;
 
-    if (!hotelId) {
+    if (!hotelIdResolved) {
       return res
         .status(400)
         .json({ success: false, message: "Hotel ID required" });
     }
 
-    const hotel = await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelIdResolved);
     if (!hotel?.aiosellHotelCode) {
       return res
         .status(404)
         .json({ success: false, message: "Hotel not mapped to Aiosell" });
     }
 
-    const { updates } = req.body;
     if (!Array.isArray(updates) || updates.length === 0) {
       return res
         .status(400)
@@ -136,7 +143,10 @@ export const updateRates = async (req, res) => {
         if (r.rateplanCode && r.rate != null) {
           localUpdates.push(
             RatePlan.updateMany(
-              { hotelId, ratePlanCode: String(r.rateplanCode).toLowerCase() },
+              {
+                hotelId: hotelIdResolved,
+                ratePlanCode: String(r.rateplanCode).toLowerCase(),
+              },
               { $set: { rate: Number(r.rate) } },
             ),
           );
@@ -163,19 +173,19 @@ export const updateRates = async (req, res) => {
 // POST /distribution/rate-restrictions
 export const updateRateRestrictions = async (req, res) => {
   try {
-    const hotelId =
+    const { hotelId, updates } = req.validated?.body || {};
+
+    const hotelIdResolved =
       req.user?.role === "SUPER_ADMIN"
-        ? req.body.hotelId || req.user.hotelId
+        ? hotelId || req.user.hotelId
         : req.user.hotelId;
 
-    const hotel = await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelIdResolved);
     if (!hotel?.aiosellHotelCode) {
       return res
         .status(404)
         .json({ success: false, message: "Hotel not mapped to Aiosell" });
     }
-
-    const { updates } = req.body;
     const result = await aiosell.pushRateRestrictions(
       hotel.aiosellHotelCode,
       updates,
@@ -204,14 +214,20 @@ export const updateRateRestrictions = async (req, res) => {
 // GET /distribution/inventory (Super-Admin)
 export const getLiveInventory = async (req, res) => {
   try {
-    const hotelId = req.query.hotelId || req.user.hotelId;
-    if (!hotelId) {
+    const {
+      hotelId,
+      startDate: queryStartDate,
+      endDate: queryEndDate,
+    } = req.validated?.query || {};
+
+    const hotelIdResolved = hotelId || req.user.hotelId;
+    if (!hotelIdResolved) {
       return res
         .status(400)
         .json({ success: false, message: "Hotel ID required" });
     }
 
-    const hotel = await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelIdResolved);
     if (!hotel?.aiosellHotelCode) {
       return res
         .status(404)
@@ -223,8 +239,8 @@ export const getLiveInventory = async (req, res) => {
       .toISOString()
       .slice(0, 10);
     const [startDate, endDate] = validateAndNormalizeDateRange(
-      req.query.startDate || today,
-      req.query.endDate || tenDaysLater,
+      queryStartDate || today,
+      queryEndDate || tenDaysLater,
     );
 
     const dates = getDatesInRange(startDate, endDate);
@@ -274,15 +290,15 @@ export const getLiveInventory = async (req, res) => {
 // POST /distribution/inventory (Super-Admin)
 export const updateInventory = async (req, res) => {
   try {
-    const hotelId = req.body.hotelId || req.user.hotelId;
-    const hotel = await Hotel.findById(hotelId);
+    const { hotelId, updates } = req.validated?.body || {};
+
+    const hotelIdResolved = hotelId || req.user.hotelId;
+    const hotel = await Hotel.findById(hotelIdResolved);
     if (!hotel?.aiosellHotelCode) {
       return res
         .status(404)
         .json({ success: false, message: "Hotel not mapped to Aiosell" });
     }
-
-    const { updates } = req.body;
     const result = await aiosell.pushInventory(hotel.aiosellHotelCode, updates);
     if (!result.ok) {
       return res.status(502).json({
@@ -308,15 +324,15 @@ export const updateInventory = async (req, res) => {
 // POST /distribution/inventory-restrictions (Super-Admin)
 export const updateInventoryRestrictions = async (req, res) => {
   try {
-    const hotelId = req.body.hotelId || req.user.hotelId;
-    const hotel = await Hotel.findById(hotelId);
+    const { hotelId, updates } = req.validated?.body || {};
+
+    const hotelIdResolved = hotelId || req.user.hotelId;
+    const hotel = await Hotel.findById(hotelIdResolved);
     if (!hotel?.aiosellHotelCode) {
       return res
         .status(404)
         .json({ success: false, message: "Hotel not mapped to Aiosell" });
     }
-
-    const { updates } = req.body;
     const result = await aiosell.pushInventoryRestrictions(
       hotel.aiosellHotelCode,
       updates,
@@ -345,19 +361,20 @@ export const updateInventoryRestrictions = async (req, res) => {
 // POST /distribution/mark-noshow
 export const markNoShow = async (req, res) => {
   try {
-    const hotelId =
+    const { hotelId, bookingId } = req.validated?.body || {};
+
+    const hotelIdResolved =
       req.user?.role === "SUPER_ADMIN"
-        ? req.body.hotelId || req.user.hotelId
+        ? hotelId || req.user.hotelId
         : req.user.hotelId;
 
-    const hotel = await Hotel.findById(hotelId);
+    const hotel = await Hotel.findById(hotelIdResolved);
     if (!hotel?.aiosellHotelCode) {
       return res
         .status(404)
         .json({ success: false, message: "Hotel not mapped to Aiosell" });
     }
 
-    const { bookingId } = req.body;
     if (!bookingId) {
       return res
         .status(400)

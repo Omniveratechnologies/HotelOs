@@ -17,8 +17,8 @@ import {
 } from "../distribution/distribution.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
+import { validate } from "#/shared/middleware/validate.middleware.js";
 import {
-  validate,
   getLiveRatesQuerySchema,
   getLiveInventoryQuerySchema,
   updateRatesBodySchema,
@@ -52,21 +52,21 @@ router.get(
   "/distribution/rates",
   authenticate,
   authorize("SUPER_ADMIN", "SUB_ADMIN", "RECEPTIONIST"),
-  validate(getLiveRatesQuerySchema, "query"),
+  validate({ query: getLiveRatesQuerySchema }),
   getLiveRates,
 );
 router.post(
   "/distribution/rates",
   authenticate,
   authorize("SUPER_ADMIN", "SUB_ADMIN", "RECEPTIONIST"),
-  validate(updateRatesBodySchema),
+  validate({ body: updateRatesBodySchema }),
   updateRates,
 );
 router.post(
   "/distribution/rate-restrictions",
   authenticate,
   authorize("SUPER_ADMIN", "SUB_ADMIN", "RECEPTIONIST"),
-  validate(updateRateRestrictionsBodySchema),
+  validate({ body: updateRateRestrictionsBodySchema }),
   updateRateRestrictions,
 );
 
@@ -74,21 +74,21 @@ router.get(
   "/distribution/inventory",
   authenticate,
   authorize("SUPER_ADMIN"),
-  validate(getLiveInventoryQuerySchema, "query"),
+  validate({ query: getLiveInventoryQuerySchema }),
   getLiveInventory,
 );
 router.post(
   "/distribution/inventory",
   authenticate,
   authorize("SUPER_ADMIN"),
-  validate(updateInventoryBodySchema),
+  validate({ body: updateInventoryBodySchema }),
   updateInventory,
 );
 router.post(
   "/distribution/inventory-restrictions",
   authenticate,
   authorize("SUPER_ADMIN"),
-  validate(updateInventoryRestrictionsBodySchema),
+  validate({ body: updateInventoryRestrictionsBodySchema }),
   updateInventoryRestrictions,
 );
 
@@ -96,7 +96,7 @@ router.post(
   "/distribution/mark-noshow",
   authenticate,
   authorize("SUPER_ADMIN", "SUB_ADMIN", "RECEPTIONIST"),
-  validate(markNoShowBodySchema),
+  validate({ body: markNoShowBodySchema }),
   markNoShow,
 );
 
