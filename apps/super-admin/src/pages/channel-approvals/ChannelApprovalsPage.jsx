@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { useOutletContext, Link } from "react-router-dom";
+import { useOutletContext, Link } from "react-router";
 import { BadgeCheck, Check, Copy, Eye, Info, X } from "lucide-react";
-import Topbar from "../components/layout/Topbar.jsx";
-import Badge from "../components/ui/Badge.jsx";
-import { TableSkeleton, EmptyState } from "../components/ui/States.jsx";
+import Topbar from "../../components/layout/Topbar.jsx";
+import Badge from "../../components/ui/Badge.jsx";
+import { TableSkeleton, EmptyState } from "../../components/ui/States.jsx";
 import {
   getChannelApprovals,
   verifyChannelApproval,
-} from "../services/hotel.service.js";
+} from "../../services/hotel.service.js";
 
 const KIND_OPTIONS = ["all", "ROOM", "RATE_PLAN", "ROOM_TYPE", "HOTEL"];
 const STATUS_OPTIONS = ["under_review", "completed"];
@@ -83,15 +83,15 @@ const renderChange = (approval) => {
     if (beforeName && afterName && beforeName !== afterName) {
       return (
         <>
-          <span className="text-ink-muted">{beforeName}</span>
-          <span className="text-ink-muted mx-1">→</span>
+          <span className="text-brand-700/60">{beforeName}</span>
+          <span className="text-brand-700/60 mx-1">→</span>
           <span className="font-semibold">{afterName}</span>
         </>
       );
     }
 
     return (
-      <span className="text-ink-body font-semibold">
+      <span className="text-brand-900 font-semibold">
         {afterName || approval.code}
       </span>
     );
@@ -108,17 +108,17 @@ const renderChange = (approval) => {
 
     return (
       <>
-        <span className="text-ink-body font-semibold">
+        <span className="text-brand-900 font-semibold">
           {after.name || approval.code}
         </span>
-        <span className="text-ink-muted"> · {approval.code}</span>
+        <span className="text-brand-700/60"> · {approval.code}</span>
         {countChanged && (
-          <p className="text-ink-muted mt-0.5 text-[11px]">
+          <p className="text-brand-700/60 mt-0.5 text-[11px]">
             count {before.count} → {after.count}
           </p>
         )}
         {diffSummary && (
-          <p className="text-ink-muted mt-0.5 text-[11px]">
+          <p className="text-brand-700/60 mt-0.5 text-[11px]">
             edited: {diffSummary}
           </p>
         )}
@@ -133,11 +133,11 @@ const renderChange = (approval) => {
     if (approval.action === "delete" && !approval.after) {
       return (
         <>
-          <span className="text-ink-body font-semibold">
+          <span className="text-brand-900 font-semibold">
             Room {approval.roomNumber}
           </span>
-          <span className="text-ink-muted"> · {typeLabel} · removed</span>
-          <p className="text-ink-muted mt-0.5 text-[11px]">
+          <span className="text-brand-700/60"> · {typeLabel} · removed</span>
+          <p className="text-brand-700/60 mt-0.5 text-[11px]">
             Remove this room from Aiosell to finish the delete
           </p>
         </>
@@ -146,12 +146,12 @@ const renderChange = (approval) => {
 
     return (
       <>
-        <span className="text-ink-body font-semibold">
+        <span className="text-brand-900 font-semibold">
           Room {approval.roomNumber}
         </span>
-        <span className="text-ink-muted"> · {typeLabel}</span>
+        <span className="text-brand-700/60"> · {typeLabel}</span>
         {desired > 0 && (
-          <p className="text-ink-muted mt-0.5 text-[11px]">
+          <p className="text-brand-700/60 mt-0.5 text-[11px]">
             needs {desired} {typeLabel} room{desired === 1 ? "" : "s"} in
             Aiosell
           </p>
@@ -164,11 +164,11 @@ const renderChange = (approval) => {
 
   return (
     <>
-      <span className="text-ink-body font-mono text-xs font-semibold">
+      <span className="text-brand-900 font-mono text-xs font-semibold">
         {approval.code}
       </span>
       {diffSummary && (
-        <p className="text-ink-muted mt-0.5 text-[11px]">
+        <p className="text-brand-700/60 mt-0.5 text-[11px]">
           edited: {diffSummary}
         </p>
       )}
@@ -307,30 +307,30 @@ function ApprovalDetailModal({
       onClick={onClose}
     >
       <div
-        className="bg-canvas flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl shadow-2xl"
+        className="bg-background-50 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-ink-950 flex items-start justify-between gap-3 px-6 py-5">
+        <div className="bg-brand-950 flex items-start justify-between gap-3 px-6 py-5">
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="text-ink-muted text-xs font-semibold tracking-wider uppercase">
+              <span className="text-brand-700/60 text-xs font-semibold tracking-wider uppercase">
                 {KIND_LABELS[approval.kind] || approval.kind}
               </span>
               <Badge status={approval.status} />
               {approval.action && (
-                <span className="text-ink-muted rounded-md bg-white/10 px-2 py-0.5 font-mono text-[10px] uppercase">
+                <span className="text-brand-700/60 rounded-md bg-white/10 px-2 py-0.5 font-mono text-[10px] uppercase">
                   {approval.action}
                 </span>
               )}
             </div>
-            <h2 className="text-ink-body mt-1 text-lg font-semibold">
+            <h2 className="text-brand-900 mt-1 text-lg font-semibold">
               {approval.hotelName || "Hotel"} · {approval.code}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-ink-muted hover:text-ink-body rounded-lg p-1.5 transition"
+            className="text-brand-700/60 hover:text-brand-900 rounded-lg p-1.5 transition"
           >
             <X size={18} />
           </button>
@@ -391,10 +391,10 @@ function ApprovalDetailModal({
 
           {/* Change summary */}
           <section>
-            <h3 className="text-ink-muted mb-2 text-xs font-semibold tracking-wider uppercase">
+            <h3 className="text-brand-700/60 mb-2 text-xs font-semibold tracking-wider uppercase">
               Change Request
             </h3>
-            <div className="border-line bg-ink-950/2.5 rounded-xl border px-4 py-3.5 text-sm">
+            <div className="border-surface-200 bg-surface-50 rounded-xl border px-4 py-3.5 text-sm">
               {renderChange(approval)}
             </div>
           </section>
@@ -402,18 +402,18 @@ function ApprovalDetailModal({
           {/* Copyable Necessary Fields */}
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-ink-muted text-xs font-semibold tracking-wider uppercase">
+              <h3 className="text-brand-700/60 text-xs font-semibold tracking-wider uppercase">
                 Copyable Fields for Aiosell Dashboard
               </h3>
-              <span className="text-ink-muted text-[11px]">
+              <span className="text-brand-700/60 text-[11px]">
                 Click icon to copy
               </span>
             </div>
 
-            <div className="border-line divide-line text-ink-body divide-y rounded-xl border bg-white text-sm">
+            <div className="border-surface-200 divide-surface-200 text-brand-900 divide-y rounded-xl border bg-white text-sm">
               {/* Code */}
               <div className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-ink-muted text-xs font-medium">
+                <span className="text-brand-700/60 text-xs font-medium">
                   Identifier Code
                 </span>
                 <div className="flex items-center gap-2">
@@ -439,7 +439,7 @@ function ApprovalDetailModal({
                 <>
                   {approval.roomNumber && (
                     <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-ink-muted text-xs font-medium">
+                      <span className="text-brand-700/60 text-xs font-medium">
                         Room Number
                       </span>
                       <div className="flex items-center gap-2">
@@ -464,7 +464,7 @@ function ApprovalDetailModal({
                   )}
                   {updates.roomType && (
                     <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-ink-muted text-xs font-medium">
+                      <span className="text-brand-700/60 text-xs font-medium">
                         Room Type Name
                       </span>
                       <div className="flex items-center gap-2">
@@ -489,7 +489,7 @@ function ApprovalDetailModal({
                   )}
                   {approval.desiredCount != null && (
                     <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-ink-muted text-xs font-medium">
+                      <span className="text-brand-700/60 text-xs font-medium">
                         Required Room Count
                       </span>
                       <div className="flex items-center gap-2">
@@ -519,7 +519,7 @@ function ApprovalDetailModal({
                 <>
                   {(updates.name || approval.name) && (
                     <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-ink-muted text-xs font-medium">
+                      <span className="text-brand-700/60 text-xs font-medium">
                         Room Type Name
                       </span>
                       <div className="flex items-center gap-2">
@@ -544,7 +544,7 @@ function ApprovalDetailModal({
                   )}
                   {(updates.count != null || approval.count != null) && (
                     <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-ink-muted text-xs font-medium">
+                      <span className="text-brand-700/60 text-xs font-medium">
                         Total Rooms Count
                       </span>
                       <div className="flex items-center gap-2">
@@ -576,7 +576,7 @@ function ApprovalDetailModal({
               {approval.kind === "RATE_PLAN" && (
                 <>
                   <div className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-ink-muted text-xs font-medium">
+                    <span className="text-brand-700/60 text-xs font-medium">
                       Rate Plan Code
                     </span>
                     <div className="flex items-center gap-2">
@@ -603,7 +603,7 @@ function ApprovalDetailModal({
                   </div>
                   {(updates.rate != null || approval.rate != null) && (
                     <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-ink-muted text-xs font-medium">
+                      <span className="text-brand-700/60 text-xs font-medium">
                         Base Nightly Rate
                       </span>
                       <div className="flex items-center gap-2">
@@ -628,7 +628,7 @@ function ApprovalDetailModal({
                   )}
                   {updates.occupancy && (
                     <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-ink-muted text-xs font-medium">
+                      <span className="text-brand-700/60 text-xs font-medium">
                         Occupancy
                       </span>
                       <div className="flex items-center gap-2">
@@ -651,7 +651,7 @@ function ApprovalDetailModal({
                   )}
                   {updates.mealPlan && (
                     <div className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-ink-muted text-xs font-medium">
+                      <span className="text-brand-700/60 text-xs font-medium">
                         Meal Plan
                       </span>
                       <div className="flex items-center gap-2">
@@ -677,7 +677,7 @@ function ApprovalDetailModal({
 
               {/* Requested by & Date */}
               <div className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-ink-muted text-xs">Requested by</span>
+                <span className="text-brand-700/60 text-xs">Requested by</span>
                 <span className="text-xs font-medium">
                   {userName(approval.requestedBy)}
                 </span>
@@ -688,12 +688,12 @@ function ApprovalDetailModal({
           {/* Required Action Snippet in Aiosell */}
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-ink-muted text-xs font-semibold tracking-wider uppercase">
+              <h3 className="text-brand-700/60 text-xs font-semibold tracking-wider uppercase">
                 Aiosell Action Instruction
               </h3>
               <button
                 onClick={() => copyText(requiredSnippet(approval))}
-                className="bg-primary-600 hover:bg-primary-500 text-ink-invert inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors"
+                className="bg-primary-600 hover:bg-primary-500 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white transition-colors"
               >
                 {copied === "full" ? (
                   <>
@@ -706,15 +706,15 @@ function ApprovalDetailModal({
                 )}
               </button>
             </div>
-            <pre className="border-line text-ink-body overflow-x-auto rounded-xl border bg-black/3 p-3.5 font-mono text-xs leading-relaxed whitespace-pre-wrap">
+            <pre className="border-surface-200 text-brand-900 overflow-x-auto rounded-xl border bg-black/3 p-3.5 font-mono text-xs leading-relaxed whitespace-pre-wrap">
               {requiredSnippet(approval)}
             </pre>
           </section>
         </div>
 
         {/* Footer with Verify Action */}
-        <div className="border-line flex items-center justify-between border-t bg-gray-50/50 px-6 py-4">
-          <div className="text-ink-muted text-xs">
+        <div className="border-surface-200 flex items-center justify-between border-t bg-gray-50/50 px-6 py-4">
+          <div className="text-brand-700/60 text-xs">
             {approval.verifyAttempts > 0 && (
               <span>
                 Verified {approval.verifyAttempts} time
@@ -726,7 +726,7 @@ function ApprovalDetailModal({
             {verifyResult?.ok ? (
               <button
                 onClick={handleClose}
-                className="bg-signal-600 hover:bg-signal-500 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
+                className="bg-primary-600 hover:bg-primary-500 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
               >
                 <BadgeCheck size={16} strokeWidth={2.25} />
                 Done
@@ -735,14 +735,14 @@ function ApprovalDetailModal({
               <>
                 <button
                   onClick={handleClose}
-                  className="border-line text-ink-body hover:bg-ink-950/5 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors"
+                  className="border-surface-200 text-brand-900 hover:bg-brand-950/5 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors"
                 >
                   Close
                 </button>
                 <button
                   onClick={handleVerifyClick}
                   disabled={isVerifying}
-                  className="bg-signal-600 hover:bg-signal-500 inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-50"
+                  className="bg-primary-600 hover:bg-primary-500 inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors disabled:opacity-50"
                 >
                   <BadgeCheck size={16} strokeWidth={2.25} />
                   {isVerifying ? "Checking Aiosell…" : "Verify & Auto-Sync"}
@@ -851,7 +851,7 @@ export default function ChannelApprovals() {
         {/* How requests work */}
         <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-100/40 px-4 py-3">
           <Info size={16} className="mt-0.5 shrink-0 text-amber-500" />
-          <p className="text-ink-muted text-sm">
+          <p className="text-brand-700/60 text-sm">
             Room, rate-plan, room-type and hotel-detail changes made by the
             hotel staff queue here for review. Make the add/edit manually in the
             Aiosell dashboard, then click{" "}
@@ -859,7 +859,7 @@ export default function ChannelApprovals() {
             property and auto-complete the request when the change is found.{" "}
             <Link
               to="/channel-manager"
-              className="text-signal-600 font-semibold hover:underline"
+              className="text-primary-600 font-semibold hover:underline"
             >
               Open Channel Manager
             </Link>{" "}
@@ -871,7 +871,7 @@ export default function ChannelApprovals() {
           <div
             className={`mb-5 rounded-xl px-4 py-3 text-sm ${
               toast.ok
-                ? "bg-signal-100 text-signal-600"
+                ? "bg-primary-100 text-primary-600"
                 : "bg-rose-100 text-rose-500"
             }`}
           >
@@ -881,15 +881,15 @@ export default function ChannelApprovals() {
 
         {/* Filters */}
         <div className="mb-5 flex flex-wrap items-center gap-3">
-          <div className="bg-ink-950/5 flex gap-1 rounded-xl p-1">
+          <div className="bg-brand-950/5 flex gap-1 rounded-xl p-1">
             {KIND_OPTIONS.map((k) => (
               <button
                 key={k}
                 onClick={() => handleKindChange(k)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
                   kind === k
-                    ? "text-ink-900 bg-white shadow-xs"
-                    : "text-ink-muted hover:text-ink-700"
+                    ? "text-brand-900 bg-white shadow-xs"
+                    : "text-brand-700/60 hover:text-brand-700"
                 }`}
               >
                 {k === "all"
@@ -904,15 +904,15 @@ export default function ChannelApprovals() {
               </button>
             ))}
           </div>
-          <div className="bg-ink-950/5 flex gap-1 rounded-xl p-1">
+          <div className="bg-brand-950/5 flex gap-1 rounded-xl p-1">
             {STATUS_OPTIONS.map((s) => (
               <button
                 key={s}
                 onClick={() => handleStatusChange(s)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
                   status === s
-                    ? "text-ink-900 bg-white shadow-xs"
-                    : "text-ink-muted hover:text-ink-700"
+                    ? "text-brand-900 bg-white shadow-xs"
+                    : "text-brand-700/60 hover:text-brand-700"
                 }`}
               >
                 {s === "under_review" ? "Under review" : "Completed"}
@@ -938,10 +938,10 @@ export default function ChannelApprovals() {
             description="Room, rate-plan, room-type and hotel changes created by hotel staff will queue here once under review, and show as completed after verification."
           />
         ) : (
-          <div className="border-line overflow-hidden rounded-2xl border bg-white">
+          <div className="border-surface-200 overflow-hidden rounded-2xl border bg-white">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-line text-ink-muted border-b text-xs font-semibold tracking-wide uppercase">
+                <tr className="border-surface-200 text-brand-700/60 border-b text-xs font-semibold tracking-wide uppercase">
                   <th className="px-5 py-3.5 font-semibold">Hotel</th>
                   <th className="px-5 py-3.5 font-semibold">Type</th>
                   <th className="px-5 py-3.5 font-semibold">Change</th>
@@ -954,31 +954,31 @@ export default function ChannelApprovals() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-line divide-y">
+              <tbody className="divide-surface-200 divide-y">
                 {approvals.map((approval) => (
-                  <tr key={approval.id} className="hover:bg-canvas/60">
+                  <tr key={approval.id} className="hover:bg-background-50/60">
                     <td className="px-5 py-4">
-                      <p className="text-ink-body font-semibold">
+                      <p className="text-brand-900 font-semibold">
                         {approval.hotelName || "—"}
                       </p>
                       {approval.hotelCode && (
-                        <p className="text-ink-muted font-mono text-xs">
+                        <p className="text-brand-700/60 font-mono text-xs">
                           {approval.hotelCode}
                         </p>
                       )}
                     </td>
                     <td className="px-5 py-4">
-                      <span className="text-ink-body text-xs font-semibold">
+                      <span className="text-brand-900 text-xs font-semibold">
                         {KIND_LABELS[approval.kind] || approval.kind}
                       </span>
                     </td>
                     <td className="px-5 py-4">{renderChange(approval)}</td>
-                    <td className="text-ink-muted px-5 py-4 text-xs">
+                    <td className="text-brand-700/60 px-5 py-4 text-xs">
                       {approval.requestedBy
                         ? userName(approval.requestedBy)
                         : "Unknown"}
                     </td>
-                    <td className="text-ink-muted px-5 py-4 text-xs">
+                    <td className="text-brand-700/60 px-5 py-4 text-xs">
                       {approval.status === "completed" ? (
                         <span className="font-medium text-green-600">
                           Verified
@@ -1008,7 +1008,7 @@ export default function ChannelApprovals() {
                         <Badge status={approval.status} />
                       )}
                     </td>
-                    <td className="text-ink-muted px-5 py-4 text-xs">
+                    <td className="text-brand-700/60 px-5 py-4 text-xs">
                       {formatDate(approval.createdAt)}
                       {approval.status === "completed" &&
                         approval.approvedBy && (
@@ -1027,7 +1027,7 @@ export default function ChannelApprovals() {
                       {approval.status === "under_review" ? (
                         <button
                           onClick={() => setViewing(approval)}
-                          className="bg-signal-600 hover:bg-signal-500 text-ink-invert inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors"
+                          className="bg-primary-600 hover:bg-primary-500 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold text-white transition-colors"
                         >
                           <Eye size={14} strokeWidth={2.25} />
                           View
@@ -1037,7 +1037,7 @@ export default function ChannelApprovals() {
                           Verified
                         </span>
                       ) : (
-                        <span className="text-ink-muted text-xs">—</span>
+                        <span className="text-brand-700/60 text-xs">—</span>
                       )}
                     </td>
                   </tr>

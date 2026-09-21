@@ -1,23 +1,23 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router";
 import { Save, Bell, ShieldCheck, User } from "lucide-react";
-import Topbar from "../components/layout/Topbar.jsx";
-import Field from "../components/ui/Field.jsx";
-import { inputClass } from "../components/ui/inputClass.js";
-import Button from "../components/ui/Button.jsx";
-import { currentAdmin } from "../data/mockData.js";
+import Topbar from "../../components/layout/Topbar.jsx";
+import Field from "../../components/ui/Field.jsx";
+import { inputClass } from "../../components/ui/inputClass.js";
+import Button from "../../components/ui/Button.jsx";
+import { currentAdmin } from "../../data/mockData.js";
 
 function SectionCard({ icon: Icon, title, description, children }) {
   return (
-    <div className="border-line rounded-2xl border bg-white p-5 sm:p-6">
+    <div className="border-surface-200 rounded-2xl border bg-white p-5 sm:p-6">
       <div className="mb-5 flex items-start gap-3">
-        <div className="bg-signal-100 text-signal-600 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+        <div className="bg-primary-100 text-primary-600 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
           <Icon size={17} strokeWidth={2.25} />
         </div>
         <div>
-          <h3 className="font-display text-ink-body font-bold">{title}</h3>
+          <h3 className="font-display text-brand-900 font-bold">{title}</h3>
           {description && (
-            <p className="text-ink-muted mt-0.5 text-sm">{description}</p>
+            <p className="text-brand-700/60 mt-0.5 text-sm">{description}</p>
           )}
         </div>
       </div>
@@ -30,18 +30,18 @@ function Toggle({ checked, onChange, label, description }) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-4 py-3">
       <span>
-        <span className="text-ink-body block text-sm font-semibold">
+        <span className="text-brand-900 block text-sm font-semibold">
           {label}
         </span>
         {description && (
-          <span className="text-ink-muted block text-xs">{description}</span>
+          <span className="text-brand-700/60 block text-xs">{description}</span>
         )}
       </span>
       <button
         type="button"
         onClick={() => onChange(!checked)}
         className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-          checked ? "bg-signal-500" : "bg-ink-950/15"
+          checked ? "bg-primary-500" : "bg-brand-950/15"
         }`}
       >
         <span
@@ -54,7 +54,7 @@ function Toggle({ checked, onChange, label, description }) {
   );
 }
 
-export default function Settings() {
+export default function SettingsPage() {
   const { onMenuClick } = useOutletContext();
   const [name, setName] = useState(currentAdmin.name);
   const [email, setEmail] = useState(currentAdmin.email);
@@ -110,7 +110,7 @@ export default function Settings() {
             title="Notifications"
             description="Choose what you get notified about."
           >
-            <div className="divide-line divide-y">
+            <div className="divide-surface-200 divide-y">
               <Toggle
                 checked={notifyExpiry}
                 onChange={setNotifyExpiry}
@@ -150,7 +150,7 @@ export default function Settings() {
               Save changes
             </Button>
             {saved && (
-              <span className="text-signal-600 text-sm font-medium">
+              <span className="text-primary-600 text-sm font-medium">
                 Saved.
               </span>
             )}

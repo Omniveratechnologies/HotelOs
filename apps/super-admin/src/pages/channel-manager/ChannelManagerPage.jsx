@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router";
 import {
   Cable,
   Save,
@@ -10,11 +10,11 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import Topbar from "../components/layout/Topbar.jsx";
-import Field from "../components/ui/Field.jsx";
-import { inputClass } from "../components/ui/inputClass.js";
-import Button from "../components/ui/Button.jsx";
-import { TableSkeleton } from "../components/ui/States.jsx";
+import Topbar from "../../components/layout/Topbar.jsx";
+import Field from "../../components/ui/Field.jsx";
+import { inputClass } from "../../components/ui/inputClass.js";
+import Button from "../../components/ui/Button.jsx";
+import { TableSkeleton } from "../../components/ui/States.jsx";
 import {
   getHotels,
   getHotelById,
@@ -22,20 +22,20 @@ import {
   updateChannelManagerConfig,
   setHotelAiosellCode,
   syncHotelFromAiosell,
-} from "../services/hotel.service.js";
-import AiosellLiveMatrix from "../components/channel-manager/AiosellLiveMatrix.jsx";
+} from "../../services/hotel.service.js";
+import AiosellLiveMatrix from "../../components/channel-manager/AiosellLiveMatrix.jsx";
 
 function SectionCard({ icon: Icon, title, description, children }) {
   return (
-    <div className="border-line rounded-2xl border bg-white p-5 sm:p-6">
+    <div className="border-surface-200 rounded-2xl border bg-white p-5 sm:p-6">
       <div className="mb-5 flex items-start gap-3">
-        <div className="bg-signal-100 text-signal-600 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+        <div className="bg-primary-100 text-primary-600 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
           <Icon size={17} strokeWidth={2.25} />
         </div>
         <div>
-          <h3 className="font-display text-ink-body font-bold">{title}</h3>
+          <h3 className="font-display text-brand-900 font-bold">{title}</h3>
           {description && (
-            <p className="text-ink-muted mt-0.5 text-sm">{description}</p>
+            <p className="text-brand-700/60 mt-0.5 text-sm">{description}</p>
           )}
         </div>
       </div>
@@ -48,18 +48,18 @@ function Toggle({ checked, onChange, label, description }) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-4 py-3">
       <span>
-        <span className="text-ink-body block text-sm font-semibold">
+        <span className="text-brand-900 block text-sm font-semibold">
           {label}
         </span>
         {description && (
-          <span className="text-ink-muted block text-xs">{description}</span>
+          <span className="text-brand-700/60 block text-xs">{description}</span>
         )}
       </span>
       <button
         type="button"
         onClick={() => onChange(!checked)}
         className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-          checked ? "bg-signal-500" : "bg-ink-950/15"
+          checked ? "bg-primary-500" : "bg-brand-950/15"
         }`}
       >
         <span
@@ -80,7 +80,7 @@ const formatDate = (value) => {
   });
 };
 
-export default function ChannelManager() {
+export default function ChannelManagerPage() {
   const { onMenuClick } = useOutletContext();
 
   const [hotels, setHotels] = useState([]);
@@ -232,7 +232,7 @@ export default function ChannelManager() {
 
       <main className="flex-1 space-y-5 px-5 pb-10 lg:px-8">
         {/* Top Control Bar: Hotel Selector + Primary Tabs */}
-        <div className="border-line flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4">
+        <div className="border-surface-200 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4">
           <div className="flex items-center gap-3">
             <label className="text-xs font-bold tracking-wider text-gray-500 uppercase">
               Target Property:
@@ -245,7 +245,7 @@ export default function ChannelManager() {
                 setHotelAiosellCodeValue(h?.aiosellHotelCode || "");
               }}
               disabled={hotelsLoading}
-              className="border-line text-brand-900 rounded-xl border px-3 py-1.5 text-xs font-semibold focus:outline-none"
+              className="border-surface-200 text-brand-900 rounded-xl border px-3 py-1.5 text-xs font-semibold focus:outline-none"
             >
               {hotels.map((h) => (
                 <option key={h._id} value={h._id}>
@@ -258,14 +258,14 @@ export default function ChannelManager() {
             </select>
           </div>
 
-          <div className="bg-ink-950/5 flex items-center gap-1 rounded-xl p-1">
+          <div className="bg-brand-950/5 flex items-center gap-1 rounded-xl p-1">
             <button
               type="button"
               onClick={() => setViewTab("matrix")}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                 viewTab === "matrix"
                   ? "text-brand-900 bg-white shadow-xs"
-                  : "text-ink-muted hover:text-ink-body"
+                  : "text-brand-700/60 hover:text-brand-900"
               }`}
             >
               Live Aiosell Matrix
@@ -276,7 +276,7 @@ export default function ChannelManager() {
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                 viewTab === "settings"
                   ? "text-brand-900 bg-white shadow-xs"
-                  : "text-ink-muted hover:text-ink-body"
+                  : "text-brand-700/60 hover:text-brand-900"
               }`}
             >
               Connection & Sync Settings
@@ -288,7 +288,7 @@ export default function ChannelManager() {
           <div
             className={`mb-2 rounded-xl px-4 py-3 text-sm ${
               toast.ok
-                ? "bg-signal-100 text-signal-600"
+                ? "bg-primary-100 text-primary-600"
                 : "bg-rose-100 text-rose-500"
             }`}
           >
@@ -314,7 +314,7 @@ export default function ChannelManager() {
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
                       config?.isEnabled
-                        ? "bg-signal-100 text-signal-600"
+                        ? "bg-primary-100 text-primary-600"
                         : "bg-amber-100 text-amber-500"
                     }`}
                   >
@@ -325,7 +325,7 @@ export default function ChannelManager() {
                     )}
                     {config?.isEnabled ? "Connected" : "Disabled"}
                   </span>
-                  <span className="text-ink-muted text-xs">
+                  <span className="text-brand-700/60 text-xs">
                     Last synced: {formatDate(config?.lastSyncAt)}
                   </span>
                 </div>
@@ -373,7 +373,7 @@ export default function ChannelManager() {
                   </Field>
                 </div>
 
-                <div className="divide-line mt-2 divide-y">
+                <div className="divide-surface-200 mt-2 divide-y">
                   <Toggle
                     checked={isEnabled}
                     onChange={setIsEnabled}
@@ -441,14 +441,14 @@ export default function ChannelManager() {
               )}
 
               {syncResult && (
-                <div className="border-signal-100 bg-signal-100/40 mt-5 rounded-xl border p-4">
+                <div className="border-primary-200 bg-primary-100/40 mt-5 rounded-xl border p-4">
                   <div className="mb-3 flex items-center gap-2">
-                    <CheckCircle2 size={16} className="text-signal-600" />
-                    <span className="text-ink-body text-sm font-semibold">
+                    <CheckCircle2 size={16} className="text-primary-600" />
+                    <span className="text-brand-900 text-sm font-semibold">
                       Sync complete
                     </span>
                     {syncResult.property && (
-                      <span className="text-ink-muted text-xs">
+                      <span className="text-brand-700/60 text-xs">
                         — {syncResult.property.hotelName} (
                         {syncResult.property.hotelCode} ·{" "}
                         {syncResult.property.currency})
@@ -457,44 +457,46 @@ export default function ChannelManager() {
                   </div>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <div className="rounded-lg bg-white p-3">
-                      <p className="text-ink-muted text-[11px] font-semibold tracking-wide uppercase">
+                      <p className="text-brand-700/60 text-[11px] font-semibold tracking-wide uppercase">
                         Rooms
                       </p>
-                      <p className="text-ink-body font-display text-lg font-bold">
+                      <p className="text-brand-900 font-display text-lg font-bold">
                         {syncResult.rooms?.created ?? 0}
                       </p>
-                      <p className="text-ink-muted text-xs">
+                      <p className="text-brand-700/60 text-xs">
                         {syncResult.rooms?.deleted ?? 0} replaced
                       </p>
                     </div>
                     <div className="rounded-lg bg-white p-3">
-                      <p className="text-ink-muted text-[11px] font-semibold tracking-wide uppercase">
+                      <p className="text-brand-700/60 text-[11px] font-semibold tracking-wide uppercase">
                         Rate plans
                       </p>
-                      <p className="text-ink-body font-display text-lg font-bold">
+                      <p className="text-brand-900 font-display text-lg font-bold">
                         {syncResult.ratePlans?.created ?? 0}
                       </p>
-                      <p className="text-ink-muted text-xs">
+                      <p className="text-brand-700/60 text-xs">
                         {syncResult.ratePlans?.deleted ?? 0} replaced
                       </p>
                     </div>
                     <div className="rounded-lg bg-white p-3">
-                      <p className="text-ink-muted text-[11px] font-semibold tracking-wide uppercase">
+                      <p className="text-brand-700/60 text-[11px] font-semibold tracking-wide uppercase">
                         Approvals
                       </p>
-                      <p className="text-ink-body font-display text-lg font-bold">
+                      <p className="text-brand-900 font-display text-lg font-bold">
                         {syncResult.approvals?.created ?? 0}
                       </p>
-                      <p className="text-ink-muted text-xs">marked approved</p>
+                      <p className="text-brand-700/60 text-xs">
+                        marked approved
+                      </p>
                     </div>
                     <div className="rounded-lg bg-white p-3">
-                      <p className="text-ink-muted text-[11px] font-semibold tracking-wide uppercase">
+                      <p className="text-brand-700/60 text-[11px] font-semibold tracking-wide uppercase">
                         Push to Aiosell
                       </p>
-                      <p className="text-ink-body font-display text-lg font-bold">
+                      <p className="text-brand-900 font-display text-lg font-bold">
                         {syncResult.sync?.inventory?.ok &&
                         syncResult.sync?.rates?.ok ? (
-                          <span className="text-signal-600">Synced</span>
+                          <span className="text-primary-600">Synced</span>
                         ) : (
                           <span className="text-rose-500">
                             {syncResult.sync?.inventory?.ok ||
@@ -504,7 +506,7 @@ export default function ChannelManager() {
                           </span>
                         )}
                       </p>
-                      <p className="text-ink-muted text-xs">
+                      <p className="text-brand-700/60 text-xs">
                         inventory
                         {syncResult.sync?.inventory?.ok ? " ✓" : " ✗"} · rates
                         {syncResult.sync?.rates?.ok ? " ✓" : " ✗"}
@@ -524,7 +526,7 @@ export default function ChannelManager() {
                     ? "Syncing from Aiosell..."
                     : "Sync from Aiosell"}
                 </Button>
-                <p className="text-ink-muted mt-2 text-xs">
+                <p className="text-brand-700/60 mt-2 text-xs">
                   Replaces the hotel's rooms, rate plans and approvals with the
                   Aiosell mapping, then pushes availability + rates back.
                 </p>

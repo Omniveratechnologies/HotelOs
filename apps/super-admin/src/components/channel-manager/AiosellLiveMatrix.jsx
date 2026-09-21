@@ -378,14 +378,15 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
     <div className="space-y-4">
       {/* HEADER WITH PROPERTY NAME */}
       {hotelName && (
-        <div className="text-ink-muted flex items-center justify-between text-xs">
+        <div className="text-brand-700/60 flex items-center justify-between text-xs">
           <span>
             Active Property:{" "}
-            <strong className="text-ink-900">{hotelName}</strong>
+            <strong className="text-brand-900">{hotelName}</strong>
           </span>
           <span>
-            Dates Window: <strong className="text-ink-900">{startDate}</strong>{" "}
-            to <strong className="text-ink-900">{endDate}</strong> (10 Days)
+            Dates Window:{" "}
+            <strong className="text-brand-900">{startDate}</strong> to{" "}
+            <strong className="text-brand-900">{endDate}</strong> (10 Days)
           </span>
         </div>
       )}
@@ -423,16 +424,16 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
       )}
 
       {/* TOP CONTROLS BAR */}
-      <div className="border-line flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4">
+      <div className="border-surface-200 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4">
         {/* Left: View Mode Tabs */}
-        <div className="bg-ink-950/5 flex items-center gap-1 rounded-xl p-1">
+        <div className="bg-brand-950/5 flex items-center gap-1 rounded-xl p-1">
           <button
             type="button"
             onClick={() => setActiveTab("rates")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               activeTab === "rates"
-                ? "text-ink-900 bg-white shadow-xs"
-                : "text-ink-muted hover:text-ink-body"
+                ? "text-brand-900 bg-white shadow-xs"
+                : "text-brand-700/60 hover:text-brand-900"
             }`}
           >
             <TrendingUp size={14} />
@@ -443,8 +444,8 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
             onClick={() => setActiveTab("inventory")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               activeTab === "inventory"
-                ? "text-ink-900 bg-white shadow-xs"
-                : "text-ink-muted hover:text-ink-body"
+                ? "text-brand-900 bg-white shadow-xs"
+                : "text-brand-700/60 hover:text-brand-900"
             }`}
           >
             <Layers size={14} />
@@ -455,8 +456,8 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
             onClick={() => setActiveTab("restrictions")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               activeTab === "restrictions"
-                ? "text-ink-900 bg-white shadow-xs"
-                : "text-ink-muted hover:text-ink-body"
+                ? "text-brand-900 bg-white shadow-xs"
+                : "text-brand-700/60 hover:text-brand-900"
             }`}
           >
             <Sliders size={14} />
@@ -466,13 +467,13 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
 
         {/* Center/Right: Date Pickers & Actions */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="border-line flex items-center gap-1.5 rounded-xl border bg-white px-2.5 py-1.5 text-xs">
-            <span className="text-ink-muted font-semibold">Start Date:</span>
+          <div className="border-surface-200 flex items-center gap-1.5 rounded-xl border bg-white px-2.5 py-1.5 text-xs">
+            <span className="text-brand-700/60 font-semibold">Start Date:</span>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="text-ink-body border-none bg-transparent text-xs font-medium outline-none focus:ring-0"
+              className="text-brand-900 border-none bg-transparent text-xs font-medium outline-none focus:ring-0"
             />
           </div>
 
@@ -480,7 +481,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
             <button
               type="button"
               onClick={handlePrev10}
-              className="border-line text-ink-muted hover:bg-ink-950/5 rounded-lg border p-1.5"
+              className="border-surface-200 text-brand-700/60 hover:bg-brand-950/5 rounded-lg border p-1.5"
               title="Previous 10 Days"
             >
               <ChevronLeft size={16} />
@@ -488,14 +489,14 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
             <button
               type="button"
               onClick={handleToday}
-              className="border-line text-ink-muted hover:bg-ink-950/5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold"
+              className="border-surface-200 text-brand-700/60 hover:bg-brand-950/5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold"
             >
               Today
             </button>
             <button
               type="button"
               onClick={handleNext10}
-              className="border-line text-ink-muted hover:bg-ink-950/5 rounded-lg border p-1.5"
+              className="border-surface-200 text-brand-700/60 hover:bg-brand-950/5 rounded-lg border p-1.5"
               title="Next 10 Days"
             >
               <ChevronRight size={16} />
@@ -506,7 +507,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
             type="button"
             onClick={loadData}
             disabled={loading}
-            className="border-line text-ink-body hover:bg-ink-950/5 flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50"
+            className="border-surface-200 text-brand-900 hover:bg-brand-950/5 flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             {loading ? "Fetching…" : "Refresh"}
@@ -520,7 +521,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                 setBulkEnd(addDays(startDate, 9));
                 setBulkRateModalOpen(true);
               }}
-              className="bg-signal-600 hover:bg-signal-500 flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition"
+              className="bg-primary-600 hover:bg-primary-500 flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition"
             >
               <Edit3 size={13} />
               Bulk Update Rates
@@ -535,7 +536,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                 setBulkInvEnd(addDays(startDate, 9));
                 setBulkInvModalOpen(true);
               }}
-              className="bg-signal-600 hover:bg-signal-500 flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition"
+              className="bg-primary-600 hover:bg-primary-500 flex cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition"
             >
               <Edit3 size={13} />
               Bulk Update Inventory
@@ -546,12 +547,12 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
 
       {/* VIEW 1: RATES & INVENTORY (AIOSELL MATRIX) */}
       {activeTab === "rates" && (
-        <div className="border-line overflow-hidden rounded-2xl border bg-white shadow-xs">
+        <div className="border-surface-200 overflow-hidden rounded-2xl border bg-white shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[850px] border-collapse text-left">
               {/* TABLE HEADER DATES */}
               <thead>
-                <tr className="border-line border-b bg-gray-50/80 text-[11px] font-semibold text-gray-600">
+                <tr className="border-surface-200 border-b bg-gray-50/80 text-[11px] font-semibold text-gray-600">
                   <th className="sticky left-0 z-10 min-w-[220px] bg-gray-50/95 px-4 py-3 backdrop-blur-xs">
                     Rates & Inventory
                   </th>
@@ -562,7 +563,9 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                       <th
                         key={d}
                         className={`min-w-[80px] border-l border-gray-100 px-3 py-2 text-center ${
-                          isToday ? "text-ink-900 bg-amber-50/60 font-bold" : ""
+                          isToday
+                            ? "text-brand-900 bg-amber-50/60 font-bold"
+                            : ""
                         }`}
                       >
                         <div className="font-semibold">{day}</div>
@@ -575,8 +578,8 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                 </tr>
 
                 {/* AVAILABLE ROOMS (OCCUPANCY %) SUMMARY ROW */}
-                <tr className="border-line/60 bg-canvas text-ink-900 border-b text-xs font-medium">
-                  <td className="bg-canvas sticky left-0 z-10 px-4 py-2.5 font-semibold backdrop-blur-xs">
+                <tr className="border-surface-200/60 bg-background-50 text-brand-900 border-b text-xs font-medium">
+                  <td className="bg-background-50 sticky left-0 z-10 px-4 py-2.5 font-semibold backdrop-blur-xs">
                     Available Rooms (Occupancy %)
                   </td>
                   {dates.map((d) => {
@@ -608,7 +611,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                       <tr className="bg-gray-100/60 font-bold text-gray-900">
                         <td className="sticky left-0 z-10 bg-gray-100/90 px-4 py-2 tracking-wide uppercase backdrop-blur-xs">
                           <div className="flex items-center gap-2">
-                            <span className="bg-signal-500 h-2 w-2 rounded-full" />
+                            <span className="bg-primary-500 h-2 w-2 rounded-full" />
                             <span>{rt.name || rt.roomCode.toUpperCase()}</span>
                           </div>
                         </td>
@@ -659,12 +662,12 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                                   });
                                   setEditValue(rateVal ? String(rateVal) : "");
                                 }}
-                                className="group hover:bg-signal-50/50 cursor-pointer border-l border-gray-100 px-2 py-2 text-center transition-colors"
+                                className="group hover:bg-primary-50/50 cursor-pointer border-l border-gray-100 px-2 py-2 text-center transition-colors"
                               >
-                                <div className="text-ink-900 font-semibold">
+                                <div className="text-brand-900 font-semibold">
                                   {rateVal != null ? `₹${rateVal}` : "—"}
                                 </div>
-                                <div className="text-signal-600 mt-0.5 hidden text-[9px] font-semibold group-hover:block">
+                                <div className="text-primary-600 mt-0.5 hidden text-[9px] font-semibold group-hover:block">
                                   edit
                                 </div>
                               </td>
@@ -683,8 +686,8 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
 
       {/* VIEW 2: UPDATE AVAILABLE ROOMS (INVENTORY MATRIX) */}
       {activeTab === "inventory" && (
-        <div className="border-line overflow-hidden rounded-2xl border bg-white shadow-xs">
-          <div className="border-line flex items-center justify-between border-b p-4">
+        <div className="border-surface-200 overflow-hidden rounded-2xl border bg-white shadow-xs">
+          <div className="border-surface-200 flex items-center justify-between border-b p-4">
             <div>
               <h4 className="text-sm font-bold text-gray-900">
                 Update Available Rooms
@@ -703,7 +706,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[850px] border-collapse text-left">
               <thead>
-                <tr className="border-line border-b bg-gray-50/80 text-[11px] font-semibold text-gray-600">
+                <tr className="border-surface-200 border-b bg-gray-50/80 text-[11px] font-semibold text-gray-600">
                   <th className="sticky left-0 z-10 min-w-[200px] bg-gray-50/95 px-4 py-3 backdrop-blur-xs">
                     Room
                   </th>
@@ -803,10 +806,10 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
       {activeTab === "restrictions" && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Restrictions Card */}
-          <div className="border-line flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-xs">
+          <div className="border-surface-200 flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-xs">
             <div>
               <div className="mb-2 flex items-center gap-2">
-                <Sliders size={18} className="text-signal-600" />
+                <Sliders size={18} className="text-primary-600" />
                 <h4 className="text-sm font-bold text-gray-900">
                   Push Rate & Inventory Restrictions
                 </h4>
@@ -873,7 +876,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                       value={restStart}
                       onChange={(e) => setRestStart(e.target.value)}
                       required
-                      className="border-line w-full rounded-lg border p-2 text-xs"
+                      className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                     />
                   </div>
                   <div>
@@ -885,7 +888,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                       value={restEnd}
                       onChange={(e) => setRestEnd(e.target.value)}
                       required
-                      className="border-line w-full rounded-lg border p-2 text-xs"
+                      className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                     />
                   </div>
                 </div>
@@ -898,7 +901,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                     value={restRoomCode}
                     onChange={(e) => setRestRoomCode(e.target.value)}
                     required
-                    className="border-line w-full rounded-lg border p-2 text-xs"
+                    className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                   >
                     <option value="">Select Room Type...</option>
                     {roomTypes.map((rt) => (
@@ -917,7 +920,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                     <select
                       value={restPlanCode}
                       onChange={(e) => setRestPlanCode(e.target.value)}
-                      className="border-line w-full rounded-lg border p-2 text-xs"
+                      className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                     >
                       <option value="">All Plans for this Room Type</option>
                       {roomTypes
@@ -946,7 +949,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                         value={minStay}
                         onChange={(e) => setMinStay(e.target.value)}
                         placeholder="e.g. 2"
-                        className="border-line w-full rounded-lg border p-2 text-xs"
+                        className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                       />
                     </div>
                     <div>
@@ -959,7 +962,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                         value={maxStay}
                         onChange={(e) => setMaxStay(e.target.value)}
                         placeholder="e.g. 14"
-                        className="border-line w-full rounded-lg border p-2 text-xs"
+                        className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                       />
                     </div>
                   </div>
@@ -997,11 +1000,11 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                   </label>
                 </div>
 
-                <div className="border-line border-t pt-3">
+                <div className="border-surface-200 border-t pt-3">
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="bg-signal-600 hover:bg-signal-500 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-50"
+                    className="bg-primary-600 hover:bg-primary-500 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors disabled:opacity-50"
                   >
                     <Sliders size={15} />
                     {submitting
@@ -1014,7 +1017,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
           </div>
 
           {/* Mark No-Show Card */}
-          <div className="border-line flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-xs">
+          <div className="border-surface-200 flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-xs">
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <Lock size={18} className="text-amber-600" />
@@ -1041,11 +1044,11 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                     onChange={(e) => setNoShowBookingId(e.target.value)}
                     required
                     placeholder="e.g. AS-BK-984321"
-                    className="border-line w-full rounded-lg border p-2 text-xs"
+                    className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                   />
                 </div>
 
-                <div className="border-line border-t pt-3">
+                <div className="border-surface-200 border-t pt-3">
                   <button
                     type="submit"
                     disabled={submitting || !noShowBookingId.trim()}
@@ -1066,8 +1069,8 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
       {/* QUICK CELL EDIT MODAL */}
       {cellEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="border-line w-full max-w-sm rounded-2xl border bg-white p-5 shadow-xl">
-            <div className="border-line flex items-center justify-between border-b pb-2.5">
+          <div className="border-surface-200 w-full max-w-sm rounded-2xl border bg-white p-5 shadow-xl">
+            <div className="border-surface-200 flex items-center justify-between border-b pb-2.5">
               <h3 className="text-sm font-bold text-gray-900">
                 {cellEditModal.type === "rate"
                   ? "Update Rate"
@@ -1088,7 +1091,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
               {cellEditModal.planName ? ` · ${cellEditModal.planName}` : ""}
               <br />
               Date:{" "}
-              <span className="text-ink-900 font-semibold">
+              <span className="text-brand-900 font-semibold">
                 {cellEditModal.date}
               </span>
             </p>
@@ -1106,7 +1109,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                   onChange={(e) => setEditValue(e.target.value)}
                   required
                   autoFocus
-                  className="border-line focus:border-signal-500 w-full rounded-lg border p-2 text-sm font-semibold focus:outline-none"
+                  className="border-surface-200 focus:border-primary-500 w-full rounded-lg border p-2 text-sm font-semibold focus:outline-none"
                 />
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
@@ -1121,7 +1124,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-signal-600 hover:bg-signal-500 cursor-pointer rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition disabled:opacity-50"
+                  className="bg-primary-600 hover:bg-primary-500 cursor-pointer rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition disabled:opacity-50"
                 >
                   {submitting ? "Pushing…" : "Push to Aiosell"}
                 </button>
@@ -1134,8 +1137,8 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
       {/* BULK RATE MODAL */}
       {bulkRateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="border-line w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
-            <div className="border-line flex items-center justify-between border-b pb-2.5">
+          <div className="border-surface-200 w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
+            <div className="border-surface-200 flex items-center justify-between border-b pb-2.5">
               <h3 className="text-sm font-bold text-gray-900">
                 Bulk Update Rates
               </h3>
@@ -1161,7 +1164,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                     value={bulkStart}
                     onChange={(e) => setBulkStart(e.target.value)}
                     required
-                    className="border-line w-full rounded-lg border p-2 text-xs"
+                    className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                   />
                 </div>
                 <div>
@@ -1173,7 +1176,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                     value={bulkEnd}
                     onChange={(e) => setBulkEnd(e.target.value)}
                     required
-                    className="border-line w-full rounded-lg border p-2 text-xs"
+                    className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                   />
                 </div>
               </div>
@@ -1185,7 +1188,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                 <select
                   value={bulkRoomCode}
                   onChange={(e) => setBulkRoomCode(e.target.value)}
-                  className="border-line w-full rounded-lg border p-2 text-xs"
+                  className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                 >
                   <option value="all">All Room Types</option>
                   {roomTypes.map((rt) => (
@@ -1203,7 +1206,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                 <select
                   value={bulkPlanCode}
                   onChange={(e) => setBulkPlanCode(e.target.value)}
-                  className="border-line w-full rounded-lg border p-2 text-xs"
+                  className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                 >
                   <option value="all">All Rate Plans</option>
                   {roomTypes
@@ -1227,11 +1230,11 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                   onChange={(e) => setBulkRateVal(e.target.value)}
                   required
                   placeholder="e.g. 3500"
-                  className="border-line w-full rounded-lg border p-2 text-sm font-semibold"
+                  className="border-surface-200 w-full rounded-lg border p-2 text-sm font-semibold"
                 />
               </div>
 
-              <div className="border-line flex items-center justify-end gap-2 border-t pt-2">
+              <div className="border-surface-200 flex items-center justify-end gap-2 border-t pt-2">
                 <button
                   type="button"
                   onClick={() => setBulkRateModalOpen(false)}
@@ -1243,7 +1246,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-signal-600 hover:bg-signal-500 cursor-pointer rounded-lg px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition disabled:opacity-50"
+                  className="bg-primary-600 hover:bg-primary-500 cursor-pointer rounded-lg px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition disabled:opacity-50"
                 >
                   {submitting ? "Pushing…" : "Push Rates to Aiosell"}
                 </button>
@@ -1256,8 +1259,8 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
       {/* BULK INVENTORY MODAL */}
       {bulkInvModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="border-line w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
-            <div className="border-line flex items-center justify-between border-b pb-2.5">
+          <div className="border-surface-200 w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
+            <div className="border-surface-200 flex items-center justify-between border-b pb-2.5">
               <h3 className="text-sm font-bold text-gray-900">
                 Bulk Update Available Rooms
               </h3>
@@ -1283,7 +1286,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                     value={bulkInvStart}
                     onChange={(e) => setBulkInvStart(e.target.value)}
                     required
-                    className="border-line w-full rounded-lg border p-2 text-xs"
+                    className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                   />
                 </div>
                 <div>
@@ -1295,7 +1298,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                     value={bulkInvEnd}
                     onChange={(e) => setBulkInvEnd(e.target.value)}
                     required
-                    className="border-line w-full rounded-lg border p-2 text-xs"
+                    className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                   />
                 </div>
               </div>
@@ -1308,7 +1311,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                   value={bulkInvRoomCode}
                   onChange={(e) => setBulkInvRoomCode(e.target.value)}
                   required
-                  className="border-line w-full rounded-lg border p-2 text-xs"
+                  className="border-surface-200 w-full rounded-lg border p-2 text-xs"
                 >
                   <option value="">Select Room Type...</option>
                   {invRoomTypes.map((rt) => (
@@ -1330,11 +1333,11 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                   onChange={(e) => setBulkInvCount(e.target.value)}
                   required
                   placeholder="e.g. 5"
-                  className="border-line w-full rounded-lg border p-2 text-sm font-semibold"
+                  className="border-surface-200 w-full rounded-lg border p-2 text-sm font-semibold"
                 />
               </div>
 
-              <div className="border-line flex items-center justify-end gap-2 border-t pt-2">
+              <div className="border-surface-200 flex items-center justify-end gap-2 border-t pt-2">
                 <button
                   type="button"
                   onClick={() => setBulkInvModalOpen(false)}
@@ -1346,7 +1349,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-signal-600 hover:bg-signal-500 cursor-pointer rounded-lg px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition disabled:opacity-50"
+                  className="bg-primary-600 hover:bg-primary-500 cursor-pointer rounded-lg px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition disabled:opacity-50"
                 >
                   {submitting ? "Pushing…" : "Push Inventory to Aiosell"}
                 </button>

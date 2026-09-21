@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext } from "react-router";
 import { LifeBuoy } from "lucide-react";
-import Topbar from "../components/layout/Topbar.jsx";
-import Badge from "../components/ui/Badge.jsx";
-import { TableSkeleton, EmptyState } from "../components/ui/States.jsx";
+import Topbar from "../../components/layout/Topbar.jsx";
+import Badge from "../../components/ui/Badge.jsx";
+import { TableSkeleton, EmptyState } from "../../components/ui/States.jsx";
 import {
   fetchServiceRequests,
   updateServiceRequestStatus,
-} from "../services/serviceRequests.service.js";
+} from "../../services/serviceRequest.service.js";
 
 const STATUS_OPTIONS = ["open", "in_progress", "resolved"];
 
-export default function ServiceRequests() {
+export default function ServiceRequestsPage() {
   const { onMenuClick } = useOutletContext();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,10 +51,10 @@ export default function ServiceRequests() {
             description="Hotel requests will show up here as they come in."
           />
         ) : (
-          <div className="border-line overflow-hidden rounded-2xl border bg-white">
+          <div className="border-surface-200 overflow-hidden rounded-2xl border bg-white shadow-xs">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-line text-ink-muted border-b text-xs font-semibold tracking-wide uppercase">
+                <tr className="border-surface-200 text-brand-700/60 border-b text-xs font-semibold tracking-wide uppercase">
                   <th className="px-5 py-3.5 font-semibold">Hotel</th>
                   <th className="px-5 py-3.5 font-semibold">Request</th>
                   <th className="px-5 py-3.5 font-semibold">Priority</th>
@@ -62,17 +62,20 @@ export default function ServiceRequests() {
                   <th className="px-5 py-3.5 font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-line divide-y">
+              <tbody className="divide-surface-200 divide-y">
                 {requests.map((req) => (
-                  <tr key={req.id} className="hover:bg-canvas/60">
-                    <td className="text-ink-body px-5 py-4 font-semibold">
+                  <tr
+                    key={req.id}
+                    className="hover:bg-background-50/60 transition-colors"
+                  >
+                    <td className="text-brand-900 px-5 py-4 font-semibold">
                       {req.hotelName}
                     </td>
-                    <td className="text-ink-body px-5 py-4">{req.subject}</td>
+                    <td className="text-brand-900 px-5 py-4">{req.subject}</td>
                     <td className="px-5 py-4">
                       <Badge status={req.priority} />
                     </td>
-                    <td className="text-ink-muted px-5 py-4 font-mono text-xs">
+                    <td className="text-brand-700/60 px-5 py-4 font-mono text-xs">
                       {req.createdAt}
                     </td>
                     <td className="px-5 py-4">
@@ -81,7 +84,7 @@ export default function ServiceRequests() {
                         onChange={(e) =>
                           handleStatusChange(req.id, e.target.value)
                         }
-                        className="border-line text-ink-body focus:border-signal-500 focus:ring-signal-500/15 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold outline-none focus:ring-2"
+                        className="border-surface-200 text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold outline-none focus:ring-2"
                       >
                         {STATUS_OPTIONS.map((s) => (
                           <option key={s} value={s}>

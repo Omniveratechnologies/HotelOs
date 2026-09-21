@@ -118,9 +118,11 @@ export default function EditHotelModal({ hotel, onClose, onSaved }) {
       subtitle="Update the hotel's profile, subscription and channel details."
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="border-line border-b pb-4">
-          <h3 className="text-ink-body text-sm font-semibold">Hotel details</h3>
-          <p className="text-ink-muted mt-1 text-xs">
+        <div className="border-surface-200 border-b pb-4">
+          <h3 className="text-brand-900 text-sm font-semibold">
+            Hotel details
+          </h3>
+          <p className="text-brand-700/60 mt-1 text-xs">
             Manage the property's public information.
           </p>
         </div>
@@ -180,9 +182,9 @@ export default function EditHotelModal({ hotel, onClose, onSaved }) {
           </Field>
         </div>
 
-        <div className="border-line border-b pb-4">
-          <h3 className="text-ink-body text-sm font-semibold">Operations</h3>
-          <p className="text-ink-muted mt-1 text-xs">
+        <div className="border-surface-200 border-b pb-4">
+          <h3 className="text-brand-900 text-sm font-semibold">Operations</h3>
+          <p className="text-brand-700/60 mt-1 text-xs">
             Check-in/out times and guest WiFi details.
           </p>
         </div>
@@ -225,9 +227,9 @@ export default function EditHotelModal({ hotel, onClose, onSaved }) {
           </Field>
         </div>
 
-        <div className="border-line border-b pb-4">
-          <h3 className="text-ink-body text-sm font-semibold">Subscription</h3>
-          <p className="text-ink-muted mt-1 text-xs">
+        <div className="border-surface-200 border-b pb-4">
+          <h3 className="text-brand-900 text-sm font-semibold">Subscription</h3>
+          <p className="text-brand-700/60 mt-1 text-xs">
             The hotel's active subscription window.
           </p>
         </div>

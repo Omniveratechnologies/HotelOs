@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router";
 import {
   LayoutGrid,
   Building2,
@@ -11,9 +11,10 @@ import {
   BadgeCheck,
   Cable,
 } from "lucide-react";
+import { useSuperAdmin } from "../../app/superAdminContext.js";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Overview", icon: LayoutGrid, end: true },
+  { to: "/dashboard", label: "Overview", icon: LayoutGrid },
   { to: "/hotels", label: "Hotels", icon: Building2 },
   { to: "/transactions", label: "Food Transactions", icon: Wallet },
   { to: "/subscriptions", label: "Subscriptions", icon: CalendarClock },
@@ -24,15 +25,12 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ onLogoutClick, mobileOpen, onCloseMobile }) {
-  // Get currently logged-in user
-  const storedUser = localStorage.getItem("auth_user");
+  const { user } = useSuperAdmin();
 
-  const currentAdmin = storedUser
-    ? JSON.parse(storedUser)
-    : {
-        name: "Super Admin",
-        role: "SUPER_ADMIN",
-      };
+  const currentAdmin = user || {
+    name: "Super Admin",
+    role: "SUPER_ADMIN",
+  };
 
   const initials = currentAdmin.name
     ? currentAdmin.name
@@ -48,25 +46,25 @@ export default function Sidebar({ onLogoutClick, mobileOpen, onCloseMobile }) {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="bg-ink-950/50 fixed inset-0 z-30 lg:hidden"
+          className="bg-brand-950/50 fixed inset-0 z-30 lg:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
-        className={`bg-ink-950 fixed inset-y-0 left-0 z-40 flex w-64 flex-col transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`bg-brand-950 fixed inset-y-0 left-0 z-40 flex w-64 flex-col transition-transform duration-200 lg:static lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-6 py-6">
-          <div className="bg-signal-500 flex h-9 w-9 items-center justify-center rounded-lg">
-            <Hotel size={18} className="text-white" strokeWidth={2.25} />
+          <div className="bg-primary-500 text-brand-950 flex h-9 w-9 items-center justify-center rounded-lg">
+            <Hotel size={18} strokeWidth={2.25} />
           </div>
 
           <div>
             <p className="font-display text-sm leading-tight font-bold text-white">
-              Stayscape
+              HotelOS
             </p>
 
             <p className="text-[11px] font-medium tracking-wider text-white/40 uppercase">
@@ -77,11 +75,10 @@ export default function Sidebar({ onLogoutClick, mobileOpen, onCloseMobile }) {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-2">
-          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
+          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
-              end={end}
               onClick={onCloseMobile}
               className={({ isActive }) =>
                 `group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -98,7 +95,7 @@ export default function Sidebar({ onLogoutClick, mobileOpen, onCloseMobile }) {
                     strokeWidth={2.25}
                     className={
                       isActive
-                        ? "text-signal-500"
+                        ? "text-primary-400"
                         : "text-white/40 group-hover:text-white/70"
                     }
                   />

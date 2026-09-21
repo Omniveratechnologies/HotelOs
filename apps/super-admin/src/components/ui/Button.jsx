@@ -1,10 +1,11 @@
 const VARIANTS = {
   primary:
-    "bg-signal-600 text-white hover:bg-signal-500 shadow-sm shadow-signal-600/20",
-  secondary: "bg-white text-ink-body border border-line hover:bg-canvas",
-  ghost: "text-ink-muted hover:text-ink-body hover:bg-ink-950/5",
-  danger: "bg-rose-500 text-white hover:bg-rose-500/90",
-  dangerGhost: "text-rose-500 border border-rose-500/30 hover:bg-rose-100",
+    "bg-primary-500 text-brand-950 hover:bg-primary-400 shadow-xs font-semibold",
+  secondary:
+    "bg-white text-brand-900 border border-surface-200 hover:bg-background-100",
+  ghost: "text-brand-700/70 hover:text-brand-900 hover:bg-brand-950/5",
+  danger: "bg-rose-600 text-white hover:bg-rose-500",
+  dangerGhost: "text-rose-600 border border-rose-200 hover:bg-rose-50",
 };
 
 const SIZES = {

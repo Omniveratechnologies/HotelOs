@@ -252,10 +252,12 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
             HOTEL DETAILS
         ============================================= */}
 
-        <div className="border-line border-b pb-4">
-          <h3 className="text-ink-body text-sm font-semibold">Hotel details</h3>
+        <div className="border-surface-200 border-b pb-4">
+          <h3 className="text-brand-900 text-sm font-semibold">
+            Hotel details
+          </h3>
 
-          <p className="text-ink-muted mt-1 text-xs">
+          <p className="text-brand-700/60 mt-1 text-xs">
             Basic information about the hotel.
           </p>
         </div>
@@ -369,12 +371,12 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
             CHANNEL (AIOSELL)
         ============================================= */}
 
-        <div className="border-line border-t pt-5">
-          <h3 className="text-ink-body text-sm font-semibold">
+        <div className="border-surface-200 border-t pt-5">
+          <h3 className="text-brand-900 text-sm font-semibold">
             Channel manager
           </h3>
 
-          <p className="text-ink-muted mt-1 text-xs">
+          <p className="text-brand-700/60 mt-1 text-xs">
             Optional Aiosell property code. Room and rate-plan codes are created
             manually in Aiosell and approved here later.
           </p>
@@ -396,12 +398,12 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
             SUB ADMIN DETAILS
         ============================================= */}
 
-        <div className="border-line border-t pt-5">
-          <h3 className="text-ink-body text-sm font-semibold">
+        <div className="border-surface-200 border-t pt-5">
+          <h3 className="text-brand-900 text-sm font-semibold">
             Hotel Sub Admin
           </h3>
 
-          <p className="text-ink-muted mt-1 text-xs">
+          <p className="text-brand-700/60 mt-1 text-xs">
             This person will receive an invitation email and manage the hotel
             account.
           </p>

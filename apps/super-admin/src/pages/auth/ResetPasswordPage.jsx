@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { resetPassword } from "../../services/auth.service.js";
 
-export default function ResetPassword() {
+export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -42,24 +43,7 @@ export default function ResetPassword() {
     try {
       setLoading(true);
 
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
-
-      const response = await fetch(`${API_URL}/api/v1/auth/reset-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          password,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Unable to reset password.");
-      }
+      await resetPassword({ token, password });
 
       setSuccess(
         "Your password has been reset successfully. Redirecting to login...",
@@ -67,7 +51,7 @@ export default function ResetPassword() {
 
       setTimeout(() => {
         navigate("/login");
-      }, 2000);
+      }, 1800);
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -76,37 +60,37 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="bg-ivory flex min-h-screen items-center justify-center px-6">
-      <div className="bg-cream border-beige-border shadow-soft w-full max-w-sm rounded-2xl border px-8 py-10">
-        <Link to="/" className="mb-8 flex items-center gap-2.5">
-          <span className="bg-navy flex h-9 w-9 items-center justify-center rounded-full">
+    <div className="bg-background-50 flex min-h-screen items-center justify-center px-6">
+      <div className="border-surface-200 w-full max-w-sm rounded-2xl border bg-white px-8 py-10 shadow-lg">
+        <Link to="/login" className="mb-8 flex items-center gap-2.5">
+          <span className="bg-primary-500 text-brand-950 flex h-9 w-9 items-center justify-center rounded-xl">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 21V9l8-5 8 5v12"
-                stroke="#F4F4E4"
-                strokeWidth="1.6"
+                stroke="currentColor"
+                strokeWidth="2"
                 strokeLinejoin="round"
               />
               <path
                 d="M9 21v-6h6v6"
-                stroke="#766242"
-                strokeWidth="1.6"
+                stroke="currentColor"
+                strokeWidth="2"
                 strokeLinejoin="round"
               />
             </svg>
           </span>
 
-          <span className="font-display text-navy text-xl font-semibold">
-            Hotel<span className="text-gold">OS</span>
+          <span className="font-display text-brand-900 text-xl font-bold">
+            Hotel<span className="text-primary-600">OS</span>
           </span>
         </Link>
 
-        <h1 className="font-display text-navy mb-1 text-3xl font-semibold">
+        <h1 className="font-display text-brand-900 mb-1 text-2xl font-bold">
           Reset Password
         </h1>
 
-        <p className="text-navy/60 mb-8">
-          Create a new password for your HotelOS account.
+        <p className="text-brand-700/60 mb-8 text-sm">
+          Create a new password for your Super Admin account.
         </p>
 
         {error && (
@@ -125,7 +109,7 @@ export default function ResetPassword() {
           <div>
             <label
               htmlFor="password"
-              className="text-navy mb-1.5 block text-sm font-medium"
+              className="text-brand-900 mb-1.5 block text-sm font-medium"
             >
               New Password
             </label>
@@ -137,14 +121,14 @@ export default function ResetPassword() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="bg-ivory border-beige-border text-navy placeholder:text-muted focus:border-gold w-full rounded-lg border px-4 py-2.5 transition-colors outline-none"
+              className="border-surface-200 bg-background-50 text-brand-900 placeholder:text-brand-700/40 focus:border-primary-400 w-full rounded-lg border px-4 py-2.5 transition-colors outline-none"
             />
           </div>
 
           <div>
             <label
               htmlFor="confirmPassword"
-              className="text-navy mb-1.5 block text-sm font-medium"
+              className="text-brand-900 mb-1.5 block text-sm font-medium"
             >
               Confirm New Password
             </label>
@@ -156,21 +140,24 @@ export default function ResetPassword() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              className="bg-ivory border-beige-border text-navy placeholder:text-muted focus:border-gold w-full rounded-lg border px-4 py-2.5 transition-colors outline-none"
+              className="border-surface-200 bg-background-50 text-brand-900 placeholder:text-brand-700/40 focus:border-primary-400 w-full rounded-lg border px-4 py-2.5 transition-colors outline-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="bg-navy text-cream hover:bg-navy-dark w-full rounded-lg px-5 py-3 font-medium transition-colors disabled:opacity-60"
+            className="bg-brand-900 hover:bg-brand-800 w-full rounded-lg px-5 py-3 font-semibold text-white shadow-xs transition-colors disabled:opacity-60"
           >
             {loading ? "Resetting..." : "Reset Password"}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-navy/70 hover:text-navy text-sm">
+          <Link
+            to="/login"
+            className="text-brand-700/70 hover:text-brand-900 text-sm font-medium"
+          >
             Back to Login
           </Link>
         </div>

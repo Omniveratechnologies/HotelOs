@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router";
 
-import Sidebar from "./Sidebar.jsx";
-import Modal from "../ui/Modal.jsx";
-import Button from "../ui/Button.jsx";
+import Sidebar from "../components/layout/Sidebar.jsx";
+import Modal from "../components/ui/Modal.jsx";
+import Button from "../components/ui/Button.jsx";
+import { SuperAdminProvider } from "../app/providers.jsx";
+import { clearAuth } from "../services/auth.service.js";
 
-import { logoutSuperAdmin } from "../../services/auth.service.js";
-
-export default function AppShell() {
+function DashboardShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -18,13 +18,9 @@ export default function AppShell() {
     setLoggingOut(true);
 
     try {
-      await logoutSuperAdmin();
-
+      clearAuth();
       setLogoutOpen(false);
-
-      navigate("/login", {
-        replace: true,
-      });
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
@@ -33,7 +29,7 @@ export default function AppShell() {
   }
 
   return (
-    <div className="bg-canvas flex min-h-screen">
+    <div className="bg-background-50 flex min-h-screen">
       <Sidebar
         onLogoutClick={() => setLogoutOpen(true)}
         mobileOpen={mobileOpen}
@@ -69,5 +65,13 @@ export default function AppShell() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function DashboardLayout() {
+  return (
+    <SuperAdminProvider>
+      <DashboardShell />
+    </SuperAdminProvider>
   );
 }

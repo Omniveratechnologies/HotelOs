@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router";
 import {
   Building2,
   Wallet,
@@ -9,20 +9,16 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-import Topbar from "../components/layout/Topbar.jsx";
-import StatCard from "../components/ui/StatCard.jsx";
-import Badge from "../components/ui/Badge.jsx";
-import Button from "../components/ui/Button.jsx";
-import CreateHotelModal from "../components/hotels/CreateHotelModal.jsx";
+import Topbar from "../../components/layout/Topbar.jsx";
+import StatCard from "../../components/ui/StatCard.jsx";
+import Badge from "../../components/ui/Badge.jsx";
+import Button from "../../components/ui/Button.jsx";
+import CreateHotelModal from "../../components/hotels/CreateHotelModal.jsx";
 
-import { getHotels } from "../services/hotel.service.js";
-import { fetchSubscriptions } from "../services/subscriptions.service.js";
-import { fetchTransactionSummary } from "../services/transactions.service.js";
-import { fetchServiceRequests } from "../services/serviceRequests.service.js";
-
-// =====================================================
-// FORMAT CURRENCY
-// =====================================================
+import { getHotels } from "../../services/hotel.service.js";
+import { fetchSubscriptions } from "../../services/subscription.service.js";
+import { fetchTransactionSummary } from "../../services/transaction.service.js";
+import { fetchServiceRequests } from "../../services/serviceRequest.service.js";
 
 function formatCurrency(n) {
   return new Intl.NumberFormat("en-IN", {
@@ -32,17 +28,9 @@ function formatCurrency(n) {
   }).format(n);
 }
 
-// =====================================================
-// OVERVIEW
-// =====================================================
-
-export default function Overview() {
+export default function DashboardPage() {
   const { onMenuClick } = useOutletContext();
   const navigate = useNavigate();
-
-  // ===================================================
-  // STATE
-  // ===================================================
 
   const [hotels, setHotels] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -51,10 +39,6 @@ export default function Overview() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // ===================================================
-  // LOAD DASHBOARD DATA
-  // ===================================================
 
   useEffect(() => {
     let mounted = true;
@@ -74,15 +58,12 @@ export default function Overview() {
         if (!mounted) return;
 
         setHotels(Array.isArray(hotelsData) ? hotelsData : []);
-
         setSubscriptions(
           Array.isArray(subscriptionsData) ? subscriptionsData : [],
         );
-
         setTransactions(
           Array.isArray(transactionsData) ? transactionsData : [],
         );
-
         setRequests(Array.isArray(requestsData) ? requestsData : []);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
@@ -100,55 +81,19 @@ export default function Overview() {
     };
   }, []);
 
-  // ===================================================
-  // ACTIVE HOTELS
-  // ===================================================
-
   const activeHotels = hotels.filter(
     (hotel) => hotel.status === "ACTIVE",
   ).length;
-
-  // ===================================================
-  // TOTAL HOTELS
-  // ===================================================
-
   const totalHotels = hotels.length;
-
-  // ===================================================
-  // FOOD TRANSACTION REVENUE
-  // KEEPING DUMMY DATA FOR NOW
-  // ===================================================
 
   const totalRevenue = transactions.reduce(
     (sum, transaction) => sum + Number(transaction.amount || 0),
     0,
   );
 
-  // ===================================================
-  // EXPIRING SUBSCRIPTIONS
-  //
-  // IMPORTANT:
-  // This now comes from the REAL subscription API.
-  //
-  // Backend calculates:
-  // ACTIVE
-  // EXPIRING_SOON
-  // EXPIRED
-  // ===================================================
-
   const expiringSoon = subscriptions.filter(
     (subscription) => subscription.status === "EXPIRING_SOON",
   ).length;
-
-  // ===================================================
-  // OPEN SERVICE REQUESTS
-  //
-  // This will become completely real once the
-  // ServiceRequest backend is implemented.
-  //
-  // Supports both existing lowercase mock statuses
-  // and future uppercase backend statuses.
-  // ===================================================
 
   const openRequests = requests.filter((request) => {
     const status = String(request.status || "").toUpperCase();
@@ -161,19 +106,10 @@ export default function Overview() {
     );
   }).length;
 
-  // ===================================================
-  // CREATE HOTEL
-  // ===================================================
-
   const handleHotelCreated = (hotel) => {
     if (!hotel) return;
-
     setHotels((previousHotels) => [hotel, ...previousHotels]);
   };
-
-  // ===================================================
-  // RENDER
-  // ===================================================
 
   return (
     <>
@@ -189,13 +125,8 @@ export default function Overview() {
       />
 
       <main className="flex-1 space-y-6 px-5 pb-10 lg:px-8">
-        {/* =================================================
-            STAT CARDS
-        ================================================= */}
-
+        {/* STAT CARDS */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {/* ACTIVE HOTELS */}
-
           <StatCard
             label="Active hotels"
             value={loading ? "—" : activeHotels}
@@ -203,9 +134,6 @@ export default function Overview() {
             accent="signal"
             trend={`${totalHotels} total on platform`}
           />
-
-          {/* FOOD REVENUE
-              KEEPING THIS DUMMY FOR NOW */}
 
           <StatCard
             label="Food transaction revenue"
@@ -215,8 +143,6 @@ export default function Overview() {
             trend="Across all properties"
           />
 
-          {/* EXPIRING SUBSCRIPTIONS */}
-
           <StatCard
             label="Subscriptions expiring soon"
             value={loading ? "—" : expiringSoon}
@@ -224,8 +150,6 @@ export default function Overview() {
             accent="rose"
             trend="Within the next 30 days"
           />
-
-          {/* OPEN SERVICE REQUESTS */}
 
           <StatCard
             label="Open service requests"
@@ -236,37 +160,31 @@ export default function Overview() {
           />
         </div>
 
-        {/* =================================================
-            LOWER SECTIONS
-        ================================================= */}
-
+        {/* LOWER SECTIONS */}
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-          {/* =================================================
-              RECENTLY ADDED HOTELS
-          ================================================= */}
-
-          <div className="border-line rounded-2xl border bg-white xl:col-span-3">
-            <div className="border-line flex items-center justify-between border-b px-5 py-4">
-              <h3 className="font-display text-ink-body font-bold">
+          {/* RECENTLY ADDED HOTELS */}
+          <div className="border-surface-200 rounded-2xl border bg-white xl:col-span-3">
+            <div className="border-surface-200 flex items-center justify-between border-b px-5 py-4">
+              <h3 className="font-display text-brand-900 font-bold">
                 Recently added hotels
               </h3>
 
               <button
                 onClick={() => navigate("/hotels")}
-                className="text-signal-600 flex items-center gap-1 text-xs font-semibold hover:underline"
+                className="text-primary-600 hover:text-primary-700 flex items-center gap-1 text-xs font-semibold hover:underline"
               >
                 View all
                 <ArrowUpRight size={13} />
               </button>
             </div>
 
-            <div className="divide-line divide-y">
+            <div className="divide-surface-200 divide-y">
               {loading ? (
-                <div className="text-ink-muted px-5 py-8 text-center text-sm">
+                <div className="text-brand-700/60 px-5 py-8 text-center text-sm">
                   Loading hotels...
                 </div>
               ) : hotels.length === 0 ? (
-                <p className="text-ink-muted px-5 py-8 text-center text-sm">
+                <p className="text-brand-700/60 px-5 py-8 text-center text-sm">
                   No hotels yet.
                 </p>
               ) : (
@@ -275,25 +193,21 @@ export default function Overview() {
                     key={hotel._id || hotel.id}
                     className="flex items-center justify-between px-5 py-3.5"
                   >
-                    {/* HOTEL INFORMATION */}
-
                     <div className="flex items-center gap-3">
-                      <div className="bg-signal-100 text-signal-600 flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold">
+                      <div className="bg-primary-100 text-primary-800 flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold">
                         {hotel.name ? hotel.name.charAt(0).toUpperCase() : "H"}
                       </div>
 
                       <div>
-                        <p className="text-ink-body text-sm font-semibold">
+                        <p className="text-brand-900 text-sm font-semibold">
                           {hotel.name}
                         </p>
 
-                        <p className="text-ink-muted text-xs">
+                        <p className="text-brand-700/60 text-xs">
                           {hotel.email || "No email"}
                         </p>
                       </div>
                     </div>
-
-                    {/* HOTEL STATUS */}
 
                     <Badge
                       status={
@@ -306,32 +220,29 @@ export default function Overview() {
             </div>
           </div>
 
-          {/* =================================================
-              LATEST SERVICE REQUESTS
-          ================================================= */}
-
-          <div className="border-line rounded-2xl border bg-white xl:col-span-2">
-            <div className="border-line flex items-center justify-between border-b px-5 py-4">
-              <h3 className="font-display text-ink-body font-bold">
+          {/* LATEST SERVICE REQUESTS */}
+          <div className="border-surface-200 rounded-2xl border bg-white xl:col-span-2">
+            <div className="border-surface-200 flex items-center justify-between border-b px-5 py-4">
+              <h3 className="font-display text-brand-900 font-bold">
                 Latest service requests
               </h3>
 
               <button
                 onClick={() => navigate("/service-requests")}
-                className="text-signal-600 flex items-center gap-1 text-xs font-semibold hover:underline"
+                className="text-primary-600 hover:text-primary-700 flex items-center gap-1 text-xs font-semibold hover:underline"
               >
                 View all
                 <ArrowUpRight size={13} />
               </button>
             </div>
 
-            <div className="divide-line divide-y">
+            <div className="divide-surface-200 divide-y">
               {loading ? (
-                <div className="text-ink-muted px-5 py-8 text-center text-sm">
+                <div className="text-brand-700/60 px-5 py-8 text-center text-sm">
                   Loading service requests...
                 </div>
               ) : requests.length === 0 ? (
-                <p className="text-ink-muted px-5 py-8 text-center text-sm">
+                <p className="text-brand-700/60 px-5 py-8 text-center text-sm">
                   No service requests.
                 </p>
               ) : (
@@ -339,13 +250,13 @@ export default function Overview() {
                   <div key={request._id || request.id} className="px-5 py-3.5">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-ink-body text-sm font-semibold">
+                        <p className="text-brand-900 text-sm font-semibold">
                           {request.subject ||
                             request.title ||
                             "Service request"}
                         </p>
 
-                        <p className="text-ink-muted mt-0.5 text-xs">
+                        <p className="text-brand-700/60 mt-0.5 text-xs">
                           {request.hotelName || request.hotel?.name || "Hotel"}
                         </p>
                       </div>
@@ -359,10 +270,6 @@ export default function Overview() {
           </div>
         </div>
       </main>
-
-      {/* =================================================
-          CREATE HOTEL MODAL
-      ================================================= */}
 
       <CreateHotelModal
         open={createOpen}
