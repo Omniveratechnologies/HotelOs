@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
+import { Header } from "@hotelos/ui/components/Header";
 
 import ChannelStatusBadge from "../../components/ChannelStatusBadge.jsx";
 import RoomFormModal from "../../components/rooms/RoomFormModal.jsx";
@@ -113,21 +113,10 @@ export default function RoomsPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       {/* TOPBAR */}
-      <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-gray-100 bg-white/95 px-6 backdrop-blur-sm lg:px-10">
-        <div className="flex min-w-0 items-center gap-4">
-          <SidebarToggle />
-
-          <div className="min-w-0">
-            <h1 className="font-display text-brand-900 truncate text-2xl font-semibold">
-              Rooms
-            </h1>
-
-            <p className="hidden text-sm text-gray-500 sm:block">
-              Manage your property's rooms and channel codes.
-            </p>
-          </div>
-        </div>
-
+      <Header
+        pageTitle="Rooms"
+        pageDescription="Manage your property's rooms and channel codes."
+      >
         <button
           type="button"
           onClick={() => {
@@ -146,7 +135,7 @@ export default function RoomsPage() {
           </svg>
           Add Room
         </button>
-      </header>
+      </Header>
 
       <main className="px-6 py-8 lg:px-10">
         {toast && (
@@ -210,7 +199,7 @@ export default function RoomsPage() {
         {/* TABLE */}
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-180 text-left text-sm">
               <thead>
                 <tr className="text-brand-900/50 border-b border-gray-100 text-xs font-semibold tracking-wider uppercase">
                   <th className="px-6 py-3.5">Room</th>

@@ -402,7 +402,7 @@ export default function AiosellRatesMatrix() {
           <table className="w-full border-collapse text-left text-xs">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50/80">
-                <th className="sticky left-0 z-10 min-w-[260px] border-r border-gray-200 bg-gray-50/95 p-3.5 font-semibold text-gray-700 shadow-[1px_0_0_0_#e5e7eb] backdrop-blur-xs">
+                <th className="sticky left-0 z-10 min-w-65 border-r border-gray-200 bg-gray-50/95 p-3.5 font-semibold text-gray-700 shadow-[1px_0_0_0_#e5e7eb] backdrop-blur-xs">
                   Room Type & Rate Plan
                 </th>
                 {dates.map((d) => {
@@ -410,7 +410,7 @@ export default function AiosellRatesMatrix() {
                   return (
                     <th
                       key={d}
-                      className="max-w-[106px] min-w-[96px] border-r border-gray-100 p-2.5 text-center font-semibold text-gray-700 last:border-r-0"
+                      className="max-w-26.5 min-w-24 border-r border-gray-100 p-2.5 text-center font-semibold text-gray-700 last:border-r-0"
                     >
                       <div className="text-[11px] leading-tight font-bold text-gray-900">
                         {hdr.dateText}
@@ -457,14 +457,14 @@ export default function AiosellRatesMatrix() {
                     className="group transition hover:bg-gray-50/60"
                   >
                     <td className="sticky left-0 z-10 border-r border-gray-200 bg-white p-3.5 shadow-[1px_0_0_0_#e5e7eb] transition group-hover:bg-gray-50/60">
-                      <div className="max-w-[240px] truncate text-xs font-semibold text-gray-900">
+                      <div className="max-w-60 truncate text-xs font-semibold text-gray-900">
                         {row.planName || row.planCode}
                       </div>
                       <div className="mt-0.5 flex items-center gap-1.5">
                         <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] font-medium text-gray-500">
                           {row.roomCode}
                         </span>
-                        <span className="max-w-[170px] truncate text-[11px] text-gray-500">
+                        <span className="max-w-42.5 truncate text-[11px] text-gray-500">
                           {row.roomName}
                         </span>
                       </div>

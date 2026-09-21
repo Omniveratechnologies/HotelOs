@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
+import { Header } from "@hotelos/ui/components/Header";
 
 import Button from "../../components/ui/Button.jsx";
 import { Input } from "../../components/ui/Input.jsx";
@@ -122,21 +122,10 @@ export default function SettingsPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       {/* TOPBAR */}
-      <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-gray-100 bg-white/95 px-6 backdrop-blur-sm lg:px-10">
-        <div className="min-w-0 items-center gap-4">
-          <SidebarToggle />
-
-          <div className="mt-2">
-            <h1 className="font-display text-brand-900 truncate text-2xl font-semibold">
-              Hotel Info
-            </h1>
-
-            <p className="hidden text-sm text-gray-500 sm:block">
-              Your property's details and channel configuration.
-            </p>
-          </div>
-        </div>
-      </header>
+      <Header
+        pageTitle="Hotel Info"
+        pageDescription="Your property's details and channel configuration."
+      />
 
       <main className="max-w-3xl px-6 py-8 lg:px-10">
         {toast && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
+import { Header } from "@hotelos/ui/components/Header";
 
 import ChannelStatusBadge from "../../components/ChannelStatusBadge.jsx";
 import RatePlanModal from "../../components/rate-plans/RatePlanModal.jsx";
@@ -124,90 +124,78 @@ export default function RatePlansPage() {
   return (
     <div className="flex min-w-0 flex-1 flex-col">
       {/* TOPBAR */}
-      <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-gray-100 bg-white/95 px-6 backdrop-blur-sm lg:px-10">
-        <div className="flex min-w-0 items-center gap-4">
-          <SidebarToggle />
 
-          <div className="min-w-0">
-            <h1 className="font-display text-brand-900 truncate text-2xl font-semibold">
-              Rate Plans
-            </h1>
-
-            <p className="hidden text-sm text-gray-500 sm:block">
-              Rates for each room type and occupancy.
-            </p>
-          </div>
+      <Header
+        pageTitle="Rate Plans"
+        pageDescription="Rates for each room type and occupancy."
+      >
+        <div className="flex items-center rounded-xl border border-gray-200 bg-gray-100 p-1">
+          <button
+            type="button"
+            onClick={() => setViewMode("matrix")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+              viewMode === "matrix"
+                ? "bg-white text-gray-900 shadow-xs"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Rates Calendar (Aiosell)
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("plans")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+              viewMode === "plans"
+                ? "bg-white text-gray-900 shadow-xs"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Plan Configurations
+          </button>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2.5">
-          <div className="flex items-center rounded-xl border border-gray-200 bg-gray-100 p-1">
+        {viewMode === "plans" && (
+          <>
             <button
               type="button"
-              onClick={() => setViewMode("matrix")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                viewMode === "matrix"
-                  ? "bg-white text-gray-900 shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              onClick={() => setSyncModalOpen(true)}
+              disabled={syncing}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
             >
-              Rates Calendar (Aiosell)
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("plans")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                viewMode === "plans"
-                  ? "bg-white text-gray-900 shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              Plan Configurations
-            </button>
-          </div>
-
-          {viewMode === "plans" && (
-            <>
-              <button
-                type="button"
-                onClick={() => setSyncModalOpen(true)}
-                disabled={syncing}
-                className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
+              {syncing ? "Syncing…" : "Sync Rates"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+              className="bg-primary-400 hover:bg-primary-500 inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-xs transition"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 5v14M5 12h14"
                   stroke="currentColor"
                   strokeWidth="2"
-                >
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-                </svg>
-                {syncing ? "Syncing…" : "Sync Rates"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEditing(null);
-                  setFormOpen(true);
-                }}
-                className="bg-primary-400 hover:bg-primary-500 inline-flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-xs transition"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 5v14M5 12h14"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                Add Rate Plan
-              </button>
-            </>
-          )}
-        </div>
-      </header>
+                  strokeLinecap="round"
+                />
+              </svg>
+              Add Rate Plan
+            </button>
+          </>
+        )}
+      </Header>
 
       <main className="px-6 py-8 lg:px-10">
         {toast && (
@@ -275,7 +263,7 @@ export default function RatePlansPage() {
             {/* TABLE */}
             <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[820px] text-left text-sm">
+                <table className="w-full min-w-205 text-left text-sm">
                   <thead>
                     <tr className="text-brand-900/50 border-b border-gray-100 text-xs font-semibold tracking-wider uppercase">
                       <th className="px-6 py-3.5">Name</th>
