@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import pinoHttp from "pino-http";
+// import pinoHttp from "pino-http";
 
 import logger from "#/utils/logger.js";
 
@@ -15,10 +15,13 @@ import guestRoutes from "#/modules/guests/index.js";
 import foodItemRoutes from "#/modules/food-items/index.js";
 import { orderRouter, kitchenOrdersRouter } from "#/modules/orders/index.js";
 import serviceRequestRoutes from "#/modules/service-requests/index.js";
+import channelManagerRoutes from "#/modules/channel-manager/index.js";
+import ratePlanRoutes from "#/modules/rate-plans/index.js";
+import roomTypeRoutes from "#/modules/room-types/index.js";
 
 const app = express();
 
-app.use(pinoHttp({ logger }));
+// app.use(pinoHttp({ logger }));
 
 app.use(
   cors({
@@ -49,6 +52,9 @@ app.use("/api/v1/food-items", foodItemRoutes);
 app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/service-requests", serviceRequestRoutes);
 app.use("/api/kitchen/orders", kitchenOrdersRouter);
+app.use("/api/v1/channel-manager", channelManagerRoutes);
+app.use("/api/v1/rate-plans", ratePlanRoutes);
+app.use("/api/v1/room-types", roomTypeRoutes);
 
 app.use((err, req, res, _next) => {
   logger.error(err, "Unhandled application error");

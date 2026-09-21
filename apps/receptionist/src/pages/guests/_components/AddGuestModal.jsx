@@ -156,10 +156,13 @@ export default function AddGuestModal({
     }
   };
 
-  // When prefilled, only that room can be chosen; otherwise free rooms
+  // When prefilled, only that room can be chosen; otherwise free rooms.
+  // Rooms awaiting channel verification are never selectable.
+  const verifiedRooms = rooms.filter((r) => r.channelVerified !== false);
+
   const selectableRooms = initial?.roomId
-    ? rooms.filter((r) => r.id === initial.roomId)
-    : rooms.filter((r) => ["available", "cleaning"].includes(r.status));
+    ? verifiedRooms.filter((r) => r.id === initial.roomId)
+    : verifiedRooms.filter((r) => ["available", "cleaning"].includes(r.status));
 
   const noRooms = !initial?.roomId && selectableRooms.length === 0;
   const formDisabled = saving || noRooms;

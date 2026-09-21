@@ -1,11 +1,19 @@
 import React, { useState } from "react";
 import AddGuestModal from "../pages/guests/_components/AddGuestModal.jsx";
 
-export default function RoomModal({ room, onClose, updateRoomStatus }) {
+export default function RoomModal({
+  room,
+  onClose,
+  updateRoomStatus,
+  updateRoom,
+}) {
   const [view, setView] = useState("info"); // info | checkout
   const [registerOpen, setRegisterOpen] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [channelCode, setChannelCode] = useState(room.roomCode || "");
+  const [channelSaving, setChannelSaving] = useState(false);
+  const unverified = room.channelVerified === false;
 
   const runUpdate = async (newStatus, guestData) => {
     setError("");
@@ -43,6 +51,20 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
 
   // Real guest creation - opens the shared registration form
   const openRegister = () => setRegisterOpen(true);
+
+  // Save the Aiosell room code; a change puts the room back under review
+  const handleChannelSave = async () => {
+    setChannelSaving(true);
+    try {
+      await updateRoom(room.id, { roomCode: channelCode.trim() || undefined });
+      onClose();
+    } catch (err) {
+      console.error("Room code update failed:", err);
+      setError(err.message || "Failed to update the room code.");
+    } finally {
+      setChannelSaving(false);
+    }
+  };
 
   const totalEstimate =
     room.checkIn && room.checkOut
@@ -131,24 +153,91 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
                     </div>
                   </div>
                 )}
+                {room.roomCode && room.channelSyncStatus === "under_review" && (
+                  <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50 p-4">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-xs font-semibold tracking-wide text-purple-600 uppercase">
+                        Channel
+                      </span>
+                      <span className="rounded-full bg-purple-200 px-2 py-0.5 text-[10px] font-bold text-purple-800">
+                        UNDER REVIEW
+                      </span>
+                    </div>
+                    <p className="text-xs text-purple-600">
+                      Room <b>{room.roomNumber}</b> is waiting for a super admin
+                      to add it (and update the room count) in the property.
+                      Check-in and reservations are blocked until then.
+                    </p>
+                  </div>
+                )}
+                {room.roomCode &&
+                  room.roomCode === channelCode &&
+                  room.channelSyncStatus === "completed" && (
+                    <div className="mb-4 flex items-center justify-between rounded-xl bg-green-50 px-4 py-3">
+                      <div>
+                        <div className="text-xs font-semibold tracking-wide text-green-600 uppercase">
+                          Channel
+                        </div>
+                        <div className="text-sm font-medium text-green-700">
+                          {room.roomCode}
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-green-200 px-2 py-0.5 text-[10px] font-bold text-green-800">
+                        SYNCED
+                      </span>
+                    </div>
+                  )}
+                <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
+                    Channel Code
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={channelCode}
+                      onChange={(e) => setChannelCode(e.target.value)}
+                      placeholder="e.g. 101S"
+                      disabled={channelSaving}
+                      className="focus:border-primary-400 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-hidden"
+                    />
+                    <button
+                      onClick={handleChannelSave}
+                      disabled={channelSaving}
+                      className="bg-brand-900 hover:bg-brand-800 shrink-0 rounded-lg px-4 text-sm font-semibold text-white transition-colors disabled:opacity-60"
+                    >
+                      {channelSaving ? "..." : "Save"}
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-gray-400">
+                    Changing the code puts the room back{" "}
+                    <span className="font-semibold">under review</span> — a
+                    super admin verifies it in the property. Leave blank for a
+                    non-linked room.
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   {(room.status === "available" ||
                     room.status === "cleaning") && (
                     <>
                       <button
                         onClick={openRegister}
-                        disabled={saving}
+                        disabled={saving || unverified}
                         className="bg-brand-900 hover:bg-brand-800 col-span-2 rounded-xl py-3 font-semibold text-white transition-colors disabled:opacity-60"
                       >
                         ✓ Check In Guest
                       </button>
                       <button
                         onClick={openRegister}
-                        disabled={saving}
+                        disabled={saving || unverified}
                         className="rounded-xl border-2 border-amber-400 py-3 text-sm font-semibold text-amber-600 transition-colors hover:bg-amber-50 disabled:opacity-60"
                       >
                         📅 Reserve Room
                       </button>
+                      {unverified && (
+                        <p className="text-[11px] font-medium text-purple-600">
+                          Blocked until a super admin verifies this room in the
+                          property.
+                        </p>
+                      )}
                       {room.status === "available" && (
                         <button
                           onClick={handleMarkCleaning}
@@ -180,7 +269,7 @@ export default function RoomModal({ room, onClose, updateRoomStatus }) {
                     <>
                       <button
                         onClick={openRegister}
-                        disabled={saving}
+                        disabled={saving || unverified}
                         className="bg-brand-900 hover:bg-brand-800 col-span-2 rounded-xl py-3 font-semibold text-white transition-colors disabled:opacity-60"
                       >
                         ✓ Check In Guest

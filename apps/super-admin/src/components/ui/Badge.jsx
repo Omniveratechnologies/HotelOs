@@ -10,6 +10,8 @@ const VARIANTS = {
   medium: "bg-amber-100 text-amber-500",
   low: "bg-ink-950/5 text-ink-muted",
   neutral: "bg-ink-950/5 text-ink-muted",
+  under_review: "bg-amber-100 text-amber-500",
+  completed: "bg-signal-100 text-signal-600",
 };
 
 const LABELS = {
@@ -23,6 +25,8 @@ const LABELS = {
   high: "High",
   medium: "Medium",
   low: "Low",
+  under_review: "Under review",
+  completed: "Completed",
 };
 
 export default function Badge({ status, children }) {

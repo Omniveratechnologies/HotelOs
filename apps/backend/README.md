@@ -210,6 +210,31 @@ The backend derives each staff user's hotel from the authenticated JWT
 
 ---
 
+## Aiosell channel manager
+
+The Aiosell integration is split into the `channel-manager`, `room-types`, and
+`rate-plans` modules. A Super Admin configures the global partner credentials
+through the authenticated channel-manager configuration endpoint; credentials
+are write-only and must never be returned by the API or committed to source.
+
+Each hotel is mapped with its Aiosell property code. Room types and rate plans
+are imported from, or manually created in, Aiosell and move through an
+`under_review` to `completed` approval workflow before automatic inventory or
+rate sync includes them. The inbound webhook is available at
+`POST /api/v1/channel-manager/webhook` and uses the configured HTTP Basic Auth
+credentials. The current Booking model represents one physical room per
+reservation, so multi-room webhook payloads are rejected rather than partially
+persisted.
+
+For local bootstrap only, setting all of `AIOSELL_PMS_SLUG`,
+`AIOSELL_PARTNER_USERNAME`, and `AIOSELL_PARTNER_PASSWORD` creates the initial
+configuration when the first hotel is created. Omit any of them to disable
+auto-provisioning; configure a real partner account through the Super Admin UI
+instead. `AIOSELL_HOTEL_CODE` is optional and only supplies the first hotel's
+property mapping.
+
+---
+
 ## Core principles
 
 ### 1. Hotel isolation is backend-owned

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SidebarToggle } from "@hotelos/ui/components/SidebarToggle";
+import { Header } from "@hotelos/ui/components/Header";
 
 import StatCard from "../../components/StatCard.jsx";
 import AddMembers from "../../components/AddMembers.jsx";
@@ -184,50 +184,37 @@ export default function Dashboard() {
             TOPBAR
         ===================================================== */}
 
-        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-gray-100 bg-white/95 px-6 backdrop-blur-sm lg:px-10">
-          <div className="flex min-w-0 items-center gap-4">
-            <SidebarToggle />
+        <Header
+          pageTitle={`Welcome, ${firstName}`}
+          pageDescription={`Here's what's happening at ${hotelName} today.`}
+        >
+          <button
+            aria-label="Notifications"
+            className="bg-background-50 text-brand-900 relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
 
-            <div className="min-w-0">
-              <h1 className="font-display text-brand-900 truncate text-2xl font-semibold">
-                Welcome, {firstName}
-              </h1>
+            <span className="bg-primary-400 absolute top-1.5 right-2 h-2 w-2 rounded-full" />
+          </button>
 
-              <p className="hidden text-sm text-gray-500 sm:block">
-                Here's what's happening at {hotelName} today.
-              </p>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <span className="bg-brand-900 font-display flex h-10 w-10 items-center justify-center rounded-full font-semibold text-white">
+              {(firstName || "A").charAt(0).toUpperCase()}
+            </span>
+
+            <span className="text-brand-900 hidden text-sm font-medium sm:block">
+              {user.name || "Admin"}
+            </span>
           </div>
-
-          <div className="flex shrink-0 items-center gap-4">
-            <button
-              aria-label="Notifications"
-              className="bg-background-50 text-brand-900 relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-
-              <span className="bg-primary-400 absolute top-1.5 right-2 h-2 w-2 rounded-full" />
-            </button>
-
-            <div className="flex items-center gap-2.5">
-              <span className="bg-brand-900 font-display flex h-10 w-10 items-center justify-center rounded-full font-semibold text-white">
-                {(firstName || "A").charAt(0).toUpperCase()}
-              </span>
-
-              <span className="text-brand-900 hidden text-sm font-medium sm:block">
-                {user.name || "Admin"}
-              </span>
-            </div>
-          </div>
-        </header>
+        </Header>
 
         {/* =====================================================
             CONTENT

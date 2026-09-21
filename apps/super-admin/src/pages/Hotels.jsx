@@ -8,6 +8,7 @@ import {
   Power,
   Mail,
   Building2,
+  Pencil,
 } from "lucide-react";
 
 import Topbar from "../components/layout/Topbar.jsx";
@@ -17,6 +18,7 @@ import Badge from "../components/ui/Badge.jsx";
 import { EmptyState, TableSkeleton } from "../components/ui/States.jsx";
 
 import CreateHotelModal from "../components/hotels/CreateHotelModal.jsx";
+import EditHotelModal from "../components/hotels/EditHotelModal.jsx";
 
 import { getHotels, updateHotelStatus } from "../services/hotel.service.js";
 
@@ -50,6 +52,8 @@ export default function Hotels() {
   const [createOpen, setCreateOpen] = useState(false);
 
   const [menuOpenId, setMenuOpenId] = useState(null);
+
+  const [editHotel, setEditHotel] = useState(null);
 
   const [toast, setToast] = useState("");
 
@@ -178,6 +182,16 @@ export default function Hotels() {
     setMenuOpenId(null);
 
     setToast(`Resend invite for ${hotel.name} will be added next.`);
+  }
+
+  // =====================================================
+  // EDIT HOTEL
+  // =====================================================
+
+  function handleEdit(hotel) {
+    setMenuOpenId(null);
+
+    setEditHotel(hotel);
   }
 
   // =====================================================
@@ -335,7 +349,12 @@ export default function Hotels() {
                     {/* HOTEL CODE */}
 
                     <td className="text-ink-body px-5 py-4 font-semibold">
-                      {hotel.hotelCode || "—"}
+                      <span className="block">{hotel.hotelCode || "—"}</span>
+                      <span className="text-ink-muted block font-mono text-xs">
+                        {hotel.aiosellHotelCode
+                          ? `Aiosell: ${hotel.aiosellHotelCode}`
+                          : ""}
+                      </span>
                     </td>
 
                     {/* CREATED */}
@@ -376,6 +395,17 @@ export default function Hotels() {
                           {/* MENU */}
 
                           <div className="border-line shadow-ink-950/10 absolute top-12 right-5 z-20 w-56 overflow-hidden rounded-xl border bg-white text-left shadow-lg">
+                            {/* EDIT HOTEL */}
+
+                            <button
+                              type="button"
+                              onClick={() => handleEdit(hotel)}
+                              className="text-ink-body hover:bg-canvas flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium"
+                            >
+                              <Pencil size={15} className="text-ink-muted" />
+                              Edit hotel
+                            </button>
+
                             {/* RESEND INVITE */}
 
                             <button
@@ -436,6 +466,26 @@ export default function Hotels() {
           );
         }}
       />
+
+      {/* ===============================================
+          EDIT HOTEL MODAL
+      =============================================== */}
+
+      {editHotel && (
+        <EditHotelModal
+          hotel={editHotel}
+          onClose={() => setEditHotel(null)}
+          onSaved={(updatedHotel) => {
+            setHotels((previous) =>
+              previous.map((item) =>
+                item._id === updatedHotel._id ? updatedHotel : item,
+              ),
+            );
+
+            setToast(`${updatedHotel.name} updated successfully.`);
+          }}
+        />
+      )}
 
       {/* ===============================================
           TOAST

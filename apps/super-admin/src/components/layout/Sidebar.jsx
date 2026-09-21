@@ -8,6 +8,8 @@ import {
   LifeBuoy,
   LogOut,
   Hotel,
+  BadgeCheck,
+  Cable,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -16,6 +18,8 @@ const NAV_ITEMS = [
   { to: "/transactions", label: "Food Transactions", icon: Wallet },
   { to: "/subscriptions", label: "Subscriptions", icon: CalendarClock },
   { to: "/service-requests", label: "Service Requests", icon: LifeBuoy },
+  { to: "/channel-approvals", label: "Channel Requests", icon: BadgeCheck },
+  { to: "/channel-manager", label: "Channel Manager", icon: Cable },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 

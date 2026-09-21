@@ -38,6 +38,9 @@ const normalizeRoom = (room) => ({
   guest: room.currentGuest || null,
   checkIn: room.checkIn ? String(room.checkIn).split("T")[0] : null,
   checkOut: room.checkOut ? String(room.checkOut).split("T")[0] : null,
+  roomCode: room.roomCode || null,
+  channelSyncStatus: room.channelSyncStatus || "completed",
+  channelVerified: room.channelVerified !== false,
 });
 
 // Map a backend guest DTO onto the shape the UI expects
@@ -372,10 +375,25 @@ export function HotelOSProvider({ children }) {
     }
   };
 
-  const addRoom = async ({ roomNumber, type, rate, floor }) => {
-    const created = await createRoomApi({ roomNumber, type, rate, floor });
+  const addRoom = async ({ roomNumber, type, rate, floor, roomCode }) => {
+    const created = await createRoomApi({
+      roomNumber,
+      type,
+      rate,
+      floor,
+      roomCode,
+    });
     setRooms((prev) => [...prev, normalizeRoom(created)]);
     return normalizeRoom(created);
+  };
+
+  // Persist editable fields (e.g. the Aiosell room code) back to the backend
+  const updateRoom = async (roomId, updates) => {
+    const updated = await updateRoomApi(roomId, updates);
+    setRooms((prev) =>
+      prev.map((r) => (r.id === roomId ? normalizeRoom(updated) : r)),
+    );
+    return normalizeRoom(updated);
   };
 
   const removeRoom = async (roomId) => {
@@ -508,6 +526,7 @@ export function HotelOSProvider({ children }) {
       statsError,
       refreshStats,
       updateRoomStatus,
+      updateRoom,
       addRoom,
       removeRoom,
       addGuest,

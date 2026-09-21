@@ -15,6 +15,10 @@ import { sendGuestCredentialsEmail } from "#/shared/services/email.service.js";
 import { deleteObjects } from "#/config/r2.js";
 
 import { GUEST_STATUSES } from "#/shared/constants/guest.js";
+import {
+  aiosellSyncInventory,
+  calculateSyncDateRange,
+} from "#/shared/services/inventory.service.js";
 
 import logger from "#/utils/logger.js";
 
@@ -204,6 +208,21 @@ export const registerStay = async (req, res) => {
         .json({ success: false, message: "This room is not available" });
     }
 
+    // A newly added room stays blocked until a super-admin verifies it against
+    // Aiosell (channelVerified is only false for staff-added linked rooms).
+    // Pending-delete rooms are blocked too — they are being removed.
+    if (room.channelVerified === false || room.pendingDelete === true) {
+      uploadedPaths = resolveDocuments(req).map((d) => d.path);
+
+      await removeFilesQuietly(uploadedPaths);
+
+      return res.status(409).json({
+        success: false,
+        message:
+          "This room is awaiting channel verification and cannot be used yet.",
+      });
+    }
+
     // =================================================
     // GENERATE CREDENTIALS
     // =================================================
@@ -276,6 +295,16 @@ export const registerStay = async (req, res) => {
       checkOut: createdBooking.checkOut,
       reserved: guestStatus === "reserved",
     });
+
+    // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    const [syncStart, syncEnd] = calculateSyncDateRange(
+      createdBooking.checkIn,
+      createdBooking.checkOut,
+    );
+    await aiosellSyncInventory(req.user.hotelId, syncStart, syncEnd);
 
     // =================================================
     // EMAIL THE CREDENTIALS (non-blocking failure)
@@ -444,6 +473,9 @@ export const updateBooking = async (req, res) => {
 
     const { status, checkIn, checkOut, roomId } = req.body;
 
+    const originalCheckIn = booking.checkIn;
+    const originalCheckOut = booking.checkOut;
+
     const guestUser = await User.findById(booking.guestId).select("name");
 
     // Room reassignment
@@ -464,6 +496,14 @@ export const updateBooking = async (req, res) => {
         return res.status(409).json({
           success: false,
           message: "This room is not available",
+        });
+      }
+
+      if (room.channelVerified === false || room.pendingDelete === true) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "This room is awaiting channel verification and cannot be used yet.",
         });
       }
 
@@ -521,6 +561,34 @@ export const updateBooking = async (req, res) => {
     }
 
     await booking.save();
+
+    // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    const syncDates = [
+      originalCheckIn,
+      originalCheckOut,
+      booking.checkIn,
+      booking.checkOut,
+    ]
+      .filter(Boolean)
+      .map((d) => new Date(d).toISOString().slice(0, 10));
+
+    const earliestCheckIn =
+      syncDates.length > 0
+        ? syncDates.reduce((min, d) => (d < min ? d : min))
+        : null;
+    const latestCheckOut =
+      syncDates.length > 0
+        ? syncDates.reduce((max, d) => (d > max ? d : max))
+        : null;
+
+    const [syncStart, syncEnd] = calculateSyncDateRange(
+      earliestCheckIn,
+      latestCheckOut,
+    );
+    await aiosellSyncInventory(req.user.hotelId, syncStart, syncEnd);
 
     const populated = await Booking.findById(booking._id)
       .populate("guestId")
@@ -588,6 +656,16 @@ export const deleteBooking = async (req, res) => {
         await freeRoom(roomId);
       }
     }
+
+    // =================================================
+    // SYNC INVENTORY TO AIOSELL (non-critical side effect)
+    // =================================================
+
+    const [syncStart, syncEnd] = calculateSyncDateRange(
+      booking.checkIn,
+      booking.checkOut,
+    );
+    await aiosellSyncInventory(req.user.hotelId, syncStart, syncEnd);
 
     logger.info({ bookingId: booking._id }, "Booking deleted");
 
