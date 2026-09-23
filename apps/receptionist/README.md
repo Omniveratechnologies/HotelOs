@@ -18,12 +18,14 @@ exercised in this app:
 
 - Log in (and accept an emailed invitation to set credentials)
 - View hotel dashboard stats
-- Manage rooms (create, update status, delete)
+- Manage rooms (create, update status, delete, assign roomCode)
+- Manage room types and rate plans with Aiosell rates matrix
+- Monitor channel approval indicators (`under_review`)
 - Register guests (with optional ID documents), check guests in/out,
   manage guest details and credentials
 - View food orders and housekeeping queues
-- View reports
-- Manage hotel settings (contact details, check-in/check-out times)
+- View operational reports
+- Manage hotel settings (contact details, check-in/check-out times, Aiosell room types)
 
 > Room and guest data is always scoped to the receptionist's own hotel by
 > the backend via `req.user.hotelId`.
@@ -42,39 +44,39 @@ exercised in this app:
 
 ### Dashboard
 
-| Area         | Page                            | Notes                                            |
-| ------------ | ------------------------------- | ------------------------------------------------ |
-| Dashboard    | `dashboard/DashboardPage`       | Summary stats + activity feed                    |
-| Guests       | `guests/GuestsPage`             | List / register / check-in / check-out guests    |
-| Rooms        | `rooms/RoomsPage`               | Room list + add / update / delete (modals)       |
-| Food Orders  | `food-orders/FoodOrdersPage`    | Food order queue                                 |
-| Housekeeping | `housekeeping/HousekeepingPage` | Housekeeping queue                               |
-| Reports      | `reports/ReportsPage`           | Reports                                          |
-| Settings     | `settings/SettingsPage`         | Hotel contact details, check-in/out times, staff |
+| Area         | Page                            | Notes                                                       |
+| ------------ | ------------------------------- | ----------------------------------------------------------- |
+| Dashboard    | `dashboard/DashboardPage`       | Summary stats + activity feed                               |
+| Guests       | `guests/GuestsPage`             | List / register / check-in / check-out guests               |
+| Rooms        | `rooms/RoomsPage`               | Room list + add / update / delete (with `roomCode` mapping) |
+| Room Types   | `room-types/RoomTypesPage`      | Room types listing & modal                                  |
+| Rate Plans   | `rate-plans/RatePlansPage`      | Rate plans CRUD & Aiosell live rates matrix                 |
+| Food Orders  | `food-orders/FoodOrdersPage`    | Realtime food order queue                                   |
+| Housekeeping | `housekeeping/HousekeepingPage` | Realtime housekeeping / service request queue               |
+| Reports      | `reports/ReportsPage`           | Daily performance & occupancy reports                       |
+| Settings     | `settings/SettingsPage`         | Hotel contact details, check-in/out times, staff            |
 
 ---
 
 ## Current backend integration
 
-All API calls go through the shared **`@hotelos/api`** package
-(`packages/api`), reading `VITE_API_URL` and attaching the
-`Authorization` header from `localStorage.auth_token` when `{ auth: true }`
-is passed. Guest documents are uploaded directly to Cloudflare R2 via
-presigned URLs.
+All API calls go through the shared **`@hotelos/api`** package (`packages/api`) with server state managed by **TanStack Query v5** (`@hotelos/query`). Session tokens (`localStorage.auth_token`) are automatically passed via `Authorization: Bearer <token>`. Guest documents are uploaded directly to Cloudflare R2 via presigned URLs.
 
-Domain service files in `src/services/`:
+Feature hooks under `src/features/<feature>/hooks/`:
 
-| File                        | Purpose                                        | Backend                                                                                                                                                 |
-| --------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auth.service.js`           | Login, session helpers, forgot/reset password  | `POST /auth/login`, `/auth/forgot-*`                                                                                                                    |
-| `invitation.service.js`     | Verify / accept invitation                     | `POST /invites/verify`, `/invites/accept`                                                                                                               |
-| `dashboard.service.js`      | Dashboard stats                                | `GET /dashboard/stats`                                                                                                                                  |
-| `room.service.js`           | Room CRUD                                      | `GET/POST/PATCH/DELETE /rooms`                                                                                                                          |
-| `guest.service.js`          | Guest stays + profiles, documents, credentials | `GET/POST/PATCH/DELETE /bookings`, `PATCH /guests/:id`, `/guests/:id/credentials`, `/guests/documents/upload-urls`, `/guests/:guestId/documents/:docId` |
-| `settings.service.js`       | My hotel + staff                               | `GET/PATCH /hotels/me`, `GET /users`                                                                                                                    |
-| `order.service.js`          | Food orders + menu                             | `GET /orders/staff`, `POST /orders/desk`, `PATCH /orders/:id/status`, `GET /food-items`                                                                 |
-| `serviceRequest.service.js` | Service requests                               | `GET /service-requests/staff`, `POST /service-requests/desk`, `PATCH /service-requests/:id/status`                                                      |
-| `realtime.service.js`       | Socket.IO client for live events               | WebSocket (`socket.io`) on the backend port                                                                                                             |
+| Feature Hook         | Purpose                                        | Backend                                                                                            |
+| -------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `useRooms`           | Room CRUD & roomCode mappings                  | `GET/POST/PATCH/DELETE /rooms`                                                                     |
+| `useRoomTypes`       | Room types CRUD & mapping                      | `GET/POST/PATCH/DELETE /room-types`                                                                |
+| `useRatePlans`       | Rate plans CRUD & Aiosell matrix               | `GET/POST/PATCH/DELETE /rate-plans`, sync                                                          |
+| `useGuests`          | Guest stays, profiles, check-in/out, documents | `GET/POST/PATCH/DELETE /bookings`, `PATCH /guests/:id`, `/guests/documents/upload-urls`            |
+| `useOrders`          | Food orders & food items                       | `GET /orders/staff`, `POST /orders/desk`, `PATCH /orders/:id/status`, `GET /food-items`            |
+| `useServiceRequests` | Housekeeping & service requests                | `GET /service-requests/staff`, `POST /service-requests/desk`, `PATCH /service-requests/:id/status` |
+| `useReports`         | Aggregated operational report metrics          | Derived from rooms, guests, and orders queries                                                     |
+| `useHotelSettings`   | Hotel info & Aiosell room types                | `GET/PATCH /hotels/me`, `GET /users`                                                               |
+| `useHotelOS`         | Composite facade hook aggregating hotel state  | Facade over feature queries for unified state access                                               |
+
+Real-time WebSocket events are synchronized into the TanStack Query cache via `<RealtimeSubscriber />` and `@hotelos/socket`.
 
 ---
 
@@ -180,29 +182,30 @@ pnpm preview -F receptionist
 src/
 │
 ├── app/
-│   ├── App.jsx             Provider & layout wiring
-│   ├── AuthLayout.jsx      Auth-page layout
-│   ├── router.jsx          Route definitions
-│   ├── providers.jsx       Global providers
-│   └── ErrorScreen.jsx     Error boundary / fallback
+│   ├── App.jsx             Root application entry
+│   ├── AuthLayout.jsx      Auth layout shell
+│   ├── providers/          Global QueryProvider & RealtimeSubscriber
+│   ├── router/             React Router configuration
+│   ├── layouts/            DashboardLayout with Header & Sidebar
+│   └── useHotelOS.js       Re-export for backward compatibility
 │
-├── components/             Reusable UI pieces
+├── hooks/
+│   └── useHotelOS.js       Composite facade hook aggregating hotel state
 │
-├── layouts/
-│   └── DashboardLayout.jsx Authenticated app shell
-│
-├── pages/
+├── features/               Domain feature modules
 │   ├── auth/               Login, AcceptInvitation, recovery
-│   ├── dashboard/DashboardPage.jsx
-│   ├── guests/GuestsPage.jsx
-│   ├── rooms/RoomsPage.jsx (+ AddRoomModal)
-│   ├── food-orders/FoodOrdersPage.jsx
-│   ├── housekeeping/HousekeepingPage.jsx
-│   ├── reports/ReportsPage.jsx
-│   └── settings/SettingsPage.jsx
+│   ├── dashboard/          Summary stats & activity feed
+│   ├── food-orders/        FoodOrdersPage, order details modal, menu
+│   ├── guests/             GuestsPage, AddGuestModal, guest documents
+│   ├── housekeeping/       HousekeepingPage, service requests
+│   ├── rate-plans/         RatePlansPage, RatePlanModal, AiosellRatesMatrix
+│   ├── reports/            ReportsPage, occupancy and revenue analytics
+│   ├── room-types/         RoomTypesPage, RoomTypeModal
+│   ├── rooms/              RoomsPage, AddRoomModal (with roomCode)
+│   └── settings/           SettingsPage, hotel info & Aiosell room types
 │
-├── services/               Domain API calls (see table above)
-└── index.css               Tailwind + global styles
+├── index.css               Tailwind CSS v4 theme entry
+└── main.jsx                Vite entry point
 ```
 
 ---
@@ -217,9 +220,13 @@ src/
 
 ## Tech stack
 
-- React 19 + Vite
-- Tailwind CSS v4
+- React 19 + Vite (`@tailwindcss/vite`)
+- Tailwind CSS v4 + `@hotelos/styles`
 - React Router
 - lucide-react icons
 - `@hotelos/api` shared client
-- `socket.io-client` for realtime food-order / service-request events
+- `@hotelos/query` (TanStack Query v5)
+- `@hotelos/socket` (Socket.IO realtime sync)
+- `@hotelos/stores` (Zustand UI stores)
+- `@hotelos/ui` (Header, Sidebar, ErrorScreen)
+- `@hotelos/utils` (Rate plan code helpers, normalizers, formatters, cn)
