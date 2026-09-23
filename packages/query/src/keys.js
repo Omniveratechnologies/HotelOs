@@ -6,6 +6,13 @@ export const queryKeys = {
     details: () => [...queryKeys.rooms.all, "detail"],
     detail: (id) => [...queryKeys.rooms.details(), id],
   },
+  reservations: {
+    all: ["reservations"],
+    lists: () => [...queryKeys.reservations.all, "list"],
+    list: (filters) => [...queryKeys.reservations.lists(), filters || {}],
+    details: () => [...queryKeys.reservations.all, "detail"],
+    detail: (id) => [...queryKeys.reservations.details(), id],
+  },
   guests: {
     all: ["guests"],
     lists: () => [...queryKeys.guests.all, "list"],

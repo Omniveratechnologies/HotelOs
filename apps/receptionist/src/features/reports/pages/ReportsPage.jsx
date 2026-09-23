@@ -21,7 +21,9 @@ export default function ReportsPage() {
     checkedOutGuests,
     reportDate,
     rooms,
+    guests,
     foodOrders,
+    serviceRequests,
   } = useReports(ROOM_TYPES);
 
   return (

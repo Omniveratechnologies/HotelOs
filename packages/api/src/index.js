@@ -7,6 +7,7 @@ export * as roomsApi from "./endpoints/rooms.js";
 export * as roomTypesApi from "./endpoints/roomTypes.js";
 export * as ratePlansApi from "./endpoints/ratePlans.js";
 export * as guestsApi from "./endpoints/guests.js";
+export * as reservationsApi from "./endpoints/reservations.js";
 export * as ordersApi from "./endpoints/orders.js";
 export * as serviceRequestsApi from "./endpoints/serviceRequests.js";
 export * as dashboardApi from "./endpoints/dashboard.js";
@@ -40,6 +41,7 @@ export {
   syncRatePlans,
 } from "./endpoints/ratePlans.js";
 export * from "./endpoints/guests.js";
+export * from "./endpoints/reservations.js";
 export * from "./endpoints/orders.js";
 export * from "./endpoints/serviceRequests.js";
 export * from "./endpoints/dashboard.js";
