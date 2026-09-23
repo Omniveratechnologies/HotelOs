@@ -162,16 +162,15 @@ function HotelShell() {
   const navigate = useNavigate();
   const user = getStoredUser();
 
-  const isSidebarOpen = useSidebarStore((s) => s.isOpen);
-  const setIsSidebarOpen = useSidebarStore((s) => s.setIsOpen);
-  const toggleSidebar = useSidebarStore((s) => s.toggleOpen);
+  const isSidebarOpen = useSidebarStore((s) => s.isSidebarOpen);
+  const closeSidebar = useSidebarStore((s) => s.closeSidebar);
 
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = () => {
     setLoggingOut(true);
     clearAuth();
-    setIsSidebarOpen(false);
+    closeSidebar();
     navigate("/login", { replace: true });
   };
 
@@ -184,16 +183,11 @@ function HotelShell() {
         onLogout={handleLogout}
         logoutLoading={loggingOut}
         isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        onClose={closeSidebar}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Outlet
-          context={{
-            isSidebarOpen,
-            toggleSidebar,
-          }}
-        />
+        <Outlet />
       </div>
     </div>
   );

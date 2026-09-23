@@ -1,6 +1,7 @@
-import { NavLink, useOutletContext } from "react-router";
+import { NavLink } from "react-router";
 import { cn } from "@hotelos/utils";
 import { useEffect, useRef, useState } from "react";
+import { useSidebarStore } from "@hotelos/stores";
 
 /**
  * @typedef {Object} SidebarItem
@@ -32,7 +33,6 @@ import { useEffect, useRef, useState } from "react";
  * @property {string} [role] - Optional role text shown under the name.
  */
 
-const COLLAPSED_KEY = "hotelos:sidebar-collapsed";
 const DEFAULT_ITEMS = [];
 
 /**
@@ -48,11 +48,9 @@ const DEFAULT_ITEMS = [];
  *   logout button when provided.
  * @param {boolean} [props.logoutLoading=false] - Shows a spinner on the
  *   logout button while `true`.
- * @param {boolean} [props.isOpen=false] - Mobile drawer isOpen state.
+ * @param {boolean} [props.isOpen=false] - Sidebar open state (controls both mobile drawer and desktop collapse).
  * @param {() => void} [props.onClose] - Called when the mobile drawer should
  *   close (backdrop click, `Escape`, or navigating).
- * @param {boolean} [props.defaultCollapsed=false] - Initial desktop collapse
- *   state when nothing is stored in `localStorage`.
  * @param {string} [props.className=""] - Extra classes for the `<aside>`.
  * @returns {import("react").ReactElement}
  */
@@ -67,22 +65,37 @@ export function Sidebar({
   onClose,
   className = "",
 }) {
+  // Close mobile drawer when resizing from desktop to mobile breakpoint
   useEffect(() => {
-    try {
-      window.localStorage.setItem(COLLAPSED_KEY, isOpen ? "0" : "1");
-    } catch {
-      // Ignore storage failures (private browsing, etc.)
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(COLLAPSED_KEY);
-      if (saved && saved === "1") onClose?.();
-    } catch {
-      // Ignore storage failures (private browsing, etc.)
-    }
+    let wasDesktop = window.innerWidth >= 1024;
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      if (wasDesktop && !isDesktop) {
+        onClose?.();
+      }
+      wasDesktop = isDesktop;
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [onClose]);
+
+  // Close mobile drawer on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const handleNavigate = () => {
+    if (window.innerWidth < 1024) {
+      onClose?.();
+    }
+  };
 
   const displayName = user?.name || "User";
   const role = user?.role || "";
@@ -192,7 +205,7 @@ export function Sidebar({
                   key={item.id ?? item.label}
                   item={item}
                   isOpen={isOpen}
-                  onNavigate={onClose}
+                  onNavigate={handleNavigate}
                 />
               ))}
             </ul>
@@ -360,7 +373,12 @@ export function SidebarItem({ item, isOpen, onNavigate }) {
                       className={itemClassName}
                     >
                       {sub.icon}
-                      <span className="block min-w-0 flex-1 truncate text-left">
+                      <span
+                        className={cn(
+                          "block min-w-0 flex-1 truncate text-left",
+                          isOpen && "lg:hidden",
+                        )}
+                      >
                         {sub.label}
                       </span>
                     </NavLink>
@@ -450,14 +468,14 @@ function SpinnerIcon() {
  * @param {string} [props.label="Open menu"] - Accessible label for the button (`aria-label`).
  */
 export function SidebarToggle({ label = "Open menu" }) {
-  const { toggleSidebar } = useOutletContext() || {};
+  const toggleSidebar = useSidebarStore((s) => s.toggleSidebar);
 
   return (
     <button
       type="button"
       onClick={toggleSidebar}
       aria-label={label}
-      className="text-brand-900"
+      className="text-brand-900 cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-black/5"
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <path

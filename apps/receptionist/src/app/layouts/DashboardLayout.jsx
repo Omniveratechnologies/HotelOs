@@ -160,9 +160,8 @@ function DashboardShell() {
     useHotelOS();
   const navigate = useNavigate();
 
-  const isSidebarOpen = useSidebarStore((s) => s.isOpen);
-  const setIsSidebarOpen = useSidebarStore((s) => s.setIsOpen);
-  const toggleSidebar = useSidebarStore((s) => s.toggleOpen);
+  const isSidebarOpen = useSidebarStore((s) => s.isSidebarOpen);
+  const closeSidebar = useSidebarStore((s) => s.closeSidebar);
 
   const [logoutLoading, setLogoutLoading] = useState(false);
 
@@ -177,6 +176,7 @@ function DashboardShell() {
   const handleLogout = () => {
     setLogoutLoading(true);
     clearAuth();
+    closeSidebar();
     navigate("/login", { replace: true });
   };
 
@@ -219,16 +219,11 @@ function DashboardShell() {
         onLogout={handleLogout}
         logoutLoading={logoutLoading}
         isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        onClose={closeSidebar}
       />
 
       <main className="min-w-0 flex-1">
-        <Outlet
-          context={{
-            isSidebarOpen,
-            toggleSidebar,
-          }}
-        />
+        <Outlet />
       </main>
 
       <Chatbot

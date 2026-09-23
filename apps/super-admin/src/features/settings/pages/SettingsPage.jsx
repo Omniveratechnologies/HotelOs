@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router";
 import { Save, Bell, ShieldCheck, User } from "lucide-react";
-import Topbar from "../../../components/layout/Topbar.jsx";
+import { Header } from "@hotelos/ui/components/Header";
 import Field from "../../../components/ui/Field.jsx";
 import { inputClass } from "../../../components/ui/inputClass.js";
 import Button from "../../../components/ui/Button.jsx";
@@ -55,7 +54,6 @@ function Toggle({ checked, onChange, label, description }) {
 }
 
 export default function SettingsPage() {
-  const { onMenuClick } = useOutletContext();
   const [name, setName] = useState(currentAdmin.name);
   const [email, setEmail] = useState(currentAdmin.email);
   const [notifyExpiry, setNotifyExpiry] = useState(true);
@@ -73,13 +71,12 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Topbar
-        title="Settings"
-        subtitle="Manage your admin profile, security, and notifications."
-        onMenuClick={onMenuClick}
+      <Header
+        pageTitle="Settings"
+        pageDescription="Manage your admin profile, security, and notifications."
       />
 
-      <main className="flex-1 space-y-5 px-5 pb-10 lg:px-8">
+      <main className="flex-1 space-y-5 px-6 py-8 lg:px-10">
         <form onSubmit={handleSave} className="space-y-5">
           <SectionCard
             icon={User}

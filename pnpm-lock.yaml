@@ -553,6 +553,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@hotelos/stores':
+        specifier: workspace:*
+        version: link:../stores
       '@hotelos/styles':
         specifier: workspace:*
         version: link:../styles

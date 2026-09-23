@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router";
 import {
   Cable,
   Save,
@@ -10,7 +9,7 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import Topbar from "../../../components/layout/Topbar.jsx";
+import { Header } from "@hotelos/ui/components/Header";
 import Field from "../../../components/ui/Field.jsx";
 import { inputClass } from "../../../components/ui/inputClass.js";
 import Button from "../../../components/ui/Button.jsx";
@@ -390,8 +389,6 @@ function HotelSyncCard({
  * @returns {JSX.Element}
  */
 export default function ChannelManagerPage() {
-  const { onMenuClick } = useOutletContext();
-
   const { hotels, isLoading: hotelsLoading } = useHotels();
   const { config, refetch: refetchConfig } = useChannelManagerConfig();
   const updateConfigMut = useUpdateChannelManagerConfig();
@@ -494,13 +491,12 @@ export default function ChannelManagerPage() {
 
   return (
     <>
-      <Topbar
-        title="Channel Manager"
-        subtitle="Live Aiosell rates & inventory distribution, property sync, and settings."
-        onMenuClick={onMenuClick}
+      <Header
+        pageTitle="Channel Manager"
+        pageDescription="Live Aiosell rates & inventory distribution, property sync, and settings."
       />
 
-      <main className="flex-1 space-y-5 px-5 pb-10 lg:px-8">
+      <main className="flex-1 space-y-5 px-6 py-8 lg:px-10">
         {/* Top Control Bar: Hotel Selector + Primary Tabs */}
         <div className="border-surface-200 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4">
           <div className="flex items-center gap-3">

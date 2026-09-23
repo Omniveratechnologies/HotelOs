@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
-import { useOutletContext } from "react-router";
 import { CalendarClock, Filter, X, Save, Loader2 } from "lucide-react";
 
-import Topbar from "../../../components/layout/Topbar.jsx";
+import { Header } from "@hotelos/ui/components/Header";
 import Badge from "../../../components/ui/Badge.jsx";
 import { TableSkeleton, EmptyState } from "../../../components/ui/States.jsx";
 
@@ -66,8 +65,6 @@ const formatInputDate = (date) => {
 };
 
 export default function SubscriptionsPage() {
-  const { onMenuClick } = useOutletContext();
-
   const {
     subscriptions: subs,
     isLoading: loading,
@@ -163,19 +160,18 @@ export default function SubscriptionsPage() {
 
   return (
     <>
-      <Topbar
-        title="Subscriptions"
-        subtitle={
+      <Header
+        pageTitle="Subscriptions"
+        pageDescription={
           expiringCount > 0
             ? `${expiringCount} subscription${
                 expiringCount > 1 ? "s" : ""
               } expiring soon`
             : "Manage subscription dates across every hotel"
         }
-        onMenuClick={onMenuClick}
       />
 
-      <main className="flex-1 px-5 pb-10 lg:px-8">
+      <main className="flex-1 px-6 py-8 lg:px-10">
         {/* FILTERS */}
         <div className="mb-5 flex flex-wrap items-center gap-2">
           <Filter size={15} className="text-brand-700/60 mr-1" />
