@@ -329,6 +329,15 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../../packages/query
+      '@hotelos/socket':
+        specifier: workspace:*
+        version: link:../../packages/socket
+      '@hotelos/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       '@hotelos/styles':
         specifier: workspace:*
         version: link:../../packages/styles
@@ -338,6 +347,9 @@ importers:
       '@hotelos/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@tanstack/react-query':
+        specifier: ^5.101.1
+        version: 5.102.8(react@19.2.8)
       lucide-react:
         specifier: ^1.37.0
         version: 1.37.0(react@19.2.8)
@@ -353,6 +365,9 @@ importers:
       socket.io-client:
         specifier: ^4.8.3
         version: 4.8.3
+      zustand:
+        specifier: ^5.0.3
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.3
@@ -372,6 +387,15 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../../packages/query
+      '@hotelos/socket':
+        specifier: workspace:*
+        version: link:../../packages/socket
+      '@hotelos/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       '@hotelos/styles':
         specifier: workspace:*
         version: link:../../packages/styles
@@ -381,6 +405,9 @@ importers:
       '@hotelos/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@tanstack/react-query':
+        specifier: ^5.101.1
+        version: 5.102.8(react@19.2.8)
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -390,6 +417,9 @@ importers:
       react-router:
         specifier: ^8.3.1
         version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zustand:
+        specifier: ^5.0.3
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.3
@@ -415,6 +445,15 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../../packages/query
+      '@hotelos/socket':
+        specifier: workspace:*
+        version: link:../../packages/socket
+      '@hotelos/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       '@hotelos/styles':
         specifier: workspace:*
         version: link:../../packages/styles
@@ -424,6 +463,9 @@ importers:
       '@hotelos/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@tanstack/react-query':
+        specifier: ^5.101.1
+        version: 5.102.8(react@19.2.8)
       lucide-react:
         specifier: ^1.31.0
         version: 1.37.0(react@19.2.8)
@@ -436,6 +478,9 @@ importers:
       react-router:
         specifier: ^8.3.1
         version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zustand:
+        specifier: ^5.0.3
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.3
@@ -457,6 +502,42 @@ importers:
         version: 8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/api: {}
+
+  packages/query:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.101.1
+        version: 5.102.8(react@19.2.8)
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.8
+      react-dom:
+        specifier: '>=18.0.0'
+        version: 19.2.8(react@19.2.8)
+
+  packages/socket:
+    dependencies:
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../query
+      '@hotelos/utils':
+        specifier: workspace:*
+        version: link:../utils
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.8
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3
+
+  packages/stores:
+    dependencies:
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.8
+      zustand:
+        specifier: ^5.0.3
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
 
   packages/styles:
     devDependencies:
@@ -3889,6 +3970,24 @@ packages:
   zod@4.6.5:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
 
+  zustand@5.0.15:
+    resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
+
 snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
@@ -7132,3 +7231,9 @@ snapshots:
   zod@3.25.76: {}
 
   zod@4.6.5: {}
+
+  zustand@5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8)):
+    optionalDependencies:
+      '@types/react': 19.2.18
+      react: 19.2.8
+      use-sync-external-store: 1.6.0(react@19.2.8)

@@ -11,7 +11,7 @@ import {
   BadgeCheck,
   Cable,
 } from "lucide-react";
-import { useSuperAdmin } from "../../app/superAdminContext.js";
+import { getStoredUser } from "@hotelos/api";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Overview", icon: LayoutGrid },
@@ -25,7 +25,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ onLogoutClick, mobileOpen, onCloseMobile }) {
-  const { user } = useSuperAdmin();
+  const user = getStoredUser();
 
   const currentAdmin = user || {
     name: "Super Admin",

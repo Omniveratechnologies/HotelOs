@@ -1,27 +1,8 @@
-import { useMemo } from "react";
+import { AppProviders } from "./AppProviders.jsx";
 
-import { clearAuth, getStoredUser } from "../services/auth.service.js";
+export { AppProviders };
 
-import { SuperAdminContext } from "./superAdminContext.js";
-
+// Backward-compatible alias for any legacy imports
 export function SuperAdminProvider({ children }) {
-  const user = useMemo(() => getStoredUser(), []);
-
-  const value = useMemo(
-    () => ({
-      user,
-
-      logout: () => {
-        clearAuth();
-      },
-    }),
-
-    [user],
-  );
-
-  return (
-    <SuperAdminContext.Provider value={value}>
-      {children}
-    </SuperAdminContext.Provider>
-  );
+  return <AppProviders>{children}</AppProviders>;
 }

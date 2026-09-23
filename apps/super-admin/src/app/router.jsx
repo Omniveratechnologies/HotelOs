@@ -1,7 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router";
 
 import AuthLayout from "./AuthLayout.jsx";
-import DashboardLayout from "../layouts/DashboardLayout.jsx";
+import DashboardLayout from "./layouts/DashboardLayout.jsx";
 import { ErrorScreen } from "@hotelos/ui/ErrorScreen";
 import { LoadingScreen } from "@hotelos/ui/components/LoadingScreen";
 
@@ -22,11 +22,13 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "/login",
-        lazy: lazyPage(() => import("../pages/auth/LoginPage.jsx")),
+        lazy: lazyPage(() => import("../features/auth/pages/LoginPage.jsx")),
       },
       {
         path: "/reset-password",
-        lazy: lazyPage(() => import("../pages/auth/ResetPasswordPage.jsx")),
+        lazy: lazyPage(
+          () => import("../features/auth/pages/ResetPasswordPage.jsx"),
+        ),
       },
       {
         element: <AuthLayout />,
@@ -41,50 +43,54 @@ export const router = createBrowserRouter([
               {
                 path: "/dashboard",
                 lazy: lazyPage(
-                  () => import("../pages/dashboard/DashboardPage.jsx"),
+                  () => import("../features/dashboard/pages/DashboardPage.jsx"),
                 ),
               },
               {
                 path: "/hotels",
-                lazy: lazyPage(() => import("../pages/hotels/HotelsPage.jsx")),
+                lazy: lazyPage(
+                  () => import("../features/hotels/pages/HotelsPage.jsx"),
+                ),
               },
               {
                 path: "/transactions",
                 lazy: lazyPage(
-                  () => import("../pages/transactions/TransactionsPage.jsx"),
+                  () =>
+                    import("../features/transactions/pages/TransactionsPage.jsx"),
                 ),
               },
               {
                 path: "/subscriptions",
                 lazy: lazyPage(
-                  () => import("../pages/subscriptions/SubscriptionsPage.jsx"),
+                  () =>
+                    import("../features/subscriptions/pages/SubscriptionsPage.jsx"),
                 ),
               },
               {
                 path: "/service-requests",
                 lazy: lazyPage(
                   () =>
-                    import("../pages/service-requests/ServiceRequestsPage.jsx"),
+                    import("../features/service-requests/pages/ServiceRequestsPage.jsx"),
                 ),
               },
               {
                 path: "/channel-approvals",
                 lazy: lazyPage(
                   () =>
-                    import("../pages/channel-approvals/ChannelApprovalsPage.jsx"),
+                    import("../features/channel-approvals/pages/ChannelApprovalsPage.jsx"),
                 ),
               },
               {
                 path: "/channel-manager",
                 lazy: lazyPage(
                   () =>
-                    import("../pages/channel-manager/ChannelManagerPage.jsx"),
+                    import("../features/channel-manager/pages/ChannelManagerPage.jsx"),
                 ),
               },
               {
                 path: "/settings",
                 lazy: lazyPage(
-                  () => import("../pages/settings/SettingsPage.jsx"),
+                  () => import("../features/settings/pages/SettingsPage.jsx"),
                 ),
               },
             ],
@@ -102,3 +108,5 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
+
+export default router;
