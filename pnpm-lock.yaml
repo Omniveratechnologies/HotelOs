@@ -329,6 +329,15 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../../packages/query
+      '@hotelos/socket':
+        specifier: workspace:*
+        version: link:../../packages/socket
+      '@hotelos/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       '@hotelos/styles':
         specifier: workspace:*
         version: link:../../packages/styles
@@ -338,6 +347,9 @@ importers:
       '@hotelos/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@tanstack/react-query':
+        specifier: ^5.101.1
+        version: 5.102.8(react@19.2.8)
       lucide-react:
         specifier: ^1.37.0
         version: 1.37.0(react@19.2.8)
@@ -353,16 +365,16 @@ importers:
       socket.io-client:
         specifier: ^4.8.3
         version: 4.8.3
+      zustand:
+        specifier: ^5.0.3
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
     devDependencies:
-      '@tailwindcss/postcss':
+      '@tailwindcss/vite':
         specifier: ^4.3.3
-        version: 4.3.3
+        version: 4.3.3(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
       '@vitejs/plugin-react':
         specifier: ^6.1.1
         version: 6.1.1(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
-      postcss:
-        specifier: ^8.5.26
-        version: 8.5.26
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -375,6 +387,15 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../../packages/query
+      '@hotelos/socket':
+        specifier: workspace:*
+        version: link:../../packages/socket
+      '@hotelos/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       '@hotelos/styles':
         specifier: workspace:*
         version: link:../../packages/styles
@@ -384,6 +405,9 @@ importers:
       '@hotelos/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@tanstack/react-query':
+        specifier: ^5.101.1
+        version: 5.102.8(react@19.2.8)
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -393,10 +417,13 @@ importers:
       react-router:
         specifier: ^8.3.1
         version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zustand:
+        specifier: ^5.0.3
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
     devDependencies:
-      '@tailwindcss/postcss':
+      '@tailwindcss/vite':
         specifier: ^4.3.3
-        version: 4.3.3
+        version: 4.3.3(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
       '@types/react':
         specifier: ^19.2.17
         version: 19.2.18
@@ -406,9 +433,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.4
         version: 6.1.1(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
-      postcss:
-        specifier: ^8.5.26
-        version: 8.5.26
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -421,6 +445,27 @@ importers:
       '@hotelos/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../../packages/query
+      '@hotelos/socket':
+        specifier: workspace:*
+        version: link:../../packages/socket
+      '@hotelos/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
+      '@hotelos/styles':
+        specifier: workspace:*
+        version: link:../../packages/styles
+      '@hotelos/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@hotelos/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
+      '@tanstack/react-query':
+        specifier: ^5.101.1
+        version: 5.102.8(react@19.2.8)
       lucide-react:
         specifier: ^1.31.0
         version: 1.37.0(react@19.2.8)
@@ -430,13 +475,16 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
-      react-router-dom:
-        specifier: ^7.18.2
-        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react-router:
+        specifier: ^8.3.1
+        version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      zustand:
+        specifier: ^5.0.3
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
     devDependencies:
-      '@tailwindcss/postcss':
+      '@tailwindcss/vite':
         specifier: ^4.3.3
-        version: 4.3.3
+        version: 4.3.3(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
       '@types/react':
         specifier: ^19.2.17
         version: 19.2.18
@@ -446,12 +494,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.4
         version: 6.1.1(vite@8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0))
-      autoprefixer:
-        specifier: ^10.5.4
-        version: 10.5.4(postcss@8.5.26)
-      postcss:
-        specifier: ^8.5.26
-        version: 8.5.26
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -460,6 +502,42 @@ importers:
         version: 8.2.2(@types/node@22.20.1)(jiti@2.7.0)(yaml@2.9.0)
 
   packages/api: {}
+
+  packages/query:
+    dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.101.1
+        version: 5.102.8(react@19.2.8)
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.8
+      react-dom:
+        specifier: '>=18.0.0'
+        version: 19.2.8(react@19.2.8)
+
+  packages/socket:
+    dependencies:
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../query
+      '@hotelos/utils':
+        specifier: workspace:*
+        version: link:../utils
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.8
+      socket.io-client:
+        specifier: ^4.8.3
+        version: 4.8.3
+
+  packages/stores:
+    dependencies:
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.8
+      zustand:
+        specifier: ^5.0.3
+        version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
 
   packages/styles:
     devDependencies:
@@ -2072,13 +2150,6 @@ packages:
     resolution: {integrity: sha512-kNOjDqAh7px0XWNI+4QbzoiR/nTkHAWNud2uvnJquD1/x5a7EQZMJT0AczqK0Qn67oY/TTQ1LbUKajZpp3I9tQ==}
     engines: {node: '>=8.0.0'}
 
-  autoprefixer@10.5.4:
-    resolution: {integrity: sha512-MaU0U/za7N3r6brxD4YB/l4NSrFzLPlANv6wEuQVaIPlD3L4W9rFcQPbL/EilY9BHhHvhfcz3gInDLrEtWT4EA==}
-    engines: {node: ^10 || ^12 || >=14}
-    hasBin: true
-    peerDependencies:
-      postcss: ^8.1.0
-
   axios@1.20.0:
     resolution: {integrity: sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==}
 
@@ -2517,9 +2588,6 @@ packages:
   forwarded@0.2.0:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
     engines: {node: '>= 0.6'}
-
-  fraction.js@5.3.4:
-    resolution: {integrity: sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==}
 
   framer-motion@12.43.0:
     resolution: {integrity: sha512-1eaL3RvR/kAlbG7UYcpMptEyzPoENO0c6w7ZnB3/hh2vSAz/6uGAFn6fdoqTBguNstf3MsFhJHsD/0DHiclG+g==}
@@ -3182,9 +3250,6 @@ packages:
   pino@10.3.1:
     resolution: {integrity: sha512-r34yH/GlQpKZbU1BvFFqOjhISRo1MNx1tWYsYvmj6KIRHSPMT2+yHOEb1SG6NMvRoHRF0a07kCOox/9yakl1vg==}
     hasBin: true
-
-  postcss-value-parser@4.2.0:
-    resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
   postcss@8.5.26:
     resolution: {integrity: sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==}
@@ -3904,6 +3969,24 @@ packages:
 
   zod@4.6.5:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
+
+  zustand@5.0.15:
+    resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
 
 snapshots:
 
@@ -5523,15 +5606,6 @@ snapshots:
 
   atomic-sleep@1.0.0: {}
 
-  autoprefixer@10.5.4(postcss@8.5.26):
-    dependencies:
-      browserslist: 4.28.8
-      caniuse-lite: 1.0.30001810
-      fraction.js: 5.3.4
-      picocolors: 1.1.1
-      postcss: 8.5.26
-      postcss-value-parser: 4.2.0
-
   axios@1.20.0:
     dependencies:
       follow-redirects: 1.16.0
@@ -5963,8 +6037,6 @@ snapshots:
       mime-types: 2.1.35
 
   forwarded@0.2.0: {}
-
-  fraction.js@5.3.4: {}
 
   framer-motion@12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
@@ -6543,8 +6615,6 @@ snapshots:
       safe-stable-stringify: 2.5.0
       sonic-boom: 4.2.1
       thread-stream: 4.2.0
-
-  postcss-value-parser@4.2.0: {}
 
   postcss@8.5.26:
     dependencies:
@@ -7161,3 +7231,9 @@ snapshots:
   zod@3.25.76: {}
 
   zod@4.6.5: {}
+
+  zustand@5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8)):
+    optionalDependencies:
+      '@types/react': 19.2.18
+      react: 19.2.8
+      use-sync-external-store: 1.6.0(react@19.2.8)

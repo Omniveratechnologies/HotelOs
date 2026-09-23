@@ -44,10 +44,12 @@ This is a **pnpm + Turborepo** monorepo. Workspaces are defined in
 | `apps/kitchen`      | `kitchen`         | Kitchen display system & live order board (React + Vite) | `5176`   |
 | `apps/guest`        | `guest`           | Hotel room guest dashboard & portal (React + Vite)       | `5177`   |
 | `packages/api`      | `@hotelos/api`    | Shared fetch client used by frontends                    | —        |
+| `packages/query`    | `@hotelos/query`  | Shared TanStack Query v5 client, provider & query keys   | —        |
+| `packages/socket`   | `@hotelos/socket` | Shared Socket.IO client & query cache realtime sync      | —        |
+| `packages/stores`   | `@hotelos/stores` | Shared Zustand stores for UI state (sidebar, modals)     | —        |
 | `packages/styles`   | `@hotelos/styles` | Shared Tailwind CSS v4 design tokens and theme styles    | —        |
-
-The `packages/auth`, `packages/lib`, `packages/ui`, and `packages/utils`
-directories are reserved workspaces for future modularization.
+| `packages/ui`       | `@hotelos/ui`     | Shared UI components (header, sidebar, screens, icons)   | —        |
+| `packages/utils`    | `@hotelos/utils`  | Shared formatters, normalizers, rate plan code utils, cn | —        |
 
 ---
 
@@ -55,9 +57,9 @@ directories are reserved workspaces for future modularization.
 
 | Role           | Scope     | Responsibilities                                                  |
 | -------------- | --------- | ----------------------------------------------------------------- |
-| `SUPER_ADMIN`  | Platform  | Create/manage hotels and Sub Admins, platform administration      |
-| `SUB_ADMIN`    | One hotel | Manage rooms, invite staff (Receptionist/Kitchen), hotel settings |
-| `RECEPTIONIST` | One hotel | Register guests, assign rooms, check-in/check-out                 |
+| `SUPER_ADMIN`  | Platform  | Create/manage hotels, Sub Admins, channel approvals & live matrix |
+| `SUB_ADMIN`    | One hotel | Manage rooms, room types, rate plans, invite staff, settings      |
+| `RECEPTIONIST` | One hotel | Register guests, assign rooms, check-in/out, rate plans matrix    |
 | `KITCHEN`      | One hotel | Kitchen operations (live food orders, order lifecycle & KDS)      |
 | `GUEST`        | One hotel | Guest room dashboard, amenity booking, and food ordering          |
 
@@ -70,9 +72,12 @@ navigation only and are never a security boundary.
 
 - **Monorepo tooling** — pnpm workspaces, Turborepo
 - **Backend** — Node.js, Express 5, MongoDB / Mongoose, JWT, bcryptjs, Multer,
-  Nodemailer, Pino (struct/log + HTTP request logging), Cloudflare R2, Razorpay
-- **Frontend** — React 19, Vite, Tailwind CSS v4, React Router / TanStack Router
-- **Shared packages** — `@hotelos/api` (fetch client), `@hotelos/styles` (Tailwind v4 tokens)
+  Nodemailer, Pino (struct/log + HTTP request logging), Cloudflare R2, Razorpay,
+  Aiosell Channel Manager (approvals, distribution, sync, webhooks)
+- **Frontend** — React 19, Vite (`@tailwindcss/vite`), Tailwind CSS v4, React Router
+- **State management** — TanStack Query v5 (server state), Zustand (UI state)
+- **Realtime** — Socket.IO (unified hub + automatic TanStack Query cache invalidation)
+- **Shared packages** — `@hotelos/api`, `@hotelos/query`, `@hotelos/socket`, `@hotelos/stores`, `@hotelos/styles`, `@hotelos/ui`, `@hotelos/utils`
 - **Quality** — oxlint, Prettier, Husky + lint-staged
 
 ---
@@ -229,22 +234,24 @@ the repository root.
 
 ## Frontend <> backend wiring
 
-Frontends talk to the backend using either the shared `@hotelos/api` client or
+Frontends talk to the backend using either the shared `@hotelos/*` packages or
 role-specific fetch wrappers:
 
-- **`super-admin`**, **`sub-admin`**, and **`receptionist`** use the shared
-  **`@hotelos/api`** package (`packages/api`). It reads `VITE_API_URL` (falls
-  back to `http://localhost:5001`), attaches `Authorization: Bearer <token>`,
-  unwraps responses, and handles automatic 401 logout.
+- **`super-admin`**, **`sub-admin`**, and **`receptionist`** share a unified
+  architecture:
+  - **`@hotelos/api`** (`packages/api`) — Centralized HTTP client and domain endpoint functions, reading `VITE_API_URL` (defaults to `http://localhost:5001`), attaching `Authorization: Bearer <token>`, and handling 401 session expiration.
+  - **`@hotelos/query`** (`packages/query`) — TanStack Query v5 `QueryClient`, `QueryProvider`, and centralized `queryKeys` factory powering all data fetching, caching, and optimistic mutations.
+  - **`@hotelos/socket`** (`packages/socket`) — Socket.IO client (`getSocket`), `bindSocketToQueryClient`, and `useRealtimeSync` / `<RealtimeSubscriber />` that automatically invalidate query caches on live backend events (`order:*`, `serviceRequest:*`).
+  - **`@hotelos/stores`** (`packages/stores`) — Lightweight Zustand stores for client-only UI state (`useSidebarStore`, `useModalStore`).
+  - **`@hotelos/ui`** (`packages/ui`) — Shared layout components (`Header`, `Sidebar`), feedback screens (`LoadingScreen`, `ErrorScreen`), and icon primitives.
+  - **`@hotelos/utils`** (`packages/utils`) — Shared helpers (`cn`), formatters, entity normalizers, and Channel Manager rate plan code utilities (`deriveRatePlanCode`, `parseRatePlanCode`).
+  - **`@hotelos/styles`** (`packages/styles`) — Centralized Tailwind CSS v4 design tokens and utilities consumed via `@tailwindcss/vite`.
 - **`kitchen`** connects directly via `src/config/api.js` using
   `VITE_API_BASE_URL` (defaults to `http://localhost:5001/api`).
 - **`guest`** connects via `src/config/api.ts` using `VITE_API_URL` (defaults to
   `http://localhost:5001/api/v1`).
-- **`@hotelos/styles`** (`packages/styles`) provides centralized Tailwind CSS v4
-  design tokens (brand, primary, surface color scales and semantic aliases)
-  shared across frontends.
 
-See `packages/api/README.md` and `packages/styles/README.md` for package details.
+See individual package READMEs in `packages/*` for detailed APIs and usage patterns.
 
 ---
 
@@ -318,4 +325,9 @@ Each app and package documents its own setup and scope:
 - [Kitchen](apps/kitchen/README.md)
 - [Guest](apps/guest/README.md)
 - [@hotelos/api](packages/api/README.md)
+- [@hotelos/query](packages/query/README.md)
+- [@hotelos/socket](packages/socket/README.md)
+- [@hotelos/stores](packages/stores/README.md)
 - [@hotelos/styles](packages/styles/README.md)
+- [@hotelos/ui](packages/ui/README.md)
+- [@hotelos/utils](packages/utils/README.md)

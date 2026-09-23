@@ -1,6 +1,14 @@
 import { API_URL } from "./config/env.js";
 
+/**
+ * Custom error thrown when an API request fails.
+ */
+
 export class ApiError extends Error {
+  /**
+   * @param {string} message - Error description
+   * @param {number} status - HTTP status code
+   */
   constructor(message, status) {
     super(message);
     this.name = "ApiError";
@@ -8,6 +16,23 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Base fetch wrapper handling authentication headers, query parameters,
+ * timeouts, JSON parsing, and 401 redirection events.
+ *
+ * @param {string} path - Request endpoint path relative to API_URL
+ * @param {object} [options] - Fetch configuration options
+ * @param {string} [options.method='GET'] - HTTP request method
+ * @param {*} [options.body] - Request payload
+ * @param {boolean} [options.auth=false] - Whether to attach Authorization token
+ * @param {object} [options.headers] - Additional HTTP headers
+ * @param {object} [options.query] - Query parameters
+ * @param {object} [options.params] - Alias for query parameters
+ * @param {string} [options.credentials='include'] - Credentials mode
+ * @param {number} [options.timeout=30000] - Request timeout in milliseconds
+ * @param {AbortSignal} [options.signal] - Optional abort signal
+ * @returns {Promise<any>} Parsed response data
+ */
 export async function apiFetch(
   path,
   {
@@ -16,6 +41,8 @@ export async function apiFetch(
     auth = false,
     headers = {},
     query,
+    params,
+    credentials = "include",
     timeout = 30000,
     signal,
   } = {},
@@ -30,8 +57,9 @@ export async function apiFetch(
 
   const url = new URL(path, API_URL);
 
-  if (query) {
-    Object.entries(query).forEach(([key, value]) => {
+  const queryParams = query || params;
+  if (queryParams) {
+    Object.entries(queryParams).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         url.searchParams.append(key, String(value));
       }
@@ -53,11 +81,9 @@ export async function apiFetch(
   if (auth) {
     const token = localStorage.getItem("auth_token");
 
-    if (!token) {
-      throw new ApiError("Authentication required.", 401);
+    if (token) {
+      requestHeaders.Authorization = `Bearer ${token}`;
     }
-
-    requestHeaders.Authorization = `Bearer ${token}`;
   }
 
   let response;
@@ -67,6 +93,7 @@ export async function apiFetch(
       method,
       headers: requestHeaders,
       signal: finalSignal,
+      credentials,
     };
     if (body !== undefined && method !== "GET") {
       fetchOptions.body =
@@ -130,3 +157,70 @@ export async function apiFetch(
 
   return data;
 }
+
+/**
+ * Convenience HTTP client methods with pre-configured request verbs.
+ */
+export const api = {
+  /**
+   * Performs a GET request.
+   * @param {string} url - Request URL or path
+   * @param {object} [options] - Request options
+   * @returns {Promise<any>}
+   */
+  get: (url, options) => apiFetch(url, { ...options, method: "GET" }),
+
+  /**
+   * Performs a POST request.
+   * @param {string} url - Request URL or path
+   * @param {*} [body] - Request body
+   * @param {object} [options] - Request options
+   * @returns {Promise<any>}
+   */
+  post: (url, body, options) =>
+    apiFetch(url, {
+      ...options,
+      method: "POST",
+      body,
+    }),
+
+  /**
+   * Performs a PUT request.
+   * @param {string} url - Request URL or path
+   * @param {*} [body] - Request body
+   * @param {object} [options] - Request options
+   * @returns {Promise<any>}
+   */
+  put: (url, body, options) =>
+    apiFetch(url, {
+      ...options,
+      method: "PUT",
+      body,
+    }),
+
+  /**
+   * Performs a PATCH request.
+   * @param {string} url - Request URL or path
+   * @param {*} [body] - Request body
+   * @param {object} [options] - Request options
+   * @returns {Promise<any>}
+   */
+  patch: (url, body, options) =>
+    apiFetch(url, {
+      ...options,
+      method: "PATCH",
+      body,
+    }),
+
+  /**
+   * Performs a DELETE request.
+   * @param {string} url - Request URL or path
+   * @param {object} [options] - Request options
+   * @returns {Promise<any>}
+   */
+  delete: (url, options) =>
+    apiFetch(url, {
+      ...options,
+      method: "DELETE",
+    }),
+};

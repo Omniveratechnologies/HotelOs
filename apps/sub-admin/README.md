@@ -20,6 +20,10 @@ A **Sub Admin** manages one hotel. Capabilities exercised in this app:
 - View hotel dashboard stats (rooms, guests, occupancy, staff, activity)
 - Invite Receptionist staff to the hotel
 - Manage (list/delete) hotel members / staff
+- Manage room types and room inventory with `roomCode` mappings
+- Manage rate plans with Aiosell live comparison matrix & sync
+- Monitor channel approval queue status (`under_review`)
+- Configure hotel settings (profile, policies, Aiosell room types)
 - Accept a pending invitation and choose credentials
 - Recover username / reset password
 
@@ -42,28 +46,34 @@ A **Sub Admin** manages one hotel. Capabilities exercised in this app:
 
 ### Authenticated dashboard
 
-| Route                | Page      | Notes                                                       |
-| -------------------- | --------- | ----------------------------------------------------------- |
-| `/dashboard`         | Dashboard | Stat cards + recent activity feed (from `/dashboard/stats`) |
-| `/dashboard/members` | Members   | List / delete hotel staff (e.g. Receptionists)              |
+| Route                   | Page       | Notes                                                              |
+| ----------------------- | ---------- | ------------------------------------------------------------------ |
+| `/dashboard`            | Dashboard  | Stat cards + recent activity feed (from `/dashboard/stats`)        |
+| `/dashboard/members`    | Members    | List / delete hotel staff (e.g. Receptionists), send invitations   |
+| `/dashboard/rooms`      | Rooms      | Room list, CRUD modals with `roomCode` & channel status indicators |
+| `/dashboard/room-types` | Room Types | Room types CRUD & Aiosell mapping (`under_review` badges)          |
+| `/dashboard/rate-plans` | Rate Plans | Rate plans CRUD, code generator & Aiosell live rates matrix        |
+| `/dashboard/settings`   | Settings   | Hotel profile, check-in/out policies, Aiosell property setup       |
 
 ---
 
 ## Current backend integration
 
-All API calls go through the shared **`@hotelos/api`** package
-(`packages/api`), reading `VITE_API_URL` and attaching the
-`Authorization` header from `localStorage.auth_token` when `{ auth: true }`
-is passed.
+All API calls go through the shared **`@hotelos/api`** package (`packages/api`) with data fetching managed by **TanStack Query v5** (`@hotelos/query`). Session tokens (`localStorage.auth_token`) are automatically passed via `Authorization: Bearer <token>`.
 
-Domain service files in `src/services/`:
+Feature hooks under `src/features/<feature>/hooks/`:
 
-| File                    | Purpose                                       | Backend                                                      |
-| ----------------------- | --------------------------------------------- | ------------------------------------------------------------ |
-| `auth.service.js`       | Login, session helpers, forgot/reset password | `POST /auth/login`, `/auth/forgot-*`, `/auth/reset-password` |
-| `dashboard.service.js`  | Dashboard stats                               | `GET /dashboard/stats`                                       |
-| `invitation.service.js` | Send Receptionist invite, verify/accept       | `POST /invites`, `/invites/verify`, `/invites/accept`        |
-| `member.service.js`     | List / delete hotel members                   | `GET/DELETE /users`                                          |
+| Feature Hook           | Purpose                                          | Backend                                          |
+| ---------------------- | ------------------------------------------------ | ------------------------------------------------ |
+| `useSubAdminDashboard` | Dashboard stats & recent activity                | `GET /dashboard/stats`                           |
+| `useMembers`           | Staff listing, invitations, deletion             | `GET/DELETE /users`, `POST /invites`             |
+| `useRooms`             | Room CRUD & roomCode mappings                    | `GET/POST/PATCH/DELETE /rooms`                   |
+| `useRoomTypes`         | Room types CRUD & channel approval               | `GET/POST/PATCH/DELETE /room-types`              |
+| `useRatePlans`         | Rate plans CRUD & Aiosell live matrix            | `GET/POST/PATCH/DELETE /rate-plans`, sync        |
+| `useHotelSettings`     | Hotel profile & Aiosell room types query         | `GET/PATCH /hotels/me`, aiosell room types       |
+| `useSubAdminOS`        | Composite hook aggregating all sub-admin queries | Facade over feature hooks for unified view state |
+
+Real-time query invalidation is handled by `<RealtimeSubscriber />` via `@hotelos/socket`.
 
 ---
 
@@ -120,28 +130,29 @@ pnpm preview -F sub-admin
 src/
 │
 ├── app/
-│   ├── App.jsx             Provider & layout wiring
-│   ├── AuthLayout.jsx      Auth-page layout
-│   ├── router.jsx          Route definitions
-│   ├── providers.jsx       Global providers
-│   ├── subAdminContext.js  Sub Admin session context
-│   └── ErrorScreen.jsx     Error boundary / fallback
+│   ├── App.jsx             Root application entry
+│   ├── AuthLayout.jsx      Auth layout shell
+│   ├── providers.jsx       Global QueryProvider & RealtimeSubscriber
+│   ├── router/             React Router configuration
+│   ├── layouts/            HotelLayout with Header & Sidebar
+│   └── useSubAdminOS.js    Re-export for backward compatibility
 │
-├── components/             Reusable UI pieces
-├── layouts/                App shell (sidebar, topbar, etc.)
+├── components/             Shared UI pieces (ChannelStatusBadge, StatCard)
+├── hooks/
+│   └── useSubAdminOS.js    Composite hook aggregating all feature hooks
 │
-├── pages/
-│   ├── landing/LandingPage.jsx     Marketing site
-│   ├── auth/
-│   │   ├── LoginPage.jsx
-│   │   ├── AcceptInvitationPage.jsx
-│   │   └── ResetPasswordPage.jsx
-│   └── dashboard/
-│       ├── DashboardPage.jsx       Summary stats + activity
-│       └── MembersPage.jsx         Hotel staff management
+├── features/               Domain feature modules
+│   ├── auth/               Login, AcceptInvitation, ResetPassword
+│   ├── dashboard/          Overview stat cards, metrics, activity feed
+│   ├── landing/            Public marketing site
+│   ├── members/            Staff list, invite receptionist, member actions
+│   ├── rate-plans/         Rate plans CRUD & AiosellRatesMatrix
+│   ├── room-types/         Room types CRUD & Aiosell mapping
+│   ├── rooms/              Room CRUD with roomCode & status badges
+│   └── settings/           Hotel profile, notifications & Aiosell room types
 │
-├── services/               Domain API calls (see table above)
-└── index.css               Tailwind + global styles
+├── index.css               Tailwind CSS v4 theme entry
+└── main.jsx                Vite entry point
 ```
 
 ---
@@ -156,10 +167,15 @@ src/
 
 ## Tech stack
 
-- React 19 + Vite
-- Tailwind CSS v4
+- React 19 + Vite (`@tailwindcss/vite`)
+- Tailwind CSS v4 + `@hotelos/styles`
 - React Router
 - `@hotelos/api` shared client
+- `@hotelos/query` (TanStack Query v5)
+- `@hotelos/socket` (Socket.IO realtime sync)
+- `@hotelos/stores` (Zustand UI stores)
+- `@hotelos/ui` (Header, Sidebar, ErrorScreen)
+- `@hotelos/utils` (Rate plan code helpers, formatters, cn)
 
 ## Brand palette
 

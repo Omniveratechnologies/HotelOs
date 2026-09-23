@@ -6,20 +6,20 @@ export default function StatCard({
   trend,
 }) {
   const accents = {
-    signal: "bg-signal-100 text-signal-600",
-    amber: "bg-amber-100 text-amber-500",
-    rose: "bg-rose-100 text-rose-500",
-    ink: "bg-ink-950/5 text-ink-body",
+    signal: "bg-primary-100 text-primary-800",
+    amber: "bg-amber-100 text-amber-700",
+    rose: "bg-rose-100 text-rose-700",
+    ink: "bg-brand-950/5 text-brand-900",
   };
 
   return (
-    <div className="border-line rounded-2xl border bg-white p-5">
+    <div className="border-surface-200 rounded-2xl border bg-white p-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
+          <p className="text-brand-700/60 text-xs font-semibold tracking-wide uppercase">
             {label}
           </p>
-          <p className="text-ink-body mt-2 font-mono text-2xl font-semibold">
+          <p className="text-brand-900 font-display mt-2 text-2xl font-semibold">
             {value}
           </p>
         </div>
@@ -32,7 +32,7 @@ export default function StatCard({
         )}
       </div>
       {trend && (
-        <p className="text-ink-muted mt-3 text-xs font-medium">{trend}</p>
+        <p className="text-brand-700/60 mt-3 text-xs font-medium">{trend}</p>
       )}
     </div>
   );
