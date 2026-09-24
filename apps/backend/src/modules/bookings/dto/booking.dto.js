@@ -57,6 +57,7 @@ export const bookingDTO = async (booking, extra = {}) => {
     commission: booking.commission,
     currency: booking.currency,
     specialRequests: booking.specialRequests,
+    purpose: booking.purpose,
     documents: await Promise.all((guest?.documents || []).map(documentDTO)),
     createdAt: booking.createdAt,
     updatedAt: booking.updatedAt,

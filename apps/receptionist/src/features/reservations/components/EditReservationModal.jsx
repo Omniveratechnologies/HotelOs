@@ -18,6 +18,7 @@ export default function EditReservationModal({
     checkIn: reservation?.checkIn || "",
     checkOut: reservation?.checkOut || "",
     status: reservation?.status || "reserved",
+    purpose: reservation?.purpose || "",
   }));
   const [error, setError] = useState("");
 
@@ -60,6 +61,7 @@ export default function EditReservationModal({
         checkIn: form.checkIn,
         checkOut: form.checkOut,
         status: form.status,
+        purpose: form.purpose,
       };
       if (form.roomId && form.roomId !== reservation.roomId) {
         updates.roomId = form.roomId;
@@ -142,6 +144,24 @@ export default function EditReservationModal({
             <option value="checked-in">Checked In (Active)</option>
             <option value="checked-out">Checked Out (Completed)</option>
           </select>
+        </div>
+
+        <div className="mb-4">
+          <label
+            htmlFor="edit-res-purpose"
+            className="text-brand-900 mb-1.5 block text-xs font-semibold"
+          >
+            Purpose of Stay
+          </label>
+          <textarea
+            id="edit-res-purpose"
+            name="purpose"
+            value={form.purpose}
+            onChange={(e) => setField("purpose", e.target.value)}
+            rows={3}
+            placeholder="e.g. Business trip, Family vacation, Medical treatment, etc."
+            className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 w-full resize-none rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm transition outline-none focus:ring-2"
+          />
         </div>
 
         <div className="flex gap-3 border-t border-gray-100 pt-4">

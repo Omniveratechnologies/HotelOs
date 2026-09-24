@@ -72,6 +72,7 @@ export const createReservation = async (data) => {
     checkIn: data.checkIn || "",
     checkOut: data.checkOut,
     status: data.status || "reserved",
+    purpose: data.purpose || "",
   };
 
   if (documents.length > 0) {

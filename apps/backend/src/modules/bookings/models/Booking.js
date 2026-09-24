@@ -92,6 +92,12 @@ const bookingSchema = new mongoose.Schema(
       default: null,
       trim: true,
     },
+
+    purpose: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     timestamps: true,

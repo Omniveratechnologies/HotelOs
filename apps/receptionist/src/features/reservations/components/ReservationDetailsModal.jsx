@@ -92,6 +92,12 @@ export default function ReservationDetailsModal({
                 </p>
               </div>
             )}
+            <div className="col-span-2">
+              <span className="text-gray-500">Purpose of Stay:</span>
+              <p className="text-brand-900 font-semibold">
+                {reservation.purpose || "Not mentioned"}
+              </p>
+            </div>
           </div>
         </div>
 

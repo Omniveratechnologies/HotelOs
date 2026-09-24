@@ -86,6 +86,7 @@ function NewReservationModalForm({
     checkIn: initial?.checkIn || new Date().toISOString().split("T")[0],
     checkOut: initial?.checkOut || "",
     status: initial?.status || "reserved",
+    purpose: initial?.purpose || "",
   }));
 
   const [docs, setDocs] = useState([]); // [{ file, docType }]
@@ -204,6 +205,7 @@ function NewReservationModalForm({
         checkIn: form.checkIn,
         checkOut: form.checkOut,
         status: form.status,
+        purpose: form.purpose.trim(),
         docTypes: docs.map((d) => d.docType),
         files: docs.map((d) => d.file),
       };
@@ -435,6 +437,24 @@ function NewReservationModalForm({
             value={form.address}
             onChange={(e) => setField("address", e.target.value)}
           />
+
+          <div className="mb-4">
+            <label
+              htmlFor="res-purpose"
+              className="text-brand-900 mb-1.5 block text-sm font-semibold"
+            >
+              Purpose of Stay
+            </label>
+            <textarea
+              id="res-purpose"
+              name="purpose"
+              placeholder="e.g. Business trip, Family vacation, Medical treatment, etc."
+              value={form.purpose}
+              onChange={(e) => setField("purpose", e.target.value)}
+              rows={3}
+              className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 w-full resize-none rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm transition outline-none focus:ring-2"
+            />
+          </div>
 
           {/* Document Upload */}
           <div className="space-y-2">
