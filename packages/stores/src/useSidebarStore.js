@@ -1,13 +1,58 @@
 import { create } from "zustand";
 
+const STORAGE_KEY = "hotelos:sidebar_open";
+
+function getInitialState() {
+  if (typeof window === "undefined") return true;
+  // Mobile drawer always starts closed
+  if (window.innerWidth < 1024) return false;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === null ? true : stored === "true";
+  } catch {
+    return true;
+  }
+}
+
 /**
- * Simplified sidebar store - single state for both mobile drawer and desktop collapse.
- * Desktop collapse is NOT persisted (simpler).
+ * Sidebar store managing both mobile drawer and desktop collapse state.
+ * On desktop, isSidebarOpen: true represents an open/expanded sidebar (default).
+ * On mobile, isSidebarOpen: true represents an open drawer.
  */
 export const useSidebarStore = create((set) => ({
-  isSidebarOpen: false,
+  isSidebarOpen: getInitialState(),
   toggleSidebar: () =>
-    set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
-  openSidebar: () => set({ isSidebarOpen: true }),
-  closeSidebar: () => set({ isSidebarOpen: false }),
+    set((state) => {
+      const next = !state.isSidebarOpen;
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+        try {
+          localStorage.setItem(STORAGE_KEY, String(next));
+        } catch {
+          // ignore storage error
+        }
+      }
+      return { isSidebarOpen: next };
+    }),
+  openSidebar: () =>
+    set(() => {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+        try {
+          localStorage.setItem(STORAGE_KEY, "true");
+        } catch {
+          // ignore storage error
+        }
+      }
+      return { isSidebarOpen: true };
+    }),
+  closeSidebar: () =>
+    set(() => {
+      if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+        try {
+          localStorage.setItem(STORAGE_KEY, "false");
+        } catch {
+          // ignore storage error
+        }
+      }
+      return { isSidebarOpen: false };
+    }),
 }));

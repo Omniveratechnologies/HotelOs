@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 import { cn } from "@hotelos/utils";
 import { useEffect, useRef, useState } from "react";
 import { useSidebarStore } from "@hotelos/stores";
@@ -65,13 +65,28 @@ export function Sidebar({
   onClose,
   className = "",
 }) {
-  // Close mobile drawer when resizing from desktop to mobile breakpoint
+  const [expandedMenuKey, setExpandedMenuKey] = useState(null);
+  const activeExpandedKey = isOpen ? expandedMenuKey : null;
+
+  // Close mobile drawer when resizing to mobile, and restore desktop preference when resizing back
   useEffect(() => {
     let wasDesktop = window.innerWidth >= 1024;
     const handleResize = () => {
       const isDesktop = window.innerWidth >= 1024;
       if (wasDesktop && !isDesktop) {
         onClose?.();
+      } else if (!wasDesktop && isDesktop) {
+        try {
+          const stored = localStorage.getItem("hotelos:sidebar_open");
+          const shouldBeOpen = stored === null ? true : stored === "true";
+          if (shouldBeOpen) {
+            useSidebarStore.getState().openSidebar();
+          } else {
+            useSidebarStore.getState().closeSidebar();
+          }
+        } catch {
+          // ignore
+        }
       }
       wasDesktop = isDesktop;
     };
@@ -108,7 +123,7 @@ export function Sidebar({
       disabled={logoutLoading}
       title="Log out"
       aria-label="Log out"
-      className="text-brand-900/50 hover:text-brand-900 group p-1.5 transition-colors disabled:opacity-60"
+      className="text-brand-900/50 hover:text-brand-900 group p-1.5 transition-all duration-150 ease-out active:scale-95 disabled:opacity-60"
     >
       {logoutLoading ? (
         <SpinnerIcon />
@@ -120,7 +135,7 @@ export function Sidebar({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="size-5 group-hover:text-rose-500"
+          className="size-5 transition-colors duration-150 group-hover:text-rose-500"
         >
           <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
         </svg>
@@ -135,27 +150,32 @@ export function Sidebar({
         aria-hidden
         onClick={onClose}
         className={cn(
-          "fixed inset-0 z-40 bg-black/20 backdrop-blur-md transition-opacity duration-300 lg:hidden",
+          "fixed inset-0 z-40 bg-black/20 backdrop-blur-md transition-opacity duration-300 ease-in-out lg:hidden",
           isOpen ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
 
       <aside
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onClose?.();
+          }
+        }}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-full w-full justify-start transition-all duration-300 lg:sticky lg:top-0 lg:z-10 lg:block lg:h-screen lg:shrink-0",
-          isOpen ? "translate-x-0 lg:w-16" : "-translate-x-full lg:w-56",
+          "pointer-events-none fixed inset-y-0 left-0 z-50 flex h-full w-full justify-start transition-[width,transform] duration-300 ease-in-out lg:pointer-events-auto lg:sticky lg:top-0 lg:z-10 lg:block lg:h-screen lg:shrink-0",
+          isOpen ? "translate-x-0 lg:w-56" : "-translate-x-full lg:w-16",
           "lg:translate-x-0",
           className,
         )}
       >
-        <div className="bg-surface-50 lg:border-surface-200 relative flex h-full w-11/12 max-w-md flex-col overflow-hidden rounded-r-2xl shadow-2xl lg:h-full lg:w-full lg:max-w-none lg:overflow-visible lg:rounded-none lg:border-r lg:shadow-none">
+        <div className="bg-surface-50 lg:border-surface-200 pointer-events-auto relative flex h-full w-11/12 max-w-md flex-col overflow-hidden rounded-r-2xl shadow-2xl transition-[width] duration-300 ease-in-out lg:h-full lg:w-full lg:max-w-none lg:overflow-visible lg:rounded-none lg:border-r lg:shadow-none">
           {/* Close row (mobile) */}
           <div className="border-surface-100 flex h-14 items-center border-b px-4 lg:hidden">
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="text-brand-900 flex cursor-pointer items-center gap-1 text-sm font-bold"
+              className="text-brand-900 flex cursor-pointer items-center gap-1 text-sm font-bold transition-all duration-150 hover:opacity-80 active:scale-95"
             >
               <span className="text-2xl leading-none">&times;</span> Close
             </button>
@@ -164,17 +184,26 @@ export function Sidebar({
           {/* Brand */}
           <div
             className={cn(
-              "bg-surface-50 border-surface-100 relative flex items-center gap-3 border-b py-4",
-              isOpen ? "lg:justify-center lg:border-b-0 lg:px-0" : "px-4",
+              "bg-surface-50 border-surface-100 relative flex items-center border-b py-4 transition-all duration-300 ease-in-out",
+              isOpen
+                ? "gap-3 px-4"
+                : "lg:justify-center lg:gap-0 lg:border-b-0 lg:px-0",
             )}
           >
-            <div className="bg-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl">
+            <div className="bg-primary-400 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-xs transition-transform duration-200 hover:scale-105">
               <svg viewBox="0 0 24 24" fill="white" className="size-5">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
               </svg>
             </div>
 
-            <div className={cn("min-w-0", isOpen ? "lg:hidden" : "")}>
+            <div
+              className={cn(
+                "min-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
+                !isOpen
+                  ? "lg:pointer-events-none lg:hidden lg:max-w-0 lg:opacity-0"
+                  : "lg:max-w-[140px] lg:opacity-100",
+              )}
+            >
               <div className="font-display text-brand-900 truncate text-sm font-bold tracking-wide">
                 {brand?.title ?? "HotelOS"}
               </div>
@@ -188,38 +217,57 @@ export function Sidebar({
 
           {/* Optional slot (e.g. stats strip) */}
           {header && (
-            <div className={isOpen ? "lg:hidden" : "shrink-0"}>{header}</div>
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                !isOpen
+                  ? "lg:pointer-events-none lg:max-h-0 lg:opacity-0"
+                  : "shrink-0 lg:max-h-40 lg:opacity-100",
+              )}
+            >
+              {header}
+            </div>
           )}
 
           {/* Nav */}
           <nav
             aria-label="Primary"
             className={cn(
-              "scrollbar-thin flex-1 overflow-y-auto px-3 py-4",
-              isOpen && "lg:px-2",
+              "scrollbar-thin flex-1 overflow-y-auto px-3 py-4 transition-[padding] duration-300 ease-in-out",
+              !isOpen && "lg:px-2",
             )}
           >
             <ul className="space-y-1">
-              {items.map((item) => (
-                <SidebarItem
-                  key={item.id ?? item.label}
-                  item={item}
-                  isOpen={isOpen}
-                  onNavigate={handleNavigate}
-                />
-              ))}
+              {items.map((item) => {
+                const itemKey = item.id ?? item.label;
+                return (
+                  <SidebarItem
+                    key={itemKey}
+                    item={item}
+                    isOpen={isOpen}
+                    isExpanded={activeExpandedKey === itemKey}
+                    onToggleExpand={() => {
+                      setExpandedMenuKey((prev) =>
+                        prev === itemKey ? null : itemKey,
+                      );
+                    }}
+                    onNavigate={handleNavigate}
+                  />
+                );
+              })}
             </ul>
           </nav>
 
           {/* Bottom bar */}
-          <div className="border-surface-200 shrink-0 border-t">
+          <div className="border-surface-200 shrink-0 border-t transition-all duration-300 ease-in-out">
             {/* Collapsed controls (desktop) */}
             <div
-              className={
-                isOpen
-                  ? "hidden items-center justify-center gap-0.5 py-2 lg:flex"
-                  : "hidden"
-              }
+              className={cn(
+                "transition-all duration-300 ease-in-out",
+                !isOpen
+                  ? "hidden items-center justify-center gap-0.5 py-2 opacity-100 lg:flex"
+                  : "pointer-events-none hidden opacity-0",
+              )}
             >
               {logoutButton}
             </div>
@@ -227,15 +275,24 @@ export function Sidebar({
             {/* User row */}
             <div
               className={cn(
-                "flex items-center justify-between gap-3 px-4 py-3",
-                isOpen ? "lg:hidden" : "",
+                "flex items-center justify-between gap-3 overflow-hidden px-4 py-3 transition-all duration-300 ease-in-out",
+                !isOpen
+                  ? "lg:pointer-events-none lg:max-h-0 lg:py-0 lg:opacity-0"
+                  : "lg:max-h-16 lg:opacity-100",
               )}
             >
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="bg-brand-900 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white">
+                <span className="bg-brand-900 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white transition-transform duration-200 group-hover:scale-105">
                   {initials}
                 </span>
-                <div className="min-w-0">
+                <div
+                  className={cn(
+                    "min-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
+                    !isOpen
+                      ? "lg:max-w-0 lg:opacity-0"
+                      : "lg:max-w-[120px] lg:opacity-100",
+                  )}
+                >
                   <div className="text-brand-900 truncate text-sm font-medium">
                     {displayName}
                   </div>
@@ -277,161 +334,477 @@ export function Sidebar({
  *   close the mobile drawer).
  * @returns {import("react").ReactElement}
  */
-export function SidebarItem({ item, isOpen, onNavigate }) {
+export function SidebarItem({
+  item,
+  isOpen,
+  isExpanded = false,
+  onToggleExpand,
+  onNavigate,
+}) {
+  const location = useLocation();
   const to = item.path ?? item.url;
   const end = item.end ?? to === "/";
-  const id = item.label.replace(/\s+/g, "-");
 
   const liRef = useRef(null);
+  const leaveTimerRef = useRef(null);
   const [hovered, setHovered] = useState(false);
-  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
+  const [tooltipPos, setTooltipPos] = useState({
+    top: 0,
+    centerTop: 0,
+    left: 0,
+  });
+
+  const isChildActive = Boolean(
+    item.subMenu?.some((sub) => {
+      const subTo = sub.path ?? sub.url;
+      if (!subTo) return false;
+      return sub.end
+        ? location.pathname === subTo
+        : location.pathname === subTo ||
+            location.pathname.startsWith(`${subTo}/`);
+    }),
+  );
+
+  const aggregatedBadge =
+    item.badge != null
+      ? item.badge
+      : item.subMenu?.reduce((sum, sub) => {
+          if (sub.badge == null) return sum;
+          const num =
+            typeof sub.badge === "number" ? sub.badge : parseInt(sub.badge, 10);
+          return !isNaN(num) ? sum + num : sum;
+        }, 0) || undefined;
+
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : true,
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isCollapsed = Boolean(!isOpen && isDesktop);
 
   const handleMouseEnter = () => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
     if (liRef.current) {
       const rect = liRef.current.getBoundingClientRect();
+      const flyoutEstimatedHeight = item.subMenu?.length
+        ? 44 + item.subMenu.length * 36
+        : 36;
+      const top = Math.max(
+        8,
+        Math.min(rect.top, window.innerHeight - flyoutEstimatedHeight - 16),
+      );
       setTooltipPos({
-        top: rect.top + rect.height / 2,
+        top,
+        centerTop: rect.top + rect.height / 2,
         left: rect.right + 8,
       });
     }
     setHovered(true);
   };
 
+  const handleMouseLeave = () => {
+    leaveTimerRef.current = setTimeout(() => {
+      setHovered(false);
+    }, 160);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (leaveTimerRef.current) {
+        clearTimeout(leaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleItemNavigate = () => {
+    setHovered(false);
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    onNavigate?.();
+  };
+
   const itemClassName = ({ isActive }) =>
     cn(
-      "group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200",
-      isOpen ? "lg:justify-center lg:px-2" : "",
+      "group relative flex w-full items-center rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ease-out",
+      isOpen ? "gap-3 px-3" : "px-3 gap-3 lg:justify-center lg:gap-0 lg:px-0",
       isActive
         ? "bg-brand-900 text-white shadow-sm"
-        : "text-brand-700 hover:bg-background-100 hover:text-brand-900",
+        : "text-brand-700 hover:bg-background-100 hover:text-brand-900 active:scale-[0.98]",
     );
-
-  const label = (
-    <span
-      className={cn(
-        "block min-w-0 flex-1 truncate text-left",
-        isOpen && "lg:hidden",
-      )}
-    >
-      {item.label}
-    </span>
-  );
 
   return (
     <li
       ref={liRef}
       className="group relative"
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={handleMouseLeave}
     >
       {item.subMenu?.length ? (
         <>
-          <input
-            className="peer hidden"
-            id={id}
-            type="checkbox"
-            defaultChecked={item.defaultOpen}
-          />
-          <label
-            htmlFor={id}
+          <button
+            type="button"
+            aria-expanded={isExpanded}
+            onClick={(e) => {
+              if (isCollapsed) {
+                e.preventDefault();
+                setHovered((prev) => !prev);
+              } else {
+                onToggleExpand?.();
+              }
+            }}
             className={cn(
-              "text-brand-700 hover:bg-background-100 hover:text-brand-900 relative flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 peer-checked:[&>svg]:rotate-180",
-              isOpen ? "lg:justify-center lg:px-2" : "",
+              "relative flex w-full cursor-pointer items-center rounded-xl py-2.5 text-sm font-medium transition-all duration-200 ease-out",
+              isOpen
+                ? "gap-3 px-3"
+                : "gap-3 px-3 lg:justify-center lg:gap-0 lg:px-0",
+              isCollapsed && isChildActive
+                ? "bg-brand-900 text-white shadow-sm"
+                : "text-brand-700 hover:bg-background-100 hover:text-brand-900 active:scale-[0.98]",
             )}
           >
-            <span className="flex shrink-0 items-center justify-center">
+            {/* Child 1: Icon centered in uniform 20x20 box */}
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center transition-transform duration-200 group-hover:scale-105">
               {item.icon}
             </span>
-            {label}
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+
+            {/* Child 2: Expanded content container (label, chevron, text badge) */}
+            <div
               className={cn(
-                "h-4 w-4 shrink-0 transition-transform",
-                isOpen && "lg:hidden",
+                "flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
+                !isOpen
+                  ? "lg:pointer-events-none lg:hidden lg:max-w-0 lg:opacity-0"
+                  : "lg:max-w-[160px] lg:opacity-100",
               )}
             >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </label>
+              <span className="block min-w-0 flex-1 truncate text-left">
+                {item.label}
+              </span>
 
-          <div className="invisible relative ml-2 hidden max-h-0 overflow-hidden pl-2 opacity-0 transition-all duration-200 peer-checked:visible peer-checked:mt-1 peer-checked:block peer-checked:max-h-96 peer-checked:opacity-100">
-            <ul className="border-surface-200 ml-3 space-y-1 border-l pl-3">
-              {item.subMenu.map((sub, index) => {
-                const subTo = sub.path ?? sub.url;
-
-                return (
-                  <li key={sub.label ?? index}>
-                    <NavLink
-                      to={subTo}
-                      end={sub.end}
-                      onClick={onNavigate}
-                      className={itemClassName}
-                    >
-                      {sub.icon}
-                      <span
-                        className={cn(
-                          "block min-w-0 flex-1 truncate text-left",
-                          isOpen && "lg:hidden",
-                        )}
-                      >
-                        {sub.label}
-                      </span>
-                    </NavLink>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </>
-      ) : (
-        <NavLink
-          to={to}
-          end={end}
-          onClick={onNavigate}
-          className={itemClassName}
-        >
-          <span className="flex shrink-0 items-center justify-center">
-            {item.icon}
-          </span>
-          {label}
-          {item.badge != null ? (
-            <>
-              <span
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 className={cn(
-                  "text-primary-700 bg-primary-400/15 ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold",
-                  isOpen && "lg:hidden",
+                  "h-4 w-4 shrink-0 transition-transform duration-200",
+                  isExpanded && "rotate-180",
                 )}
               >
-                {item.badge}
-              </span>
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+
+              {aggregatedBadge != null ? (
+                <span className="text-primary-700 bg-primary-400/15 ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">
+                  {aggregatedBadge}
+                </span>
+              ) : null}
+            </div>
+
+            {/* Absolute notification dot when collapsed */}
+            {aggregatedBadge != null ? (
               <span
                 className={cn(
-                  "bg-primary-400 absolute top-1.5 right-1.5 h-2 w-2 rounded-full",
-                  isOpen ? "hidden lg:block" : "hidden",
+                  "bg-primary-400 absolute top-2 right-2 h-2 w-2 rounded-full transition-opacity duration-300 ease-in-out",
+                  !isOpen
+                    ? "hidden opacity-100 lg:block"
+                    : "pointer-events-none opacity-0",
                 )}
               />
-            </>
-          ) : null}
-        </NavLink>
+            ) : null}
+          </button>
+
+          <div
+            className={cn(
+              "grid overflow-hidden transition-all duration-300 ease-in-out",
+              isExpanded && !isCollapsed
+                ? "mt-1 grid-rows-[1fr] opacity-100"
+                : "pointer-events-none mt-0 grid-rows-[0fr] opacity-0",
+              !isOpen && "lg:hidden",
+            )}
+          >
+            <div className="overflow-hidden">
+              <ul className="border-surface-200 ml-5 space-y-1 border-l py-1 pl-3">
+                {item.subMenu.map((sub, index) => {
+                  const subTo = sub.path ?? sub.url;
+
+                  return (
+                    <li key={sub.id ?? sub.label ?? index}>
+                      <NavLink
+                        to={subTo}
+                        end={sub.end}
+                        onClick={onNavigate}
+                        className={({ isActive }) =>
+                          cn(
+                            "group relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ease-out",
+                            isActive
+                              ? "bg-brand-900 text-white shadow-sm"
+                              : "text-brand-700 hover:bg-background-100 hover:text-brand-900 active:scale-[0.98]",
+                          )
+                        }
+                      >
+                        {sub.icon && (
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                            {sub.icon}
+                          </span>
+                        )}
+                        <span className="block min-w-0 flex-1 truncate text-left">
+                          {sub.label}
+                        </span>
+                        {sub.badge != null && (
+                          <span className="text-primary-700 bg-primary-400/15 ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">
+                            {sub.badge}
+                          </span>
+                        )}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+
+          {/* Desktop Collapsed Submenu Flyout */}
+          {isCollapsed && hovered && (
+            <div
+              role="menu"
+              aria-label={item.label}
+              onMouseEnter={() => {
+                if (leaveTimerRef.current) {
+                  clearTimeout(leaveTimerRef.current);
+                  leaveTimerRef.current = null;
+                }
+                setHovered(true);
+              }}
+              onMouseLeave={handleMouseLeave}
+              className={cn(
+                "border-surface-200 bg-surface-50 fixed z-9999 hidden min-w-48 rounded-xl border p-1.5 shadow-2xl backdrop-blur-md transition-all duration-150 ease-out lg:block",
+                "animate-in fade-in-0 zoom-in-95 duration-150",
+                "before:absolute before:top-0 before:bottom-0 before:-left-3 before:w-3 before:content-['']",
+              )}
+              style={{ top: tooltipPos.top, left: tooltipPos.left }}
+            >
+              <div className="border-surface-200/80 border-b px-3 py-2 text-left">
+                <div className="text-brand-900 font-display text-xs font-bold tracking-wide">
+                  {item.label}
+                </div>
+              </div>
+              <ul className="mt-1 space-y-0.5">
+                {item.subMenu.map((sub, index) => {
+                  const subTo = sub.path ?? sub.url;
+                  return (
+                    <li key={sub.id ?? sub.label ?? index}>
+                      <NavLink
+                        to={subTo}
+                        end={sub.end}
+                        onClick={handleItemNavigate}
+                        className={({ isActive }) =>
+                          cn(
+                            "flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-150 ease-out active:scale-[0.98]",
+                            isActive
+                              ? "bg-brand-900 text-white shadow-sm"
+                              : "text-brand-700 hover:bg-background-100 hover:text-brand-900",
+                          )
+                        }
+                      >
+                        {sub.icon && (
+                          <span className="flex shrink-0 items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                            {sub.icon}
+                          </span>
+                        )}
+                        <span className="flex-1 truncate text-left">
+                          {sub.label}
+                        </span>
+                        {sub.badge != null && (
+                          <span className="bg-primary-400/20 text-primary-700 ml-auto rounded-full px-1.5 py-0.5 text-[10px] font-bold">
+                            {sub.badge}
+                          </span>
+                        )}
+                      </NavLink>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {to ? (
+            <NavLink
+              to={to}
+              end={end}
+              onClick={onNavigate}
+              className={itemClassName}
+            >
+              {/* Child 1: Icon centered in uniform 20x20 box */}
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                {item.icon}
+              </span>
+
+              {/* Child 2: Expanded content container (label, text badge) */}
+              <div
+                className={cn(
+                  "flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
+                  !isOpen
+                    ? "lg:pointer-events-none lg:hidden lg:max-w-0 lg:opacity-0"
+                    : "lg:max-w-[160px] lg:opacity-100",
+                )}
+              >
+                <span className="block min-w-0 flex-1 truncate text-left">
+                  {item.label}
+                </span>
+
+                {item.badge != null ? (
+                  <span className="text-primary-700 bg-primary-400/15 ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Absolute notification dot when collapsed */}
+              {item.badge != null ? (
+                <span
+                  className={cn(
+                    "bg-primary-400 absolute top-2 right-2 h-2 w-2 rounded-full transition-opacity duration-300 ease-in-out",
+                    !isOpen
+                      ? "hidden opacity-100 lg:block"
+                      : "pointer-events-none opacity-0",
+                  )}
+                />
+              ) : null}
+            </NavLink>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                onNavigate?.();
+                item.onClick?.(e);
+              }}
+              className={itemClassName({ isActive: false })}
+            >
+              {/* Child 1: Icon centered in uniform 20x20 box */}
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                {item.icon}
+              </span>
+
+              {/* Child 2: Expanded content container (label, text badge) */}
+              <div
+                className={cn(
+                  "flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out",
+                  !isOpen
+                    ? "lg:pointer-events-none lg:hidden lg:max-w-0 lg:opacity-0"
+                    : "lg:max-w-[160px] lg:opacity-100",
+                )}
+              >
+                <span className="block min-w-0 flex-1 truncate text-left">
+                  {item.label}
+                </span>
+
+                {item.badge != null ? (
+                  <span className="text-primary-700 bg-primary-400/15 ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Absolute notification dot when collapsed */}
+              {item.badge != null ? (
+                <span
+                  className={cn(
+                    "bg-primary-400 absolute top-2 right-2 h-2 w-2 rounded-full transition-opacity duration-300 ease-in-out",
+                    !isOpen
+                      ? "hidden opacity-100 lg:block"
+                      : "pointer-events-none opacity-0",
+                  )}
+                />
+              ) : null}
+            </button>
+          )}
+
+          {/* Desktop Collapsed Clickable Tooltip */}
+          {isCollapsed &&
+            hovered &&
+            (to ? (
+              <NavLink
+                to={to}
+                end={end}
+                onClick={handleItemNavigate}
+                onMouseEnter={() => {
+                  if (leaveTimerRef.current) {
+                    clearTimeout(leaveTimerRef.current);
+                    leaveTimerRef.current = null;
+                  }
+                  setHovered(true);
+                }}
+                onMouseLeave={handleMouseLeave}
+                className={({ isActive }) =>
+                  cn(
+                    "fixed z-9999 hidden -translate-y-1/2 cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap shadow-xl transition-all duration-150 ease-out active:scale-95 lg:flex",
+                    "animate-in fade-in-0 zoom-in-95 duration-150",
+                    "before:absolute before:top-0 before:bottom-0 before:-left-3 before:w-3 before:content-['']",
+                    isActive
+                      ? "bg-brand-900 text-white ring-1 ring-white/20"
+                      : "bg-brand-900 hover:bg-brand-800 text-white hover:shadow-2xl",
+                  )
+                }
+                style={{ top: tooltipPos.centerTop, left: tooltipPos.left }}
+              >
+                <span>{item.label}</span>
+                {item.badge != null && (
+                  <span className="bg-primary-400/25 text-primary-200 rounded-full px-1.5 py-0.5 text-[10px] font-bold">
+                    {item.badge}
+                  </span>
+                )}
+              </NavLink>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  handleItemNavigate(e);
+                  item.onClick?.();
+                }}
+                onMouseEnter={() => {
+                  if (leaveTimerRef.current) {
+                    clearTimeout(leaveTimerRef.current);
+                    leaveTimerRef.current = null;
+                  }
+                  setHovered(true);
+                }}
+                onMouseLeave={handleMouseLeave}
+                className={cn(
+                  "bg-brand-900 hover:bg-brand-800 fixed z-9999 hidden -translate-y-1/2 cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-xl transition-all duration-150 ease-out hover:shadow-2xl active:scale-95 lg:flex",
+                  "animate-in fade-in-0 zoom-in-95 duration-150",
+                  "before:absolute before:top-0 before:bottom-0 before:-left-3 before:w-3 before:content-['']",
+                )}
+                style={{ top: tooltipPos.centerTop, left: tooltipPos.left }}
+              >
+                <span>{item.label}</span>
+                {item.badge != null && (
+                  <span className="bg-primary-400/25 text-primary-200 rounded-full px-1.5 py-0.5 text-[10px] font-bold">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+        </>
       )}
 
       {!item.subMenu?.length && item.hr && (
         <hr className="border-surface-100 my-2" />
-      )}
-
-      {/* Collapsed hover tooltip */}
-      {isOpen && hovered && (
-        <span
-          className="bg-brand-900 pointer-events-none fixed z-9999 -translate-y-1/2 rounded-lg px-2.5 py-1.5 text-xs font-medium whitespace-nowrap text-white shadow-lg lg:block"
-          style={{ top: tooltipPos.top, left: tooltipPos.left }}
-        >
-          {item.label}
-        </span>
       )}
     </li>
   );
@@ -475,7 +848,7 @@ export function SidebarToggle({ label = "Open menu" }) {
       type="button"
       onClick={toggleSidebar}
       aria-label={label}
-      className="text-brand-900 cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-black/5"
+      className="text-brand-900 cursor-pointer rounded-lg p-1.5 transition-all duration-150 ease-out hover:bg-black/5 active:scale-95"
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <path

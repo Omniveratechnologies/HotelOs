@@ -123,6 +123,32 @@ const icons = {
       <rect x="4" y="13" width="7" height="7" />
     </svg>
   ),
+  inventory: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className="h-5 w-5"
+    >
+      <path
+        d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  operations: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className="h-5 w-5"
+    >
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
   settings: (
     <svg
       viewBox="0 0 24 24"
@@ -145,28 +171,42 @@ const items = [
     path: "/reservations",
     icon: icons.reservations,
   },
-  { id: "rooms", label: "Rooms", path: "/rooms", icon: icons.rooms },
   { id: "guests", label: "Guests", path: "/guests", icon: icons.guests },
-  { id: "food", label: "Food Orders", path: "/food", icon: icons.food },
   {
-    id: "housekeeping",
-    label: "Housekeeping",
-    path: "/housekeeping",
-    icon: icons.housekeeping,
+    id: "inventory",
+    label: "Inventory",
+    icon: icons.inventory,
+    subMenu: [
+      { id: "rooms", label: "Rooms", path: "/rooms", icon: icons.rooms },
+      {
+        id: "roomTypes",
+        label: "Room Types",
+        path: "/room-types",
+        icon: icons.roomTypes,
+      },
+      {
+        id: "ratePlans",
+        label: "Rate Plans",
+        path: "/rate-plans",
+        icon: icons.ratePlans,
+      },
+    ],
+  },
+  {
+    id: "operations",
+    label: "Operations",
+    icon: icons.operations,
+    subMenu: [
+      { id: "food", label: "Food Orders", path: "/food", icon: icons.food },
+      {
+        id: "housekeeping",
+        label: "Housekeeping",
+        path: "/housekeeping",
+        icon: icons.housekeeping,
+      },
+    ],
   },
   { id: "reports", label: "Reports", path: "/reports", icon: icons.reports },
-  {
-    id: "ratePlans",
-    label: "Rate Plans",
-    path: "/rate-plans",
-    icon: icons.ratePlans,
-  },
-  {
-    id: "roomTypes",
-    label: "Room Types",
-    path: "/room-types",
-    icon: icons.roomTypes,
-  },
   {
     id: "settings",
     label: "Settings",
@@ -228,11 +268,25 @@ function DashboardShell() {
   return (
     <div className="bg-background-50 flex min-h-screen">
       <Sidebar
-        items={items.map((item) =>
-          item.id === "housekeeping"
-            ? Object.assign({}, item, { badge: pendingRequests || undefined })
-            : item,
-        )}
+        items={items.map((item) => {
+          if (item.id === "housekeeping") {
+            return Object.assign({}, item, {
+              badge: pendingRequests || undefined,
+            });
+          }
+          if (item.subMenu?.length) {
+            return Object.assign({}, item, {
+              subMenu: item.subMenu.map((sub) =>
+                sub.id === "housekeeping"
+                  ? Object.assign({}, sub, {
+                      badge: pendingRequests || undefined,
+                    })
+                  : sub,
+              ),
+            });
+          }
+          return item;
+        })}
         brand={{ title: "HotelOS", subtitle: hotelName }}
         header={header}
         user={{ name: user.name || "Receptionist", role: "Receptionist" }}

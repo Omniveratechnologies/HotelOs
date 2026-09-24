@@ -39,8 +39,19 @@ const items = [
     ),
   },
   {
+    label: "Guests",
+    path: "/guests",
+    icon: icon(
+      <path
+        d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />,
+    ),
+  },
+  {
     label: "Inventory",
-    defaultOpen: true,
     icon: icon(
       <path
         d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
@@ -61,16 +72,6 @@ const items = [
         ),
       },
       {
-        label: "Rate Plans",
-        path: "/rate-plans",
-        icon: icon(
-          <path
-            d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"
-            strokeLinecap="round"
-          />,
-        ),
-      },
-      {
         label: "Room Types",
         path: "/room-types",
         icon: icon(
@@ -80,20 +81,19 @@ const items = [
           />,
         ),
       },
+      {
+        label: "Rate Plans",
+        path: "/rate-plans",
+        icon: icon(
+          <path
+            d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"
+            strokeLinecap="round"
+          />,
+        ),
+      },
     ],
   },
-  {
-    label: "Guests",
-    path: "/guests",
-    icon: icon(
-      <path
-        d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />,
-    ),
-  },
+  // TODO: Pending route implementation in sub-admin router
   {
     label: "Housekeeping",
     path: "/housekeeping",
@@ -117,6 +117,7 @@ const items = [
       />,
     ),
   },
+  // TODO: Pending route implementation in sub-admin router
   {
     label: "Billing",
     path: "/billing",
@@ -128,6 +129,7 @@ const items = [
       />,
     ),
   },
+  // TODO: Pending route implementation in sub-admin router
   {
     label: "Reports",
     path: "/reports",
