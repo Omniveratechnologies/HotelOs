@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { Save } from "lucide-react";
 
-import Modal from "../../../components/ui/Modal.jsx";
-import Field from "../../../components/ui/Field.jsx";
-import { inputClass } from "../../../components/ui/inputClass.js";
-import Button from "../../../components/ui/Button.jsx";
+import { Modal, Input, Button } from "@hotelos/ui/components";
 
 import { useUpdateHotel, useSetHotelAiosellCode } from "../hooks/useHotels.js";
 
@@ -139,59 +136,49 @@ export default function EditHotelModal({ hotel, onClose, onSaved }) {
           </p>
         </div>
 
-        <Field label="Hotel name" error={errors.name}>
-          <input
-            className={inputClass(errors.name)}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </Field>
+        <Input
+          label="Hotel name"
+          error={errors.name}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Hotel email" error={errors.email}>
-            <input
-              type="email"
-              className={inputClass(errors.email)}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Hotel email"
+            type="email"
+            error={errors.email}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-          <Field label="Phone number">
-            <input
-              type="tel"
-              className={inputClass()}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Phone number"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </div>
 
-        <Field label="Address">
-          <input
-            className={inputClass()}
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </Field>
+        <Input
+          label="Address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="City">
-            <input
-              className={inputClass()}
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="City"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          />
 
-          <Field label="Aiosell property code">
-            <input
-              className={inputClass()}
-              placeholder="e.g. sandbox-pms"
-              value={aiosellHotelCode}
-              onChange={(e) => setAiosellHotelCode(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Aiosell property code"
+            placeholder="e.g. sandbox-pms"
+            value={aiosellHotelCode}
+            onChange={(e) => setAiosellHotelCode(e.target.value)}
+          />
         </div>
 
         <div className="border-surface-200 border-b pb-4">
@@ -202,41 +189,33 @@ export default function EditHotelModal({ hotel, onClose, onSaved }) {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Check-in time">
-            <input
-              type="time"
-              className={inputClass()}
-              value={checkInTime}
-              onChange={(e) => setCheckInTime(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Check-in time"
+            type="time"
+            value={checkInTime}
+            onChange={(e) => setCheckInTime(e.target.value)}
+          />
 
-          <Field label="Check-out time">
-            <input
-              type="time"
-              className={inputClass()}
-              value={checkOutTime}
-              onChange={(e) => setCheckOutTime(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Check-out time"
+            type="time"
+            value={checkOutTime}
+            onChange={(e) => setCheckOutTime(e.target.value)}
+          />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="WiFi network name">
-            <input
-              className={inputClass()}
-              value={wifiNetworkName}
-              onChange={(e) => setWifiNetworkName(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="WiFi network name"
+            value={wifiNetworkName}
+            onChange={(e) => setWifiNetworkName(e.target.value)}
+          />
 
-          <Field label="WiFi password">
-            <input
-              className={inputClass()}
-              value={wifiPassword}
-              onChange={(e) => setWifiPassword(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="WiFi password"
+            value={wifiPassword}
+            onChange={(e) => setWifiPassword(e.target.value)}
+          />
         </div>
 
         <div className="border-surface-200 border-b pb-4">
@@ -247,26 +226,21 @@ export default function EditHotelModal({ hotel, onClose, onSaved }) {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
+          <Input
             label="Subscription start"
+            type="date"
             error={errors.subscriptionStartDate}
-          >
-            <input
-              type="date"
-              className={inputClass(errors.subscriptionStartDate)}
-              value={subscriptionStartDate}
-              onChange={(e) => setSubscriptionStartDate(e.target.value)}
-            />
-          </Field>
+            value={subscriptionStartDate}
+            onChange={(e) => setSubscriptionStartDate(e.target.value)}
+          />
 
-          <Field label="Subscription end" error={errors.subscriptionEndDate}>
-            <input
-              type="date"
-              className={inputClass(errors.subscriptionEndDate)}
-              value={subscriptionEndDate}
-              onChange={(e) => setSubscriptionEndDate(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Subscription end"
+            type="date"
+            error={errors.subscriptionEndDate}
+            value={subscriptionEndDate}
+            onChange={(e) => setSubscriptionEndDate(e.target.value)}
+          />
         </div>
 
         {errors.form && (

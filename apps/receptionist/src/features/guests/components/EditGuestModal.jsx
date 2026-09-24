@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Input } from "@hotelos/ui/components";
 import { useHotelOS } from "../../../app/useHotelOS.js";
 import { updateGuest } from "@hotelos/api";
 
@@ -89,47 +90,37 @@ export default function EditGuestModal({ guest, onClose, onSaved }) {
         </div>
 
         <div className="space-y-3 p-5">
-          <div>
-            <label className={labelCls}>Guest Name *</label>
-            <input
-              value={form.name}
-              onChange={(e) => setField("name", e.target.value)}
-              disabled={saving}
-              className={inputCls}
-            />
-          </div>
+          <Input
+            label="Guest Name *"
+            value={form.name}
+            onChange={(e) => setField("name", e.target.value)}
+            disabled={saving}
+            required
+          />
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Email *</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setField("email", e.target.value)}
-                disabled={saving}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Phone</label>
-              <input
-                value={form.phone}
-                onChange={(e) => setField("phone", e.target.value)}
-                disabled={saving}
-                className={inputCls}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelCls}>Address</label>
-            <input
-              value={form.address}
-              onChange={(e) => setField("address", e.target.value)}
+            <Input
+              label="Email *"
+              type="email"
+              value={form.email}
+              onChange={(e) => setField("email", e.target.value)}
               disabled={saving}
-              className={inputCls}
+              required
+            />
+            <Input
+              label="Phone"
+              value={form.phone}
+              onChange={(e) => setField("phone", e.target.value)}
+              disabled={saving}
             />
           </div>
+
+          <Input
+            label="Address"
+            value={form.address}
+            onChange={(e) => setField("address", e.target.value)}
+            disabled={saving}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -145,15 +136,12 @@ export default function EditGuestModal({ guest, onClose, onSaved }) {
                 ))}
               </select>
             </div>
-            <div>
-              <label className={labelCls}>ID Number</label>
-              <input
-                value={form.idNumber}
-                onChange={(e) => setField("idNumber", e.target.value)}
-                disabled={saving}
-                className={inputCls}
-              />
-            </div>
+            <Input
+              label="ID Number"
+              value={form.idNumber}
+              onChange={(e) => setField("idNumber", e.target.value)}
+              disabled={saving}
+            />
           </div>
 
           {error && (

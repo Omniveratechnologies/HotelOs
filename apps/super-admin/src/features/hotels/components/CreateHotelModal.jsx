@@ -1,10 +1,7 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
 
-import Modal from "../../../components/ui/Modal.jsx";
-import Field from "../../../components/ui/Field.jsx";
-import { inputClass } from "../../../components/ui/inputClass.js";
-import Button from "../../../components/ui/Button.jsx";
+import { Modal, Input, Button } from "@hotelos/ui/components";
 
 import { useCreateHotel } from "../hooks/useHotels.js";
 import { invitationsApi } from "@hotelos/api";
@@ -263,107 +260,90 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
 
         {/* HOTEL NAME */}
 
-        <Field label="Hotel name" error={errors.name}>
-          <input
-            className={inputClass(errors.name)}
-            placeholder="e.g. The Grand Meridian"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-          />
-        </Field>
+        <Input
+          label="Hotel name"
+          error={errors.name}
+          placeholder="e.g. The Grand Meridian"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
+        />
 
         {/* HOTEL EMAIL */}
 
-        <Field label="Hotel email" error={errors.email}>
-          <input
-            type="email"
-            className={inputClass(errors.email)}
-            placeholder="hotel@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </Field>
+        <Input
+          label="Hotel email"
+          type="email"
+          error={errors.email}
+          placeholder="hotel@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
         {/* PHONE */}
 
-        <Field label="Phone number">
-          <input
-            type="tel"
-            className={inputClass()}
-            placeholder="e.g. 9876543210"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </Field>
+        <Input
+          label="Phone number"
+          type="tel"
+          placeholder="e.g. 9876543210"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
 
         {/* ADDRESS */}
 
-        <Field label="Address">
-          <input
-            className={inputClass()}
-            placeholder="Hotel address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-        </Field>
+        <Input
+          label="Address"
+          placeholder="Hotel address"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
 
         {/* CITY */}
 
-        <Field label="City">
-          <input
-            className={inputClass()}
-            placeholder="e.g. Kolkata"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          />
-        </Field>
+        <Input
+          label="City"
+          placeholder="e.g. Kolkata"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+        />
 
         {/* SUBSCRIPTION */}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
+          <Input
             label="Subscription start"
+            type="date"
             error={errors.subscriptionStartDate}
-          >
-            <input
-              type="date"
-              className={inputClass(errors.subscriptionStartDate)}
-              value={subscriptionStartDate}
-              onChange={(e) => setSubscriptionStartDate(e.target.value)}
-            />
-          </Field>
+            value={subscriptionStartDate}
+            onChange={(e) => setSubscriptionStartDate(e.target.value)}
+          />
 
-          <Field label="Subscription end" error={errors.subscriptionEndDate}>
-            <input
-              type="date"
-              className={inputClass(errors.subscriptionEndDate)}
-              value={subscriptionEndDate}
-              onChange={(e) => setSubscriptionEndDate(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Subscription end"
+            type="date"
+            error={errors.subscriptionEndDate}
+            value={subscriptionEndDate}
+            onChange={(e) => setSubscriptionEndDate(e.target.value)}
+          />
         </div>
 
         {/* CHECK-IN / CHECK-OUT TIMES */}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Check-in time">
-            <input
-              type="time"
-              className={inputClass()}
-              value={checkInTime}
-              onChange={(e) => setCheckInTime(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Check-in time"
+            type="time"
+            value={checkInTime}
+            onChange={(e) => setCheckInTime(e.target.value)}
+          />
 
-          <Field label="Check-out time">
-            <input
-              type="time"
-              className={inputClass()}
-              value={checkOutTime}
-              onChange={(e) => setCheckOutTime(e.target.value)}
-            />
-          </Field>
+          <Input
+            label="Check-out time"
+            type="time"
+            value={checkOutTime}
+            onChange={(e) => setCheckOutTime(e.target.value)}
+          />
         </div>
 
         {/* =============================================
@@ -381,17 +361,13 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
           </p>
         </div>
 
-        <Field
+        <Input
           label="Aiosell property code"
           hint="The hotelCode Aiosell uses for this property (e.g. sandbox-pms)."
-        >
-          <input
-            className={inputClass()}
-            placeholder="e.g. sandbox-pms"
-            value={aiosellHotelCode}
-            onChange={(e) => setAiosellHotelCode(e.target.value)}
-          />
-        </Field>
+          placeholder="e.g. sandbox-pms"
+          value={aiosellHotelCode}
+          onChange={(e) => setAiosellHotelCode(e.target.value)}
+        />
 
         {/* =============================================
             SUB ADMIN DETAILS
@@ -410,45 +386,39 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
 
         {/* SUB ADMIN NAME */}
 
-        <Field label="Sub Admin name" error={errors.adminName}>
-          <input
-            className={inputClass(errors.adminName)}
-            placeholder="e.g. Rahul Sharma"
-            value={adminName}
-            onChange={(e) => setAdminName(e.target.value)}
-          />
-        </Field>
+        <Input
+          label="Sub Admin name"
+          error={errors.adminName}
+          placeholder="e.g. Rahul Sharma"
+          value={adminName}
+          onChange={(e) => setAdminName(e.target.value)}
+        />
 
         {/* USERNAME */}
 
-        <Field label="Username" error={errors.adminUsername}>
-          <input
-            className={inputClass(errors.adminUsername)}
-            placeholder="e.g. rahulsharma"
-            value={adminUsername}
-            onChange={(e) => setAdminUsername(e.target.value)}
-          />
-        </Field>
+        <Input
+          label="Username"
+          error={errors.adminUsername}
+          placeholder="e.g. rahulsharma"
+          value={adminUsername}
+          onChange={(e) => setAdminUsername(e.target.value)}
+        />
 
         {/* SUB ADMIN EMAIL */}
 
-        <Field
+        <Input
           label="Sub Admin email"
+          type="email"
           error={errors.adminEmail}
           hint={
             !errors.adminEmail
               ? "The invitation link will be sent to this email."
               : undefined
           }
-        >
-          <input
-            type="email"
-            className={inputClass(errors.adminEmail)}
-            placeholder="admin@hotel.com"
-            value={adminEmail}
-            onChange={(e) => setAdminEmail(e.target.value)}
-          />
-        </Field>
+          placeholder="admin@hotel.com"
+          value={adminEmail}
+          onChange={(e) => setAdminEmail(e.target.value)}
+        />
 
         {/* =============================================
             ERROR

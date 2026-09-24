@@ -9,10 +9,7 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import { Header } from "@hotelos/ui/components/Header";
-import Field from "../../../components/ui/Field.jsx";
-import { inputClass } from "../../../components/ui/inputClass.js";
-import Button from "../../../components/ui/Button.jsx";
+import { Header, Input, Button } from "@hotelos/ui/components";
 import { TableSkeleton } from "../../../components/ui/States.jsx";
 import {
   useHotels,
@@ -151,46 +148,34 @@ function ConnectionSettingsCard({ config, onSave, saving }) {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field
+          <Input
             label="PMS slug"
             hint="Partner id used in the API path (e.g. sample-pms)."
-          >
-            <input
-              className={inputClass()}
-              value={pmsSlug}
-              onChange={(e) => setPmsSlug(e.target.value)}
-              placeholder="sample-pms"
-            />
-          </Field>
-          <Field label="Partner username">
-            <input
-              className={inputClass()}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="aiosell"
-            />
-          </Field>
-          <Field
+            value={pmsSlug}
+            onChange={(e) => setPmsSlug(e.target.value)}
+            placeholder="sample-pms"
+          />
+          <Input
+            label="Partner username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="aiosell"
+          />
+          <Input
             label="Partner password"
+            type="password"
             hint="Leave blank to keep the current credential."
-          >
-            <input
-              type="password"
-              className={inputClass()}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="new-password"
-            />
-          </Field>
-          <Field label="API base URL">
-            <input
-              className={inputClass()}
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://live.aiosell.com/api/v2/cm"
-            />
-          </Field>
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="new-password"
+          />
+          <Input
+            label="API base URL"
+            value={baseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
+            placeholder="https://live.aiosell.com/api/v2/cm"
+          />
         </div>
 
         <div className="divide-surface-200 mt-2 divide-y">
@@ -254,9 +239,12 @@ function HotelSyncCard({
         <TableSkeleton rows={2} cols={3} />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Field label="Hotel" hint={selectedHotel?.name}>
+          <div>
+            <label className="text-brand-900 mb-1.5 block text-sm font-semibold">
+              Hotel
+            </label>
             <select
-              className={inputClass()}
+              className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm transition outline-none focus:ring-2"
               value={selectedHotelId}
               onChange={(e) => onSelectHotel(e.target.value)}
             >
@@ -266,14 +254,19 @@ function HotelSyncCard({
                 </option>
               ))}
             </select>
-          </Field>
-          <Field
-            label="Aiosell property code"
-            hint="The hotelCode used in Aiosell payloads for this property."
-          >
+            {selectedHotel?.name && (
+              <p className="mt-1.5 text-xs text-gray-500">
+                {selectedHotel.name}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="text-brand-900 mb-1.5 block text-sm font-semibold">
+              Aiosell property code
+            </label>
             <div className="flex gap-2">
               <input
-                className={inputClass()}
+                className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm transition outline-none placeholder:text-gray-400 focus:ring-2"
                 value={hotelAiosellCode}
                 onChange={(e) => setHotelAiosellCode(e.target.value)}
                 placeholder="sandbox-pms"
@@ -288,7 +281,10 @@ function HotelSyncCard({
                 {codeSaving ? "Saving..." : "Save"}
               </Button>
             </div>
-          </Field>
+            <p className="mt-1.5 text-xs text-gray-500">
+              The hotelCode used in Aiosell payloads for this property.
+            </p>
+          </div>
         </div>
       )}
 

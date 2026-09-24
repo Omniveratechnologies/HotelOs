@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Input } from "../../../components/ui/Input.jsx";
+import { Input } from "@hotelos/ui/components";
 import { sendReceptionistInvitation } from "@hotelos/api";
 
 export default function AddMembers({ onInvited }) {

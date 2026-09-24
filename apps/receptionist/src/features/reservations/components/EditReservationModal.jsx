@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Modal, Button, Input } from "@hotelos/ui/components";
 import { useRooms } from "../../rooms/hooks/useRooms.js";
 import { useUpdateReservation } from "../hooks/useReservations.js";
 
@@ -80,117 +81,88 @@ export default function EditReservationModal({
   if (!open || !reservation) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Edit Reservation"
+      subtitle={`Update room assignment, dates, or stay status for ${reservation.name}.`}
+      maxWidth="md"
     >
-      <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between border-b border-gray-100 pb-4">
-          <div>
-            <h3 className="text-brand-900 text-lg font-bold">
-              Edit Reservation
-            </h3>
-            <p className="mt-0.5 text-xs text-gray-500">
-              Update room assignment, dates, or stay status for{" "}
-              {reservation.name}.
-            </p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-600">
+            {error}
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+        )}
+
+        <div>
+          <label className="text-brand-900 mb-1.5 block text-xs font-semibold">
+            Assigned Room
+          </label>
+          <select
+            value={form.roomId}
+            onChange={(e) => setField("roomId", e.target.value)}
+            className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm transition outline-none focus:ring-2"
           >
-            ✕
-          </button>
+            <option value="">Select a room...</option>
+            {selectableRooms.map((r) => (
+              <option key={r.id} value={r.id}>
+                Room {r.roomNumber} ({r.type} - ₹{r.rate || 0}/night)
+              </option>
+            ))}
+          </select>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          {error && (
-            <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-600">
-              {error}
-            </div>
-          )}
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Check In"
+            type="date"
+            value={form.checkIn}
+            onChange={(e) => setField("checkIn", e.target.value)}
+          />
+          <Input
+            label="Check Out *"
+            type="date"
+            required
+            value={form.checkOut}
+            onChange={(e) => setField("checkOut", e.target.value)}
+          />
+        </div>
 
-          <div>
-            <label className="text-brand-900 block text-xs font-semibold">
-              Assigned Room
-            </label>
-            <select
-              value={form.roomId}
-              onChange={(e) => setField("roomId", e.target.value)}
-              className="focus:border-brand-900 mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2 text-sm focus:outline-hidden"
-            >
-              <option value="">Select a room...</option>
-              {selectableRooms.map((r) => (
-                <option key={r.id} value={r.id}>
-                  Room {r.roomNumber} ({r.type} - ₹{r.rate || 0}/night)
-                </option>
-              ))}
-            </select>
-          </div>
+        <div>
+          <label className="text-brand-900 mb-1.5 block text-xs font-semibold">
+            Stay Status
+          </label>
+          <select
+            value={form.status}
+            onChange={(e) => setField("status", e.target.value)}
+            className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm transition outline-none focus:ring-2"
+          >
+            <option value="reserved">Reserved (Upcoming)</option>
+            <option value="checked-in">Checked In (Active)</option>
+            <option value="checked-out">Checked Out (Completed)</option>
+          </select>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-brand-900 block text-xs font-semibold">
-                Check In
-              </label>
-              <input
-                type="date"
-                value={form.checkIn}
-                onChange={(e) => setField("checkIn", e.target.value)}
-                className="focus:border-brand-900 mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2 text-sm focus:outline-hidden"
-              />
-            </div>
-            <div>
-              <label className="text-brand-900 block text-xs font-semibold">
-                Check Out *
-              </label>
-              <input
-                type="date"
-                required
-                value={form.checkOut}
-                onChange={(e) => setField("checkOut", e.target.value)}
-                className="focus:border-brand-900 mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2 text-sm focus:outline-hidden"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-brand-900 block text-xs font-semibold">
-              Stay Status
-            </label>
-            <select
-              value={form.status}
-              onChange={(e) => setField("status", e.target.value)}
-              className="focus:border-brand-900 mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2 text-sm focus:outline-hidden"
-            >
-              <option value="reserved">Reserved (Upcoming)</option>
-              <option value="checked-in">Checked In (Active)</option>
-              <option value="checked-out">Checked Out (Completed)</option>
-            </select>
-          </div>
-
-          <div className="flex gap-3 border-t border-gray-100 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={updateReservationMut.isPending}
-              className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={updateReservationMut.isPending}
-              className="bg-brand-900 hover:bg-brand-800 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {updateReservationMut.isPending ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex gap-3 border-t border-gray-100 pt-4">
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onClick={onClose}
+            disabled={updateReservationMut.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            className="flex-1"
+            loading={updateReservationMut.isPending}
+          >
+            Save Changes
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

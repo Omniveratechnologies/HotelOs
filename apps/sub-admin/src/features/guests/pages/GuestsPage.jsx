@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { Header } from "@hotelos/ui/components/Header";
-import Button from "../../../components/ui/Button.jsx";
+import { Header, Button, NewReservationModal } from "@hotelos/ui/components";
 import { useGuests, useDeleteGuest } from "../hooks/useGuests.js";
 import GuestDetailsModal from "../components/GuestDetailsModal.jsx";
 import EditGuestModal from "../components/EditGuestModal.jsx";
 import CredentialsModal from "../components/CredentialsModal.jsx";
-import NewReservationModal from "../../reservations/components/NewReservationModal.jsx";
 
 const avatarColors = [
   "bg-brand-500",

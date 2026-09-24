@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CalendarClock, Filter, X, Save, Loader2 } from "lucide-react";
 
-import { Header } from "@hotelos/ui/components/Header";
+import { Header, Input } from "@hotelos/ui/components";
 import Badge from "../../../components/ui/Badge.jsx";
 import { TableSkeleton, EmptyState } from "../../../components/ui/States.jsx";
 
@@ -351,31 +351,21 @@ export default function SubscriptionsPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="text-brand-900 mb-2 block text-sm font-semibold">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={form.startDate}
-                  onChange={handleChange}
-                  className="border-surface-200 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-xl border bg-white px-4 py-3 text-sm transition outline-none focus:ring-2"
-                />
-              </div>
+              <Input
+                type="date"
+                name="startDate"
+                label="Start Date"
+                value={form.startDate}
+                onChange={handleChange}
+              />
 
-              <div>
-                <label className="text-brand-900 mb-2 block text-sm font-semibold">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  name="endDate"
-                  value={form.endDate}
-                  onChange={handleChange}
-                  className="border-surface-200 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-xl border bg-white px-4 py-3 text-sm transition outline-none focus:ring-2"
-                />
-              </div>
+              <Input
+                type="date"
+                name="endDate"
+                label="End Date"
+                value={form.endDate}
+                onChange={handleChange}
+              />
 
               {saveError && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">

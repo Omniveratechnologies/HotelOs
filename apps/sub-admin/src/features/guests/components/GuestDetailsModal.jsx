@@ -1,5 +1,4 @@
-import Modal from "../../../components/ui/Modal.jsx";
-import Button from "../../../components/ui/Button.jsx";
+import { Modal, Button } from "@hotelos/ui/components";
 
 const avatarColors = [
   "bg-brand-500",

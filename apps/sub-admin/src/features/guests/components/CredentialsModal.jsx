@@ -1,6 +1,5 @@
 import { useState } from "react";
-import Modal from "../../../components/ui/Modal.jsx";
-import Button from "../../../components/ui/Button.jsx";
+import { Modal, Button } from "@hotelos/ui/components";
 import { useUpdateGuestCredentials } from "../hooks/useGuests.js";
 
 export default function CredentialsModal({ open, onClose, guest }) {

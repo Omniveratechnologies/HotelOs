@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
+import { Input } from "@hotelos/ui/components";
 import { resetPassword } from "@hotelos/api";
 
 export default function ResetPasswordPage() {
@@ -106,46 +107,30 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* New password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="text-brand-900 mb-1.5 block text-sm font-medium"
-            >
-              New Password
-            </label>
-
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter new password"
-              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors placeholder:text-gray-500"
-            />
-          </div>
+          <Input
+            id="password"
+            name="password"
+            label="New Password"
+            type="password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter new password"
+          />
 
           {/* Confirm password */}
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="text-brand-900 mb-1.5 block text-sm font-medium"
-            >
-              Confirm Password
-            </label>
-
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password"
-              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors placeholder:text-gray-500"
-            />
-          </div>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            required
+            minLength={8}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm new password"
+          />
 
           {/* Error */}
           {error && (

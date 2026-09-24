@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { Header } from "@hotelos/ui/components/Header";
-import Button from "../../../components/ui/Button.jsx";
+import { Header, Button, NewReservationModal } from "@hotelos/ui/components";
 import {
   useReservations,
   useUpdateReservation,
   useDeleteReservation,
 } from "../hooks/useReservations.js";
-import NewReservationModal from "../components/NewReservationModal.jsx";
 import ReservationDetailsModal from "../components/ReservationDetailsModal.jsx";
 import EditReservationModal from "../components/EditReservationModal.jsx";
 

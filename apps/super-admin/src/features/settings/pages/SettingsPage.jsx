@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { Save, Bell, ShieldCheck, User } from "lucide-react";
-import { Header } from "@hotelos/ui/components/Header";
-import Field from "../../../components/ui/Field.jsx";
-import { inputClass } from "../../../components/ui/inputClass.js";
-import Button from "../../../components/ui/Button.jsx";
+import { Header, Input, Button } from "@hotelos/ui/components";
 import { currentAdmin } from "../../../data/mockData.js";
 
 function SectionCard({ icon: Icon, title, description, children }) {
@@ -84,21 +81,17 @@ export default function SettingsPage() {
             description="This information is visible to your team."
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Full name">
-                <input
-                  className={inputClass()}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </Field>
-              <Field label="Email address">
-                <input
-                  type="email"
-                  className={inputClass()}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </Field>
+              <Input
+                label="Full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <Input
+                label="Email address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
           </SectionCard>
 

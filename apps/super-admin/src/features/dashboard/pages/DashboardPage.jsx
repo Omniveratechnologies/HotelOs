@@ -9,10 +9,9 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-import { Header } from "@hotelos/ui/components/Header";
+import { Header, Button } from "@hotelos/ui/components";
 import StatCard from "../../../components/ui/StatCard.jsx";
 import Badge from "../../../components/ui/Badge.jsx";
-import Button from "../../../components/ui/Button.jsx";
 import CreateHotelModal from "../../hotels/components/CreateHotelModal.jsx";
 
 import { useHotels } from "../../hotels/hooks/useHotels.js";

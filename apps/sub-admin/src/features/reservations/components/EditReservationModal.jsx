@@ -1,7 +1,5 @@
 import { useState } from "react";
-import Modal from "../../../components/ui/Modal.jsx";
-import Button from "../../../components/ui/Button.jsx";
-import { Input } from "../../../components/ui/Input.jsx";
+import { Modal, Button, Input } from "@hotelos/ui/components";
 import { useRooms } from "../../rooms/hooks/useRooms.js";
 import { useUpdateReservation } from "../hooks/useReservations.js";
 

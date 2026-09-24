@@ -5,6 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./components": "./src/components/index.jsx",
     "./*": "./src/*.jsx"
   },
   "files": [
@@ -15,6 +16,8 @@
     "react-router": "^8.3.1",
     "@hotelos/styles": "workspace:*",
     "@hotelos/utils": "workspace:*",
-    "@hotelos/stores": "workspace:*"
+    "@hotelos/stores": "workspace:*",
+    "@hotelos/api": "workspace:*",
+    "@hotelos/query": "workspace:*"
   }
 }

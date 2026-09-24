@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import RecoveryModal from "../components/RecoveryModal.jsx";
+import { Input } from "@hotelos/ui/components";
 import { isAuthenticated, login } from "@hotelos/api";
 
 export default function LoginPage() {
@@ -70,42 +71,28 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Username */}
-          <div>
-            <label
-              htmlFor="username"
-              className="text-brand-900 mb-1.5 block text-sm font-medium"
-            >
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="your.username"
-              className="border-brand-900/15 bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border px-4 py-2.5 outline-hidden transition-colors"
-            />
-          </div>
+          <Input
+            id="username"
+            name="username"
+            label="Username"
+            type="text"
+            required
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="your.username"
+          />
 
           {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="text-brand-900 mb-1.5 block text-sm font-medium"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="border-brand-900/15 bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border px-4 py-2.5 outline-hidden transition-colors"
-            />
-          </div>
+          <Input
+            id="password"
+            name="password"
+            label="Password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
 
           {/* Error */}
           {error && (

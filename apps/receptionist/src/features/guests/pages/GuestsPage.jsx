@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Header } from "@hotelos/ui/components/Header";
+import { Header, NewReservationModal } from "@hotelos/ui/components";
 import { useHotelOS } from "../../../hooks/useHotelOS.js";
-import AddGuestModal from "../components/AddGuestModal.jsx";
 import GuestDetailsModal from "../components/GuestDetailsModal.jsx";
 import EditGuestModal from "../components/EditGuestModal.jsx";
 
@@ -250,12 +249,11 @@ export default function GuestsPage() {
         )}
 
         {/* Modals */}
-        {showAdd && (
-          <AddGuestModal
-            onClose={() => setShowAdd(false)}
-            onRegistered={() => refreshData()}
-          />
-        )}
+        <NewReservationModal
+          open={showAdd}
+          onClose={() => setShowAdd(false)}
+          onCreated={() => refreshData()}
+        />
 
         {liveGuest && !editing && (
           <GuestDetailsModal

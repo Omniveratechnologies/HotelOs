@@ -553,6 +553,12 @@ importers:
 
   packages/ui:
     dependencies:
+      '@hotelos/api':
+        specifier: workspace:*
+        version: link:../api
+      '@hotelos/query':
+        specifier: workspace:*
+        version: link:../query
       '@hotelos/stores':
         specifier: workspace:*
         version: link:../stores

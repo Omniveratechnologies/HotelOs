@@ -10,8 +10,7 @@ import {
   Pencil,
 } from "lucide-react";
 
-import { Header } from "@hotelos/ui/components/Header";
-import Button from "../../../components/ui/Button.jsx";
+import { Header, Button } from "@hotelos/ui/components";
 import Badge from "../../../components/ui/Badge.jsx";
 
 import { EmptyState, TableSkeleton } from "../../../components/ui/States.jsx";

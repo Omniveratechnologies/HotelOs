@@ -1,8 +1,5 @@
+import { Input } from "@hotelos/ui/components";
 import { useMyHotel } from "../hooks/useHotelSettings.js";
-
-const inputClass =
-  "w-full mt-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:border-primary-400 focus:ring-1 focus:ring-primary-400";
-const disabledInputClass = inputClass + " bg-gray-50 text-gray-400";
 
 export default function HotelInformationSection() {
   const { hotel, isLoading: loading, error: loadError } = useMyHotel();
@@ -27,56 +24,16 @@ export default function HotelInformationSection() {
           </p>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Hotel Name
-              </label>
-              <input
-                value={hotel?.name || ""}
-                disabled
-                className={disabledInputClass}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Email
-              </label>
-              <input
-                value={hotel?.email || ""}
-                disabled
-                className={disabledInputClass}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Phone
-              </label>
-              <input
-                value={hotel?.phone || ""}
-                disabled
-                className={disabledInputClass}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                City
-              </label>
-              <input
-                value={hotel?.city || ""}
-                disabled
-                className={disabledInputClass}
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Address
-              </label>
-              <input
-                value={hotel?.address || ""}
-                disabled
-                className={disabledInputClass}
-              />
-            </div>
+            <Input label="Hotel Name" value={hotel?.name || ""} disabled />
+            <Input label="Email" value={hotel?.email || ""} disabled />
+            <Input label="Phone" value={hotel?.phone || ""} disabled />
+            <Input label="City" value={hotel?.city || ""} disabled />
+            <Input
+              label="Address"
+              value={hotel?.address || ""}
+              disabled
+              containerClassName="col-span-2"
+            />
           </div>
         </div>
       )}
