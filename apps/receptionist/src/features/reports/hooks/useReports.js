@@ -1,125 +1,116 @@
+import { useQuery, useQueryClient, queryKeys } from "@hotelos/query";
+import { reportsApi } from "@hotelos/api";
 import { useMemo } from "react";
-import { useRooms } from "../../rooms/hooks/useRooms.js";
-import { useGuests } from "../../guests/hooks/useGuests.js";
-import { useOrders } from "../../food-orders/hooks/useOrders.js";
-import { useRequests } from "../../housekeeping/hooks/useRequests.js";
 
-const DEFAULT_ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
+const DEFAULT_PERIOD = "today";
 
 /**
- * Hook to compute aggregated hotel operational reports from server state queries.
- * @param {Array<string>} [roomTypes=DEFAULT_ROOM_TYPES] - List of room type categories
- * @returns {object} Aggregated report metrics, loading states, and refetch helpers.
+ * Hook to fetch comprehensive hotel reports from the backend.
+ * @param {object} options - Configuration options
+ * @param {string} options.period - 'today', 'week', 'month', 'custom'
+ * @param {string} options.startDate - YYYY-MM-DD (for custom period)
+ * @param {string} options.endDate - YYYY-MM-DD (for custom period)
+ * @returns {object} Report data, loading states, and helpers
  */
-export function useReports(roomTypes = DEFAULT_ROOM_TYPES) {
-  const {
-    rooms,
-    isLoading: roomsLoading,
-    error: roomsError,
-    refetch: refetchRooms,
-  } = useRooms();
-  const {
-    guests,
-    isLoading: guestsLoading,
-    error: guestsError,
-    refetch: refetchGuests,
-  } = useGuests();
-  const {
-    foodOrders,
-    isLoading: ordersLoading,
-    error: ordersError,
-    refetch: refetchOrders,
-  } = useOrders();
-  const {
-    serviceRequests,
-    isLoading: requestsLoading,
-    error: requestsError,
-    refetch: refetchRequests,
-  } = useRequests();
+export function useReports(options = {}) {
+  const { period = DEFAULT_PERIOD, startDate, endDate } = options;
+  const queryClient = useQueryClient();
 
-  const isLoading =
-    roomsLoading || guestsLoading || ordersLoading || requestsLoading;
-  const error =
-    roomsError || guestsError || ordersError || requestsError || null;
+  const query = useQuery({
+    queryKey: queryKeys.reports.dashboard(period, startDate, endDate),
+    queryFn: async () => {
+      const data = await reportsApi.getReportData({
+        period,
+        startDate,
+        endDate,
+      });
+      return data;
+    },
+    staleTime: 30000, // 30 seconds
+  });
 
   const metrics = useMemo(() => {
-    const occupied = rooms.filter((r) => r.status === "occupied");
-    const available = rooms.filter((r) => r.status === "available");
-    const reserved = rooms.filter((r) => r.status === "reserved");
-    const cleaning = rooms.filter((r) => r.status === "cleaning");
-    const total = rooms.length;
-    const occupancyRate =
-      total > 0 ? Math.round((occupied.length / total) * 100) : 0;
+    if (!query.data) return null;
 
-    const roomRevenue = occupied.reduce((sum, r) => sum + (r.rate || 0), 0);
-    const foodRevenue = foodOrders
-      .filter((o) => o.status === "delivered")
-      .reduce((sum, o) => sum + (o.amount || 0), 0);
-    const avgDailyRate =
-      occupied.length > 0 ? Math.round(roomRevenue / occupied.length) : 0;
-
-    const byType = roomTypes.map((type) => {
-      const occ = occupied.filter((r) => r.type === type);
-      const totalInType = rooms.filter((r) => r.type === type).length;
-      return {
-        type,
-        total: totalInType,
-        occupied: occ.length,
-        avgRate:
-          occ.length > 0
-            ? Math.round(
-                occ.reduce((sum, r) => sum + (r.rate || 0), 0) / occ.length,
-              )
-            : 0,
-        revenue: occ.reduce((sum, r) => sum + (r.rate || 0), 0),
-      };
-    });
-
-    const checkedInGuests = guests.filter((g) => g.status === "checked-in");
-    const reservedGuests = guests.filter((g) => g.status === "reserved");
-    const checkedOutGuests = guests.filter((g) => g.status === "checked-out");
-
-    const reportDate = new Date().toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+    const { rooms, bookings, revenue, serviceRequests, occupancyTrend } =
+      query.data;
 
     return {
-      total,
-      occupied,
-      available,
-      reserved,
-      cleaning,
-      occupancyRate,
-      roomRevenue,
-      foodRevenue,
-      avgDailyRate,
-      byType,
-      checkedInGuests,
-      reservedGuests,
-      checkedOutGuests,
-      reportDate,
+      // Room metrics
+      total: rooms.total,
+      occupied: rooms.occupied,
+      available: rooms.available,
+      reserved: rooms.reserved,
+      cleaning: rooms.cleaning,
+      occupancyRate: rooms.occupancyRate,
+      roomsByType: rooms.byType,
+      roomsByFloor: rooms.byFloor,
+
+      // Booking metrics
+      checkedIn: bookings.checkedIn,
+      arrivalsToday: bookings.arrivalsToday,
+      departuresToday: bookings.departuresToday,
+      totalBookings: bookings.totalBookings,
+      bookingsInPeriod: bookings.bookingsInPeriod,
+      avgStayDuration: bookings.avgStayDuration,
+      bookingSources: bookings.bookingSources,
+      recentBookings: bookings.recentBookings,
+      checkedInGuests: bookings.recentBookings
+        .filter((b) => b.status === "checked-in")
+        .map((b) => ({ name: b.guestName })),
+      reservedGuests: bookings.recentBookings
+        .filter((b) => b.status === "reserved")
+        .map((b) => ({ name: b.guestName })),
+      checkedOutGuests: bookings.recentBookings
+        .filter((b) => b.status === "checked-out")
+        .map((b) => ({ name: b.guestName })),
+
+      // Revenue metrics
+      roomRevenue: revenue.roomRevenue,
+      foodRevenue: revenue.foodRevenue,
+      totalRevenue: revenue.totalRevenue,
+      avgDailyRate: revenue.avgDailyRate,
+      revPAR: revenue.revPAR,
+      foodOrderCount: revenue.foodOrderCount,
+      avgOrderValue: revenue.avgOrderValue,
+      revenueByType: revenue.revenueByType,
+      dailyRevenue: revenue.dailyRevenue,
+      dailyRoomRevenue: revenue.dailyRoomRevenue,
+      topFoodItems: revenue.topFoodItems,
+
+      // Service request metrics
+      totalRequests: serviceRequests.totalRequests,
+      serviceRequestsByStatus: serviceRequests.byStatus,
+      serviceRequestsByType: serviceRequests.byType,
+      serviceRequestsByPriority: serviceRequests.byPriority,
+      avgResponseTimeMinutes: serviceRequests.avgResponseTimeMinutes,
+
+      // Trends
+      occupancyTrend,
+
+      // Period info
+      period,
+      periodStart: query.data?.period?.start,
+      periodEnd: query.data?.period?.end,
+      hotelName: query.data?.hotelName,
+      reportDate: new Date().toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
     };
-  }, [rooms, guests, foodOrders, roomTypes]);
+  }, [query.data, period]);
 
   const refetchAll = async () => {
-    await Promise.all([
-      refetchRooms(),
-      refetchGuests(),
-      refetchOrders(),
-      refetchRequests(),
-    ]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });
   };
 
   return {
     ...metrics,
-    rooms,
-    guests,
-    foodOrders,
-    serviceRequests,
-    isLoading,
-    error,
+    ...query,
+    isLoading: query.isLoading,
+    error: query.error,
     refetchAll,
+    currentPeriod: { period, startDate, endDate },
   };
 }

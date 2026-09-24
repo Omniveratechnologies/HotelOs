@@ -115,4 +115,12 @@ export const queryKeys = {
     details: () => [...queryKeys.invitations.all, "detail"],
     detail: (id) => [...queryKeys.invitations.details(), id],
   },
+  reports: {
+    all: ["reports"],
+    dashboard: (period, startDate, endDate) => [
+      ...queryKeys.reports.all,
+      "dashboard",
+      { period, startDate, endDate },
+    ],
+  },
 };
