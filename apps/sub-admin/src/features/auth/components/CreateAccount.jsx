@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Link, useNavigate } from "react-router";
-
+import { Input } from "@hotelos/ui/components";
 import { acceptInvitation } from "@hotelos/api";
 
 export default function CreateAccount({ token, invitation }) {
@@ -182,89 +182,54 @@ export default function CreateAccount({ token, invitation }) {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* FULL NAME */}
-
-          <div>
-            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
-              Full Name
-            </label>
-
-            <input
-              type="text"
-              required
-              disabled={creating}
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
-            />
-          </div>
+          <Input
+            label="Full Name"
+            type="text"
+            required
+            disabled={creating}
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
 
           {/* USERNAME */}
-
-          <div>
-            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
-              Username
-            </label>
-
-            <input
-              type="text"
-              required
-              disabled={creating}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
-            />
-          </div>
+          <Input
+            label="Username"
+            type="text"
+            required
+            disabled={creating}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
 
           {/* EMAIL */}
-
-          <div>
-            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
-              Email
-            </label>
-
-            <input
-              type="email"
-              disabled
-              value={invitation?.email || ""}
-              className="bg-background-50 text-brand-900 w-full rounded-lg border border-gray-200 px-4 py-2.5 opacity-70"
-            />
-          </div>
+          <Input
+            label="Email"
+            type="email"
+            disabled
+            value={invitation?.email || ""}
+          />
 
           {/* PASSWORD */}
-
-          <div>
-            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
-              Password
-            </label>
-
-            <input
-              type="password"
-              required
-              disabled={creating}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
-            />
-          </div>
+          <Input
+            label="Password"
+            type="password"
+            required
+            disabled={creating}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
 
           {/* CONFIRM PASSWORD */}
-
-          <div>
-            <label className="text-brand-900 mb-1.5 block text-sm font-medium">
-              Confirm Password
-            </label>
-
-            <input
-              type="password"
-              required
-              disabled={creating}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors disabled:opacity-70"
-            />
-          </div>
+          <Input
+            label="Confirm Password"
+            type="password"
+            required
+            disabled={creating}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="••••••••"
+          />
 
           {/* BUTTON */}
 

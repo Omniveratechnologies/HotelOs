@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import AddGuestModal from "../../guests/components/AddGuestModal.jsx";
+import { NewReservationModal } from "@hotelos/ui/components";
 
 export default function RoomModal({
   room,
@@ -9,6 +9,7 @@ export default function RoomModal({
 }) {
   const [view, setView] = useState("info"); // info | checkout
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerStatus, setRegisterStatus] = useState("checked-in");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [channelCode, setChannelCode] = useState(room.roomCode || "");
@@ -48,9 +49,6 @@ export default function RoomModal({
     if (saving) return;
     runUpdate("cleaning", {});
   };
-
-  // Real guest creation - opens the shared registration form
-  const openRegister = () => setRegisterOpen(true);
 
   // Save the Aiosell room code; a change puts the room back under review
   const handleChannelSave = async () => {
@@ -219,14 +217,20 @@ export default function RoomModal({
                     room.status === "cleaning") && (
                     <>
                       <button
-                        onClick={openRegister}
+                        onClick={() => {
+                          setRegisterStatus("checked-in");
+                          setRegisterOpen(true);
+                        }}
                         disabled={saving || unverified}
                         className="bg-brand-900 hover:bg-brand-800 col-span-2 rounded-xl py-3 font-semibold text-white transition-colors disabled:opacity-60"
                       >
                         ✓ Check In Guest
                       </button>
                       <button
-                        onClick={openRegister}
+                        onClick={() => {
+                          setRegisterStatus("reserved");
+                          setRegisterOpen(true);
+                        }}
                         disabled={saving || unverified}
                         className="rounded-xl border-2 border-amber-400 py-3 text-sm font-semibold text-amber-600 transition-colors hover:bg-amber-50 disabled:opacity-60"
                       >
@@ -351,19 +355,19 @@ export default function RoomModal({
       </div>
 
       {/* Real guest registration prefilled with this room */}
-      {registerOpen && (
-        <AddGuestModal
-          initial={{
-            roomId: room.id,
-            roomNumber: room.roomNumber,
-          }}
-          onClose={() => setRegisterOpen(false)}
-          onRegistered={() => {
-            setRegisterOpen(false);
-            onClose();
-          }}
-        />
-      )}
+      <NewReservationModal
+        open={registerOpen}
+        initial={{
+          roomId: room.id,
+          roomNumber: room.roomNumber,
+          status: registerStatus,
+        }}
+        onClose={() => setRegisterOpen(false)}
+        onCreated={() => {
+          setRegisterOpen(false);
+          onClose();
+        }}
+      />
     </>
   );
 }

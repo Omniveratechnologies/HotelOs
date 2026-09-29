@@ -56,6 +56,19 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "/reservations",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/ReservationsPage.jsx"),
+                ),
+              },
+              {
+                path: "/guests",
+                lazy: lazyPage(
+                  () => import("../../features/guests/pages/GuestsPage.jsx"),
+                ),
+              },
+              {
                 path: "/members",
                 lazy: lazyPage(
                   () => import("../../features/members/pages/MembersPage.jsx"),

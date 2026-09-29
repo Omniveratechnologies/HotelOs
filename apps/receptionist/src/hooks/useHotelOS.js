@@ -12,6 +12,12 @@ import {
   useDeleteGuest,
 } from "../features/guests/hooks/useGuests.js";
 import {
+  useReservations,
+  useCreateReservation,
+  useUpdateReservation,
+  useDeleteReservation,
+} from "../features/reservations/hooks/useReservations.js";
+import {
   useOrders,
   useFoodItems,
   useCreateDeskOrder,
@@ -47,6 +53,11 @@ export function useHotelOS() {
   const setChatOpen = useChatStore((s) => s.setIsOpen);
 
   const { rooms, isLoading: roomsLoading, error: roomsError } = useRooms();
+  const {
+    reservations,
+    isLoading: reservationsLoading,
+    error: reservationsError,
+  } = useReservations();
   const { guests, isLoading: guestsLoading, error: guestsError } = useGuests();
   const {
     stats,
@@ -77,6 +88,10 @@ export function useHotelOS() {
   const updateStatusMut = useUpdateRoomStatus();
   const deleteRoomMut = useDeleteRoom();
 
+  const createReservationMut = useCreateReservation();
+  const updateReservationMut = useUpdateReservation();
+  const deleteReservationMut = useDeleteReservation();
+
   const registerGuestMut = useRegisterGuest();
   const deleteGuestMut = useDeleteGuest();
 
@@ -95,6 +110,7 @@ export function useHotelOS() {
   const refreshData = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.guests.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.ratePlans.all }),
@@ -110,6 +126,9 @@ export function useHotelOS() {
     rooms,
     roomsLoading,
     roomsError,
+    reservations,
+    reservationsLoading,
+    reservationsError,
     serviceRequests,
     requestsLoading,
     requestsError,
@@ -140,6 +159,10 @@ export function useHotelOS() {
       updateRoomMut.mutateAsync({ roomId, updates }),
     addRoom: (data) => createRoomMut.mutateAsync(data),
     removeRoom: (roomId) => deleteRoomMut.mutateAsync(roomId),
+    addReservation: (data) => createReservationMut.mutateAsync(data),
+    updateReservation: (id, updates) =>
+      updateReservationMut.mutateAsync({ id, updates }),
+    removeReservation: (id) => deleteReservationMut.mutateAsync(id),
     addGuest: (data) => registerGuestMut.mutateAsync(data),
     removeGuest: (bookingId) => deleteGuestMut.mutateAsync(bookingId),
     updateOrderStatus: (id, status) =>

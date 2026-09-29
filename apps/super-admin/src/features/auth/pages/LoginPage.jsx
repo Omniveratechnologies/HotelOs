@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { Input } from "@hotelos/ui/components";
 import { authApi } from "@hotelos/api";
 
 export default function LoginPage() {
@@ -70,35 +71,24 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="text-brand-900 mb-2 block text-sm font-medium">
-              Username
-            </label>
+          <Input
+            label="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Enter username"
+            autoComplete="username"
+            required
+          />
 
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
-              className="border-surface-200 bg-background-50 text-brand-900 focus:border-primary-400 focus:ring-primary-400/20 w-full rounded-lg border px-4 py-3 text-sm transition outline-none focus:ring-2"
-              autoComplete="username"
-            />
-          </div>
-
-          <div>
-            <label className="text-brand-900 mb-2 block text-sm font-medium">
-              Password
-            </label>
-
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              className="border-surface-200 bg-background-50 text-brand-900 focus:border-primary-400 focus:ring-primary-400/20 w-full rounded-lg border px-4 py-3 text-sm transition outline-none focus:ring-2"
-              autoComplete="current-password"
-            />
-          </div>
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password"
+            autoComplete="current-password"
+            required
+          />
 
           <button
             type="submit"

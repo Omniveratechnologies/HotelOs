@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { createRoomType, updateRoomType } from "@hotelos/api";
-
-const inputClass =
-  "focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden";
+import { Input } from "@hotelos/ui/components";
 const rowInputClass =
   "focus:border-primary-400 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden";
 
@@ -224,83 +222,53 @@ export default function RoomTypeModal({ roomType, onClose, onSaved }) {
           onSubmit={handleSubmit}
           className="max-h-[80vh] space-y-3 overflow-y-auto p-5"
         >
-          <div>
-            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              Name *
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Executive"
-              autoFocus
-              disabled={saving}
-              className={inputClass}
-            />
-          </div>
+          <Input
+            label="Name *"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Executive"
+            autoFocus
+            disabled={saving}
+          />
 
-          <div>
-            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              Room code *
-            </label>
-            <input
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value)}
-              placeholder="e.g. executive"
-              disabled={saving || isEdit}
-              className={inputClass}
-            />
-            {isEdit ? (
-              <p className="mt-1 text-[11px] text-gray-400">
-                The code is locked once created — it identifies this type in the
-                property.
-              </p>
-            ) : (
-              <p className="mt-1 text-[11px] text-gray-400">
-                This becomes the Aiosell room code for every room of this type.
-              </p>
-            )}
-          </div>
+          <Input
+            label="Room code *"
+            value={roomCode}
+            onChange={(e) => setRoomCode(e.target.value)}
+            placeholder="e.g. executive"
+            disabled={saving || isEdit}
+            hint={
+              isEdit
+                ? "The code is locked once created — it identifies this type in the property."
+                : "This becomes the Aiosell room code for every room of this type."
+            }
+          />
 
           {!isEdit && (
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Description
-              </label>
-              <input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="e.g. Free Wifi"
-                disabled={saving}
-                className={inputClass}
-              />
-            </div>
+            <Input
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g. Free Wifi"
+              disabled={saving}
+            />
           )}
 
-          <div>
-            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              Room count *
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={count}
-              onChange={(e) =>
-                isEdit ? null : handleCountChange(e.target.value)
-              }
-              disabled={saving || isEdit}
-              className={inputClass}
-            />
-            {isEdit ? (
-              <p className="mt-1 text-[11px] text-gray-400">
-                Count is managed from the Rooms section — add or delete rooms
-                there to change it.
-              </p>
-            ) : (
-              <p className="mt-1 text-[11px] text-gray-400">
-                Set the number of rooms, then fill each room's details below.
-              </p>
-            )}
-          </div>
+          <Input
+            label="Room count *"
+            type="number"
+            min="1"
+            value={count}
+            onChange={(e) =>
+              isEdit ? null : handleCountChange(e.target.value)
+            }
+            disabled={saving || isEdit}
+            hint={
+              isEdit
+                ? "Count is managed from the Rooms section — add or delete rooms there to change it."
+                : "Set the number of rooms, then fill each room's details below."
+            }
+          />
 
           {!isEdit && (
             <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50/60 p-3">
@@ -347,33 +315,23 @@ export default function RoomTypeModal({ roomType, onClose, onSaved }) {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Min occ. *
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={minOccupancy}
-                onChange={(e) => setMinOccupancy(e.target.value)}
-                disabled={saving}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Max occ.
-              </label>
-              <input
-                type="number"
-                min="1"
-                placeholder="None"
-                value={maxOccupancy}
-                onChange={(e) => setMaxOccupancy(e.target.value)}
-                disabled={saving}
-                className={inputClass}
-              />
-            </div>
+            <Input
+              label="Min occ. *"
+              type="number"
+              min="1"
+              value={minOccupancy}
+              onChange={(e) => setMinOccupancy(e.target.value)}
+              disabled={saving}
+            />
+            <Input
+              label="Max occ."
+              type="number"
+              min="1"
+              placeholder="None"
+              value={maxOccupancy}
+              onChange={(e) => setMaxOccupancy(e.target.value)}
+              disabled={saving}
+            />
           </div>
 
           <label className="flex cursor-pointer items-center gap-2.5 pt-1">

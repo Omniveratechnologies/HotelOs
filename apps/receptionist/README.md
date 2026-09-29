@@ -196,7 +196,7 @@ src/
 │   ├── auth/               Login, AcceptInvitation, recovery
 │   ├── dashboard/          Summary stats & activity feed
 │   ├── food-orders/        FoodOrdersPage, order details modal, menu
-│   ├── guests/             GuestsPage, AddGuestModal, guest documents
+│   ├── guests/             GuestsPage, guest documents, credentials
 │   ├── housekeeping/       HousekeepingPage, service requests
 │   ├── rate-plans/         RatePlansPage, RatePlanModal, AiosellRatesMatrix
 │   ├── reports/            ReportsPage, occupancy and revenue analytics

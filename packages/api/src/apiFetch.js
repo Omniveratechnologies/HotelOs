@@ -1,5 +1,7 @@
 import { API_URL } from "./config/env.js";
 
+export { API_URL };
+
 /**
  * Custom error thrown when an API request fails.
  */

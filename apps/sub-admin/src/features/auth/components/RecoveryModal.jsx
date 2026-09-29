@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { Input } from "@hotelos/ui/components";
 import { forgotPassword, forgotUsername } from "@hotelos/api";
 
 export default function RecoveryModal({ recoveryMode, onClose }) {
@@ -60,25 +61,17 @@ export default function RecoveryModal({ recoveryMode, onClose }) {
         </div>
 
         <form onSubmit={handleRecovery} className="space-y-5">
-          <div>
-            <label
-              htmlFor="recoveryEmail"
-              className="text-brand-900 mb-1.5 block text-sm font-medium"
-            >
-              Registered Email
-            </label>
-
-            <input
-              id="recoveryEmail"
-              type="email"
-              required
-              autoFocus
-              value={recoveryEmail}
-              onChange={(e) => setRecoveryEmail(e.target.value)}
-              placeholder="you@hotel.com"
-              className="bg-background-50 text-brand-900 focus:border-primary-400 w-full rounded-lg border border-gray-200 px-4 py-2.5 outline-hidden transition-colors placeholder:text-gray-500"
-            />
-          </div>
+          <Input
+            id="recoveryEmail"
+            name="recoveryEmail"
+            label="Registered Email"
+            type="email"
+            required
+            autoFocus
+            value={recoveryEmail}
+            onChange={(e) => setRecoveryEmail(e.target.value)}
+            placeholder="you@hotel.com"
+          />
 
           {/* Recovery message */}
           {recoveryMessage && (

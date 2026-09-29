@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 
-import Modal from "../../../components/ui/Modal.jsx";
-import Button from "../../../components/ui/Button.jsx";
-import { Input } from "../../../components/ui/Input.jsx";
+import { Modal, Button, Input } from "@hotelos/ui/components";
 
 import { useCreateRatePlan, useUpdateRatePlan } from "../hooks/useRatePlans.js";
 import { useAiosellRoomTypes } from "../../settings/hooks/useHotelSettings.js";
@@ -297,34 +295,21 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
           </p>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">
-                Start Date
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="focus:ring-primary-400 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs text-gray-800 outline-hidden focus:ring-2"
-              />
-              {errors.startDate && (
-                <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>
-              )}
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">
-                End Date
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="focus:ring-primary-400 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs text-gray-800 outline-hidden focus:ring-2"
-              />
-              {errors.endDate && (
-                <p className="mt-1 text-xs text-red-600">{errors.endDate}</p>
-              )}
-            </div>
+            <Input
+              type="date"
+              label="Start Date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              error={errors.startDate}
+            />
+
+            <Input
+              type="date"
+              label="End Date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              error={errors.endDate}
+            />
           </div>
         </div>
 

@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { Header } from "@hotelos/ui/components/Header";
-
-import Button from "../../../components/ui/Button.jsx";
-import { Input } from "../../../components/ui/Input.jsx";
+import { Header, Button, Input } from "@hotelos/ui/components";
 
 import { useMyHotel, useUpdateMyHotel } from "../hooks/useHotelSettings.js";
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useOutletContext, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import {
   Building2,
   Wallet,
@@ -9,10 +9,9 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-import Topbar from "../../../components/layout/Topbar.jsx";
+import { Header, Button } from "@hotelos/ui/components";
 import StatCard from "../../../components/ui/StatCard.jsx";
 import Badge from "../../../components/ui/Badge.jsx";
-import Button from "../../../components/ui/Button.jsx";
 import CreateHotelModal from "../../hotels/components/CreateHotelModal.jsx";
 
 import { useHotels } from "../../hotels/hooks/useHotels.js";
@@ -29,7 +28,6 @@ function formatCurrency(n) {
 }
 
 export default function DashboardPage() {
-  const { onMenuClick } = useOutletContext();
   const navigate = useNavigate();
 
   const { hotels = [], isLoading: hotelsLoading } = useHotels();
@@ -74,18 +72,16 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Topbar
-        title="Overview"
-        subtitle="A snapshot of every hotel on your platform."
-        onMenuClick={onMenuClick}
-        actions={
-          <Button icon={Plus} onClick={() => setCreateOpen(true)}>
-            Create hotel
-          </Button>
-        }
-      />
+      <Header
+        pageTitle="Overview"
+        pageDescription="A snapshot of every hotel on your platform."
+      >
+        <Button icon={Plus} onClick={() => setCreateOpen(true)}>
+          Create hotel
+        </Button>
+      </Header>
 
-      <main className="flex-1 space-y-6 px-5 pb-10 lg:px-8">
+      <main className="flex-1 space-y-6 px-6 py-8 lg:px-10">
         {/* STAT CARDS */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard

@@ -1,343 +1,475 @@
-import React from "react";
+import { useState } from "react";
 import { Header } from "@hotelos/ui/components/Header";
+import { Link } from "react-router";
 import { useReports } from "../hooks/useReports.js";
+import { format } from "date-fns";
+import {
+  KPICard,
+  GuestActivityCard,
+  MetricSummaryCard,
+} from "../components/SummaryCards.jsx";
+import {
+  OccupancyTrendChart,
+  RevenueTrendChart,
+  RevenueByTypePie,
+  ServiceRequestStatusChart,
+  RoomStatusDonut,
+} from "../components/Charts.jsx";
+import {
+  RoomTypeTable,
+  BookingSourcesTable,
+  RecentBookingsTable,
+  TopFoodItemsTable,
+  ServiceRequestTypesTable,
+} from "../components/DataTable.jsx";
 
-const ROOM_TYPES = ["Standard", "Deluxe", "Suite"];
+const formatCurrency = (val) => `₹${(val || 0).toLocaleString("en-IN")}`;
+
+const PeriodSelector = ({ currentPeriod, onPeriodChange }) => {
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const [showCustomDates, setShowCustomDates] = useState(false);
+
+  const handlePeriodChange = (e) => {
+    const period = e.target.value;
+    if (period === "custom") {
+      setShowCustomDates(true);
+    } else {
+      onPeriodChange(period);
+      setShowCustomDates(false);
+    }
+  };
+
+  const handleCustomSubmit = (e) => {
+    e.preventDefault();
+    if (customStart && customEnd) {
+      onPeriodChange("custom", customStart, customEnd);
+      setShowCustomDates(false);
+    }
+  };
+
+  const periodOptions = [
+    { value: "today", label: "Today" },
+    { value: "week", label: "This Week" },
+    { value: "month", label: "This Month" },
+    { value: "custom", label: "Custom Range" },
+  ];
+
+  return (
+    <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center">
+      <select
+        value={currentPeriod.period}
+        onChange={handlePeriodChange}
+        className="focus:ring-brand-900 w-full cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium focus:border-transparent focus:ring-2 focus:outline-none sm:w-48"
+      >
+        {periodOptions.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      {showCustomDates && (
+        <form
+          onSubmit={handleCustomSubmit}
+          className="flex w-full flex-col items-start gap-2 sm:w-auto sm:flex-row sm:items-center"
+        >
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <label
+              htmlFor="customStart"
+              className="text-sm whitespace-nowrap text-gray-600"
+            >
+              From
+            </label>
+            <input
+              id="customStart"
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              max={format(new Date(), "yyyy-MM-dd")}
+              className="focus:ring-brand-900 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:outline-none"
+              required
+            />
+          </div>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <label
+              htmlFor="customEnd"
+              className="text-sm whitespace-nowrap text-gray-600"
+            >
+              To
+            </label>
+            <input
+              id="customEnd"
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              max={format(new Date(), "yyyy-MM-dd")}
+              className="focus:ring-brand-900 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:outline-none"
+              required
+            />
+          </div>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <button
+              type="submit"
+              className="bg-brand-900 hover:bg-brand-800 focus:ring-brand-900 flex-1 rounded-xl px-4 py-2 text-sm font-medium text-white focus:ring-2 focus:ring-offset-2 focus:outline-none sm:flex-none"
+            >
+              Apply
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCustomDates(false)}
+              className="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:outline-none sm:flex-none"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
+const PrintButton = ({ currentPeriod, periodStart, periodEnd }) => {
+  const buildPrintUrl = () => {
+    const params = new URLSearchParams();
+    if (currentPeriod) params.set("period", currentPeriod);
+    if (periodStart) params.set("startDate", periodStart);
+    if (periodEnd) params.set("endDate", periodEnd);
+    return `/reports/print?${params.toString()}`;
+  };
+
+  return (
+    <Link
+      to={buildPrintUrl()}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+    >
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+        />
+      </svg>
+      Print / Save as PDF
+    </Link>
+  );
+};
 
 export default function ReportsPage() {
+  const [period, setPeriod] = useState("today");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
+  const reportData = useReports({
+    period,
+    startDate: customStart,
+    endDate: customEnd,
+  });
+
+  const handlePeriodChange = (newPeriod, startDate, endDate) => {
+    setPeriod(newPeriod);
+    if (newPeriod === "custom") {
+      setCustomStart(startDate);
+      setCustomEnd(endDate);
+    }
+  };
+
   const {
+    isLoading,
+    error,
+    hotelName,
+    reportDate,
+    period: currentPeriod,
+    periodStart,
+    periodEnd,
+    // Room metrics
     total,
     occupied,
     available,
     reserved,
     cleaning,
     occupancyRate,
-    roomRevenue,
-    foodRevenue,
-    avgDailyRate,
-    byType,
+    roomsByType,
+    // Booking metrics
+    checkedIn,
+    arrivalsToday,
+    departuresToday,
+    totalBookings,
+    avgStayDuration,
+    bookingSources,
+    recentBookings,
     checkedInGuests,
     reservedGuests,
     checkedOutGuests,
-    reportDate,
-    rooms,
-    foodOrders,
-  } = useReports(ROOM_TYPES);
+    // Revenue metrics
+    roomRevenue,
+    foodRevenue,
+    totalRevenue,
+    avgDailyRate,
+    revPAR,
+    foodOrderCount,
+    avgOrderValue,
+    revenueByType,
+    dailyRevenue,
+    dailyRoomRevenue,
+    topFoodItems,
+    // Service request metrics
+    totalRequests,
+    serviceRequestsByStatus,
+    serviceRequestsByType,
+    avgResponseTimeMinutes,
+    // Trends
+    occupancyTrend,
+  } = reportData;
+
+  if (isLoading) {
+    return (
+      <>
+        <Header
+          pageTitle="Reports & Analytics"
+          pageDescription="Loading report data..."
+        />
+        <div className="flex h-64 items-center justify-center p-6">
+          <div className="border-brand-900 h-12 w-12 animate-spin rounded-full border-4 border-t-transparent" />
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Header
+          pageTitle="Reports & Analytics"
+          pageDescription="Error loading report"
+        />
+        <div className="p-6 text-center text-red-600">
+          Failed to load report data: {error.message}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <Header
         pageTitle="Reports & Analytics"
-        pageDescription={`Live snapshot • ${reportDate}`}
+        pageDescription={`${hotelName} • ${reportDate}`}
       >
-        <button className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
-          Export PDF
-        </button>
+        <div className="flex items-center gap-3">
+          <PeriodSelector
+            currentPeriod={currentPeriod}
+            onPeriodChange={handlePeriodChange}
+          />
+          <PrintButton
+            currentPeriod={currentPeriod}
+            periodStart={periodStart}
+            periodEnd={periodEnd}
+          />
+        </div>
       </Header>
-      <div className="p-6">
+
+      <div className="space-y-6 p-6">
         {/* KPI Cards */}
-        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {[
-            {
-              label: "Occupancy Rate",
-              value: `${occupancyRate}%`,
-              sub: `${occupied.length}/${total} rooms`,
-              color: "text-blue-600",
-              bg: "bg-blue-50",
-              icon: "🏨",
-            },
-            {
-              label: "Room Revenue",
-              value: `₹${roomRevenue.toLocaleString()}`,
-              sub: `${occupied.length} occupied rooms`,
-              color: "text-green-600",
-              bg: "bg-green-50",
-              icon: "💰",
-            },
-            {
-              label: "F&B Revenue",
-              value: `₹${foodRevenue.toLocaleString()}`,
-              sub: `${foodOrders.filter((o) => o.status === "delivered").length} delivered orders`,
-              color: "text-blue-600",
-              bg: "bg-blue-50",
-              icon: "🍽️",
-            },
-            {
-              label: "Avg Daily Rate",
-              value: `₹${avgDailyRate.toLocaleString()}`,
-              sub: "Per occupied room",
-              color: "text-primary-400",
-              bg: "bg-amber-50",
-              icon: "📊",
-            },
-          ].map((k) => (
-            <div
-              key={k.label}
-              className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs"
-            >
-              <div
-                className={`h-10 w-10 ${k.bg} mb-3 flex items-center justify-center rounded-xl text-xl`}
-              >
-                {k.icon}
-              </div>
-              <div className={`text-2xl font-bold ${k.color}`}>{k.value}</div>
-              <div className="mt-0.5 text-sm font-medium text-gray-700">
-                {k.label}
-              </div>
-              <div className="mt-0.5 text-xs text-gray-400">{k.sub}</div>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <KPICard
+            label="Occupancy Rate"
+            value={`${occupancyRate}%`}
+            sub={`${occupied}/${total} rooms`}
+            color="text-blue-600"
+            bg="bg-blue-50"
+            icon="🏨"
+          />
+          <KPICard
+            label="Room Revenue"
+            value={formatCurrency(roomRevenue)}
+            sub={`${occupied} occupied rooms`}
+            color="text-green-600"
+            bg="bg-green-50"
+            icon="💰"
+          />
+          <KPICard
+            label="F&B Revenue"
+            value={formatCurrency(foodRevenue)}
+            sub={`${foodOrderCount} delivered orders`}
+            color="text-blue-600"
+            bg="bg-blue-50"
+            icon="🍽️"
+          />
+          <KPICard
+            label="Total Revenue"
+            value={formatCurrency(totalRevenue)}
+            sub={`RevPAR: ${formatCurrency(revPAR)}`}
+            color="text-purple-600"
+            bg="bg-purple-50"
+            icon="📈"
+          />
+          <KPICard
+            label="Avg Daily Rate"
+            value={formatCurrency(avgDailyRate)}
+            sub="Per occupied room"
+            color="text-amber-600"
+            bg="bg-amber-50"
+            icon="📊"
+          />
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Room Mix by Type */}
+        {/* Charts Row 1: Occupancy Trend + Revenue Trend */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
-            <h3 className="text-brand-900 mb-4 font-bold">Current Room Mix</h3>
-            <div className="space-y-4">
-              {byType.map((t) => (
-                <div key={t.type}>
-                  <div className="mb-1.5 flex justify-between">
-                    <span className="text-brand-900 text-sm font-semibold">
-                      {t.type}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      {t.occupied}/{t.total} occupied · ₹{t.avgRate}/night
-                    </span>
-                  </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${t.occupied > 0 ? "from-brand-900 to-brand-700 bg-linear-to-r" : "bg-gray-200"}`}
-                      style={{
-                        width: `${total > 0 ? (t.total / total) * 100 : 0}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            {rooms.length === 0 && (
-              <div className="py-6 text-center text-sm text-gray-400">
-                No rooms yet. Create rooms to see the mix.
-              </div>
-            )}
+            <h3 className="text-brand-900 mb-4 font-bold">Occupancy Trend</h3>
+            <OccupancyTrendChart data={occupancyTrend} />
           </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+            <h3 className="text-brand-900 mb-4 font-bold">Revenue Trend</h3>
+            <RevenueTrendChart
+              dailyRevenue={dailyRevenue}
+              dailyRoomRevenue={dailyRoomRevenue}
+            />
+          </div>
+        </div>
 
-          {/* Room Status Donut */}
+        {/* Charts Row 2: Room Status + Revenue by Type Pie */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
             <h3 className="text-brand-900 mb-4 font-bold">
               Current Room Status
             </h3>
-            {total === 0 ? (
-              <div className="py-10 text-center text-sm text-gray-400">
-                No rooms yet.
-              </div>
-            ) : (
-              <div className="flex items-center gap-6">
-                <div className="relative h-36 w-36 shrink-0">
-                  <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15.9"
-                      fill="none"
-                      className="stroke-gray-100"
-                      strokeWidth="3.5"
-                    />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15.9"
-                      fill="none"
-                      className="stroke-green-500"
-                      strokeWidth="3.5"
-                      strokeDasharray={`${(available.length / total) * 100} ${100 - (available.length / total) * 100}`}
-                      strokeDashoffset="0"
-                    />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15.9"
-                      fill="none"
-                      className="stroke-blue-500"
-                      strokeWidth="3.5"
-                      strokeDasharray={`${(occupied.length / total) * 100} ${100 - (occupied.length / total) * 100}`}
-                      strokeDashoffset={`${-(available.length / total) * 100}`}
-                    />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15.9"
-                      fill="none"
-                      className="stroke-amber-500"
-                      strokeWidth="3.5"
-                      strokeDasharray={`${(reserved.length / total) * 100} ${100 - (reserved.length / total) * 100}`}
-                      strokeDashoffset={`${-((available.length + occupied.length) / total) * 100}`}
-                    />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="15.9"
-                      fill="none"
-                      className="stroke-gray-400"
-                      strokeWidth="3.5"
-                      strokeDasharray={`${(cleaning.length / total) * 100} ${100 - (cleaning.length / total) * 100}`}
-                      strokeDashoffset={`${-((available.length + occupied.length + reserved.length) / total) * 100}`}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-brand-900 text-2xl font-bold">
-                        {occupancyRate}%
-                      </div>
-                      <div className="text-xs text-gray-400">Occupied</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    ["bg-green-500", "Available", available.length],
-                    ["bg-blue-500", "Occupied", occupied.length],
-                    ["bg-amber-500", "Reserved", reserved.length],
-                    ["bg-gray-400", "Cleaning", cleaning.length],
-                  ].map(([c, l, n]) => (
-                    <div key={l} className="flex items-center gap-3">
-                      <div className={`h-3 w-3 rounded-full ${c} shrink-0`} />
-                      <div>
-                        <div className="text-brand-900 text-sm font-semibold">
-                          {n} rooms
-                        </div>
-                        <div className="text-xs text-gray-400">{l}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <RoomStatusDonut
+              available={available}
+              occupied={occupied}
+              reserved={reserved}
+              cleaning={cleaning}
+              total={total}
+              occupancyRate={occupancyRate}
+            />
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+            <h3 className="text-brand-900 mb-4 font-bold">
+              Revenue by Room Type
+            </h3>
+            <RevenueByTypePie revenueByType={revenueByType} />
           </div>
         </div>
 
-        {/* Guest Status */}
-        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
-            <div className="mb-2 text-xs font-semibold tracking-wide text-blue-600 uppercase">
-              Checked In
-            </div>
-            <div className="text-brand-900 text-3xl font-bold">
-              {checkedInGuests.length}
-            </div>
-            <div className="mt-1 text-sm text-gray-400">
-              {checkedInGuests
-                .slice(0, 3)
-                .map((g) => g.name)
-                .join(" · ") || "No guests in-house"}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
-            <div className="mb-2 text-xs font-semibold tracking-wide text-amber-600 uppercase">
-              Upcoming Reservations
-            </div>
-            <div className="text-brand-900 text-3xl font-bold">
-              {reservedGuests.length}
-            </div>
-            <div className="mt-1 text-sm text-gray-400">
-              {reservedGuests
-                .slice(0, 3)
-                .map((g) => g.name)
-                .join(" · ") || "No upcoming reservations"}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
-            <div className="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              Total Guests Registered
-            </div>
-            <div className="text-brand-900 text-3xl font-bold">
-              {guests.length}
-            </div>
-            <div className="mt-1 text-sm text-gray-400">
-              {checkedOutGuests.length} checked out so far
-            </div>
-          </div>
-        </div>
-
-        {/* Revenue by Room Type */}
-        <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+        {/* Room Type Performance Table */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
           <h3 className="text-brand-900 mb-4 font-bold">
-            Revenue by Room Type
+            Room Type Performance
           </h3>
-          {total === 0 ? (
-            <div className="py-6 text-center text-sm text-gray-400">
-              No rooms yet.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {byType.map((t) => {
-                const rev = t.revenue;
-                const pct = roomRevenue > 0 ? (rev / roomRevenue) * 100 : 0;
-                return (
-                  <div key={t.type}>
-                    <div className="mb-1.5 flex justify-between">
-                      <span className="text-brand-900 text-sm font-medium">
-                        {t.type}{" "}
-                        <span className="font-normal text-gray-400">
-                          ({t.occupied} rooms · ₹{t.avgRate}/night avg)
-                        </span>
-                      </span>
-                      <span className="text-brand-900 text-sm font-bold">
-                        ₹{rev.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-gray-100">
-                      <div
-                        className="from-brand-900 to-brand-700 h-full rounded-full bg-linear-to-r transition-all duration-700"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <div className="mt-0.5 text-xs text-gray-400">
-                      {Math.round(pct)}% of room revenue
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <RoomTypeTable roomsByType={roomsByType} />
         </div>
 
-        {/* Service Metrics */}
+        {/* Guest Activity */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <GuestActivityCard
+            label="Checked In"
+            value={checkedIn}
+            color="text-blue-600"
+            guests={checkedInGuests}
+            emptyText="No guests in-house"
+          />
+          <GuestActivityCard
+            label="Upcoming Arrivals"
+            value={arrivalsToday}
+            color="text-amber-600"
+            guests={reservedGuests}
+            emptyText="No upcoming reservations"
+          />
+          <GuestActivityCard
+            label="Departures Today"
+            value={departuresToday}
+            color="text-gray-500"
+            guests={checkedOutGuests}
+            emptyText="No departures"
+          />
+        </div>
+
+        {/* Booking Sources & Recent Bookings */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+            <h3 className="text-brand-900 mb-4 font-bold">Booking Sources</h3>
+            <BookingSourcesTable bookingSources={bookingSources} />
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+            <h3 className="text-brand-900 mb-4 font-bold">Recent Bookings</h3>
+            <RecentBookingsTable recentBookings={recentBookings} />
+          </div>
+        </div>
+
+        {/* F&B Top Items */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+          <h3 className="text-brand-900 mb-4 font-bold">Top F&B Items</h3>
+          <TopFoodItemsTable topFoodItems={topFoodItems} />
+        </div>
+
+        {/* Service Requests */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+            <h3 className="text-brand-900 mb-4 font-bold">
+              Service Request Status
+            </h3>
+            <ServiceRequestStatusChart
+              serviceRequestsByStatus={serviceRequestsByStatus}
+            />
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-xs">
+            <h3 className="text-brand-900 mb-4 font-bold">
+              Service Request Types
+            </h3>
+            <ServiceRequestTypesTable
+              serviceRequestsByType={serviceRequestsByType}
+            />
+          </div>
+        </div>
+
+        {/* Key Metrics Summary */}
         <div className="bg-brand-900 rounded-2xl p-5">
-          <h3 className="mb-4 font-bold text-white">Service Performance</h3>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            {[
-              ["Total Requests", serviceRequests.length, "text-white"],
-              [
-                "Pending",
-                serviceRequests.filter((r) => r.status === "requested").length,
-                "text-amber-400",
-              ],
-              [
-                "Acknowledged",
-                serviceRequests.filter((r) => r.status === "acknowledged")
-                  .length,
-                "text-blue-400",
-              ],
-              [
-                "In Progress",
-                serviceRequests.filter((r) => r.status === "in-progress")
-                  .length,
-                "text-primary-400",
-              ],
-              [
-                "Completed",
-                serviceRequests.filter((r) => r.status === "completed").length,
-                "text-green-400",
-              ],
-            ].map(([l, v, c]) => (
-              <div key={l} className="rounded-xl bg-white/5 p-3 text-center">
-                <div className={`text-3xl font-bold ${c}`}>{v}</div>
-                <div className="mt-1 text-xs tracking-wide text-white/50 uppercase">
-                  {l}
-                </div>
-              </div>
-            ))}
+          <h3 className="mb-4 font-bold text-white">Key Metrics Summary</h3>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+            <MetricSummaryCard
+              label="Total Bookings"
+              value={totalBookings}
+              color="text-white"
+            />
+            <MetricSummaryCard
+              label="Avg Stay (days)"
+              value={avgStayDuration}
+              color="text-white"
+            />
+            <MetricSummaryCard
+              label="Total Requests"
+              value={totalRequests}
+              color="text-white"
+            />
+            <MetricSummaryCard
+              label="Avg Response (min)"
+              value={avgResponseTimeMinutes}
+              color="text-white"
+            />
+            <MetricSummaryCard
+              label="F&B Orders"
+              value={foodOrderCount}
+              color="text-white"
+            />
+            <MetricSummaryCard
+              label="Avg Order Value"
+              value={formatCurrency(avgOrderValue)}
+              color="text-white"
+            />
+            <MetricSummaryCard
+              label="Booking Sources"
+              value={bookingSources.length}
+              color="text-white"
+            />
           </div>
         </div>
       </div>

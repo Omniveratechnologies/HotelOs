@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
-import { useOutletContext } from "react-router";
 import { CalendarClock, Filter, X, Save, Loader2 } from "lucide-react";
 
-import Topbar from "../../../components/layout/Topbar.jsx";
+import { Header, Input } from "@hotelos/ui/components";
 import Badge from "../../../components/ui/Badge.jsx";
 import { TableSkeleton, EmptyState } from "../../../components/ui/States.jsx";
 
@@ -66,8 +65,6 @@ const formatInputDate = (date) => {
 };
 
 export default function SubscriptionsPage() {
-  const { onMenuClick } = useOutletContext();
-
   const {
     subscriptions: subs,
     isLoading: loading,
@@ -163,19 +160,18 @@ export default function SubscriptionsPage() {
 
   return (
     <>
-      <Topbar
-        title="Subscriptions"
-        subtitle={
+      <Header
+        pageTitle="Subscriptions"
+        pageDescription={
           expiringCount > 0
             ? `${expiringCount} subscription${
                 expiringCount > 1 ? "s" : ""
               } expiring soon`
             : "Manage subscription dates across every hotel"
         }
-        onMenuClick={onMenuClick}
       />
 
-      <main className="flex-1 px-5 pb-10 lg:px-8">
+      <main className="flex-1 px-6 py-8 lg:px-10">
         {/* FILTERS */}
         <div className="mb-5 flex flex-wrap items-center gap-2">
           <Filter size={15} className="text-brand-700/60 mr-1" />
@@ -355,31 +351,21 @@ export default function SubscriptionsPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="text-brand-900 mb-2 block text-sm font-semibold">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  name="startDate"
-                  value={form.startDate}
-                  onChange={handleChange}
-                  className="border-surface-200 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-xl border bg-white px-4 py-3 text-sm transition outline-none focus:ring-2"
-                />
-              </div>
+              <Input
+                type="date"
+                name="startDate"
+                label="Start Date"
+                value={form.startDate}
+                onChange={handleChange}
+              />
 
-              <div>
-                <label className="text-brand-900 mb-2 block text-sm font-semibold">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  name="endDate"
-                  value={form.endDate}
-                  onChange={handleChange}
-                  className="border-surface-200 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-xl border bg-white px-4 py-3 text-sm transition outline-none focus:ring-2"
-                />
-              </div>
+              <Input
+                type="date"
+                name="endDate"
+                label="End Date"
+                value={form.endDate}
+                onChange={handleChange}
+              />
 
               {saveError && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">

@@ -1,5 +1,4 @@
 import { useMemo, useState, useEffect } from "react";
-import { useOutletContext } from "react-router";
 
 import {
   Plus,
@@ -11,8 +10,7 @@ import {
   Pencil,
 } from "lucide-react";
 
-import Topbar from "../../../components/layout/Topbar.jsx";
-import Button from "../../../components/ui/Button.jsx";
+import { Header, Button } from "@hotelos/ui/components";
 import Badge from "../../../components/ui/Badge.jsx";
 
 import { EmptyState, TableSkeleton } from "../../../components/ui/States.jsx";
@@ -37,8 +35,6 @@ function formatDate(date) {
 }
 
 export default function HotelsPage() {
-  const { onMenuClick } = useOutletContext();
-
   const { hotels, isLoading: loading } = useHotels();
   const updateHotelStatusMutation = useUpdateHotelStatus();
   const [query, setQuery] = useState("");
@@ -124,20 +120,18 @@ export default function HotelsPage() {
 
   return (
     <>
-      <Topbar
-        title="Hotels"
-        subtitle={`${hotels.length} propert${
+      <Header
+        pageTitle="Hotels"
+        pageDescription={`${hotels.length} propert${
           hotels.length === 1 ? "y" : "ies"
         } on the platform`}
-        onMenuClick={onMenuClick}
-        actions={
-          <Button icon={Plus} onClick={() => setCreateOpen(true)}>
-            Create hotel
-          </Button>
-        }
-      />
+      >
+        <Button icon={Plus} onClick={() => setCreateOpen(true)}>
+          Create hotel
+        </Button>
+      </Header>
 
-      <main className="flex-1 px-5 pb-10 lg:px-8">
+      <main className="flex-1 px-6 py-8 lg:px-10">
         {/* SEARCH */}
         <div className="mb-5 flex items-center gap-3">
           <div className="relative w-full max-w-sm">

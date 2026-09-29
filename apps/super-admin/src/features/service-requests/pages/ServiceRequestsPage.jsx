@@ -1,6 +1,5 @@
-import { useOutletContext } from "react-router";
 import { LifeBuoy } from "lucide-react";
-import Topbar from "../../../components/layout/Topbar.jsx";
+import { Header } from "@hotelos/ui/components/Header";
 import Badge from "../../../components/ui/Badge.jsx";
 import { TableSkeleton, EmptyState } from "../../../components/ui/States.jsx";
 import {
@@ -11,7 +10,6 @@ import {
 const STATUS_OPTIONS = ["open", "in_progress", "resolved"];
 
 export default function ServiceRequestsPage() {
-  const { onMenuClick } = useOutletContext();
   const { serviceRequests: requests = [], isLoading: loading } =
     useSuperAdminServiceRequests();
   const updateStatusMut = useUpdateSuperAdminServiceRequestStatus();
@@ -25,13 +23,12 @@ export default function ServiceRequestsPage() {
 
   return (
     <>
-      <Topbar
-        title="Service Requests"
-        subtitle={`${openCount} request${openCount === 1 ? "" : "s"} need attention`}
-        onMenuClick={onMenuClick}
+      <Header
+        pageTitle="Service Requests"
+        pageDescription={`${openCount} request${openCount === 1 ? "" : "s"} need attention`}
       />
 
-      <main className="flex-1 px-5 pb-10 lg:px-8">
+      <main className="flex-1 px-6 py-8 lg:px-10">
         {loading ? (
           <TableSkeleton rows={4} cols={5} />
         ) : requests.length === 0 ? (

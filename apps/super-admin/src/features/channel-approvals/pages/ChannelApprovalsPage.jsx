@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useOutletContext, Link } from "react-router";
+import { Link } from "react-router";
 import { BadgeCheck, Check, Copy, Eye, Info, X } from "lucide-react";
-import Topbar from "../../../components/layout/Topbar.jsx";
+import { Header } from "@hotelos/ui/components/Header";
 import Badge from "../../../components/ui/Badge.jsx";
 import { TableSkeleton, EmptyState } from "../../../components/ui/States.jsx";
 import {
@@ -764,7 +764,6 @@ function ApprovalDetailModal({
 }
 
 export default function ChannelApprovals() {
-  const { onMenuClick } = useOutletContext();
   const [kind, setKind] = useState("all");
   const [status, setStatus] = useState("under_review");
   const [viewing, setViewing] = useState(null);
@@ -823,15 +822,14 @@ export default function ChannelApprovals() {
 
   return (
     <>
-      <Topbar
-        title="Channel Requests"
-        subtitle={`${pendingCount} change request${
+      <Header
+        pageTitle="Channel Requests"
+        pageDescription={`${pendingCount} change request${
           pendingCount === 1 ? "" : "s"
         } awaiting verification`}
-        onMenuClick={onMenuClick}
       />
 
-      <main className="flex-1 px-5 pb-10 lg:px-8">
+      <main className="flex-1 px-6 py-8 lg:px-10">
         {/* How requests work */}
         <div className="mb-5 flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-100/40 px-4 py-3">
           <Info size={16} className="mt-0.5 shrink-0 text-amber-500" />

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAiosellRoomTypes } from "@hotelos/api";
+import { Input } from "@hotelos/ui/components";
 
 export default function AddRoomModal({ onClose, onAdd }) {
   const [roomNumber, setRoomNumber] = useState("");
@@ -143,33 +144,23 @@ export default function AddRoomModal({ onClose, onAdd }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3 p-5">
-          <div>
-            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              Room Number *
-            </label>
-            <input
-              value={roomNumber}
-              onChange={(e) => setRoomNumber(e.target.value)}
-              placeholder="e.g. 101"
-              autoFocus
-              disabled={saving}
-              className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
-            />
-          </div>
+          <Input
+            label="Room Number *"
+            value={roomNumber}
+            onChange={(e) => setRoomNumber(e.target.value)}
+            placeholder="e.g. 101"
+            autoFocus
+            disabled={saving}
+          />
 
-          <div>
-            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              Floor *
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={floor}
-              onChange={(e) => setFloor(e.target.value)}
-              disabled={saving}
-              className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
-            />
-          </div>
+          <Input
+            label="Floor *"
+            type="number"
+            min="0"
+            value={floor}
+            onChange={(e) => setFloor(e.target.value)}
+            disabled={saving}
+          />
 
           <div>
             <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -208,20 +199,15 @@ export default function AddRoomModal({ onClose, onAdd }) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Rate / Night *
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={rate}
-                onChange={(e) => setRate(e.target.value)}
-                placeholder="₹2500"
-                disabled={saving}
-                className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
-              />
-            </div>
+            <Input
+              label="Rate / Night *"
+              type="number"
+              min="0"
+              value={rate}
+              onChange={(e) => setRate(e.target.value)}
+              placeholder="₹2500"
+              disabled={saving}
+            />
             {selected && (
               <div className="mt-0 flex flex-col justify-end rounded-xl bg-gray-50 px-3 py-2.5">
                 <span className="text-[11px] font-medium text-gray-500">

@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { useOutletContext } from "react-router";
 import { Search, Wallet, ArrowDownUp } from "lucide-react";
-import Topbar from "../../../components/layout/Topbar.jsx";
+import { Header } from "@hotelos/ui/components/Header";
 import { TableSkeleton, EmptyState } from "../../../components/ui/States.jsx";
 import { useTransactions } from "../hooks/useTransactions.js";
 
@@ -14,7 +13,6 @@ function formatCurrency(n) {
 }
 
 export default function TransactionsPage() {
-  const { onMenuClick } = useOutletContext();
   const { transactions: rows, isLoading: loading } = useTransactions();
   const [query, setQuery] = useState("");
   const [sortDesc, setSortDesc] = useState(true);
@@ -32,13 +30,12 @@ export default function TransactionsPage() {
 
   return (
     <>
-      <Topbar
-        title="Food Transactions"
-        subtitle={`${formatCurrency(total)} received across all hotels`}
-        onMenuClick={onMenuClick}
+      <Header
+        pageTitle="Food Transactions"
+        pageDescription={`${formatCurrency(total)} received across all hotels`}
       />
 
-      <main className="flex-1 px-5 pb-10 lg:px-8">
+      <main className="flex-1 px-6 py-8 lg:px-10">
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <div className="relative w-full max-w-sm">
             <Search

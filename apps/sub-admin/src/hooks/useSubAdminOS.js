@@ -23,6 +23,18 @@ import {
   useDeleteMember,
   useSendMemberInvitation,
 } from "../features/members/hooks/useMembers.js";
+import {
+  useReservations,
+  useCreateReservation,
+  useUpdateReservation,
+  useDeleteReservation,
+} from "../features/reservations/hooks/useReservations.js";
+import {
+  useGuests,
+  useUpdateGuest,
+  useUpdateGuestCredentials,
+  useDeleteGuest,
+} from "../features/guests/hooks/useGuests.js";
 import { useDashboardStats } from "../features/dashboard/hooks/useDashboardStats.js";
 import {
   useMyHotel,
@@ -55,6 +67,12 @@ export function useSubAdminOS() {
     error: membersError,
   } = useMembers();
   const {
+    reservations,
+    isLoading: reservationsLoading,
+    error: reservationsError,
+  } = useReservations();
+  const { guests, isLoading: guestsLoading, error: guestsError } = useGuests();
+  const {
     stats,
     isLoading: statsLoading,
     error: statsError,
@@ -66,6 +84,14 @@ export function useSubAdminOS() {
   const createRoomMut = useCreateRoom();
   const updateRoomMut = useUpdateRoom();
   const deleteRoomMut = useDeleteRoom();
+
+  const createReservationMut = useCreateReservation();
+  const updateReservationMut = useUpdateReservation();
+  const deleteReservationMut = useDeleteReservation();
+
+  const updateGuestMut = useUpdateGuest();
+  const updateGuestCredentialsMut = useUpdateGuestCredentials();
+  const deleteGuestMut = useDeleteGuest();
 
   const createRoomTypeMut = useCreateRoomType();
   const updateRoomTypeMut = useUpdateRoomType();
@@ -84,6 +110,8 @@ export function useSubAdminOS() {
   const refreshAll = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.guests.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.roomTypes.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.ratePlans.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.members.all }),
@@ -97,6 +125,12 @@ export function useSubAdminOS() {
     rooms,
     roomsLoading,
     roomsError,
+    reservations,
+    reservationsLoading,
+    reservationsError,
+    guests,
+    guestsLoading,
+    guestsError,
     roomTypes,
     roomTypesLoading,
     roomTypesError,
@@ -121,6 +155,15 @@ export function useSubAdminOS() {
     createRoom: (data) => createRoomMut.mutateAsync(data),
     updateRoom: (id, updates) => updateRoomMut.mutateAsync({ id, updates }),
     deleteRoom: (id) => deleteRoomMut.mutateAsync(id),
+    createReservation: (data) => createReservationMut.mutateAsync(data),
+    updateReservation: (id, updates) =>
+      updateReservationMut.mutateAsync({ id, updates }),
+    deleteReservation: (id) => deleteReservationMut.mutateAsync(id),
+    updateGuest: (guestId, updates) =>
+      updateGuestMut.mutateAsync({ guestId, updates }),
+    updateGuestCredentials: (guestId, payload) =>
+      updateGuestCredentialsMut.mutateAsync({ guestId, payload }),
+    deleteGuest: (id) => deleteGuestMut.mutateAsync(id),
     createRoomType: (data) => createRoomTypeMut.mutateAsync(data),
     updateRoomType: (id, data) => updateRoomTypeMut.mutateAsync({ id, data }),
     deleteRoomType: (id) => deleteRoomTypeMut.mutateAsync(id),

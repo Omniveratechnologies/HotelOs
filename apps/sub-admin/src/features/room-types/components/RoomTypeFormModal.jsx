@@ -1,8 +1,6 @@
 import { useState } from "react";
 
-import Modal from "../../../components/ui/Modal.jsx";
-import Button from "../../../components/ui/Button.jsx";
-import { Input } from "../../../components/ui/Input.jsx";
+import { Modal, Button, Input } from "@hotelos/ui/components";
 
 import { useCreateRoomType, useUpdateRoomType } from "../hooks/useRoomTypes.js";
 
@@ -219,35 +217,22 @@ export default function RoomTypeFormModal({ roomType, onClose, onSaved }) {
           error={errors.name}
         />
 
-        <div className="mb-4">
-          <label
-            htmlFor="roomCode"
-            className="text-brand-900 mb-2 block text-sm font-medium"
-          >
-            Room code
-          </label>
-          <input
-            id="roomCode"
-            className="text-brand-900 focus:ring-primary-400 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 outline-hidden focus:ring-2 disabled:bg-gray-50 disabled:text-gray-400"
-            placeholder="e.g. executive"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-            readOnly={isEdit}
-            disabled={isEdit}
-          />
-          {errors.roomCode ? (
-            <p className="mt-2 text-sm text-red-600">{errors.roomCode}</p>
-          ) : isEdit ? (
-            <p className="mt-2 text-xs text-gray-500">
-              The code is locked once created — it identifies this type in the
-              property.
-            </p>
-          ) : (
-            <p className="mt-2 text-xs text-gray-500">
-              This becomes the Aiosell room code for every room of this type.
-            </p>
-          )}
-        </div>
+        <Input
+          id="roomCode"
+          name="roomCode"
+          label="Room code"
+          placeholder="e.g. executive"
+          value={roomCode}
+          onChange={(e) => setRoomCode(e.target.value)}
+          readOnly={isEdit}
+          disabled={isEdit}
+          error={errors.roomCode}
+          hint={
+            isEdit
+              ? "The code is locked once created — it identifies this type in the property."
+              : "This becomes the Aiosell room code for every room of this type."
+          }
+        />
 
         {!isEdit && (
           <Input
@@ -260,38 +245,23 @@ export default function RoomTypeFormModal({ roomType, onClose, onSaved }) {
           />
         )}
 
-        <div className="mb-4">
-          <label
-            htmlFor="count"
-            className="text-brand-900 mb-2 block text-sm font-medium"
-          >
-            {isEdit ? "Room count" : "Room count"}
-          </label>
-          <input
-            id="count"
-            type="number"
-            min="1"
-            className="text-brand-900 focus:ring-primary-400 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 outline-hidden focus:ring-2 disabled:bg-gray-50 disabled:text-gray-400"
-            value={count}
-            onChange={(e) =>
-              isEdit ? null : handleCountChange(e.target.value)
-            }
-            disabled={isEdit}
-            readOnly={isEdit}
-          />
-          {errors.count ? (
-            <p className="mt-2 text-sm text-red-600">{errors.count}</p>
-          ) : isEdit ? (
-            <p className="mt-2 text-xs text-gray-500">
-              Count is managed from the Rooms section — add or delete rooms
-              there to change it.
-            </p>
-          ) : (
-            <p className="mt-2 text-xs text-gray-500">
-              Set the number of rooms, then fill each room's details below.
-            </p>
-          )}
-        </div>
+        <Input
+          id="count"
+          name="count"
+          label="Room count"
+          type="number"
+          min="1"
+          value={count}
+          onChange={(e) => (isEdit ? null : handleCountChange(e.target.value))}
+          disabled={isEdit}
+          readOnly={isEdit}
+          error={errors.count}
+          hint={
+            isEdit
+              ? "Count is managed from the Rooms section — add or delete rooms there to change it."
+              : "Set the number of rooms, then fill each room's details below."
+          }
+        />
 
         {!isEdit && (
           <div className="mb-4">
@@ -356,46 +326,28 @@ export default function RoomTypeFormModal({ roomType, onClose, onSaved }) {
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="minOccupancy"
-              className="text-brand-900 mb-2 block text-sm font-medium"
-            >
-              Min occupancy
-            </label>
-            <input
-              id="minOccupancy"
-              type="number"
-              min="1"
-              className="text-brand-900 focus:ring-primary-400 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 outline-hidden focus:ring-2"
-              value={minOccupancy}
-              onChange={(e) => setMinOccupancy(e.target.value)}
-            />
-            {errors.minOccupancy && (
-              <p className="mt-2 text-sm text-red-600">{errors.minOccupancy}</p>
-            )}
-          </div>
+          <Input
+            id="minOccupancy"
+            name="minOccupancy"
+            label="Min occupancy"
+            type="number"
+            min="1"
+            value={minOccupancy}
+            onChange={(e) => setMinOccupancy(e.target.value)}
+            error={errors.minOccupancy}
+          />
 
-          <div>
-            <label
-              htmlFor="maxOccupancy"
-              className="text-brand-900 mb-2 block text-sm font-medium"
-            >
-              Max occupancy
-            </label>
-            <input
-              id="maxOccupancy"
-              type="number"
-              min="1"
-              placeholder="None"
-              className="text-brand-900 focus:ring-primary-400 w-full rounded-lg border border-gray-200 bg-white px-4 py-3 outline-hidden focus:ring-2"
-              value={maxOccupancy}
-              onChange={(e) => setMaxOccupancy(e.target.value)}
-            />
-            {errors.maxOccupancy && (
-              <p className="mt-2 text-sm text-red-600">{errors.maxOccupancy}</p>
-            )}
-          </div>
+          <Input
+            id="maxOccupancy"
+            name="maxOccupancy"
+            label="Max occupancy"
+            type="number"
+            min="1"
+            placeholder="None"
+            value={maxOccupancy}
+            onChange={(e) => setMaxOccupancy(e.target.value)}
+            error={errors.maxOccupancy}
+          />
         </div>
 
         <label className="mt-4 mb-4 flex cursor-pointer items-center gap-2.5">

@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import DashboardLayout from "../layouts/DashboardLayout.jsx";
+import PrintLayout from "../layouts/PrintLayout.jsx";
 import AuthLayout from "../AuthLayout.jsx";
 import { ErrorScreen } from "@hotelos/ui/ErrorScreen";
 import { LoadingScreen } from "@hotelos/ui/components/LoadingScreen";
@@ -40,6 +41,13 @@ export const router = createBrowserRouter([
                 lazy: lazyPage(
                   () =>
                     import("../../features/dashboard/pages/DashboardPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/ReservationsPage.jsx"),
                 ),
               },
               {
@@ -96,6 +104,17 @@ export const router = createBrowserRouter([
                 ),
               },
             ],
+          },
+        ],
+      },
+      {
+        element: <PrintLayout />,
+        children: [
+          {
+            path: "reports/print",
+            lazy: lazyPage(
+              () => import("../../features/reports/pages/ReportsPrintPage.jsx"),
+            ),
           },
         ],
       },

@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
+import { Input } from "@hotelos/ui/components";
 import { deriveRatePlanCode } from "@hotelos/utils";
 import { useAiosellRoomTypes } from "../../settings/hooks/useHotelSettings.js";
 
 const OCCUPANCIES = ["single", "double", "triple", "quad"];
 const MEAL_PLANS = ["EP", "CP", "MAP", "AP"];
-
-const inputClass =
-  "focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden";
 
 export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
   const [name, setName] = useState(ratePlan?.name || "");
@@ -165,19 +163,15 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3 p-5">
-          <div>
-            <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-              Plan Name *
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Executive Single Room Only"
-              autoFocus
-              disabled={saving}
-              className={inputClass}
-            />
-          </div>
+          <Input
+            label="Plan Name *"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Executive Single Room Only"
+            autoFocus
+            disabled={saving}
+            required
+          />
 
           <div>
             <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
@@ -187,7 +181,7 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
               value={code}
               onChange={(e) => handleRoomCodeChange(e.target.value)}
               disabled={saving || noTypes}
-              className={inputClass}
+              className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
             >
               {typesLoading && <option value="">Loading…</option>}
               {!typesLoading && noTypes && (
@@ -230,20 +224,16 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Rate / Night *
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={rate}
-                onChange={(e) => setRate(e.target.value)}
-                placeholder="₹2500"
-                disabled={saving}
-                className={inputClass}
-              />
-            </div>
+            <Input
+              label="Rate / Night *"
+              type="number"
+              min="0"
+              value={rate}
+              onChange={(e) => setRate(e.target.value)}
+              placeholder="₹2500"
+              disabled={saving}
+              required
+            />
             <div>
               <label className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Occupancy *
@@ -252,7 +242,7 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
                 value={occupancy}
                 onChange={(e) => setOccupancy(e.target.value)}
                 disabled={saving}
-                className={inputClass}
+                className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
               >
                 {OCCUPANCIES.map((o) => (
                   <option key={o} value={o}>
@@ -271,7 +261,7 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
               value={mealPlan}
               onChange={(e) => setMealPlan(e.target.value)}
               disabled={saving}
-              className={inputClass}
+              className="focus:border-primary-400 mt-1 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-hidden"
             >
               {MEAL_PLANS.map((m) => (
                 <option key={m} value={m}>
@@ -294,30 +284,20 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
             </p>
 
             <div className="mt-2.5 grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-gray-600">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  disabled={saving}
-                  className="focus:ring-primary-400 w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-800 outline-hidden focus:ring-1"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-gray-600">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  disabled={saving}
-                  className="focus:ring-primary-400 w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs text-gray-800 outline-hidden focus:ring-1"
-                />
-              </div>
+              <Input
+                type="date"
+                label="Start Date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                disabled={saving}
+              />
+              <Input
+                type="date"
+                label="End Date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                disabled={saving}
+              />
             </div>
           </div>
 

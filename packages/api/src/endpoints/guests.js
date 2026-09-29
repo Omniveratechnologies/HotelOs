@@ -56,6 +56,37 @@ export const getGuest = async (bookingId) => {
 };
 
 /**
+ * Fetches guest directory profiles list from /api/v1/guests.
+ * @param {object|string} [params] - { status, search } or status string
+ * @returns {Promise<Array<object>>}
+ */
+export const getGuestsList = async (params = {}) => {
+  const query = {};
+  const opts = typeof params === "string" ? { status: params } : params;
+  if (opts.status && opts.status !== "all") {
+    query.status = opts.status;
+  }
+  if (opts.search?.trim()) {
+    query.search = opts.search.trim();
+  }
+  const result = await api.get("/api/v1/guests", {
+    auth: true,
+    ...(Object.keys(query).length > 0 ? { query } : {}),
+  });
+  return result.data || [];
+};
+
+/**
+ * Fetches single guest profile details from /api/v1/guests/:id.
+ * @param {string} guestId
+ * @returns {Promise<object>}
+ */
+export const getGuestDetails = async (guestId) => {
+  const result = await api.get(`/api/v1/guests/${guestId}`, { auth: true });
+  return result.data;
+};
+
+/**
  * Registers a new guest and creates a booking, uploading any identity documents.
  * @param {object} data
  * @returns {Promise<object>}

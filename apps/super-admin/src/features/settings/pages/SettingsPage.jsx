@@ -1,10 +1,6 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router";
 import { Save, Bell, ShieldCheck, User } from "lucide-react";
-import Topbar from "../../../components/layout/Topbar.jsx";
-import Field from "../../../components/ui/Field.jsx";
-import { inputClass } from "../../../components/ui/inputClass.js";
-import Button from "../../../components/ui/Button.jsx";
+import { Header, Input, Button } from "@hotelos/ui/components";
 import { currentAdmin } from "../../../data/mockData.js";
 
 function SectionCard({ icon: Icon, title, description, children }) {
@@ -55,7 +51,6 @@ function Toggle({ checked, onChange, label, description }) {
 }
 
 export default function SettingsPage() {
-  const { onMenuClick } = useOutletContext();
   const [name, setName] = useState(currentAdmin.name);
   const [email, setEmail] = useState(currentAdmin.email);
   const [notifyExpiry, setNotifyExpiry] = useState(true);
@@ -73,13 +68,12 @@ export default function SettingsPage() {
 
   return (
     <>
-      <Topbar
-        title="Settings"
-        subtitle="Manage your admin profile, security, and notifications."
-        onMenuClick={onMenuClick}
+      <Header
+        pageTitle="Settings"
+        pageDescription="Manage your admin profile, security, and notifications."
       />
 
-      <main className="flex-1 space-y-5 px-5 pb-10 lg:px-8">
+      <main className="flex-1 space-y-5 px-6 py-8 lg:px-10">
         <form onSubmit={handleSave} className="space-y-5">
           <SectionCard
             icon={User}
@@ -87,21 +81,17 @@ export default function SettingsPage() {
             description="This information is visible to your team."
           >
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Full name">
-                <input
-                  className={inputClass()}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </Field>
-              <Field label="Email address">
-                <input
-                  type="email"
-                  className={inputClass()}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </Field>
+              <Input
+                label="Full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <Input
+                label="Email address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
           </SectionCard>
 

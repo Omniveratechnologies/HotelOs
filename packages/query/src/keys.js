@@ -6,6 +6,13 @@ export const queryKeys = {
     details: () => [...queryKeys.rooms.all, "detail"],
     detail: (id) => [...queryKeys.rooms.details(), id],
   },
+  reservations: {
+    all: ["reservations"],
+    lists: () => [...queryKeys.reservations.all, "list"],
+    list: (filters) => [...queryKeys.reservations.lists(), filters || {}],
+    details: () => [...queryKeys.reservations.all, "detail"],
+    detail: (id) => [...queryKeys.reservations.details(), id],
+  },
   guests: {
     all: ["guests"],
     lists: () => [...queryKeys.guests.all, "list"],
@@ -107,5 +114,13 @@ export const queryKeys = {
     list: (hotelId) => [...queryKeys.invitations.lists(), hotelId || "all"],
     details: () => [...queryKeys.invitations.all, "detail"],
     detail: (id) => [...queryKeys.invitations.details(), id],
+  },
+  reports: {
+    all: ["reports"],
+    dashboard: (period, startDate, endDate) => [
+      ...queryKeys.reports.all,
+      "dashboard",
+      { period, startDate, endDate },
+    ],
   },
 };
