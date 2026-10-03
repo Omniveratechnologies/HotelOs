@@ -57,6 +57,8 @@ function kitchenOrderDTO(order, room) {
     paymentStatus: order.paymentStatus,
     items: (order.items || []).map((item) => ({
       _id: item._id || item.foodItemId,
+      foodItemId: item.foodItemId,
+      recipeId: item.recipeId || null,
       name: item.name,
       quantity: item.quantity,
       price: item.price,
@@ -114,6 +116,7 @@ export const createOrder = async (req, res) => {
 
       return {
         foodItemId: foodItem._id,
+        recipeId: reqItem.recipeId || null,
         name: foodItem.name,
         price: foodItem.price,
         quantity,
@@ -409,6 +412,7 @@ export const createDeskOrder = async (req, res) => {
 
       return {
         foodItemId: foodItem._id,
+        recipeId: reqItem.recipeId || null,
         name: foodItem.name,
         price: foodItem.price,
         quantity,
@@ -527,7 +531,13 @@ export const updateOrder = async (req, res) => {
 
     order.guestId = guestId;
     order.roomId = roomId;
-    order.items = items;
+    order.items = items.map((item) => ({
+      foodItemId: item.foodItemId,
+      recipeId: item.recipeId || null,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+    }));
 
     await order.save();
 
@@ -547,22 +557,40 @@ export const updateOrderStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!status) {
-      return res.status(400).json({ message: "status is required" });
+      return res.status(400).json({
+        message: "status is required",
+      });
     }
 
     const normalized = normalizeStatus(status);
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status: normalized },
-      { new: true },
-    );
+    const existingOrder = await Order.findById(req.params.id);
 
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+    if (!existingOrder) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
     }
 
+    const updateData = {
+      status: normalized,
+    };
+
+    if (normalized === "PREPARING" && !existingOrder.acceptedAt) {
+      updateData.acceptedAt = new Date();
+    }
+
+    if (normalized === "OUT_FOR_DELIVERY") {
+      updateData.outForDeliveryAt = new Date();
+    }
+
+    const order = await Order.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: false,
+    });
+
     let room = null;
+
     if (order.roomId) {
       room = await Room.findById(order.roomId).select("roomNumber");
     }
@@ -570,6 +598,7 @@ export const updateOrderStatus = async (req, res) => {
     return res.status(200).json(kitchenOrderDTO(order, room));
   } catch (error) {
     logger.error(error, "Update order status error");
+
     return res.status(500).json({
       message: "Failed to update order status",
       error: error.message,

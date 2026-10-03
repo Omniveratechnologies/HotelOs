@@ -6,6 +6,10 @@ const foodItemSchema = new mongoose.Schema(
     description: { type: String, trim: true },
     price: { type: Number, required: true },
     category: { type: String, trim: true, default: "General" },
+    image: {
+      type: String,
+      trim: true,
+    },
     isAvailable: { type: Boolean, default: true },
     hotelId: {
       type: mongoose.Schema.Types.ObjectId,

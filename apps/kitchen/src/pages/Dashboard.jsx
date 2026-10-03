@@ -12,29 +12,36 @@ const Dashboard = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [navbarSearchTerm, setNavbarSearchTerm] = useState("");
 
-  const updateStatus = async (id, newStatus) => {
+  const updateStatus = async (orderId, status) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/kitchen/orders/${id}/status`,
+        `${API_BASE_URL}/kitchen/orders/${orderId}/status`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            status: newStatus,
-          }),
+          body: JSON.stringify({ status }),
         },
       );
 
+      const result = await response.json();
+
+      console.log("Status update response:", result);
+
       if (!response.ok) {
-        throw new Error("Failed to update order status");
+        throw new Error(result.message || "Failed to update order status");
       }
 
-      const updatedOrder = await response.json();
-
-      setOrders((prev) =>
-        prev.map((order) => (order._id === id ? updatedOrder : order)),
+      setOrders((currentOrders) =>
+        currentOrders.map((order) =>
+          order._id === orderId
+            ? {
+                ...order,
+                ...result,
+              }
+            : order,
+        ),
       );
     } catch (error) {
       console.error("Error updating order status:", error);

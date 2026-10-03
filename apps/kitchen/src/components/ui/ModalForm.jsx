@@ -1,36 +1,25 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiX } from "react-icons/fi";
 import FormField from "./FormField";
 
-const ModalForm = ({
-  isOpen,
+const ModalFormContent = ({
   onClose,
-  title = "Add New",
-  subtitle = "",
-  fields = [],
-  submitText = "Submit",
+  title,
+  subtitle,
+  fields,
+  submitText,
   onSubmit,
-  initialData = {},
+  initialData,
+  showCancel,
 }) => {
-  const getInitialValues = () => {
-    return fields.reduce((acc, field) => {
+  const getInitialValues = () =>
+    fields.reduce((acc, field) => {
       acc[field.name] = initialData[field.name] ?? field.defaultValue ?? "";
 
       return acc;
     }, {});
-  };
 
   const [formData, setFormData] = useState(getInitialValues);
-
-  useEffect(() => {
-    if (isOpen) {
-      setFormData(getInitialValues());
-    }
-  }, [isOpen, initialData]);
-
-  if (!isOpen) {
-    return null;
-  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -91,13 +80,15 @@ const ModalForm = ({
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-gray-700 px-4 py-2 text-xs font-medium text-gray-300 transition hover:bg-gray-800 hover:text-white"
-            >
-              Cancel
-            </button>
+            {showCancel && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-gray-700 px-4 py-2 text-xs font-medium text-gray-300 transition hover:bg-gray-800 hover:text-white"
+              >
+                Cancel
+              </button>
+            )}
 
             <button
               type="submit"
@@ -109,6 +100,37 @@ const ModalForm = ({
         </form>
       </div>
     </div>
+  );
+};
+const EMPTY_ARRAY = [];
+const EMPTY_OBJECT = {};
+const ModalForm = ({
+  isOpen,
+  onClose,
+  title = "Add New",
+  subtitle = "",
+  fields = EMPTY_ARRAY,
+  submitText = "Submit",
+  onSubmit,
+  initialData = EMPTY_OBJECT,
+  showCancel = true,
+}) => {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <ModalFormContent
+      key={JSON.stringify(initialData)}
+      onClose={onClose}
+      title={title}
+      subtitle={subtitle}
+      fields={fields}
+      submitText={submitText}
+      onSubmit={onSubmit}
+      initialData={initialData}
+      showCancel={showCancel}
+    />
   );
 };
 

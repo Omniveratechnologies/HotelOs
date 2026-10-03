@@ -5,6 +5,14 @@ const StatusBadge = ({ status }) => {
     READY: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
     "OUT FOR DELIVERY": "border-blue-500/30 bg-blue-500/10 text-blue-400",
     REJECTED: "border-red-500/30 bg-red-500/10 text-red-400",
+    PARTIALLY_RECEIVED: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400",
+    DRAFT: "border-purple-500/30 bg-purple-500/10 text-purple-400",
+    RECEIVED: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    CONFIRMED: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    CANCELLED: "border-red-500/30 bg-red-500/10 text-red-400",
+    "OUT OF STOCK": "border-red-500/30 bg-red-500/10 text-red-400",
+    "LOW STOCK": "border-yellow-500/30 bg-yellow-500/10 text-yellow-400",
+    "IN STOCK": "border-green-500/30 bg-green-500/10 text-green-400",
   };
 
   const statusLabels = {
@@ -13,6 +21,14 @@ const StatusBadge = ({ status }) => {
     READY: "Ready",
     "OUT FOR DELIVERY": "Out for Delivery",
     REJECTED: "Rejected",
+    PARTIALLY_RECEIVED: "PARTIALLY RECEIVED",
+    DRAFT: "DRAFT",
+    RECEIVED: "RECEIVED",
+    CONFIRMED: "CONFIRMED",
+    CANCELLED: "CANCELLED",
+    "OUT OF STOCK": "OUT OF STOCK",
+    "LOW STOCK": "LOW STOCK",
+    "IN STOCK": "IN STOCK",
   };
 
   return (

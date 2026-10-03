@@ -11,12 +11,11 @@ import {
   FiUsers,
   FiCreditCard,
   FiBarChart2,
-  FiTruck,
   FiSettings,
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
-const SidebarMenu = () => {
+const SideBarMenu = () => {
   const [openSubmenu, setOpenSubmenu] = useState(null);
 
   const handleSubmenu = (name) => {
@@ -74,11 +73,13 @@ const SidebarMenu = () => {
         { name: "Stock Overview", path: "/inventory/stock-overview" },
         { name: "Add / Receive Stock", path: "/inventory/add-stock" },
         { name: "Stock Out / Usage", path: "/inventory/stock-out" },
+        { name: "Recipe / Ingredients", path: "/inventory/recipe/add" },
+        { name: "Recipes", path: "/inventory/recipes" },
         { name: "Low Stock Items", path: "/inventory/low-stock-items" },
         { name: "Wastage / Spoilage", path: "/inventory/wastage" },
         { name: "Suppliers", path: "/inventory/suppliers" },
-        { name: "Categories", path: "/inventory/categories" },
         { name: "Purchase Orders", path: "/inventory/purchase-orders" },
+        { name: "Stock Adjustment", path: "/inventory/stock-adjustment" },
       ],
     },
 
@@ -135,19 +136,6 @@ const SidebarMenu = () => {
     },
 
     {
-      name: "Suppliers",
-      icon: <FiTruck />,
-      submenu: [
-        { name: "All Suppliers", path: "/suppliers" },
-        { name: "Supplies History", path: "/suppliers/history" },
-        { name: "Purchase Order", path: "/suppliers/purchase-order" },
-        { name: "Pending Deliveries", path: "/suppliers/pending-deliveries" },
-        { name: "Payments", path: "/suppliers/payments" },
-        { name: "Supplier Performance", path: "/suppliers/performance" },
-      ],
-    },
-
-    {
       name: "Settings",
       path: "/settings",
       icon: <FiSettings />,
@@ -162,7 +150,7 @@ const SidebarMenu = () => {
             <Link
               to={item.path}
               onClick={() => console.log("Dashboard clicked")}
-              className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm text-gray-300 transition hover:bg-emerald-900 hover:text-white"
+              className="hover:bg-white-900 flex items-center gap-3 rounded-lg px-3 py-3 text-sm text-gray-300 transition hover:text-white"
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.name}</span>
@@ -171,7 +159,7 @@ const SidebarMenu = () => {
             <>
               <button
                 onClick={() => handleSubmenu(item.name)}
-                className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-sm text-gray-300 transition hover:bg-emerald-900 hover:text-white"
+                className="hover:bg-white-900 flex w-full items-center justify-between rounded-lg px-3 py-3 text-sm text-gray-300 transition hover:text-white"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{item.icon}</span>
@@ -191,7 +179,7 @@ const SidebarMenu = () => {
                     <Link
                       key={subItem.name}
                       to={subItem.path}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-gray-400 transition hover:bg-emerald-950 hover:text-white"
+                      className="hover:bg-white-950 flex items-center gap-2 rounded-md px-3 py-2 text-xs text-gray-400 transition hover:text-white"
                     >
                       <span className="text-gray-500">•</span>
                       {subItem.name}
@@ -207,4 +195,4 @@ const SidebarMenu = () => {
   );
 };
 
-export default SidebarMenu;
+export default SideBarMenu;
