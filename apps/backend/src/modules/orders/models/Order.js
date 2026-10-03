@@ -7,9 +7,28 @@ const orderItemSchema = new mongoose.Schema(
       ref: "FoodItem",
       required: true,
     },
-    name: { type: String, required: true },
-    price: { type: Number, required: true },
-    quantity: { type: Number, required: true, min: 1 },
+
+    recipeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Recipe",
+      default: null,
+    },
+
+    name: {
+      type: String,
+      required: true,
+    },
+
+    price: {
+      type: Number,
+      required: true,
+    },
+
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
   },
   { _id: false },
 );
@@ -78,6 +97,15 @@ const orderSchema = new mongoose.Schema(
         "CANCELLED",
       ],
       default: "NEW",
+    },
+    acceptedAt: {
+      type: Date,
+      default: null,
+    },
+
+    outForDeliveryAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true },

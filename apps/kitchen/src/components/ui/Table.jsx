@@ -1,7 +1,10 @@
+const EMPTY_ARRAY = [];
+
 const Table = ({
-  columns = [],
-  data = [],
+  columns = EMPTY_ARRAY,
+  data = EMPTY_ARRAY,
   emptyMessage = "No data available",
+  onRowClick,
 }) => {
   return (
     <div className="w-full overflow-x-auto">
@@ -11,7 +14,7 @@ const Table = ({
             {columns.map((column) => (
               <th
                 key={column.key}
-                className="px-4 py-3 text-[11px] font-medium tracking-wide text-gray-500 uppercase"
+                className="px-4 py-3 text-center text-[15px] tracking-wide text-gray-500 uppercase"
               >
                 {column.label}
               </th>
@@ -24,15 +27,24 @@ const Table = ({
             data.map((row, rowIndex) => (
               <tr
                 key={row._id || row.id || rowIndex}
-                className="border-b border-gray-800/70 transition hover:bg-[#151515]"
+                onClick={() => onRowClick?.(row)}
+                className={`border-b border-gray-800/70 text-center text-[13px] transition hover:bg-[#151515] ${
+                  onRowClick ? "cursor-pointer" : ""
+                }`}
               >
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className="px-4 py-3 text-xs text-gray-300"
+                    className="px-4 py-3 text-gray-300"
+
+                    onClick={
+                      column.key === "actions"
+                        ? (e) => e.stopPropagation()
+                        : undefined
+                    }
                   >
                     {column.render
-                      ? column.render(row)
+                      ? column.render(row, rowIndex)
                       : (row[column.key] ?? "-")}
                   </td>
                 ))}

@@ -25,7 +25,7 @@ export const getFoodItems = async (req, res) => {
 // Do not build guest-facing UI for this endpoint.
 export const createFoodItem = async (req, res) => {
   try {
-    const { name, description, price, category } = req.body;
+    const { name, description, price, category, image } = req.body;
 
     if (!name || price === undefined) {
       return res
@@ -38,6 +38,7 @@ export const createFoodItem = async (req, res) => {
       description,
       price,
       category,
+      image,
       hotelId: req.user.hotelId,
     });
 

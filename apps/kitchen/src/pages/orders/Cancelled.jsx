@@ -6,7 +6,7 @@ import Sidebar from "../../components/Hamburger/SideBar.jsx";
 import Navbar from "../../components/ui/Navbar.jsx";
 
 import OrdersTable from "../../components/orders/OrdersTable.jsx";
-import ViewOrderModal from "../../components/ui/ViewOrderModal.jsx";
+import ViewOrderModal from "../../components/orders/ViewOrderModal.jsx";
 
 const Cancelled = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

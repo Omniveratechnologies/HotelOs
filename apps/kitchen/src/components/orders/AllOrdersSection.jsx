@@ -7,7 +7,7 @@ import ModalForm from "../ui/ModalForm.jsx";
 import OrdersTable from "./OrdersTable.jsx";
 
 import OrderHeader from "./OrdersHeader.jsx";
-import ViewOrderModal from "../ui/ViewOrderModal.jsx";
+import ViewOrderModal from "./ViewOrderModal.jsx";
 
 const AllOrdersSection = ({
   orders = [],
@@ -246,7 +246,7 @@ const AllOrdersSection = ({
               setEditingOrder(null);
               setIsModalOpen(true);
             }}
-            className="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-medium text-white transition hover:bg-emerald-800"
+            className="hover:bg-white-800 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-medium text-white transition"
           >
             + New Order
           </button>
