@@ -18,6 +18,7 @@ This document establishes our team's engineering standards, branching strategy, 
 - [Commit Message Convention](#commit-message-convention)
 - [Team Collaboration Guidelines](#team-collaboration-guidelines)
 - [Best Practices](#best-practices)
+- [Frontend Engineering Standards](#frontend-engineering-standards)
 - [End-to-End Example Workflow](#end-to-end-example-workflow)
 
 ---
@@ -552,6 +553,51 @@ Working effectively in a 5–6 developer team requires mutual discipline and pro
 - **Keep Changes Minimal & Modular:** Smaller functions with single responsibilities are easier to test, review, and debug.
 - **Keep Dependencies Lean:** Check with the team before adding heavy third-party npm packages. Prefer native language and framework features where practical.
 - **Update Documentation:** Whenever you add an environment variable, route, or command, update `.env.example` and the respective `README.md`.
+
+---
+
+## Frontend Engineering Standards
+
+Frontend apps (`super-admin`, `sub-admin`, `receptionist`) adhere to standard architecture and state patterns:
+
+### 1. Feature-Based Architecture
+
+Group code by business feature rather than by technical type:
+
+```text
+src/
+├── app/                  # Application root (providers, router, layouts, composite hook)
+└── features/
+    └── <feature-name>/   # e.g., rooms, rate-plans, guests, channel-manager
+        ├── api/          # Domain endpoint definitions or wrappers
+        ├── components/   # Feature-specific UI components & modals
+        ├── hooks/        # TanStack Query hooks (queries, mutations)
+        └── pages/        # Route page views
+```
+
+### 2. State Management Rules
+
+- **Server State:** Handled exclusively via **TanStack Query v5** (`@hotelos/query`). Never use custom React Context or manual `useState` + `useEffect` fetch loops for remote server resources.
+  - Always use or register query keys in the centralized `queryKeys` factory (`@hotelos/query`).
+  - Cache mutations should invalidate relevant query keys upon success (`queryClient.invalidateQueries({ queryKey: queryKeys.<domain>.<key>() })`).
+- **Client / UI State:** Handled via lightweight **Zustand** stores (`@hotelos/stores`) for state that belongs strictly to the client (e.g. `useSidebarStore` for navigation collapse, `useModalStore` for global modal toggles).
+
+### 3. Realtime Synchronization
+
+- Live updates from the backend Socket.IO hub are listened to via `@hotelos/socket`.
+- Use `bindSocketToQueryClient` in `<RealtimeSubscriber />` to automatically trigger `queryClient.invalidateQueries` when server events (`order:*`, `serviceRequest:*`) fire.
+
+### 4. Channel Manager & Rate Plan Conventions
+
+- Room and rate-plan codes adhere to standard formats. Use helper functions from `@hotelos/utils`:
+  - `deriveRatePlanCode(roomTypeCode, mealPlan, occupancy)`
+  - `parseRatePlanCode(ratePlanCode)`
+- Staff edits to Aiosell-synchronized properties enter an `under_review` queue state. Display the `ChannelStatusBadge` indicator and do not bypass the Super Admin approval workflow.
+
+### 5. JSDoc Function Comments
+
+- Add simple, clear JSDoc comments to all newly created or edited functions and custom hooks (describing purpose, `@param`, and `@returns`).
+- Plain React components do not require verbose JSDocs unless they expose non-trivial callback contracts.
 
 ---
 

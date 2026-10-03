@@ -28,41 +28,36 @@ Capabilities exercised in this app:
 
 ## Features / pages
 
-| Route               | Page             | Notes                                                     |
-| ------------------- | ---------------- | --------------------------------------------------------- |
-| `/login`            | Login            | Super Admin sign-in; rejects non-`SUPER_ADMIN` roles      |
-| `/`                 | Overview         | Dashboard home with summary stats + health check          |
-| `/hotels`           | Hotels           | Create hotels, list, activate/deactivate, credentials     |
-| `/transactions`     | Transactions     | Food-transaction revenue per hotel — **mock data**        |
-| `/subscriptions`    | Subscriptions    | Per-hotel plan & subscription dates (from backend hotels) |
-| `/service-requests` | Service Requests | Inbox of hotel requests — **mock data**                   |
-| `/settings`         | Settings         | Admin profile & preferences                               |
-| `/reset-password`   | ResetPassword    | Password reset                                            |
+| Route                | Page              | Notes                                                               |
+| -------------------- | ----------------- | ------------------------------------------------------------------- |
+| `/login`             | Login             | Super Admin sign-in; rejects non-`SUPER_ADMIN` roles                |
+| `/`                  | Overview          | Dashboard home with summary stats + health check                    |
+| `/hotels`            | Hotels            | Create hotels, list, activate/deactivate, credentials, Aiosell cfg  |
+| `/channel-manager`   | Channel Manager   | Aiosell Live Matrix (rates, inventory, restrictions, property sync) |
+| `/channel-approvals` | Channel Approvals | Verify queued roomCode & ratePlanCode mappings across hotels        |
+| `/transactions`      | Transactions      | Food-transaction revenue per hotel (TanStack Query + mock data)     |
+| `/subscriptions`     | Subscriptions     | Per-hotel plan & subscription dates (from backend hotels)           |
+| `/service-requests`  | Service Requests  | Platform service request inbox (TanStack Query + mock data)         |
+| `/settings`          | Settings          | Admin profile & preferences                                         |
+| `/reset-password`    | ResetPassword     | Password reset                                                      |
 
 ---
 
 ## Current backend integration
 
-All API calls go through the shared **`@hotelos/api`** package
-(`packages/api`), which reads `VITE_API_URL` and attaches the
-`Authorization` header from `localStorage.auth_token` when `{ auth: true }`
-is passed.
+All API calls go through the shared **`@hotelos/api`** package (`packages/api`) with data fetching managed by **TanStack Query v5** (`@hotelos/query`). Session tokens (`localStorage.auth_token`) are automatically passed via `Authorization: Bearer <token>`.
 
-Domain service files in `src/services/`:
+Feature hooks under `src/features/<feature>/hooks/`:
 
-| File                         | Purpose                                        | Backend                                          |
-| ---------------------------- | ---------------------------------------------- | ------------------------------------------------ |
-| `auth.service.js`            | Login, logout, session helpers                 | `POST /auth/login`                               |
-| `hotel.service.js`           | CRUD hotels, status, credentials, invites      | `GET/POST/PATCH/DELETE /hotels`, `POST /invites` |
-| `subscriptions.service.js`   | Subscription view (derived from hotel records) | `GET/PATCH /hotels`                              |
-| `user.service.js`            | Create staff users                             | `POST /users`                                    |
-| `dashboard.service.js`       | Health check                                   | `GET /health`                                    |
-| `transactions.service.js`    | **Mock data** — not yet connected              | —                                                |
-| `serviceRequests.service.js` | **Mock data** — not yet connected              | —                                                |
+| Feature Hook                   | Purpose                                     | Backend / Source                                 |
+| ------------------------------ | ------------------------------------------- | ------------------------------------------------ |
+| `useHotels`                    | CRUD hotels, status, credentials, invites   | `GET/POST/PATCH/DELETE /hotels`, `POST /invites` |
+| `useChannelManager`            | Channel config, live rates, inventory, sync | `/channel-manager/*` endpoints                   |
+| `useSuperAdminDashboard`       | Platform overview metrics & system health   | `GET /health`, `/dashboard/*`                    |
+| `useSuperAdminTransactions`    | Transaction summary metrics                 | `src/data/mockData.js` (Query hook wrapped)      |
+| `useSuperAdminServiceRequests` | Platform service requests inbox             | `src/data/mockData.js` (Query hook wrapped)      |
 
-Transactions and Service Requests currently read from in-memory mock data in
-`src/data/mockData.js`. Wire these to real endpoints (e.g. `/api/v1/...`)
-when the backend modules are implemented.
+Real-time cache invalidation is managed by `<RealtimeSubscriber />` via `@hotelos/socket`.
 
 ### Expected API shapes
 
@@ -175,26 +170,30 @@ your backend.
 ```
 src/
 │
-├── App.jsx                 Route definitions / providers
-├── main.jsx                Vite entry point
-├── index.css               Global styles (Tailwind)
+├── app/
+│   ├── App.jsx             Root application entry
+│   ├── AppProviders.jsx    QueryProvider & RealtimeSubscriber
+│   ├── AuthLayout.jsx      Unauthenticated auth shell
+│   ├── router.jsx          Lazy-loaded React Router routes
+│   └── layouts/            DashboardLayout with Header & Sidebar
 │
-├── components/             Reusable UI & layout components
+├── components/             Shared UI widgets & modals
 ├── data/
-│   └── mockData.js         Mock data for Transactions & Service Requests
-├── hooks/                  Custom hooks
+│   └── mockData.js         Mock datasets for transactions & service requests
 │
-├── pages/
-│   ├── Login.jsx           Super Admin login
-│   ├── Overview.jsx        Dashboard home
-│   ├── Hotels.jsx          Hotel list + create/status/credentials
-│   ├── Transactions.jsx    Food-transaction revenue
-│   ├── Subscriptions.jsx   Subscription expiry tracking
-│   ├── ServiceRequests.jsx Hotel service request inbox
-│   ├── Settings.jsx        Admin profile & preferences
-│   └── ResetPassword.jsx   Password reset
+├── features/               Domain feature modules
+│   ├── auth/               Login, ResetPassword, session hooks
+│   ├── channel-approvals/  Approval queue, filter bar, verification actions
+│   ├── channel-manager/    AiosellLiveMatrix, rates, inventory & sync
+│   ├── dashboard/          Overview cards, metrics, health status
+│   ├── hotels/             HotelsPage, CreateHotelModal, EditHotelModal
+│   ├── service-requests/   Service request inbox & details
+│   ├── settings/           Admin profile & preferences
+│   ├── subscriptions/      Subscription plans & expiry management
+│   └── transactions/       Revenue feeds & transaction metrics
 │
-└── services/               Domain API calls (see table above)
+├── index.css               Tailwind CSS v4 theme entry
+└── main.jsx                Vite entry point
 ```
 
 ---
@@ -209,8 +208,13 @@ src/
 
 ## Tech stack
 
-- React 19 + Vite
-- Tailwind CSS v4
-- React Router
+- React 19 + Vite (`@tailwindcss/vite`)
+- Tailwind CSS v4 + `@hotelos/styles`
+- React Router (lazy-loaded routes)
 - lucide-react icons
 - `@hotelos/api` shared client
+- `@hotelos/query` (TanStack Query v5)
+- `@hotelos/socket` (Socket.IO client & realtime sync)
+- `@hotelos/stores` (Zustand)
+- `@hotelos/ui` (Header, Sidebar, ErrorScreen)
+- `@hotelos/utils` (Formatters, helpers)

@@ -24,16 +24,25 @@ export const bookingDTO = async (booking, extra = {}) => {
     address: guest?.address,
     idType: guest?.idType,
     idNumber: guest?.idNumber,
-    roomId: booking.roomId,
-    room: booking.room
-      ? {
-          id: booking.room._id,
-          roomNumber: booking.room.roomNumber,
-          type: booking.room.type,
-          rate: booking.room.rate,
-          floor: booking.room.floor,
-        }
-      : null,
+    roomId: booking.roomId?._id ? booking.roomId._id : booking.roomId,
+    room:
+      booking.roomId?.roomNumber != null
+        ? {
+            id: booking.roomId._id,
+            roomNumber: booking.roomId.roomNumber,
+            type: booking.roomId.type,
+            rate: booking.roomId.rate,
+            floor: booking.roomId.floor,
+          }
+        : booking.room
+          ? {
+              id: booking.room._id,
+              roomNumber: booking.room.roomNumber,
+              type: booking.room.type,
+              rate: booking.room.rate,
+              floor: booking.room.floor,
+            }
+          : null,
     hotelId: booking.hotelId,
     checkIn: booking.checkIn,
     checkOut: booking.checkOut,
@@ -48,6 +57,7 @@ export const bookingDTO = async (booking, extra = {}) => {
     commission: booking.commission,
     currency: booking.currency,
     specialRequests: booking.specialRequests,
+    purpose: booking.purpose,
     documents: await Promise.all((guest?.documents || []).map(documentDTO)),
     createdAt: booking.createdAt,
     updatedAt: booking.updatedAt,
