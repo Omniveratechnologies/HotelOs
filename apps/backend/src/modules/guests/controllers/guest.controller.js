@@ -453,6 +453,59 @@ export const updateDND = async (req, res) => {
 // LIST GUESTS (directory & profiles)
 // =====================================================
 
+// =====================================================
+// GUEST SEARCH — lightweight lookup for reservation "Existing Guest"
+// =====================================================
+
+export const searchGuests = async (req, res) => {
+  try {
+    const search = req.query.q?.trim();
+
+    const filter = { hotelId: req.user.hotelId, role: "GUEST" };
+    if (search) {
+      const rx = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      filter.$or = [{ name: rx }, { phone: rx }, { email: rx }];
+    }
+
+    const guests = await User.find(filter)
+      .select("name email phone address idType idNumber nationality createdAt")
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+
+    const guestIds = guests.map((g) => g._id);
+    const stayCounts = await Booking.aggregate([
+      { $match: { hotelId: req.user.hotelId, guestId: { $in: guestIds } } },
+      { $group: { _id: "$guestId", count: { $sum: 1 } } },
+    ]);
+    const countByGuest = new Map(
+      stayCounts.map((r) => [String(r._id), r.count]),
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Guests fetched",
+      data: guests.map((g) => ({
+        id: g._id,
+        name: g.name,
+        email: g.email || "",
+        phone: g.phone || "",
+        address: g.address || "",
+        idType: g.idType,
+        idNumber: g.idNumber || "",
+        nationality: g.nationality || null,
+        repeatGuest: (countByGuest.get(String(g._id)) || 0) > 1,
+        staysCount: countByGuest.get(String(g._id)) || 0,
+      })),
+    });
+  } catch (error) {
+    logger.error(error, "Guest Search Error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to search guests" });
+  }
+};
+
 export const getGuests = async (req, res) => {
   try {
     const userFilter = {

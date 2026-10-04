@@ -1,5 +1,5 @@
 import Booking from "../models/Booking.js";
-import { bookingDTO } from "../dto/booking.dto.js";
+import { bookingDTO, bookingListDTO } from "../dto/booking.dto.js";
 import Room from "#/modules/rooms/models/Room.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import User from "#/modules/users/models/User.js";
@@ -721,29 +721,111 @@ export const getAvailability = async (req, res) => {
 };
 
 // =====================================================
-// LIST BOOKINGS
+// LIST BOOKINGS (filters + search + pagination + sorting)
 // =====================================================
+
+const SORTABLE = {
+  createdAt: "createdAt",
+  checkIn: "checkIn",
+  checkOut: "checkOut",
+  grandTotal: "pricing.grandTotal",
+};
 
 export const getBookings = async (req, res) => {
   try {
     const filter = { hotelId: req.user.hotelId };
+    const {
+      status,
+      source,
+      otaChannel,
+      roomType,
+      ratePlanId,
+      q,
+      from,
+      to,
+      page = 1,
+      limit = 50,
+      sort = "-createdAt",
+    } = req.query;
 
-    if (req.query.status && RESERVATION_STATUSES.includes(req.query.status)) {
-      filter.status = req.query.status;
+    if (status && RESERVATION_STATUSES.includes(status)) {
+      filter.status = status;
+    }
+    if (source && RESERVATION_SOURCES.includes(source)) {
+      filter.source = source;
+    }
+    if (otaChannel) {
+      filter["otaInfo.channel"] = otaChannel;
+    }
+    if (roomType) {
+      filter.roomTypeCode = roomType;
+    }
+    if (ratePlanId) {
+      filter.ratePlanId = ratePlanId;
     }
 
-    const bookings = await Booking.find(filter)
-      .populate("guestId")
-      .populate("roomId", "roomNumber type rate floor roomCode")
-      .populate("ratePlanId", "name mealPlan occupancy rate")
-      .sort({ createdAt: -1 });
+    const fromDate = from ? parseDate(from) : null;
+    const toDate = to ? parseDate(to) : null;
+    if (fromDate || toDate) {
+      filter.checkIn = {
+        ...(fromDate ? { $gte: fromDate } : {}),
+        ...(toDate ? { $lte: toDate } : {}),
+      };
+    }
 
-    const data = await Promise.all(bookings.map((b) => bookingDTO(b)));
+    const search = q?.trim();
+    if (search) {
+      const rx = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+      const matchingGuests = await User.find({
+        hotelId: req.user.hotelId,
+        role: "GUEST",
+        $or: [{ name: rx }, { phone: rx }, { email: rx }],
+      })
+        .select("_id")
+        .limit(200)
+        .lean();
+
+      filter.$or = [
+        { reservationNo: rx },
+        { aiosellBookingId: rx },
+        { "otaInfo.otaBookingId": rx },
+        { "otaInfo.confirmationCode": rx },
+        ...(matchingGuests.length
+          ? [{ guestId: { $in: matchingGuests.map((g) => g._id) } }]
+          : []),
+      ];
+    }
+
+    const sortField = String(sort).replace(/^-/, "");
+    const sortDir = String(sort).startsWith("-") ? -1 : 1;
+    const sortKey = SORTABLE[sortField] || "createdAt";
+
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
+
+    const [bookings, total] = await Promise.all([
+      Booking.find(filter)
+        .populate("guestId", "name email phone idType idNumber nationality")
+        .populate("roomId", "roomNumber type rate floor roomCode")
+        .populate("ratePlanId", "name mealPlan occupancy rate")
+        .sort({ [sortKey]: sortDir })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum),
+      Booking.countDocuments(filter),
+    ]);
+
+    const data = await Promise.all(bookings.map((b) => bookingListDTO(b)));
 
     return res.status(200).json({
       success: true,
       message: "Bookings fetched successfully",
       data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
     });
   } catch (error) {
     logger.error(error, "Get Bookings Error");
@@ -752,6 +834,82 @@ export const getBookings = async (req, res) => {
       success: false,
       message: "Failed to fetch bookings",
     });
+  }
+};
+
+// Aggregate rows [{_id, count}] → plain map (with a DIRECT fallback for the
+// legacy `channel`-only rows whose source group is null).
+const toSourceMap = (rows) =>
+  Object.fromEntries(rows.map((r) => [r._id || "DIRECT", r.count]));
+
+// =====================================================
+// STATS — KPI tiles + tab counts + footer cards
+// =====================================================
+
+export const getBookingStats = async (req, res) => {
+  try {
+    const hotelId = req.user.hotelId;
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(startOfToday);
+    endOfToday.setDate(endOfToday.getDate() + 1);
+
+    const [bySource, byStatus, arrivalsToday, departuresToday, inHouse] =
+      await Promise.all([
+        Booking.aggregate([
+          { $match: { hotelId } },
+          { $group: { _id: "$source", count: { $sum: 1 } } },
+        ]),
+        Booking.aggregate([
+          { $match: { hotelId } },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]),
+        Booking.countDocuments({
+          hotelId,
+          status: "confirmed",
+          checkIn: { $gte: startOfToday, $lt: endOfToday },
+        }),
+        Booking.countDocuments({
+          hotelId,
+          status: "checked-in",
+          checkOut: { $gte: startOfToday, $lt: endOfToday },
+        }),
+        Booking.countDocuments({ hotelId, status: "checked-in" }),
+      ]);
+
+    const toMap = toSourceMap;
+    const sourceMap = toMap(bySource);
+    const statusMap = toMap(byStatus);
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking stats fetched",
+      data: {
+        total: bySource.reduce((s, r) => s + r.count, 0),
+        bySource: sourceMap,
+        byStatus: statusMap,
+        otaChannels: (
+          await Booking.aggregate([
+            { $match: { hotelId, source: "OTA" } },
+            { $group: { _id: "$otaInfo.channel", count: { $sum: 1 } } },
+          ])
+        ).reduce((acc, r) => {
+          acc[r._id || "OTHER"] = r.count;
+          return acc;
+        }, {}),
+        today: {
+          arrivals: arrivalsToday,
+          departures: departuresToday,
+          inHouse,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Booking Stats Error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch booking stats" });
   }
 };
 
@@ -1098,6 +1256,457 @@ export const updateBooking = async (req, res) => {
       success: false,
       message: "Failed to update booking",
     });
+  }
+};
+
+// =====================================================
+// ACTIONS — cancel / reconfirm / change-room / extend-stay / history
+// =====================================================
+
+async function findBookingOr404(req, res) {
+  const booking = await Booking.findOne({
+    _id: req.params.id,
+    hotelId: req.user.hotelId,
+  });
+  if (!booking) {
+    res.status(404).json({ success: false, message: "Booking not found" });
+    return null;
+  }
+  return booking;
+}
+
+async function syncInventoryQuietly(hotelId, ...dates) {
+  try {
+    const flat = dates
+      .filter(Boolean)
+      .map((d) => new Date(d).toISOString().slice(0, 10));
+    if (!flat.length) return;
+    const start = flat.reduce((min, d) => (d < min ? d : min));
+    const end = flat.reduce((max, d) => (d > max ? d : max));
+    const [syncStart, syncEnd] = calculateSyncDateRange(start, end);
+    await aiosellSyncInventory(hotelId, syncStart, syncEnd);
+  } catch (error) {
+    logger.warn(error, "Aiosell inventory sync failed (non-fatal)");
+  }
+}
+
+async function releaseRoomIfFree(hotelId, booking) {
+  if (!booking.roomId) return;
+  const stillHeld = await Booking.exists({
+    roomId: booking.roomId,
+    hotelId,
+    status: { $in: ACTIVE_STAY_STATUSES },
+    _id: { $ne: booking._id },
+  });
+  if (!stillHeld) {
+    await freeRoom(booking.roomId);
+  }
+}
+
+export const cancelBooking = async (req, res) => {
+  try {
+    const booking = await findBookingOr404(req, res);
+    if (!booking) return;
+
+    const { reason } = req.body;
+    if (!reason?.trim()) {
+      return badRequest(res, "A cancellation reason is required");
+    }
+
+    if (!canTransition(booking.status, "cancelled")) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot cancel a booking with status "${booking.status}"`,
+      });
+    }
+
+    // OTA cancellation policy → compute penalty (one night after free window).
+    let charge = 0;
+    let policyNote = null;
+    if (booking.source === "OTA" && booking.otaInfo) {
+      const freeUntil = booking.otaInfo.cancellationPolicy?.freeUntil;
+      if (freeUntil && new Date() < new Date(freeUntil)) {
+        policyNote = "Free cancellation per OTA policy";
+      } else {
+        charge = booking.pricing?.nightlyRate || 0;
+        policyNote =
+          booking.otaInfo.cancellationPolicy?.penalty ||
+          "After free-cancellation window: one-night charge applies";
+      }
+    }
+
+    const previous = booking.status;
+    booking.status = "cancelled";
+    booking.cancellation = {
+      reason: reason.trim(),
+      at: new Date(),
+      by: req.user._id,
+      charge,
+    };
+    booking.auditTrail.push({
+      by: req.user._id,
+      action: "status-changed",
+      from: previous,
+      to: "cancelled",
+      note: reason.trim(),
+    });
+    await booking.save();
+
+    await releaseRoomIfFree(req.user.hotelId, booking);
+    await syncInventoryQuietly(
+      req.user.hotelId,
+      booking.checkIn,
+      booking.checkOut,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Reservation cancelled",
+      data: {
+        ...(await bookingDTO(booking)),
+        cancellationCharge: charge,
+        policyNote,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Cancel Booking Error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to cancel booking" });
+  }
+};
+
+export const reconfirmBooking = async (req, res) => {
+  try {
+    const booking = await findBookingOr404(req, res);
+    if (!booking) return;
+
+    const allowed = ["draft", "pending", "cancelled", "no-show"];
+    if (!allowed.includes(booking.status)) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot reconfirm a booking with status "${booking.status}"`,
+      });
+    }
+
+    // Re-validate inventory before confirming again.
+    if (booking.roomTypeCode) {
+      const { ok, available } = await assertTypeAvailability(
+        req.user.hotelId,
+        booking.roomTypeCode,
+        booking.checkIn,
+        booking.checkOut,
+        booking.rooms || 1,
+        booking._id,
+      );
+      if (!ok) {
+        return res.status(409).json({
+          success: false,
+          message: `Only ${available} room(s) of this type available for the selected dates`,
+        });
+      }
+    }
+
+    const previous = booking.status;
+    booking.status = "confirmed";
+    booking.auditTrail.push({
+      by: req.user._id,
+      action: "status-changed",
+      from: previous,
+      to: "confirmed",
+      note: req.body.note?.trim() || "Reconfirmed",
+    });
+    await booking.save();
+
+    if (booking.roomId) {
+      await claimRoom(booking.roomId, {
+        guestName:
+          (await User.findById(booking.guestId).select("name"))?.name ||
+          "Guest",
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        reserved: true,
+      });
+    }
+
+    await syncInventoryQuietly(
+      req.user.hotelId,
+      booking.checkIn,
+      booking.checkOut,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Reservation reconfirmed",
+      data: await bookingDTO(booking),
+    });
+  } catch (error) {
+    logger.error(error, "Reconfirm Booking Error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to reconfirm booking" });
+  }
+};
+
+export const changeBookingRoom = async (req, res) => {
+  try {
+    const booking = await findBookingOr404(req, res);
+    if (!booking) return;
+
+    if (
+      !["confirmed", "reserved", "pending", "checked-in", "draft"].includes(
+        booking.status,
+      )
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot change room for a booking with status "${booking.status}"`,
+      });
+    }
+
+    const { roomId } = req.body;
+    if (!roomId) {
+      return badRequest(res, "roomId is required");
+    }
+
+    const room = await Room.findOne({ _id: roomId, hotelId: req.user.hotelId });
+    if (!room) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Room not found" });
+    }
+    if (room.channelVerified === false || room.pendingDelete === true) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "This room is awaiting channel verification and cannot be used yet.",
+      });
+    }
+
+    const roomCode = room.roomCode || String(room.type).toLowerCase();
+    const freeRooms = await listAvailableRooms(
+      req.user.hotelId,
+      roomCode,
+      booking.checkIn,
+      booking.checkOut,
+      booking._id,
+    );
+    if (
+      String(room._id) !== String(booking.roomId) &&
+      !freeRooms.some((r) => String(r._id) === String(room._id))
+    ) {
+      return res
+        .status(409)
+        .json({ success: false, message: "This room is not available" });
+    }
+
+    const guestUser = await User.findById(booking.guestId).select("name");
+    const previousRoomId = booking.roomId;
+
+    booking.roomId = room._id;
+    booking.roomTypeCode = booking.roomTypeCode || roomCode;
+    booking.auditTrail.push({
+      by: req.user._id,
+      action: "room-changed",
+      from: previousRoomId ? String(previousRoomId) : null,
+      to: String(room._id),
+      note: req.body.note?.trim() || null,
+    });
+    await booking.save();
+
+    if (booking.status !== "draft") {
+      await claimRoom(room._id, {
+        guestName: guestUser?.name,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        reserved: booking.status !== "checked-in",
+      });
+      if (previousRoomId)
+        await releaseRoomIfFree(req.user.hotelId, {
+          ...booking.toObject(),
+          roomId: previousRoomId,
+        });
+    }
+
+    await syncInventoryQuietly(
+      req.user.hotelId,
+      booking.checkIn,
+      booking.checkOut,
+    );
+
+    const populated = await Booking.findById(booking._id)
+      .populate("guestId")
+      .populate("roomId", "roomNumber type rate floor roomCode")
+      .populate("ratePlanId", "name mealPlan occupancy rate");
+
+    return res.status(200).json({
+      success: true,
+      message: "Room changed",
+      data: await bookingDTO(populated),
+    });
+  } catch (error) {
+    logger.error(error, "Change Room Error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to change room" });
+  }
+};
+
+export const extendBookingStay = async (req, res) => {
+  try {
+    const booking = await findBookingOr404(req, res);
+    if (!booking) return;
+
+    if (
+      !["confirmed", "reserved", "pending", "checked-in", "draft"].includes(
+        booking.status,
+      )
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot extend a booking with status "${booking.status}"`,
+      });
+    }
+
+    const newCheckOut = parseDate(req.body.checkOut);
+    if (!newCheckOut || newCheckOut <= booking.checkOut) {
+      return badRequest(
+        res,
+        "New check-out must be a valid date after the current check-out",
+      );
+    }
+
+    // The room (if assigned) and the room type must stay free for the added nights.
+    if (booking.roomId) {
+      const code = booking.roomTypeCode;
+      if (code) {
+        const freeRooms = await listAvailableRooms(
+          req.user.hotelId,
+          code,
+          booking.checkIn,
+          newCheckOut,
+          booking._id,
+        );
+        if (!freeRooms.some((r) => String(r._id) === String(booking.roomId))) {
+          return res.status(409).json({
+            success: false,
+            message:
+              "The assigned room is not available for the extended dates",
+          });
+        }
+      }
+    } else if (booking.roomTypeCode && booking.status !== "draft") {
+      const { ok, available } = await assertTypeAvailability(
+        req.user.hotelId,
+        booking.roomTypeCode,
+        booking.checkIn,
+        newCheckOut,
+        booking.rooms || 1,
+        booking._id,
+      );
+      if (!ok) {
+        return res.status(409).json({
+          success: false,
+          message: `Only ${available} room(s) of this type available for the extended dates`,
+        });
+      }
+    }
+
+    const previousCheckOut = booking.checkOut;
+    booking.checkOut = newCheckOut;
+
+    const hotel = await Hotel.findById(req.user.hotelId)
+      .select("taxPercent")
+      .lean();
+
+    const { pricing } = await buildPricingSnapshot({
+      hotelId: req.user.hotelId,
+      hotelTaxPercent: hotel?.taxPercent,
+      roomTypeCode: booking.roomTypeCode,
+      ratePlanId: booking.ratePlanId,
+      adults: booking.adults,
+      mealPlan: booking.mealPlan,
+      rateOverride: req.body.rateOverride,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      rooms: booking.rooms,
+      addOns: booking.pricing?.addOns,
+      discount: booking.pricing?.discount,
+      taxPercent: booking.pricing?.taxPercent,
+    });
+
+    booking.pricing = pricing;
+    booking.totalAmountBeforeTax = pricing.taxableBase;
+    booking.tax = pricing.taxAmount;
+    booking.auditTrail.push({
+      by: req.user._id,
+      action: "stay-extended",
+      from: previousCheckOut.toISOString().slice(0, 10),
+      to: newCheckOut.toISOString().slice(0, 10),
+      note: null,
+    });
+    await booking.save();
+
+    if (booking.roomId) {
+      await Room.findByIdAndUpdate(booking.roomId, {
+        checkOut: booking.checkOut,
+      });
+    }
+
+    await syncInventoryQuietly(
+      req.user.hotelId,
+      booking.checkIn,
+      previousCheckOut,
+      newCheckOut,
+    );
+
+    const populated = await Booking.findById(booking._id)
+      .populate("guestId")
+      .populate("roomId", "roomNumber type rate floor roomCode")
+      .populate("ratePlanId", "name mealPlan occupancy rate");
+
+    return res.status(200).json({
+      success: true,
+      message: "Stay extended",
+      data: await bookingDTO(populated),
+    });
+  } catch (error) {
+    logger.error(error, "Extend Stay Error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to extend stay" });
+  }
+};
+
+export const getBookingHistory = async (req, res) => {
+  try {
+    const booking = await Booking.findOne({
+      _id: req.params.id,
+      hotelId: req.user.hotelId,
+    })
+      .select("reservationNo auditTrail")
+      .populate("auditTrail.by", "name role")
+      .lean();
+
+    if (!booking) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Booking not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Booking history fetched",
+      data: {
+        reservationNo: booking.reservationNo,
+        history: booking.auditTrail || [],
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Booking History Error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch booking history" });
   }
 };
 

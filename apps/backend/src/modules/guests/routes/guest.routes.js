@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getGuests,
+  searchGuests,
   getGuestById,
   updateGuest,
   getDocumentUploadUrls,
@@ -23,6 +24,8 @@ router.patch("/me/dnd", authenticate, authorize("GUEST"), updateDND);
 router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
 
 router.get("/", getGuests);
+
+router.get("/search", searchGuests);
 
 router.post("/documents/upload-urls", getDocumentUploadUrls);
 

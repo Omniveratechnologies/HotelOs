@@ -4,8 +4,14 @@ import {
   getQuote,
   getAvailability,
   getBookings,
+  getBookingStats,
   getBookingById,
   updateBooking,
+  cancelBooking,
+  reconfirmBooking,
+  changeBookingRoom,
+  extendBookingStay,
+  getBookingHistory,
   deleteBooking,
 } from "../controllers/booking.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
@@ -19,6 +25,7 @@ router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
 // Static paths before /:id
 router.post("/quote", getQuote);
 router.get("/availability", getAvailability);
+router.get("/stats", getBookingStats);
 
 router.get("/", getBookings);
 
@@ -27,6 +34,12 @@ router.post("/", createReservation);
 router.get("/:id", getBookingById);
 
 router.patch("/:id", updateBooking);
+
+router.post("/:id/cancel", cancelBooking);
+router.post("/:id/reconfirm", reconfirmBooking);
+router.post("/:id/change-room", changeBookingRoom);
+router.post("/:id/extend-stay", extendBookingStay);
+router.get("/:id/history", getBookingHistory);
 
 router.delete("/:id", deleteBooking);
 
