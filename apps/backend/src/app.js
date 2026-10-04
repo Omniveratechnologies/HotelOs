@@ -16,6 +16,10 @@ import foodItemRoutes from "#/modules/food-items/index.js";
 import { orderRouter, kitchenOrdersRouter } from "#/modules/orders/index.js";
 import serviceRequestRoutes from "#/modules/service-requests/index.js";
 import channelManagerRoutes from "#/modules/channel-manager/index.js";
+import {
+  checkInRouter,
+  publicCheckInRouter,
+} from "#/modules/check-ins/index.js";
 import ratePlanRoutes from "#/modules/rate-plans/index.js";
 import roomTypeRoutes from "#/modules/room-types/index.js";
 import inventoryRoutes from "#/modules/inventory/index.js";
@@ -55,6 +59,8 @@ app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/service-requests", serviceRequestRoutes);
 app.use("/api/kitchen/orders", kitchenOrdersRouter);
 app.use("/api/v1/channel-manager", channelManagerRoutes);
+app.use("/api/v1/check-in", checkInRouter);
+app.use("/api/v1/public/check-in", publicCheckInRouter);
 app.use("/api/v1/rate-plans", ratePlanRoutes);
 app.use("/api/v1/room-types", roomTypeRoutes);
 app.use("/api/inventory", inventoryRoutes);

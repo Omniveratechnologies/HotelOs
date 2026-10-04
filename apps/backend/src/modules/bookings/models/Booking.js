@@ -186,6 +186,12 @@ const bookingSchema = new mongoose.Schema(
       default: "unpaid",
     },
 
+    // Set when the receptionist approves the guest's digital check-in.
+    checkInVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     otaInfo: {
       type: otaInfoSchema,
       default: null,

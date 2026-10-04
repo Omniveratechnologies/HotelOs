@@ -53,6 +53,7 @@ export const bookingListDTO = (booking) => {
     grandTotal:
       booking.pricing?.grandTotal ?? booking.totalAmountBeforeTax ?? 0,
     paymentStatus: booking.paymentStatus || "unpaid",
+    checkInVerified: booking.checkInVerified || false,
     otaChannel: booking.otaInfo?.channel || null,
     otaBookingId:
       booking.otaInfo?.otaBookingId || booking.aiosellBookingId || null,
@@ -124,6 +125,7 @@ export const bookingDTO = async (booking, extra = {}) => {
     dndEnabled: booking.dndEnabled,
     pricing: booking.pricing || null,
     paymentStatus: booking.paymentStatus || "unpaid",
+    checkInVerified: booking.checkInVerified || false,
     otaInfo: booking.otaInfo || null,
     cancellation: booking.cancellation || null,
     auditTrail: booking.auditTrail || [],
