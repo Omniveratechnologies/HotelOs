@@ -3,6 +3,7 @@ import {
   createReservation,
   getQuote,
   getAvailability,
+  getAvailableRooms,
   getBookings,
   getBookingStats,
   getBookingById,
@@ -25,6 +26,7 @@ router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
 // Static paths before /:id
 router.post("/quote", getQuote);
 router.get("/availability", getAvailability);
+router.get("/available-rooms", getAvailableRooms);
 router.get("/stats", getBookingStats);
 
 router.get("/", getBookings);

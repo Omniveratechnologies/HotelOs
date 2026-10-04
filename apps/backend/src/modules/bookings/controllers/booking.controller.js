@@ -721,6 +721,56 @@ export const getAvailability = async (req, res) => {
 };
 
 // =====================================================
+// AVAILABLE ROOMS — concrete rooms of a type free for a range
+// =====================================================
+
+export const getAvailableRooms = async (req, res) => {
+  try {
+    const { roomTypeCode } = req.query;
+    const checkInDate = parseDate(req.query.checkIn);
+    const checkOutDate = parseDate(req.query.checkOut);
+
+    if (
+      !roomTypeCode ||
+      !checkInDate ||
+      !checkOutDate ||
+      checkOutDate <= checkInDate
+    ) {
+      return badRequest(
+        res,
+        "roomTypeCode and a valid check-in/check-out range are required",
+      );
+    }
+
+    const rooms = await listAvailableRooms(
+      req.user.hotelId,
+      roomTypeCode,
+      checkInDate,
+      checkOutDate,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Available rooms fetched",
+      data: rooms.map((r) => ({
+        id: r._id,
+        roomNumber: r.roomNumber,
+        type: r.type,
+        roomCode: r.roomCode,
+        floor: r.floor,
+        rate: r.rate,
+        status: r.status,
+      })),
+    });
+  } catch (error) {
+    logger.error(error, "Available Rooms Error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch available rooms" });
+  }
+};
+
+// =====================================================
 // LIST BOOKINGS (filters + search + pagination + sorting)
 // =====================================================
 

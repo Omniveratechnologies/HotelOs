@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Header, NewReservationModal } from "@hotelos/ui/components";
+import { useNavigate } from "react-router";
+import { Header } from "@hotelos/ui/components";
 import { useHotelOS } from "../../../hooks/useHotelOS.js";
 import GuestDetailsModal from "../components/GuestDetailsModal.jsx";
 import EditGuestModal from "../components/EditGuestModal.jsx";
@@ -20,11 +21,10 @@ const avatarColors = [
 ];
 
 export default function GuestsPage() {
-  const { guests, guestsLoading, guestsError, removeGuest, refreshData } =
-    useHotelOS();
+  const navigate = useNavigate();
+  const { guests, guestsLoading, guestsError, removeGuest } = useHotelOS();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [showAdd, setShowAdd] = useState(false);
   const [viewing, setViewing] = useState(null);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -74,10 +74,10 @@ export default function GuestsPage() {
         pageDescription={`${checkedInCount} checked in • ${upcomingCount} upcoming`}
       >
         <button
-          onClick={() => setShowAdd(true)}
+          onClick={() => navigate("/reservations/new")}
           className="bg-brand-900 hover:bg-brand-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
-          + Add Guest
+          + New Reservation
         </button>
       </Header>
       <div className="p-6">
@@ -242,19 +242,13 @@ export default function GuestsPage() {
             </table>
             {filtered.length === 0 && (
               <div className="py-12 text-center text-gray-400">
-                No guests found. Register your first guest with “+ Add Guest”.
+                No guests found. Create a reservation with “+ New Reservation”.
               </div>
             )}
           </div>
         )}
 
         {/* Modals */}
-        <NewReservationModal
-          open={showAdd}
-          onClose={() => setShowAdd(false)}
-          onCreated={() => refreshData()}
-        />
-
         {liveGuest && !editing && (
           <GuestDetailsModal
             guest={liveGuest}

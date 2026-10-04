@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Header, NewReservationModal } from "@hotelos/ui/components";
+import { useNavigate } from "react-router";
+import { Header } from "@hotelos/ui/components";
 import {
   useReservations,
   useUpdateReservation,
@@ -15,6 +16,7 @@ const statusBadges = {
 };
 
 export default function ReservationsPage() {
+  const navigate = useNavigate();
   const {
     reservations = [],
     isLoading: loading,
@@ -28,7 +30,6 @@ export default function ReservationsPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
 
-  const [newModalOpen, setNewModalOpen] = useState(false);
   const [viewingReservation, setViewingReservation] = useState(null);
   const [editingReservation, setEditingReservation] = useState(null);
   const [deletingReservation, setDeletingReservation] = useState(null);
@@ -119,7 +120,7 @@ export default function ReservationsPage() {
         pageDescription={`${inHouseCount} in-house • ${reservedCount} upcoming bookings`}
       >
         <button
-          onClick={() => setNewModalOpen(true)}
+          onClick={() => navigate("/reservations/new")}
           className="bg-brand-900 hover:bg-brand-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
           + New Reservation
@@ -343,15 +344,6 @@ export default function ReservationsPage() {
       </div>
 
       {/* Modals */}
-      <NewReservationModal
-        open={newModalOpen}
-        onClose={() => setNewModalOpen(false)}
-        onCreated={() => {
-          refetch();
-          setActionSuccess("Reservation created successfully.");
-        }}
-      />
-
       <ReservationDetailsModal
         open={!!viewingReservation}
         onClose={() => setViewingReservation(null)}

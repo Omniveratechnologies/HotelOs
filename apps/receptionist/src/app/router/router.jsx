@@ -51,6 +51,20 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "reservations/new",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/NewReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/:id/edit",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/NewReservationPage.jsx"),
+                ),
+              },
+              {
                 path: "rooms",
                 lazy: lazyPage(
                   () => import("../../features/rooms/pages/RoomsPage.jsx"),
@@ -94,6 +108,12 @@ export const router = createBrowserRouter([
                 lazy: lazyPage(
                   () =>
                     import("../../features/room-types/pages/RoomTypesPage.jsx"),
+                ),
+              },
+              {
+                path: "dev/ui-scratch",
+                lazy: lazyPage(
+                  () => import("../../features/dev/UiScratchPage.jsx"),
                 ),
               },
               {

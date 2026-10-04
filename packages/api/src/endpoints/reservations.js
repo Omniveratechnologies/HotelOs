@@ -230,6 +230,23 @@ export const getReservationHistory = async (reservationId) => {
 };
 
 /**
+ * Concrete rooms of a type free for a date range.
+ * @param {{ roomTypeCode: string, checkIn: string, checkOut: string }} params
+ * @returns {Promise<Array<{ id: string, roomNumber: string, floor?: number, rate?: number }>>}
+ */
+export const getAvailableRooms = async ({
+  roomTypeCode,
+  checkIn,
+  checkOut,
+}) => {
+  const result = await api.get("/api/v1/bookings/available-rooms", {
+    auth: true,
+    query: { roomTypeCode, checkIn, checkOut },
+  });
+  return result.data || [];
+};
+
+/**
  * Lightweight guest lookup for the "Existing Guest" flow.
  * @param {string} q
  * @returns {Promise<object[]>}
