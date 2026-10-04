@@ -12,6 +12,13 @@ export const queryKeys = {
     list: (filters) => [...queryKeys.reservations.lists(), filters || {}],
     details: () => [...queryKeys.reservations.all, "detail"],
     detail: (id) => [...queryKeys.reservations.details(), id],
+    stats: () => [...queryKeys.reservations.all, "stats"],
+    availability: (params) => [
+      ...queryKeys.reservations.all,
+      "availability",
+      params || {},
+    ],
+    history: (id) => [...queryKeys.reservations.details(), id, "history"],
   },
   guests: {
     all: ["guests"],
@@ -19,6 +26,7 @@ export const queryKeys = {
     list: (status) => [...queryKeys.guests.lists(), status || "all"],
     details: () => [...queryKeys.guests.all, "detail"],
     detail: (id) => [...queryKeys.guests.details(), id],
+    search: (q) => [...queryKeys.guests.all, "search", q || ""],
   },
   hotels: {
     all: ["hotels"],
