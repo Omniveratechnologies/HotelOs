@@ -17,3 +17,8 @@ export { SummaryPanel } from "./SummaryPanel.jsx";
 export { ChoiceCardGroup } from "./ChoiceCardGroup.jsx";
 export { SelectableMediaCard } from "./SelectableMediaCard.jsx";
 export { ToggleRow } from "./ToggleRow.jsx";
+export { QuantityStepper } from "./QuantityStepper.jsx";
+export { FilterBar } from "./FilterBar.jsx";
+export { ConfirmDialog } from "./ConfirmDialog.jsx";
+export { FileCaptureField } from "./FileCaptureField.jsx";
+export { SignaturePad } from "./SignaturePad.jsx";
