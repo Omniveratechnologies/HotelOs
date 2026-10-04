@@ -1,6 +1,8 @@
 import express from "express";
 import {
-  registerStay,
+  createReservation,
+  getQuote,
+  getAvailability,
   getBookings,
   getBookingById,
   updateBooking,
@@ -14,9 +16,13 @@ const router = express.Router();
 // Booking (guest stay) management — admin-scoped
 router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
 
+// Static paths before /:id
+router.post("/quote", getQuote);
+router.get("/availability", getAvailability);
+
 router.get("/", getBookings);
 
-router.post("/", registerStay);
+router.post("/", createReservation);
 
 router.get("/:id", getBookingById);
 

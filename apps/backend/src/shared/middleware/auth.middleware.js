@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "#/modules/users/models/User.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { CURRENT_STAY_STATUSES } from "#/modules/bookings/constants.js";
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -33,7 +34,7 @@ export const authenticate = async (req, res, next) => {
     if (user.role === "GUEST") {
       req.currentBooking = await Booking.findOne({
         guestId: user._id,
-        status: { $in: ["reserved", "checked-in"] },
+        status: { $in: CURRENT_STAY_STATUSES },
       }).sort({ createdAt: -1 });
     }
 

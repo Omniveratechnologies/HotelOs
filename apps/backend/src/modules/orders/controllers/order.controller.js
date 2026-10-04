@@ -3,6 +3,7 @@ import Order from "../models/Order.js";
 import FoodItem from "#/modules/food-items/models/FoodItem.js";
 import Room from "#/modules/rooms/models/Room.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import User from "#/modules/users/models/User.js";
 import getRazorpay from "#/config/razorpay.js";
 import { orderDTO, staffOrderDTO } from "../dto/order.dto.js";
@@ -382,7 +383,7 @@ export const createDeskOrder = async (req, res) => {
     const booking = await Booking.findOne({
       roomId,
       hotelId: req.user.hotelId,
-      status: { $in: ["reserved", "checked-in"] },
+      status: { $in: ACTIVE_STAY_STATUSES },
     }).sort({ createdAt: -1 });
 
     if (!booking) {

@@ -1,5 +1,6 @@
 import Room from "#/modules/rooms/models/Room.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import RatePlan from "#/modules/rate-plans/models/RatePlan.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import aiosell from "#/shared/services/aiosell.service.js";
@@ -105,7 +106,7 @@ export async function aiosellCalculateAvailability(
 
   const activeBookings = await Booking.find({
     hotelId,
-    status: { $in: ["reserved", "checked-in"] },
+    status: { $in: ACTIVE_STAY_STATUSES },
     checkIn: { $lte: new Date(`${endDate}T23:59:59.999Z`) },
     checkOut: { $gt: new Date(`${startDate}T00:00:00.000Z`) },
   }).populate("roomId", "roomCode");

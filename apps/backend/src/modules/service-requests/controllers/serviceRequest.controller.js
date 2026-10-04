@@ -1,5 +1,6 @@
 import ServiceRequest from "../models/ServiceRequest.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
 import {
@@ -156,7 +157,7 @@ export const createDeskRequest = async (req, res) => {
     const booking = await Booking.findOne({
       roomId,
       hotelId: req.user.hotelId,
-      status: { $in: ["reserved", "checked-in"] },
+      status: { $in: ACTIVE_STAY_STATUSES },
     }).sort({ createdAt: -1 });
 
     if (!booking) {

@@ -3,6 +3,7 @@ import crypto from "crypto";
 import User from "#/modules/users/models/User.js";
 import Room from "#/modules/rooms/models/Room.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 
 import { generateTemporaryPassword } from "#/shared/utils/generateCredentials.js";
 
@@ -230,7 +231,7 @@ export const updateGuest = async (req, res) => {
     if (req.body.name?.trim()) {
       const activeBooking = await Booking.findOne({
         guestId: guest._id,
-        status: { $in: ["reserved", "checked-in"] },
+        status: { $in: ACTIVE_STAY_STATUSES },
       });
 
       if (activeBooking) {
