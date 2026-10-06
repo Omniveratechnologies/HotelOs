@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, ArrowRight, Phone, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Phone } from "lucide-react";
 import {
   Header,
   Stepper,
@@ -30,6 +30,7 @@ import AdditionalOptionsSection from "../sections/AdditionalOptionsSection.jsx";
 import BookingSummary from "../sections/BookingSummary.jsx";
 
 const STEPS = [
+  { id: "call", title: "Call Information", subtitle: "Caller details & notes" },
   { id: "stay", title: "Stay Details", subtitle: "Dates, guests, purpose" },
   { id: "room", title: "Select Room", subtitle: "Room type & rate" },
   { id: "guest", title: "Guest Details", subtitle: "Contact & ID" },
@@ -156,7 +157,6 @@ export default function PhoneReservationPage() {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
   const [loaded, setLoaded] = useState(!editId);
-  const [selectedGuest, setSelectedGuest] = useState(null);
 
   const { roomTypes, isLoading: typesLoading } = useRoomTypes();
   const { ratePlans, isLoading: plansLoading } = useRatePlans();
@@ -370,11 +370,13 @@ export default function PhoneReservationPage() {
         ? `${form.addOns.length} add-on${form.addOns.length === 1 ? "" : "s"}`
         : "None";
     }
+    if (index === 5) {
+      return "Review and confirm booking";
+    }
     return "";
   };
 
   const handleGuestSelect = (g) => {
-    setSelectedGuest(g);
     setForm((f) => ({
       ...f,
       guestMode: "new",
@@ -388,18 +390,6 @@ export default function PhoneReservationPage() {
         idType: g.idType || "Aadhaar",
         idNumber: g.idNumber || "",
       },
-    }));
-    // Switch to "new" mode to show the filled form
-    setForm((f) => ({ ...f, guestMode: "new" }));
-  };
-
-  const handleClearGuest = () => {
-    setSelectedGuest(null);
-    setForm((f) => ({
-      ...f,
-      guestMode: "existing",
-      guestQuery: "",
-      guest: { ...EMPTY_GUEST },
     }));
   };
 
@@ -536,7 +526,7 @@ export default function PhoneReservationPage() {
         <div className="grid grid-cols-12 gap-6">
           {/* LEFT — step content */}
           <div className="col-span-12 space-y-4 xl:col-span-8">
-            {/* Step 0: Call Information (unique to Phone) */}
+            {/* Step 0: Call Information */}
             {step === 0 && (
               <SectionCard number="1" title="Call Information">
                 <div className="grid grid-cols-12 gap-4">
@@ -634,9 +624,7 @@ export default function PhoneReservationPage() {
                 value={form}
                 onChange={onChange}
                 errors={errors}
-                {...sectionState(0)}
-                // Override source to show as Phone
-                lockedSource="PHONE"
+                {...sectionState(1)}
               />
             )}
 
@@ -661,7 +649,7 @@ export default function PhoneReservationPage() {
                   }}
                   onModifySearch={() => setStep(1)}
                   loading={typesLoading}
-                  {...sectionState(1)}
+                  {...sectionState(2)}
                 />
                 {form.roomTypeCode && (
                   <div className="mt-4 space-y-4">
@@ -706,120 +694,21 @@ export default function PhoneReservationPage() {
               </div>
             )}
 
-            {/* Step 3: Guest Details — with Existing Guest Search at top */}
+            {/* Step 3: Guest Details — GuestSection handles Existing/New Guest search internally */}
             {step === 3 && (
-              <>
-                {/* Existing Guest Search Card (unique to Phone) */}
-                <SectionCard
-                  number="3"
-                  title="Guest Details"
-                  action={
-                    selectedGuest ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-surface-500 text-xs font-medium">
-                          Selected: {selectedGuest.name}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="xs"
-                          onClick={handleClearGuest}
-                          icon={X}
-                          className="border-rose-200 text-rose-500 hover:text-rose-700"
-                        >
-                          Clear
-                        </Button>
-                      </div>
-                    ) : null
-                  }
-                >
-                  <div className="mb-4">
-                    <label className="text-brand-900 mb-1.5 flex items-center justify-between text-sm font-semibold">
-                      Existing Guest Search
-                      {selectedGuest && (
-                        <Button
-                          type="button"
-                          variant="text"
-                          size="xs"
-                          onClick={handleClearGuest}
-                          className="text-surface-500 hover:text-brand-700"
-                        >
-                          Clear
-                        </Button>
-                      )}
-                    </label>
-                    <div className="border-surface-200 flex items-center gap-2 rounded-lg border bg-white px-3">
-                      <input
-                        type="search"
-                        value={form.guestQuery}
-                        onChange={(e) => onChange("guestQuery", e.target.value)}
-                        placeholder="Search by name, phone or email…"
-                        className="text-brand-900 h-10 w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
-                      />
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {guestSearch.isSearching && (
-                        <p className="text-surface-500 py-2 text-sm">
-                          Searching…
-                        </p>
-                      )}
-                      {!guestSearch.isSearching &&
-                        guestSearch.results.length === 0 && (
-                          <p className="border-surface-200 text-surface-500 rounded-lg border border-dashed px-4 py-3 text-sm">
-                            {form.guestQuery.trim().length >= 2
-                              ? "No guests found. Use New Guest tab to create one."
-                              : "Type a name, phone or email to find returning guests."}
-                          </p>
-                        )}
-                      {guestSearch.results.map((g) => (
-                        <div
-                          key={g.id}
-                          className="border-surface-200 flex items-center gap-3 rounded-lg border bg-white p-3"
-                        >
-                          <span className="bg-brand-50 text-brand-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
-                            {g.name.trim().charAt(0).toUpperCase()}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-brand-900 truncate text-sm font-semibold">
-                              {g.name}
-                              {g.repeatGuest && (
-                                <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-                                  Existing Guest
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-surface-500 truncate text-xs">
-                              {g.phone || g.email || "—"}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleGuestSelect(g)}
-                          >
-                            Select
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </SectionCard>
-                {/* Guest Details (Existing/New tabs) */}
-                <GuestSection
-                  mode={form.guestMode}
-                  onModeChange={(m) => onChange("guestMode", m)}
-                  form={form.guest}
-                  onField={onGuestField}
-                  errors={errors}
-                  searchQuery={form.guestQuery}
-                  onSearchChange={(q) => onChange("guestQuery", q)}
-                  searchResults={guestSearch.results}
-                  searching={guestSearch.isSearching}
-                  onSelectGuest={handleGuestSelect}
-                  {...sectionState(3)}
-                />
-              </>
+              <GuestSection
+                mode={form.guestMode}
+                onModeChange={(m) => onChange("guestMode", m)}
+                form={form.guest}
+                onField={onGuestField}
+                errors={errors}
+                searchQuery={form.guestQuery}
+                onSearchChange={(q) => onChange("guestQuery", q)}
+                searchResults={guestSearch.results}
+                searching={guestSearch.isSearching}
+                onSelectGuest={handleGuestSelect}
+                {...sectionState(3)}
+              />
             )}
 
             {/* Step 4: Additional Options */}
@@ -919,7 +808,7 @@ export default function PhoneReservationPage() {
             )}
 
             {/* Navigation */}
-            {step < 5 && (
+            {step < 6 && (
               <div className="flex justify-end">
                 <Button
                   variant="secondary"
