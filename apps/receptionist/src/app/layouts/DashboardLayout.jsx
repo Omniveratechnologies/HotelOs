@@ -193,6 +193,13 @@ const items = [
     label: "Reservations",
     path: "/reservations",
     icon: icons.reservations,
+    subMenu: [
+      {
+        id: "phone-reservation",
+        label: "Phone Reservation",
+        path: "/reservations/phone/new",
+      },
+    ],
   },
   { id: "guests", label: "Guests", path: "/guests", icon: icons.guests },
   {
