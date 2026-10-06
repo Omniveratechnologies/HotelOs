@@ -214,7 +214,10 @@ export const getCheckInSessions = async (req, res) => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const [sessions, total, kpis] = await Promise.all([
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
+    const [sessions, total, kpis, sentYesterdayCount] = await Promise.all([
       CheckInSession.find(filter)
         .populate({
           path: "reservationId",
@@ -239,6 +242,10 @@ export const getCheckInSessions = async (req, res) => {
           },
         },
       ]),
+      CheckInSession.countDocuments({
+        hotelId: req.user.hotelId,
+        sentAt: { $gte: startOfYesterday, $lt: startOfToday },
+      }),
     ]);
 
     const sentToday = await CheckInSession.countDocuments({
@@ -247,6 +254,26 @@ export const getCheckInSessions = async (req, res) => {
     });
 
     const statusMap = Object.fromEntries(kpis.map((k) => [k._id, k.count]));
+
+    const linksSentTodayChange =
+      sentYesterdayCount > 0
+        ? Math.round(
+            ((sentToday - sentYesterdayCount) / sentYesterdayCount) * 100,
+          )
+        : sentToday > 0
+          ? 100
+          : 0;
+
+    const pendingToday = statusMap.submitted || 0;
+    const pendingYesterday = 0; // Could be calculated similarly if needed
+    const pendingVerificationChange =
+      pendingYesterday > 0
+        ? Math.round(
+            ((pendingToday - pendingYesterday) / pendingYesterday) * 100,
+          )
+        : pendingToday > 0
+          ? 100
+          : 0;
 
     return res.status(200).json({
       success: true,
@@ -261,11 +288,13 @@ export const getCheckInSessions = async (req, res) => {
         },
         stats: {
           sentToday,
+          linksSentTodayChange,
           submitted:
             (statusMap.submitted || 0) +
             (statusMap.approved || 0) +
             (statusMap["correction-requested"] || 0),
           pendingVerification: statusMap.submitted || 0,
+          pendingVerificationChange,
           approved: statusMap.approved || 0,
           rejected: statusMap.rejected || 0,
           expired: statusMap.expired || 0,

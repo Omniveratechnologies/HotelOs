@@ -17,6 +17,7 @@ export * as subscriptionsApi from "./endpoints/subscriptions.js";
 export * as transactionsApi from "./endpoints/transactions.js";
 export * as usersApi from "./endpoints/users.js";
 export * as reportsApi from "./endpoints/reports.js";
+export * as checkInApi from "./endpoints/checkIn.js";
 
 // Also re-export direct functions for convenient imports
 export {
@@ -52,3 +53,4 @@ export * from "./endpoints/subscriptions.js";
 export * from "./endpoints/transactions.js";
 export * from "./endpoints/users.js";
 export * from "./endpoints/reports.js";
+export * from "./endpoints/checkIn.js";
