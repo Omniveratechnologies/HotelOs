@@ -35,6 +35,7 @@ export function StayDetailsSection({
   open = true,
   summary,
   onEdit,
+  lockedSource,
 }) {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -205,22 +206,47 @@ export function StayDetailsSection({
           >
             Booking Source
           </label>
-          <select
-            id="stay-source"
-            value={value.source}
-            onChange={set("source")}
-            className={selectClass}
-          >
-            {BOOKING_SOURCE_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <p className="text-surface-500 mt-1.5 text-xs">
-            Walk-in guests are created at the front desk; OTA bookings arrive
-            via channel import.
-          </p>
+          {lockedSource ? (
+            <>
+              <div
+                className={cn(
+                  selectClass,
+                  "bg-background-100 cursor-not-allowed",
+                )}
+              >
+                {BOOKING_SOURCE_OPTIONS.find((s) => s.value === lockedSource)
+                  ?.label || lockedSource}
+              </div>
+              <input
+                type="hidden"
+                id="stay-source"
+                value={lockedSource}
+                onChange={set("source")}
+              />
+              <p className="text-surface-500 mt-1.5 text-xs">
+                Source is locked for this reservation type.
+              </p>
+            </>
+          ) : (
+            <>
+              <select
+                id="stay-source"
+                value={value.source}
+                onChange={set("source")}
+                className={selectClass}
+              >
+                {BOOKING_SOURCE_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-surface-500 mt-1.5 text-xs">
+                Walk-in guests are created at the front desk; OTA bookings
+                arrive via channel import.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="col-span-12 sm:col-span-4">

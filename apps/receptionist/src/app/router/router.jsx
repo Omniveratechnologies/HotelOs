@@ -79,6 +79,20 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "reservations/website/new",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/NewReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/website/:id/edit",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/NewReservationPage.jsx"),
+                ),
+              },
+              {
                 path: "check-in/:token",
                 lazy: lazyPage(
                   () =>

@@ -199,6 +199,11 @@ const items = [
         label: "Phone Reservation",
         path: "/reservations/phone/new",
       },
+      {
+        id: "website-reservation",
+        label: "Website Reservation",
+        path: "/reservations/website/new",
+      },
     ],
   },
   { id: "guests", label: "Guests", path: "/guests", icon: icons.guests },

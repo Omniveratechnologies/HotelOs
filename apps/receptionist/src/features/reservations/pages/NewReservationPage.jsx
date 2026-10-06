@@ -59,6 +59,7 @@ const EMPTY_GUEST = {
 };
 
 function initialForm(searchParams) {
+  const source = searchParams.get("source") || "DIRECT";
   return {
     checkIn: new Date().toISOString().slice(0, 10),
     checkOut: "",
@@ -67,7 +68,7 @@ function initialForm(searchParams) {
     children: 0,
     infants: 0,
     purpose: "",
-    source: "DIRECT",
+    source,
     guestType: "individual",
     specialRequests: "",
     roomTypeCode: searchParams.get("roomTypeCode") || "",
@@ -458,6 +459,38 @@ export default function NewReservationPage() {
           <Stepper steps={STEPS} currentIndex={step} onStepClick={goTo} />
         </SectionCard>
 
+        {/* Website source banner */}
+        {form.source === "WEBSITE" && (
+          <SectionCard className="border-emerald-200 bg-emerald-50">
+            <div className="flex items-center gap-3">
+              <svg
+                className="h-5 w-5 shrink-0 text-emerald-600"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-emerald-800">
+                  This guest registered and booked through your website.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="text-sm font-semibold text-emerald-700 underline hover:text-emerald-900"
+              >
+                View Registration Details →
+              </button>
+            </div>
+          </SectionCard>
+        )}
+
         <div className="grid grid-cols-12 gap-6">
           {/* LEFT — step content */}
           <div className="col-span-12 space-y-4 xl:col-span-8">
@@ -466,6 +499,7 @@ export default function NewReservationPage() {
               onChange={onChange}
               errors={errors}
               {...sectionState(0)}
+              lockedSource={form.source === "WEBSITE" ? "WEBSITE" : undefined}
             />
 
             <div>
