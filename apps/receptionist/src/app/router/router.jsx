@@ -65,6 +65,13 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "check-in/:token",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/check-in/pages/SelfCheckInPage.jsx"),
+                ),
+              },
+              {
                 path: "rooms",
                 lazy: lazyPage(
                   () => import("../../features/rooms/pages/RoomsPage.jsx"),
