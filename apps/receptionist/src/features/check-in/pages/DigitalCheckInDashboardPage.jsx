@@ -266,18 +266,17 @@ export default function DigitalCheckInDashboardPage() {
           <Header
             pageTitle="Digital Check-in Dashboard"
             pageDescription="Send secure check-in link to guests and verify submitted check-ins"
-            actions={
-              <Button
-                variant="primary"
-                onClick={() => {
-                  // In a real implementation, this would open a dialog to send a new check-in link
-                  navigate("/reservations/new"); // Placeholder
-                }}
-              >
-                + Send Check-in Link
-              </Button>
-            }
-          />
+          >
+            <Button
+              variant="primary"
+              onClick={() => {
+                // In a real implementation, this would open a dialog to send a new check-in link
+                navigate("/reservations/new"); // Placeholder
+              }}
+            >
+              + Send Check-in Link
+            </Button>
+          </Header>
 
           {/* Stats and Tabs */}
           {!stats ? null : (
