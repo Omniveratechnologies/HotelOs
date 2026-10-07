@@ -29,14 +29,24 @@ const iconTileClass =
  * @returns {React.ReactElement}
  */
 export function AdditionalOptionsSection({
-  addOns,
-  onAddOnsChange,
-  specialRequests,
-  onSpecialRequestsChange,
+  form,
+  onChange,
+  addOns: directAddOns,
+  onAddOnsChange: directOnAddOnsChange,
+  specialRequests: directSpecialRequests,
+  onSpecialRequestsChange: directOnSpecialRequestsChange,
   open = true,
   summary,
   onEdit,
 }) {
+  const addOns = form?.addOns ?? directAddOns ?? [];
+  const onAddOnsChange =
+    directOnAddOnsChange || ((val) => onChange && onChange("addOns", val));
+  const specialRequests = form?.specialRequests ?? directSpecialRequests ?? "";
+  const onSpecialRequestsChange =
+    directOnSpecialRequestsChange ||
+    ((val) => onChange && onChange("specialRequests", val));
+
   const [expanded, setExpanded] = useState(null);
   const [draftLabel, setDraftLabel] = useState("");
   const [draftAmount, setDraftAmount] = useState("");

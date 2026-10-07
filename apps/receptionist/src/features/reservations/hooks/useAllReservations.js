@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@hotelos/query";
 import { reservationsApi } from "@hotelos/api";
+import { normalizeReservation } from "./useReservations.js";
 
 /**
  * Server-filtered reservation list for the All Reservations page.
@@ -14,7 +15,7 @@ export function useAllReservations(filters) {
   });
 
   return {
-    reservations: query.data?.data || [],
+    reservations: (query.data?.data || []).map(normalizeReservation),
     pagination: query.data?.pagination || {
       page: 1,
       limit: 50,

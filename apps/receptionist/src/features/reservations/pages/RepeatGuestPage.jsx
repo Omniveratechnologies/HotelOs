@@ -1,77 +1,68 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import ReservationWizardLayout from "../components/ReservationWizardLayout.jsx";
 import {
   useReservationWizard,
   defaultInitialForm,
 } from "../hooks/useReservationWizard.js";
-import CallInformationCard from "../components/CallInformationCard.jsx";
+import {
+  RepeatGuestSearchPane,
+  RepeatGuestHistoryPanel,
+} from "../components/RepeatGuestComponents.jsx";
 import { StayDetailsSection } from "../sections/StayDetailsSection.jsx";
 import { RoomTypePicker } from "../sections/RoomTypePicker.jsx";
 import { RatePlanPicker } from "../sections/RatePlanPicker.jsx";
 import { RoomSelection } from "../sections/RoomSelection.jsx";
-import { GuestSection } from "../sections/GuestSection.jsx";
 import { AdditionalOptionsSection } from "../sections/AdditionalOptionsSection.jsx";
 import { BookingSummary } from "../sections/BookingSummary.jsx";
+import { searchGuests } from "@hotelos/api";
 import { formatDate } from "@hotelos/utils";
-import { Phone } from "lucide-react";
+import { Crown } from "lucide-react";
 
 const STEPS = [
-  { id: "call", title: "Call Information", subtitle: "Caller details & notes" },
-  { id: "stay", title: "Stay Details", subtitle: "Dates, guests, purpose" },
-  { id: "room", title: "Select Room", subtitle: "Room type & rate" },
-  { id: "guest", title: "Guest Details", subtitle: "Contact & ID" },
-  {
-    id: "options",
-    title: "Additional Options",
-    subtitle: "Add-ons & requests",
-  },
-  { id: "confirm", title: "Confirm & Create", subtitle: "Review booking" },
+  { id: "guest", title: "Select Guest", subtitle: "Profile & preferences" },
+  { id: "stay", title: "Stay Details", subtitle: "Dates, guests & purpose" },
+  { id: "room", title: "Select Room & Rate", subtitle: "History suggested" },
+  { id: "options", title: "Add-ons & Extras", subtitle: "Saved amenities" },
+  { id: "confirm", title: "Review & Confirm", subtitle: "Review booking" },
 ];
 
-export default function PhoneReservationPage() {
+export default function RepeatGuestPage() {
+  const [searchParams] = useSearchParams();
+  const guestIdQuery = searchParams.get("guestId");
+  const phoneQuery = searchParams.get("phone");
+  const [selectedGuest, setSelectedGuest] = useState(null);
+
   const wizard = useReservationWizard({
-    source: "PHONE",
+    source: "REPEAT_GUEST",
     steps: STEPS,
-    initialCustomForm: (searchParams) => {
-      const base = defaultInitialForm("PHONE", {
-        callerName: "",
-        callerPhone: "",
-        callerPhonePrefix: "+91",
-        callTime: new Date().toISOString().slice(0, 16),
-        callNotes: "",
+    initialCustomForm: () =>
+      defaultInitialForm("REPEAT_GUEST", {
         guestMode: "existing",
-      });
-      if (searchParams.get("roomTypeCode"))
-        base.roomTypeCode = searchParams.get("roomTypeCode");
-      if (searchParams.get("ratePlanId"))
-        base.ratePlanId = searchParams.get("ratePlanId");
-      if (searchParams.get("roomId")) {
-        base.roomId = searchParams.get("roomId");
-        base.preferSpecificRoom = true;
-      }
-      return base;
-    },
+        specialRequests:
+          "Same preferences as previous stay: high floor, non-smoking",
+      }),
     validateCustomStep: (stepId, form) => {
       const errs = {};
-      if (stepId === "call") {
-        if (!form.callerName?.trim())
-          errs.callerName = "Caller name is required";
-        if (!form.callerPhone?.trim())
-          errs.callerPhone = "Caller phone is required";
+      if (stepId === "guest") {
+        if (!form.guest?.name?.trim()) {
+          errs["guest.name"] =
+            "Please select a returning guest from the profile list";
+        }
       }
       return errs;
     },
     buildCustomPayload: (form, status) => ({
       status,
-      source: "PHONE",
+      source: "REPEAT_GUEST",
       checkIn: form.checkIn,
       checkOut: form.checkOut,
       rooms: form.rooms,
       adults: form.adults,
       children: form.children,
       infants: form.infants,
-      purpose: form.purpose,
-      guestType: form.guestType,
+      purpose: form.purpose || "Returning Guest Stay",
+      guestType: "individual",
       specialRequests: form.specialRequests,
       roomTypeCode: form.roomTypeCode,
       ratePlanId: form.ratePlanId || undefined,
@@ -79,8 +70,8 @@ export default function PhoneReservationPage() {
       rateOverride:
         form.rateOverride !== "" ? Number(form.rateOverride) : undefined,
       roomId: form.preferSpecificRoom ? form.roomId || undefined : undefined,
-      name: (form.guest.name || form.callerName || "").trim(),
-      phone: `${form.guest.phonePrefix || form.callerPhonePrefix || "+91"}${(form.guest.phone || form.callerPhone || "").trim()}`,
+      name: form.guest.name.trim(),
+      phone: `${form.guest.phonePrefix || "+91"}${form.guest.phone.trim()}`,
       email: form.guest.email?.trim() || undefined,
       nationality: form.guest.nationality || undefined,
       idType: form.guest.idType || undefined,
@@ -91,10 +82,10 @@ export default function PhoneReservationPage() {
           ? { type: "percent", value: Number(form.discount) }
           : undefined,
       metadata: {
-        callerName: form.callerName,
-        callerPhone: form.callerPhone,
-        callTime: form.callTime,
-        callNotes: form.callNotes,
+        repeatGuestId: selectedGuest?.id,
+        loyaltyTier: selectedGuest?.tier,
+        loyaltyPoints: selectedGuest?.points,
+        preferences: selectedGuest?.preferences,
       },
     }),
   });
@@ -103,7 +94,6 @@ export default function PhoneReservationPage() {
     editId,
     form,
     onFieldChange,
-    onGuestField,
     onSelectExistingGuest,
     currentStep,
     nextStep,
@@ -118,12 +108,43 @@ export default function PhoneReservationPage() {
     roomsLoading,
     availableRooms,
     quote,
-    guestSearch,
     saveAsDraft,
     submitReservation,
     isSubmitting,
     navigate,
   } = wizard;
+
+  const handleGuestSelect = (g) => {
+    setSelectedGuest(g);
+    onSelectExistingGuest({
+      name: g.name,
+      phone: g.phone.replace("+91", "").trim(),
+      phonePrefix: "+91",
+      email: g.email,
+      nationality: g.nationality,
+      idType: g.idType,
+      idNumber: g.idNumber,
+    });
+    if (g.preferredRoomType) {
+      onFieldChange("roomTypeCode", g.preferredRoomType);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedGuest && (guestIdQuery || phoneQuery)) {
+      searchGuests(phoneQuery || "")
+        .then((list) => {
+          const found =
+            (list || []).find(
+              (g) => g.id === guestIdQuery || g._id === guestIdQuery,
+            ) || list?.[0];
+          if (found) {
+            handleGuestSelect(found);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [guestIdQuery, phoneQuery]);
 
   const currentType = useMemo(
     () => typeItems.find((t) => t.roomTypeCode === form.roomTypeCode),
@@ -151,27 +172,32 @@ export default function PhoneReservationPage() {
   );
 
   const summaryPanel = (
-    <BookingSummary
-      quote={quote.data}
-      quoteLoading={quote.isPending}
-      media={media}
-      editMode={Boolean(editId)}
-      onEdit={() => goToStep(1)}
-      onSaveDraft={saveAsDraft}
-      onCreate={submitReservation}
-      creating={isSubmitting}
-      disabled={nights < 1 || !form.roomTypeCode}
-    />
+    <div className="space-y-4">
+      {selectedGuest && (
+        <RepeatGuestHistoryPanel selectedGuest={selectedGuest} />
+      )}
+      <BookingSummary
+        quote={quote.data}
+        quoteLoading={quote.isPending}
+        media={media}
+        editMode={Boolean(editId)}
+        onEdit={() => goToStep(1)}
+        onSaveDraft={saveAsDraft}
+        onCreate={submitReservation}
+        creating={isSubmitting}
+        disabled={nights < 1 || !form.roomTypeCode}
+      />
+    </div>
   );
 
   return (
     <ReservationWizardLayout
-      title={editId ? "Edit Phone Reservation" : "Phone Reservation"}
-      subtitle="Take incoming phone reservations with live caller log and quote"
+      title={editId ? "Edit Repeat Guest Booking" : "Repeat Guest Booking"}
+      subtitle="Fast booking for returning guests with auto-populated profile and past preferences"
       badge={
-        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
-          <Phone className="h-3 w-3" />
-          Phone Inbound
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+          <Crown className="h-3 w-3" />
+          Loyalty Member
         </span>
       }
       steps={STEPS}
@@ -183,21 +209,17 @@ export default function PhoneReservationPage() {
       onSaveDraft={saveAsDraft}
       onSubmit={submitReservation}
       isSubmitting={isSubmitting}
-      submitText={
-        editId ? "Update Phone Reservation" : "Create Phone Reservation"
-      }
+      submitText={editId ? "Update Booking" : "Create Repeat Guest Booking"}
       submitError={submitError}
       summaryPanel={summaryPanel}
     >
       {currentStep === 0 && (
-        <CallInformationCard
-          callerName={form.callerName}
-          callerPhone={form.callerPhone}
-          callerPhonePrefix={form.callerPhonePrefix}
-          callTime={form.callTime}
-          callNotes={form.callNotes}
-          errors={errors}
-          onChange={onFieldChange}
+        <RepeatGuestSearchPane
+          searchQuery={form.guestQuery}
+          onSearchChange={(q) => onFieldChange("guestQuery", q)}
+          selectedGuest={selectedGuest}
+          onSelectGuest={handleGuestSelect}
+          error={errors["guest.name"]}
         />
       )}
 
@@ -206,7 +228,7 @@ export default function PhoneReservationPage() {
           value={form}
           onChange={onFieldChange}
           errors={errors}
-          lockedSource="PHONE"
+          lockedSource="REPEAT_GUEST"
           open={true}
         />
       )}
@@ -255,22 +277,6 @@ export default function PhoneReservationPage() {
       )}
 
       {currentStep === 3 && (
-        <GuestSection
-          mode={form.guestMode}
-          onModeChange={(m) => onFieldChange("guestMode", m)}
-          form={form.guest}
-          onField={onGuestField}
-          errors={errors}
-          searchQuery={form.guestQuery}
-          onSearchChange={(q) => onFieldChange("guestQuery", q)}
-          searchResults={guestSearch.results}
-          onSelectGuest={onSelectExistingGuest}
-          searching={guestSearch.isLoading}
-          open={true}
-        />
-      )}
-
-      {currentStep === 4 && (
         <AdditionalOptionsSection
           form={form}
           onChange={onFieldChange}
@@ -278,51 +284,34 @@ export default function PhoneReservationPage() {
         />
       )}
 
-      {currentStep === 5 && (
+      {currentStep === 4 && (
         <div className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-xs">
           <h3 className="border-b border-gray-100 pb-3 text-lg font-bold text-gray-900">
-            Review Phone Reservation
+            Review Repeat Guest Booking
           </h3>
-          <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
-            <div className="rounded-xl bg-gray-50 p-4">
-              <span className="text-xs font-semibold text-gray-500 uppercase">
-                Call Record
+          <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+              <span className="text-xs font-semibold text-amber-800 uppercase">
+                Guest Profile
               </span>
               <p className="mt-1 font-semibold text-gray-900">
-                {form.callerName}
+                {form.guest.name || "—"}
               </p>
-              <p className="text-gray-600">{form.callerPhone}</p>
-              {form.callNotes && (
-                <p className="mt-2 text-xs text-gray-500 italic">
-                  "{form.callNotes}"
-                </p>
-              )}
+              <p className="text-gray-600">{form.guest.phone || "—"}</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Tier: {selectedGuest?.tier || "Regular"}
+              </p>
             </div>
 
             <div className="rounded-xl bg-gray-50 p-4">
               <span className="text-xs font-semibold text-gray-500 uppercase">
-                Stay Details
+                Stay Period
               </span>
               <p className="mt-1 font-semibold text-gray-900">
                 {form.checkIn} → {form.checkOut} ({nights} nights)
               </p>
               <p className="text-gray-600">
                 {form.rooms} Room(s), {form.adults} Adult(s)
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-gray-50 p-4">
-              <span className="text-xs font-semibold text-gray-500 uppercase">
-                Guest Profile
-              </span>
-              <p className="mt-1 font-semibold text-gray-900">
-                {form.guest.name || form.callerName}
-              </p>
-              <p className="text-gray-600">
-                {form.guest.phone || form.callerPhone}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                {form.guest.email || "No email"}
               </p>
             </div>
           </div>

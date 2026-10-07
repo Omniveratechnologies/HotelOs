@@ -37,7 +37,12 @@ const SOURCE_TABS = [
   { id: "all", label: "All" },
   { id: "DIRECT", label: "Direct" },
   { id: "WEBSITE", label: "Website" },
+  { id: "PHONE", label: "Phone" },
+  { id: "CORPORATE", label: "Corporate" },
+  { id: "GROUP", label: "Group" },
+  { id: "REPEAT_GUEST", label: "Repeat Guest" },
   { id: "OTA", label: "OTA" },
+  { id: "drafts", label: "Drafts" },
 ];
 
 const STATUS_FILTER_OPTIONS = [
@@ -77,7 +82,15 @@ export default function ReservationsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [selected, setSelected] = useState(null);
+
+  const urlSelectedId = useMemo(() => {
+    return new URLSearchParams(location.search).get("selected");
+  }, [location.search]);
+
+  const [clickedSelectedId, setClickedSelectedId] = useState(null);
+  const selectedId = clickedSelectedId || urlSelectedId || null;
+  const setSelectedId = setClickedSelectedId;
+
   const flash = location.state?.created
     ? `Reservation ${location.state.created} created.`
     : location.state?.updated
@@ -115,6 +128,25 @@ export default function ReservationsPage() {
       ),
     );
 
+  const selected = useMemo(() => {
+    if (!selectedId) return null;
+    const match = (reservations || []).find(
+      (r) => r.id === selectedId || r._id === selectedId,
+    );
+    if (match) return match;
+    return { id: selectedId, _id: selectedId };
+  }, [selectedId, reservations]);
+
+  const handleCloseDetail = () => {
+    setSelectedId(null);
+    if (urlSelectedId) {
+      const nextParams = new URLSearchParams(location.search);
+      nextParams.delete("selected");
+      const qs = nextParams.toString();
+      navigate(`${location.pathname}${qs ? `?${qs}` : ""}`, { replace: true });
+    }
+  };
+
   const setFilter = (key, value) =>
     setFilters((f) => ({
       ...f,
@@ -128,6 +160,10 @@ export default function ReservationsPage() {
     all: stats?.total || 0,
     DIRECT: stats?.bySource?.DIRECT || 0,
     WEBSITE: stats?.bySource?.WEBSITE || 0,
+    PHONE: stats?.bySource?.PHONE || 0,
+    CORPORATE: stats?.bySource?.CORPORATE || 0,
+    GROUP: stats?.bySource?.GROUP || 0,
+    REPEAT_GUEST: stats?.bySource?.REPEAT_GUEST || 0,
     OTA: stats?.bySource?.OTA || 0,
     drafts: stats?.byStatus?.draft || 0,
   };
@@ -321,99 +357,103 @@ export default function ReservationsPage() {
                       </td>
                     </tr>
                   ) : (
-                    reservations.map((r) => (
-                      <tr
-                        key={r.id}
-                        onClick={() => setSelected(r)}
-                        className={`hover:bg-background-50 cursor-pointer transition-colors ${
-                          selected?.id === r.id ? "bg-brand-50/60" : ""
-                        }`}
-                      >
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            aria-label={`Select ${r.reservationNo || r.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="border-surface-300 h-4 w-4 rounded"
-                          />
-                        </td>
-                        <td className="text-brand-700 px-4 py-3 font-medium">
-                          {r.reservationNo || r.id.slice(-6).toUpperCase()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <span className="bg-brand-100 text-brand-800 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
-                              {guestInitials(r.name)}
-                            </span>
-                            <div>
-                              <p className="text-brand-900 font-medium">
-                                {r.name}
-                              </p>
-                              <p className="text-surface-500 text-xs">
-                                {r.phone || r.email || "—"}
-                              </p>
+                    reservations.map((r) => {
+                      const rId = r.id || r._id;
+                      const isSelected = selectedId === rId;
+                      return (
+                        <tr
+                          key={rId}
+                          onClick={() => setSelectedId(rId)}
+                          className={`hover:bg-background-50 cursor-pointer transition-colors ${
+                            isSelected ? "bg-brand-50/60" : ""
+                          }`}
+                        >
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              aria-label={`Select ${r.reservationNo || r.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="border-surface-300 h-4 w-4 rounded"
+                            />
+                          </td>
+                          <td className="text-brand-700 px-4 py-3 font-medium">
+                            {r.reservationNo || r.id.slice(-6).toUpperCase()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <span className="bg-brand-100 text-brand-800 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                                {guestInitials(r.name)}
+                              </span>
+                              <div>
+                                <p className="text-brand-900 font-medium">
+                                  {r.name}
+                                </p>
+                                <p className="text-surface-500 text-xs">
+                                  {r.phone || r.email || "—"}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
-                              r.source === "OTA"
-                                ? "border-orange-200 bg-orange-50 text-orange-700"
-                                : r.source === "WEBSITE"
-                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                  : r.source === "PHONE"
-                                    ? "border-amber-200 bg-amber-50 text-amber-700"
-                                    : r.source === "CORPORATE"
-                                      ? "border-violet-200 bg-violet-50 text-violet-700"
-                                      : "border-blue-200 bg-blue-50 text-blue-700"
-                            }`}
-                          >
-                            {sourceLabel(r)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {formatDate(r.checkIn)}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {formatDate(r.checkOut)}
-                        </td>
-                        <td className="text-brand-900 px-4 py-3 font-medium">
-                          {r.nights ? `${r.nights}n` : "—"}
-                        </td>
-                        <td className="px-4 py-3">{r.rooms}</td>
-                        <td className="px-4 py-3">
-                          <span className="text-surface-600 inline-flex items-center gap-1">
-                            <UsersIcon size={13} />
-                            {r.adults + r.children}
-                          </span>
-                        </td>
-                        <td className="text-brand-900 px-4 py-3 text-right font-semibold">
-                          {formatCurrency(
-                            r.grandTotal ?? r.pricing?.grandTotal ?? 0,
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusChip
-                            variant={STATUS_VARIANT[r.status] || "neutral"}
-                          >
-                            {STATUS_LABEL[r.status] || r.status}
-                          </StatusChip>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            aria-label="Open reservation actions"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelected(r);
-                            }}
-                            className="text-surface-400 rounded-lg p-1.5 hover:bg-gray-100 hover:text-gray-700"
-                          >
-                            ⋮
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+                                r.source === "OTA"
+                                  ? "border-orange-200 bg-orange-50 text-orange-700"
+                                  : r.source === "WEBSITE"
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                    : r.source === "PHONE"
+                                      ? "border-amber-200 bg-amber-50 text-amber-700"
+                                      : r.source === "CORPORATE"
+                                        ? "border-violet-200 bg-violet-50 text-violet-700"
+                                        : "border-blue-200 bg-blue-50 text-blue-700"
+                              }`}
+                            >
+                              {sourceLabel(r)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {formatDate(r.checkIn)}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {formatDate(r.checkOut)}
+                          </td>
+                          <td className="text-brand-900 px-4 py-3 font-medium">
+                            {r.nights ? `${r.nights}n` : "—"}
+                          </td>
+                          <td className="px-4 py-3">{r.rooms}</td>
+                          <td className="px-4 py-3">
+                            <span className="text-surface-600 inline-flex items-center gap-1">
+                              <UsersIcon size={13} />
+                              {r.adults + r.children}
+                            </span>
+                          </td>
+                          <td className="text-brand-900 px-4 py-3 text-right font-semibold">
+                            {formatCurrency(
+                              r.grandTotal ?? r.pricing?.grandTotal ?? 0,
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusChip
+                              variant={STATUS_VARIANT[r.status] || "neutral"}
+                            >
+                              {STATUS_LABEL[r.status] || r.status}
+                            </StatusChip>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              aria-label="Open reservation actions"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedId(rId);
+                              }}
+                              className="text-surface-400 rounded-lg p-1.5 hover:bg-gray-100 hover:text-gray-700"
+                            >
+                              ⋮
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -487,9 +527,10 @@ export default function ReservationsPage() {
           <div className="sticky top-24 hidden w-100 shrink-0 self-start xl:block">
             <ReservationDetailPane
               reservation={selected}
+              reservationId={selectedId}
               variant="docked"
-              onClose={() => setSelected(null)}
-              onChanged={() => setSelected(null)}
+              onClose={handleCloseDetail}
+              onChanged={() => {}}
             />
           </div>
         )}
@@ -499,9 +540,10 @@ export default function ReservationsPage() {
       <div className="xl:hidden">
         <ReservationDetailPane
           reservation={selected}
+          reservationId={selectedId}
           variant="overlay"
-          onClose={() => setSelected(null)}
-          onChanged={() => setSelected(null)}
+          onClose={handleCloseDetail}
+          onChanged={() => {}}
         />
       </div>
     </>

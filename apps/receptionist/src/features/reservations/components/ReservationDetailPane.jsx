@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import {
   DetailDrawer,
@@ -7,24 +7,35 @@ import {
   Button,
   ConfirmDialog,
   Input,
+  Modal,
 } from "@hotelos/ui/components";
 import {
   BedDouble,
-  Pencil,
   XCircle,
   RefreshCcw,
   BedSingle,
-  ArrowRight,
+  LogIn,
+  ExternalLink,
+  User,
+  CalendarRange,
 } from "lucide-react";
-import { formatCurrency, formatDate, formatTime } from "@hotelos/utils";
-import { useReservation } from "../hooks/useReservations.js";
+import {
+  formatCurrency,
+  formatDate,
+  formatTime,
+  toLocalDateString,
+} from "@hotelos/utils";
+import {
+  useReservation,
+  useUpdateReservation,
+} from "../hooks/useReservations.js";
 import { useReservationHistory } from "../hooks/useAllReservations.js";
 import { useAvailableRooms } from "../hooks/useAvailableRooms.js";
+import { useRoomTypes } from "../../room-types/hooks/useRoomTypes.js";
 import {
   useCancelReservation,
   useReconfirmReservation,
   useChangeReservationRoom,
-  useExtendReservationStay,
 } from "../hooks/useAllReservations.js";
 import {
   STATUS_VARIANT,
@@ -40,6 +51,17 @@ const TABS = [
   { id: "billing", label: "Billing" },
   { id: "history", label: "History" },
 ];
+
+function getEditUrl(booking) {
+  const id = booking.id || booking._id;
+  const src = (booking.source || "").toUpperCase();
+  if (src === "CORPORATE") return `/reservations/corporate/${id}/edit`;
+  if (src === "GROUP") return `/reservations/group/${id}/edit`;
+  if (src === "PHONE") return `/reservations/phone/${id}/edit`;
+  if (src === "WEBSITE") return `/reservations/website/${id}/edit`;
+  if (src === "REPEAT_GUEST") return `/reservations/repeat/${id}/edit`;
+  return `/reservations/${id}/edit`;
+}
 
 function DetailRow({ label, value }) {
   return (
@@ -63,55 +85,406 @@ function PaneCard({ title, children }) {
   );
 }
 
+function StayEditModal({
+  booking,
+  roomTypeOptions,
+  onClose,
+  onSave,
+  isSaving,
+}) {
+  const [checkIn, setCheckIn] = useState(
+    () => toLocalDateString(booking.checkIn) || "",
+  );
+  const [checkOut, setCheckOut] = useState(
+    () => toLocalDateString(booking.checkOut) || "",
+  );
+  const [roomTypeCode, setRoomTypeCode] = useState(
+    () =>
+      booking.roomTypeCode ||
+      booking.room?.roomCode ||
+      booking.room?.type ||
+      "",
+  );
+  const [roomId, setRoomId] = useState(() =>
+    booking.roomId ? String(booking.roomId?._id || booking.roomId) : "",
+  );
+  const [rooms, setRooms] = useState(() => booking.rooms || 1);
+  const [adults, setAdults] = useState(() => booking.adults || 1);
+  const [children, setChildren] = useState(() => booking.children || 0);
+  const [mealPlan, setMealPlan] = useState(() => booking.mealPlan || "EP");
+  const [requests, setRequests] = useState(() => booking.specialRequests || "");
+  const [localError, setLocalError] = useState("");
+
+  const availableRoomsQuery = useAvailableRooms({
+    roomTypeCode,
+    checkIn,
+    checkOut,
+    enabled: Boolean(roomTypeCode && checkIn && checkOut),
+  });
+
+  const currentAssignedRoom = booking?.room;
+  const roomOptions = useMemo(() => {
+    const list = [...(availableRoomsQuery?.rooms || [])];
+    const curId = currentAssignedRoom?._id || currentAssignedRoom?.id;
+    if (curId && !list.some((r) => String(r.id || r._id) === String(curId))) {
+      list.unshift({
+        id: curId,
+        _id: curId,
+        roomNumber: currentAssignedRoom.roomNumber,
+        floor: currentAssignedRoom.floor,
+        status: "current",
+      });
+    }
+    return list;
+  }, [availableRoomsQuery?.rooms, currentAssignedRoom]);
+
+  const handleSubmit = () => {
+    if (!checkIn || !checkOut) {
+      setLocalError("Please provide both check-in and check-out dates");
+      return;
+    }
+    if (new Date(checkOut) <= new Date(checkIn)) {
+      setLocalError("Check-out date must be after check-in date");
+      return;
+    }
+    setLocalError("");
+    onSave({
+      checkIn,
+      checkOut,
+      roomTypeCode: roomTypeCode || undefined,
+      roomId: roomId || undefined,
+      rooms: Math.max(1, Number(rooms) || 1),
+      adults: Math.max(1, Number(adults) || 1),
+      children: Math.max(0, Number(children) || 0),
+      mealPlan: mealPlan || undefined,
+      specialRequests: requests?.trim() || undefined,
+    });
+  };
+
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      title="Edit Stay Details"
+      subtitle={`Editing stay for ${booking.reservationNo || booking.id || booking._id} (${booking.name || "Guest"})`}
+      maxWidth="md"
+    >
+      <div className="space-y-4 p-1">
+        {localError && (
+          <InlineBanner variant="error">{localError}</InlineBanner>
+        )}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input
+            label="Check-in Date"
+            type="date"
+            value={checkIn}
+            onChange={(e) => setCheckIn(e.target.value)}
+            required
+          />
+          <Input
+            label="Check-out Date"
+            type="date"
+            min={checkIn || undefined}
+            value={checkOut}
+            onChange={(e) => setCheckOut(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="text-brand-900 mb-1.5 block text-sm font-semibold">
+              Room Type
+            </label>
+            <select
+              value={roomTypeCode}
+              onChange={(e) => {
+                setRoomTypeCode(e.target.value);
+                setRoomId("");
+              }}
+              className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:ring-2"
+            >
+              <option value="">Select Room Type…</option>
+              {roomTypeOptions.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label} ({t.value})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-brand-900 mb-1.5 block text-sm font-semibold">
+              Assigned Room
+            </label>
+            <select
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:ring-2"
+            >
+              <option value="">Auto-assign (No room locked)</option>
+              {roomOptions.map((r) => (
+                <option key={r.id || r._id} value={r.id || r._id}>
+                  Room {r.roomNumber}
+                  {r.floor != null ? ` · Floor ${r.floor}` : ""}{" "}
+                  {r.status ? `(${r.status})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <Input
+            label="Rooms"
+            type="number"
+            min={1}
+            value={rooms}
+            onChange={(e) => setRooms(Math.max(1, Number(e.target.value)))}
+            required
+          />
+          <Input
+            label="Adults"
+            type="number"
+            min={1}
+            value={adults}
+            onChange={(e) => setAdults(Math.max(1, Number(e.target.value)))}
+            required
+          />
+          <Input
+            label="Children"
+            type="number"
+            min={0}
+            value={children}
+            onChange={(e) => setChildren(Math.max(0, Number(e.target.value)))}
+          />
+        </div>
+
+        <div>
+          <label className="text-brand-900 mb-1.5 block text-sm font-semibold">
+            Meal Plan
+          </label>
+          <select
+            value={mealPlan}
+            onChange={(e) => setMealPlan(e.target.value)}
+            className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:ring-2"
+          >
+            <option value="EP">EP — European Plan (Room Only)</option>
+            <option value="CP">CP — Continental Plan (Bed & Breakfast)</option>
+            <option value="MAP">
+              MAP — Modified American Plan (Half Board)
+            </option>
+            <option value="AP">AP — American Plan (Full Board)</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="text-brand-900 mb-1.5 block text-sm font-semibold">
+            Special Requests & Stay Notes
+          </label>
+          <textarea
+            rows={3}
+            value={requests}
+            onChange={(e) => setRequests(e.target.value)}
+            placeholder="Guest preferences, arrival notes, high floor, quiet room…"
+            className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-lg border border-gray-200 bg-white p-3 text-sm outline-none focus:ring-2"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-gray-100 pt-2">
+          <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} loading={isSaving}>
+            Save Stay Changes
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function GuestEditModal({ booking, onClose, onSave, isSaving }) {
+  const [name, setName] = useState(() => booking.name || "");
+  const [phone, setPhone] = useState(() => booking.phone || "");
+  const [email, setEmail] = useState(() => booking.email || "");
+  const [idType, setIdType] = useState(() => booking.idType || "Aadhaar");
+  const [idNumber, setIdNumber] = useState(() => booking.idNumber || "");
+  const [paymentStatus, setPaymentStatus] = useState(
+    () => booking.paymentStatus || "unpaid",
+  );
+  const [localError, setLocalError] = useState("");
+
+  const handleSubmit = () => {
+    if (!name.trim()) {
+      setLocalError("Guest name is required");
+      return;
+    }
+    setLocalError("");
+    onSave({
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email?.trim() || undefined,
+      idType: idType || undefined,
+      idNumber: idNumber?.trim() || undefined,
+      paymentStatus,
+    });
+  };
+
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      title="Edit Guest Details"
+      subtitle={`Guest profile for ${booking.reservationNo || booking.id || booking._id}`}
+      maxWidth="md"
+    >
+      <div className="space-y-4 p-1">
+        {localError && (
+          <InlineBanner variant="error">{localError}</InlineBanner>
+        )}
+        <Input
+          label="Guest Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input
+            label="Contact Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+          <Input
+            label="Contact Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="text-brand-900 mb-1.5 block text-sm font-semibold">
+              ID Type
+            </label>
+            <select
+              value={idType}
+              onChange={(e) => setIdType(e.target.value)}
+              className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:ring-2"
+            >
+              <option value="Aadhaar">Aadhaar</option>
+              <option value="Passport">Passport</option>
+              <option value="Driving License">Driving License</option>
+              <option value="Voter ID">Voter ID</option>
+              <option value="PAN">PAN</option>
+            </select>
+          </div>
+          <Input
+            label="ID Number"
+            value={idNumber}
+            onChange={(e) => setIdNumber(e.target.value)}
+            placeholder="e.g. 1234 5678 9012"
+          />
+        </div>
+
+        <div>
+          <label className="text-brand-900 mb-1.5 block text-sm font-semibold">
+            Payment Status
+          </label>
+          <select
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+            className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:ring-2"
+          >
+            <option value="unpaid">Unpaid</option>
+            <option value="partially-paid">Partially Paid</option>
+            <option value="paid">Paid in Full</option>
+          </select>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-gray-100 pt-2">
+          <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} loading={isSaving}>
+            Save Guest Changes
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /**
  * Right-side reservation detail pane (docked ≥1280 via parent layout, overlay
- * below) with tabs and status-aware footer actions.
+ * below) with tabs, quick in-place edits (Stay & Guest), and full edit navigation.
  *
  * @param {Object} props
  * @param {object|null} props.reservation - Selected list row.
+ * @param {string|null} [props.reservationId] - ID of the selected reservation.
  * @param {'overlay'|'docked'} props.variant
  * @param {() => void} props.onClose
+ * @param {() => void} [props.onChanged]
  */
 export function ReservationDetailPane({
   reservation,
+  reservationId,
   variant,
   onClose,
   onChanged,
 }) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("overview");
+
+  // Dialog & modal states
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [changeRoomOpen, setChangeRoomOpen] = useState(false);
-  const [extendOpen, setExtendOpen] = useState(false);
+  const [stayEditOpen, setStayEditOpen] = useState(false);
+  const [guestEditOpen, setGuestEditOpen] = useState(false);
+
+  // Form states for small edits
   const [newRoomId, setNewRoomId] = useState("");
-  const [newCheckOut, setNewCheckOut] = useState("");
   const [actionError, setActionError] = useState("");
 
-  const detail = useReservation(reservation?.id);
-  const history = useReservationHistory(reservation?.id, tab === "history");
+  const resId = reservationId || reservation?.id || reservation?._id;
+  const detail = useReservation(resId);
+  const history = useReservationHistory(resId, tab === "history");
 
   const cancel = useCancelReservation();
   const reconfirm = useReconfirmReservation();
   const changeRoom = useChangeReservationRoom();
-  const extendStay = useExtendReservationStay();
+  const updateRes = useUpdateReservation();
 
   const booking = detail.data || reservation;
+
   const actionsPending =
     cancel.isPending ||
     reconfirm.isPending ||
     changeRoom.isPending ||
-    extendStay.isPending;
+    updateRes.isPending;
 
   const run = (mutation, payload, onDone) => {
     setActionError("");
     mutation.mutateAsync(payload).then(
       () => {
         onDone?.();
+        detail.refetch();
         onChanged?.();
       },
       (err) => setActionError(err.message || "Action failed"),
     );
   };
+
+  const { roomTypes } = useRoomTypes();
+  const roomTypeOptions = useMemo(
+    () =>
+      (roomTypes || [])
+        .filter((t) => t.active !== false)
+        .map((t) => ({ value: t.roomCode, label: t.name })),
+    [roomTypes],
+  );
 
   const availableRooms = useAvailableRooms({
     roomTypeCode: booking?.roomTypeCode,
@@ -120,7 +493,7 @@ export function ReservationDetailPane({
     enabled: changeRoomOpen,
   });
 
-  if (!reservation) return null;
+  if (!reservation && !booking) return null;
 
   const isOta = booking.source === "OTA";
   const canModify = ["draft", "pending", "confirmed", "reserved"].includes(
@@ -139,25 +512,19 @@ export function ReservationDetailPane({
     "checked-in",
     "draft",
   ].includes(booking.status);
-  const canExtend = [
-    "pending",
-    "confirmed",
-    "reserved",
-    "checked-in",
-    "draft",
-  ].includes(booking.status);
+  const canCheckIn = ["confirmed", "reserved"].includes(booking.status);
 
   const pricing = booking.pricing;
 
   return (
     <DetailDrawer
-      open={Boolean(reservation)}
+      open={Boolean(reservation || booking)}
       onClose={onClose}
       variant={variant}
       widthClassName={variant === "overlay" ? "w-full max-w-110" : "w-full"}
       title={
         <span className="flex items-center gap-2">
-          {booking.reservationNo || booking.id}
+          {booking.reservationNo || booking.id || booking._id}
           <StatusChip variant={STATUS_VARIANT[booking.status] || "neutral"}>
             {STATUS_LABEL[booking.status] || booking.status}
           </StatusChip>
@@ -176,7 +543,7 @@ export function ReservationDetailPane({
       activeTabId={tab}
       onTabChange={setTab}
       footer={
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {actionError && (
             <InlineBanner variant="error">{actionError}</InlineBanner>
           )}
@@ -190,16 +557,70 @@ export function ReservationDetailPane({
                   "One-night charge applies after the free window."}
             </InlineBanner>
           )}
-          <div className="flex gap-2">
+
+          {/* Row 1: Small In-Place Edits */}
+          <div className="grid grid-cols-3 gap-2">
             {canModify && (
               <Button
                 variant="secondary"
                 size="sm"
-                icon={Pencil}
-                onClick={() => navigate(`/reservations/${booking.id}/edit`)}
+                icon={CalendarRange}
+                onClick={() => setStayEditOpen(true)}
+                disabled={actionsPending}
+                title="Quick edit stay details (dates, room, occupancy, meal plan)"
+                className="justify-center text-xs"
+              >
+                Edit Stay
+              </Button>
+            )}
+            {canModify && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={User}
+                onClick={() => setGuestEditOpen(true)}
+                disabled={actionsPending}
+                title="Quick edit guest info and contact details"
+                className="justify-center text-xs"
+              >
+                Edit Guest
+              </Button>
+            )}
+            {canChangeRoom && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={BedSingle}
+                onClick={() => {
+                  setNewRoomId(booking.roomId ? String(booking.roomId) : "");
+                  setChangeRoomOpen(true);
+                }}
+                disabled={actionsPending}
+                className="justify-center text-xs"
+              >
+                Room
+              </Button>
+            )}
+          </div>
+
+          {/* Row 2: Status & Operational Actions */}
+          <div className="flex flex-wrap gap-2">
+            {canCheckIn && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={LogIn}
+                className="flex-1 justify-center text-xs"
+                onClick={() => {
+                  const bId = booking.id || booking._id;
+                  const rId = booking.roomId?._id || booking.roomId || "";
+                  navigate(
+                    `/front-desk/check-in?roomId=${rId}&bookingId=${bId}&guest=${encodeURIComponent(booking.name || "")}`,
+                  );
+                }}
                 disabled={actionsPending}
               >
-                Modify
+                Check-in Guest
               </Button>
             )}
             {canCancel && (
@@ -209,6 +630,7 @@ export function ReservationDetailPane({
                 icon={XCircle}
                 onClick={() => setConfirmCancel(true)}
                 disabled={actionsPending}
+                className="text-xs"
               >
                 Cancel
               </Button>
@@ -218,51 +640,24 @@ export function ReservationDetailPane({
                 variant="secondary"
                 size="sm"
                 icon={RefreshCcw}
-                onClick={() => run(reconfirm, booking.id)}
+                onClick={() => run(reconfirm, booking.id || booking._id)}
                 loading={reconfirm.isPending}
+                className="text-xs"
               >
                 Reconfirm
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
-            {canChangeRoom && (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex-1"
-                icon={BedSingle}
-                onClick={() => {
-                  setNewRoomId(booking.roomId ? String(booking.roomId) : "");
-                  setChangeRoomOpen(true);
-                }}
-                disabled={actionsPending}
-              >
-                Change Room
-              </Button>
-            )}
-            {canExtend && (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex-1"
-                icon={ArrowRight}
-                onClick={() => {
-                  setNewCheckOut(booking.checkOut || "");
-                  setExtendOpen(true);
-                }}
-                disabled={actionsPending}
-              >
-                Extend Stay
-              </Button>
-            )}
-          </div>
+
+          {/* Row 3: Full Wizard Edit */}
           {canModify && (
             <Button
-              className="w-full"
-              onClick={() => navigate(`/reservations/${booking.id}/edit`)}
+              variant="secondary"
+              className="text-brand-900 w-full justify-center border-gray-300 font-semibold shadow-2xs hover:bg-gray-50"
+              icon={ExternalLink}
+              onClick={() => navigate(getEditUrl(booking))}
             >
-              View / Edit Full Reservation →
+              Full Edit Reservation →
             </Button>
           )}
         </div>
@@ -300,7 +695,7 @@ export function ReservationDetailPane({
             <PaneCard title="Reservation Details">
               <DetailRow
                 label="Reservation No."
-                value={booking.reservationNo || booking.id}
+                value={booking.reservationNo || booking.id || booking._id}
               />
               <DetailRow label="Source" value={sourceLabel(booking)} />
               <DetailRow
@@ -533,6 +928,33 @@ export function ReservationDetailPane({
         )}
       </div>
 
+      {/* Quick Edit Stay Details Modal */}
+      {stayEditOpen && (
+        <StayEditModal
+          booking={booking}
+          roomTypeOptions={roomTypeOptions}
+          onClose={() => setStayEditOpen(false)}
+          onSave={(updates) => {
+            const bId = booking.id || booking._id;
+            run(updateRes, { id: bId, updates }, () => setStayEditOpen(false));
+          }}
+          isSaving={updateRes.isPending}
+        />
+      )}
+
+      {/* Quick Edit Guest Details Modal */}
+      {guestEditOpen && (
+        <GuestEditModal
+          booking={booking}
+          onClose={() => setGuestEditOpen(false)}
+          onSave={(updates) => {
+            const bId = booking.id || booking._id;
+            run(updateRes, { id: bId, updates }, () => setGuestEditOpen(false));
+          }}
+          isSaving={updateRes.isPending}
+        />
+      )}
+
       {/* Cancel dialog */}
       <ConfirmDialog
         open={confirmCancel}
@@ -558,15 +980,19 @@ export function ReservationDetailPane({
         }
         message={
           <>
-            Cancel <strong>{booking.reservationNo || booking.id}</strong>
+            Cancel{" "}
+            <strong>
+              {booking.reservationNo || booking.id || booking._id}
+            </strong>
             {booking.room?.roomNumber
               ? ` — Room ${booking.room.roomNumber} will be freed.`
               : ""}
           </>
         }
-        onConfirm={(reason) =>
-          run(cancel, { id: booking.id, reason }, () => setConfirmCancel(false))
-        }
+        onConfirm={(reason) => {
+          const bId = booking.id || booking._id;
+          run(cancel, { id: bId, reason }, () => setConfirmCancel(false));
+        }}
       />
 
       {/* Change room dialog */}
@@ -596,7 +1022,7 @@ export function ReservationDetailPane({
             >
               <option value="">Select a room…</option>
               {(availableRooms.rooms || []).map((r) => (
-                <option key={r.id} value={r.id}>
+                <option key={r.id || r._id} value={r.id || r._id}>
                   Room {r.roomNumber}
                   {r.floor != null ? ` · Floor ${r.floor}` : ""} · {r.status}
                 </option>
@@ -604,44 +1030,14 @@ export function ReservationDetailPane({
             </select>
           </div>
         }
-        onConfirm={() =>
-          newRoomId &&
-          run(changeRoom, { id: booking.id, roomId: newRoomId }, () =>
-            setChangeRoomOpen(false),
-          )
-        }
-      />
-
-      {/* Extend stay dialog */}
-      <ConfirmDialog
-        open={extendOpen}
-        onClose={() => setExtendOpen(false)}
-        title="Extend Stay"
-        tone="primary"
-        confirmLabel="Extend Stay"
-        cancelLabel="Cancel"
-        loading={extendStay.isPending}
-        message={
-          <div className="space-y-3">
-            <p className="text-surface-600 text-sm">
-              Current check-out: <strong>{formatDate(booking.checkOut)}</strong>
-            </p>
-            <Input
-              label="New check-out date"
-              name="extend-checkOut"
-              type="date"
-              min={booking.checkOut}
-              value={newCheckOut}
-              onChange={(e) => setNewCheckOut(e.target.value)}
-            />
-          </div>
-        }
-        onConfirm={() =>
-          newCheckOut &&
-          run(extendStay, { id: booking.id, checkOut: newCheckOut }, () =>
-            setExtendOpen(false),
-          )
-        }
+        onConfirm={() => {
+          const bId = booking.id || booking._id;
+          if (newRoomId) {
+            run(changeRoom, { id: bId, roomId: newRoomId }, () =>
+              setChangeRoomOpen(false),
+            );
+          }
+        }}
       />
     </DetailDrawer>
   );

@@ -5,6 +5,7 @@ import {
   queryKeys,
 } from "@hotelos/query";
 import { reservationsApi } from "@hotelos/api";
+import { toLocalDateString } from "@hotelos/utils";
 
 export function normalizeReservation(item) {
   if (!item) return null;
@@ -31,8 +32,8 @@ export function normalizeReservation(item) {
     roomTypeCode: item.roomTypeCode || room.roomCode || "",
     ratePlan: item.ratePlan || null,
     mealPlan: item.mealPlan || null,
-    checkIn: item.checkIn ? String(item.checkIn).split("T")[0] : null,
-    checkOut: item.checkOut ? String(item.checkOut).split("T")[0] : null,
+    checkIn: toLocalDateString(item.checkIn),
+    checkOut: toLocalDateString(item.checkOut),
     nights: item.nights ?? null,
     rooms: item.rooms ?? 1,
     adults: item.adults ?? 1,
@@ -110,8 +111,11 @@ export function useUpdateReservation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }) =>
-      reservationsApi.updateReservation(id, updates),
+    mutationFn: (params) => {
+      const { id, updates, ...rest } = params || {};
+      const payload = updates !== undefined ? updates : rest;
+      return reservationsApi.updateReservation(id, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.guests.all });

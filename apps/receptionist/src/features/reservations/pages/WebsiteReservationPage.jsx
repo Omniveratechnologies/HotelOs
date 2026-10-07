@@ -1,6 +1,13 @@
 import { useMemo } from "react";
 import ReservationWizardLayout from "../components/ReservationWizardLayout.jsx";
-import { useReservationWizard } from "../hooks/useReservationWizard.js";
+import {
+  useReservationWizard,
+  defaultInitialForm,
+} from "../hooks/useReservationWizard.js";
+import {
+  WebsiteRegistrationBanner,
+  WebsiteGuestCard,
+} from "../components/WebsiteComponents.jsx";
 import { StayDetailsSection } from "../sections/StayDetailsSection.jsx";
 import { RoomTypePicker } from "../sections/RoomTypePicker.jsx";
 import { RatePlanPicker } from "../sections/RatePlanPicker.jsx";
@@ -9,23 +16,47 @@ import { GuestSection } from "../sections/GuestSection.jsx";
 import { AdditionalOptionsSection } from "../sections/AdditionalOptionsSection.jsx";
 import { BookingSummary } from "../sections/BookingSummary.jsx";
 import { formatDate } from "@hotelos/utils";
+import { Globe } from "lucide-react";
 
 const STEPS = [
-  { id: "stay", title: "Stay Details", subtitle: "Dates, guests, purpose" },
-  { id: "room", title: "Select Room", subtitle: "Room type & rate" },
-  { id: "guest", title: "Guest Details", subtitle: "Contact & ID" },
+  {
+    id: "stay",
+    title: "Booking Details",
+    subtitle: "Website dates & requests",
+  },
+  {
+    id: "guest",
+    title: "Guest Information",
+    subtitle: "Website registration data",
+  },
+  { id: "room", title: "Select Room & Rate", subtitle: "Selected room type" },
   {
     id: "options",
     title: "Additional Options",
-    subtitle: "Add-ons & requests",
+    subtitle: "Add-ons & preferences",
   },
-  { id: "confirm", title: "Confirm & Create", subtitle: "Review booking" },
+  {
+    id: "confirm",
+    title: "Review & Create",
+    subtitle: "Confirm website booking",
+  },
 ];
 
-export default function NewReservationPage() {
+export default function WebsiteReservationPage() {
   const wizard = useReservationWizard({
-    source: "DIRECT",
+    source: "WEBSITE",
     steps: STEPS,
+    initialCustomForm: (searchParams) => {
+      const base = defaultInitialForm("WEBSITE", {
+        guestMode: "new",
+        purpose: "Leisure",
+      });
+      if (searchParams.get("roomTypeCode"))
+        base.roomTypeCode = searchParams.get("roomTypeCode");
+      if (searchParams.get("ratePlanId"))
+        base.ratePlanId = searchParams.get("ratePlanId");
+      return base;
+    },
   });
 
   const {
@@ -80,23 +111,33 @@ export default function NewReservationPage() {
   );
 
   const summaryPanel = (
-    <BookingSummary
-      quote={quote.data}
-      quoteLoading={quote.isPending}
-      media={media}
-      editMode={Boolean(editId)}
-      onEdit={() => goToStep(0)}
-      onSaveDraft={saveAsDraft}
-      onCreate={submitReservation}
-      creating={isSubmitting}
-      disabled={nights < 1 || !form.roomTypeCode}
-    />
+    <div className="space-y-4">
+      <WebsiteGuestCard guest={form.guest} />
+      <BookingSummary
+        quote={quote.data}
+        quoteLoading={quote.isPending}
+        media={media}
+        editMode={Boolean(editId)}
+        onEdit={() => goToStep(0)}
+        onSaveDraft={saveAsDraft}
+        onCreate={submitReservation}
+        creating={isSubmitting}
+        disabled={nights < 1 || !form.roomTypeCode}
+      />
+    </div>
   );
 
   return (
     <ReservationWizardLayout
-      title={editId ? "Edit Reservation" : "New Reservation"}
-      subtitle="Direct front desk reservation booking with real-time room holds and rate calculation"
+      title={editId ? "Edit Website Reservation" : "Website Reservation"}
+      subtitle="Direct website registration and booking review"
+      badge={
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+          <Globe className="h-3 w-3" />
+          Website (Direct)
+        </span>
+      }
+      banner={<WebsiteRegistrationBanner />}
       steps={STEPS}
       currentStep={currentStep}
       onStepClick={goToStep}
@@ -106,7 +147,9 @@ export default function NewReservationPage() {
       onSaveDraft={saveAsDraft}
       onSubmit={submitReservation}
       isSubmitting={isSubmitting}
-      submitText={editId ? "Update Reservation" : "Create Reservation"}
+      submitText={
+        editId ? "Update Website Reservation" : "Create Website Reservation"
+      }
       submitError={submitError}
       summaryPanel={summaryPanel}
     >
@@ -115,11 +158,28 @@ export default function NewReservationPage() {
           value={form}
           onChange={onFieldChange}
           errors={errors}
+          lockedSource="WEBSITE"
           open={true}
         />
       )}
 
       {currentStep === 1 && (
+        <GuestSection
+          mode={form.guestMode}
+          onModeChange={(m) => onFieldChange("guestMode", m)}
+          form={form.guest}
+          onField={onGuestField}
+          errors={errors}
+          searchQuery={form.guestQuery}
+          onSearchChange={(q) => onFieldChange("guestQuery", q)}
+          searchResults={guestSearch.results}
+          onSelectGuest={onSelectExistingGuest}
+          searching={guestSearch.isLoading}
+          open={true}
+        />
+      )}
+
+      {currentStep === 2 && (
         <div className="space-y-6">
           <RoomTypePicker
             items={typeItems}
@@ -162,22 +222,6 @@ export default function NewReservationPage() {
         </div>
       )}
 
-      {currentStep === 2 && (
-        <GuestSection
-          mode={form.guestMode}
-          onModeChange={(m) => onFieldChange("guestMode", m)}
-          form={form.guest}
-          onField={onGuestField}
-          errors={errors}
-          searchQuery={form.guestQuery}
-          onSearchChange={(q) => onFieldChange("guestQuery", q)}
-          searchResults={guestSearch.results}
-          onSelectGuest={onSelectExistingGuest}
-          searching={guestSearch.isLoading}
-          open={true}
-        />
-      )}
-
       {currentStep === 3 && (
         <AdditionalOptionsSection
           form={form}
@@ -189,7 +233,7 @@ export default function NewReservationPage() {
       {currentStep === 4 && (
         <div className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-xs">
           <h3 className="border-b border-gray-100 pb-3 text-lg font-bold text-gray-900">
-            Review Booking Details
+            Review Website Booking
           </h3>
           <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
             <div className="rounded-xl bg-gray-50 p-4">
@@ -202,21 +246,21 @@ export default function NewReservationPage() {
               <p className="text-gray-600">
                 {form.rooms} Room(s), {form.adults} Adult(s)
               </p>
-              <p className="mt-1 text-xs text-gray-500">
-                Source: {form.source}
+              <p className="mt-1 text-xs font-medium text-emerald-700">
+                Source: Website (Direct)
               </p>
             </div>
 
             <div className="rounded-xl bg-gray-50 p-4">
               <span className="text-xs font-semibold text-gray-500 uppercase">
-                Primary Guest
+                Registered Guest
               </span>
               <p className="mt-1 font-semibold text-gray-900">
                 {form.guest.name || "—"}
               </p>
               <p className="text-gray-600">{form.guest.phone || "—"}</p>
               <p className="mt-1 text-xs text-gray-500">
-                {form.guest.email || "No email provided"}
+                {form.guest.email || "No email"}
               </p>
             </div>
           </div>

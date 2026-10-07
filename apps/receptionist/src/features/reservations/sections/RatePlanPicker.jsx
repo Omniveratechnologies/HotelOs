@@ -21,7 +21,17 @@ const MEAL_LABELS = {
  * @param {boolean} [props.loading]
  * @returns {React.ReactElement}
  */
-export function RatePlanPicker({ options, value, onChange, loading = false }) {
+export function RatePlanPicker({
+  options,
+  plans,
+  value,
+  onChange,
+  onSelect,
+  loading = false,
+}) {
+  const items = plans || options || [];
+  const handleSelect = onSelect || onChange;
+
   if (loading) {
     return (
       <div>
@@ -40,7 +50,7 @@ export function RatePlanPicker({ options, value, onChange, loading = false }) {
     );
   }
 
-  if (!options.length) {
+  if (!items.length) {
     return (
       <div>
         <p className="text-brand-900 mb-2 inline-flex items-center gap-2 text-sm font-semibold">
@@ -62,8 +72,8 @@ export function RatePlanPicker({ options, value, onChange, loading = false }) {
       <ChoiceCardGroup
         name="ratePlan"
         value={value}
-        onChange={onChange}
-        options={options.map((p) => ({
+        onChange={handleSelect}
+        options={items.map((p) => ({
           id: p.id,
           title: p.name,
           description: MEAL_LABELS[p.mealPlan] || p.mealPlan || "",
