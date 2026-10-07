@@ -131,4 +131,41 @@ export const queryKeys = {
       { period, startDate, endDate },
     ],
   },
+  frontDesk: {
+    all: ["front-desk"],
+    arrivals: (params) => [
+      ...queryKeys.frontDesk.all,
+      "arrivals",
+      params || {},
+    ],
+    departures: (params) => [
+      ...queryKeys.frontDesk.all,
+      "departures",
+      params || {},
+    ],
+    stats: () => [...queryKeys.frontDesk.all, "stats"],
+    folio: (id) => [...queryKeys.frontDesk.all, "folio", id],
+  },
+  keyCards: {
+    all: ["key-cards"],
+    lists: () => [...queryKeys.keyCards.all, "list"],
+    list: (filters) => [...queryKeys.keyCards.lists(), filters || {}],
+    stats: () => [...queryKeys.keyCards.all, "stats"],
+    details: () => [...queryKeys.keyCards.all, "detail"],
+    detail: (id) => [...queryKeys.keyCards.details(), id],
+  },
+  corporateCompanies: {
+    all: ["corporate-companies"],
+    lists: () => [...queryKeys.corporateCompanies.all, "list"],
+    list: (filters) => [...queryKeys.corporateCompanies.lists(), filters || {}],
+    details: () => [...queryKeys.corporateCompanies.all, "detail"],
+    detail: (id) => [...queryKeys.corporateCompanies.details(), id],
+  },
+  kiosks: {
+    all: ["kiosks"],
+    lists: () => [...queryKeys.kiosks.all, "list"],
+    list: (filters) => [...queryKeys.kiosks.lists(), filters || {}],
+    details: () => [...queryKeys.kiosks.all, "detail"],
+    detail: (id) => [...queryKeys.kiosks.details(), id],
+  },
 };

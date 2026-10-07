@@ -28,8 +28,17 @@ export const REQUEST_STATUS_MAP = {
 
 export const REQUEST_TYPE_MAP = {
   AMENITY: "Amenity request",
-  HOUSEKEEPING: "Housekeeping request",
-  RESTAURANT: "Call restaurant",
-  RECEPTION: "Reception request",
+  HOUSEKEEPING: "Housekeeping",
+  RESTAURANT: "Dining / Room Service",
+  RECEPTION: "Front Desk",
   MAINTENANCE: "Maintenance",
+  LAUNDRY: "Laundry",
+  MEDICINE: "Medicine / First Aid",
+  TRANSPORT: "Transport / Cab",
+  SPA: "Spa & Wellness",
+  EMERGENCY: "Emergency",
+  CONCIERGE: "Concierge",
+  WAKEUP_CALL: "Wake-up Call",
+  ROOM_CONTROL: "Room Controls",
+  FEEDBACK: "Feedback / Inquiry",
 };

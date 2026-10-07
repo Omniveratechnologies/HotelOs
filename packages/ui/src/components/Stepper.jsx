@@ -20,22 +20,34 @@ import { cn } from "@hotelos/utils";
  * @param {string} [props.className] - Extra classes for the container.
  * @returns {React.ReactElement}
  */
-export function Stepper({ steps, currentIndex, onStepClick, className = "" }) {
+export function Stepper({
+  steps = [],
+  currentIndex,
+  currentStep,
+  onStepClick,
+  className = "",
+}) {
+  const activeIdx =
+    typeof currentIndex === "number"
+      ? currentIndex
+      : typeof currentStep === "number"
+        ? currentStep
+        : 0;
   const total = steps.length;
-  const active = steps[currentIndex];
+  const active = steps[activeIdx];
 
   return (
     <div className={className}>
       {/* Compact label for small screens */}
       <p className="text-brand-900 text-sm font-semibold md:hidden">
-        Step {currentIndex + 1} of {total}
+        Step {activeIdx + 1} of {total}
         {active?.title ? ` · ${active.title}` : ""}
       </p>
 
       <ol className="hidden items-start md:flex">
         {steps.map((step, index) => {
-          const done = index < currentIndex;
-          const activeStep = index === currentIndex;
+          const done = index < activeIdx;
+          const activeStep = index === activeIdx;
           const clickable = done && typeof onStepClick === "function";
 
           const circle = (

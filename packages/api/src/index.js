@@ -18,6 +18,10 @@ export * as transactionsApi from "./endpoints/transactions.js";
 export * as usersApi from "./endpoints/users.js";
 export * as reportsApi from "./endpoints/reports.js";
 export * as checkInApi from "./endpoints/checkIn.js";
+export * as frontDeskApi from "./endpoints/frontDesk.js";
+export * as keyCardsApi from "./endpoints/keyCards.js";
+export * as kioskDevicesApi from "./endpoints/kioskDevices.js";
+export * as corporateCompaniesApi from "./endpoints/corporateCompanies.js";
 
 // Also re-export direct functions for convenient imports
 export {
@@ -54,3 +58,7 @@ export * from "./endpoints/transactions.js";
 export * from "./endpoints/users.js";
 export * from "./endpoints/reports.js";
 export * from "./endpoints/checkIn.js";
+export * from "./endpoints/frontDesk.js";
+export * from "./endpoints/keyCards.js";
+export * from "./endpoints/kioskDevices.js";
+export * from "./endpoints/corporateCompanies.js";

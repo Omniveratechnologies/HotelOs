@@ -50,41 +50,27 @@ export const createReservation = async (data) => {
       ),
     );
 
-    documents.push(
-      ...uploads.map((upload, index) => ({
-        key: upload.key,
-        filename: upload.filename,
-        docType: upload.docType || data.docTypes?.[index] || null,
-        mimeType: upload.mimeType,
-        size: upload.size,
-      })),
-    );
+    for (let i = 0; i < uploads.length; i++) {
+      documents.push({
+        ...uploads[i],
+        docType: data.docTypes?.[i] || null,
+      });
+    }
   }
 
-  const body = {
-    name: data.name,
-    email: data.email,
-    phone: data.phone || "",
-    address: data.address || "",
-    idType: data.idType || "Aadhaar",
-    idNumber: data.idNumber || "",
-    roomId: data.roomId,
-    checkIn: data.checkIn || "",
-    checkOut: data.checkOut,
-    status: data.status || "reserved",
-    purpose: data.purpose || "",
-  };
-
-  if (documents.length > 0) {
-    body.documents = documents;
-  }
-
-  const result = await api.post("/api/v1/bookings", body, { auth: true });
+  const result = await api.post(
+    "/api/v1/bookings",
+    {
+      ...data,
+      documents,
+    },
+    { auth: true },
+  );
   return result.data;
 };
 
 /**
- * Updates reservation parameters (status, room, checkIn, checkOut).
+ * Updates an existing reservation.
  * @param {string} reservationId
  * @param {object} updates
  * @returns {Promise<object>}
@@ -97,16 +83,19 @@ export const updateReservation = async (reservationId, updates) => {
 };
 
 /**
- * Cancels or deletes a reservation.
+ * Deletes a reservation.
  * @param {string} reservationId
- * @returns {Promise<object>}
+ * @returns {Promise<void>}
  */
 export const deleteReservation = async (reservationId) => {
-  return api.delete(`/api/v1/bookings/${reservationId}`, { auth: true });
+  const result = await api.delete(`/api/v1/bookings/${reservationId}`, {
+    auth: true,
+  });
+  return result.data;
 };
 
 /**
- * Fetches reservations with filters/pagination (Step 3 backend).
+ * Fetches reservations with filters/pagination.
  * @param {Object} [params] - Filter object ({ status, source, otaChannel,
  *   roomType, ratePlanId, q, from, to, page, limit, sort }).
  * @returns {Promise<{ data: object[], pagination: object }>}
@@ -139,28 +128,50 @@ export const getReservationStats = async () => {
 };
 
 /**
- * Live quote (pricing + availability) for the booking summary panel.
- * @param {object} payload - { roomTypeCode | roomId, ratePlanId?, mealPlan?, rateOverride?, checkIn, checkOut, rooms?, adults?, addOns?, discount?, taxPercent? }
- * @returns {Promise<{ pricing: object, ratePlan: object|null, availability: object|null }>}
+ * Room availability for a date range. Supports both object { checkIn, checkOut } and separate args.
+ * @param {string|{ checkIn: string, checkOut: string }} param1
+ * @param {string} [param2]
+ * @returns {Promise<Array<object>>}
+ */
+export const getAvailability = async (param1, param2) => {
+  const query =
+    typeof param1 === "object" && param1 !== null
+      ? { checkIn: param1.checkIn, checkOut: param1.checkOut }
+      : { checkIn: param1, checkOut: param2 };
+  const result = await api.get("/api/v1/bookings/availability", {
+    auth: true,
+    query,
+  });
+  return result.data || [];
+};
+
+/**
+ * Concrete rooms of a type free for a date range.
+ * @param {{ roomTypeCode: string, checkIn: string, checkOut: string }} params
+ * @returns {Promise<Array<{ id: string, roomNumber: string, floor?: number, rate?: number }>>}
+ */
+export const getAvailableRooms = async ({
+  roomTypeCode,
+  checkIn,
+  checkOut,
+} = {}) => {
+  const result = await api.get("/api/v1/bookings/available-rooms", {
+    auth: true,
+    query: { roomTypeCode, checkIn, checkOut },
+  });
+  return result.data || [];
+};
+
+/**
+ * Requests a price quote for a reservation.
+ * @param {object} payload
+ * @returns {Promise<object>}
  */
 export const getQuote = async (payload) => {
   const result = await api.post("/api/v1/bookings/quote", payload, {
     auth: true,
   });
   return result.data;
-};
-
-/**
- * Per-room-type availability for a date range.
- * @param {{ checkIn: string, checkOut: string }} params
- * @returns {Promise<Array<{ roomTypeCode: string, name: string, totalRooms: number, heldUnits: number, available: number }>>}
- */
-export const getAvailability = async ({ checkIn, checkOut }) => {
-  const result = await api.get("/api/v1/bookings/availability", {
-    auth: true,
-    query: { checkIn, checkOut },
-  });
-  return result.data || [];
 };
 
 /**
@@ -227,23 +238,6 @@ export const getReservationHistory = async (reservationId) => {
     auth: true,
   });
   return result.data;
-};
-
-/**
- * Concrete rooms of a type free for a date range.
- * @param {{ roomTypeCode: string, checkIn: string, checkOut: string }} params
- * @returns {Promise<Array<{ id: string, roomNumber: string, floor?: number, rate?: number }>>}
- */
-export const getAvailableRooms = async ({
-  roomTypeCode,
-  checkIn,
-  checkOut,
-}) => {
-  const result = await api.get("/api/v1/bookings/available-rooms", {
-    auth: true,
-    query: { roomTypeCode, checkIn, checkOut },
-  });
-  return result.data || [];
 };
 
 /**

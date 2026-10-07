@@ -19,7 +19,12 @@ export {
   REQUEST_TYPE_MAP,
 } from "./constants.js";
 
-export { formatTime, formatDate, formatCurrency } from "./formatters.js";
+export {
+  formatTime,
+  formatDate,
+  formatCurrency,
+  toLocalDateString,
+} from "./formatters.js";
 
 export {
   normalizeRoom,
