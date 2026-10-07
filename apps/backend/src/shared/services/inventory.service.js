@@ -111,14 +111,20 @@ export async function aiosellCalculateAvailability(
     checkOut: { $gt: new Date(`${startDate}T00:00:00.000Z`) },
   }).populate("roomId", "roomCode");
 
-  // Pre-normalize booking dates to ISO YYYY-MM-DD strings for fast, exact night comparisons
-  const normalizedBookings = activeBookings
-    .filter((b) => b.roomId?.roomCode && b.checkIn && b.checkOut)
-    .map((b) => ({
-      roomCode: b.roomId.roomCode,
+  // Pre-normalize booking dates to ISO YYYY-MM-DD strings for fast, exact night comparisons.
+  // Support both physical assigned rooms (b.roomId.roomCode) and room-type holds (b.roomTypeCode).
+  const normalizedBookings = [];
+  for (const b of activeBookings) {
+    if (!b.checkIn || !b.checkOut) continue;
+    const code = b.roomId?.roomCode || b.roomTypeCode;
+    if (!code) continue;
+    normalizedBookings.push({
+      roomCode: code,
+      rooms: Math.max(1, b.rooms || 1),
       checkInDate: new Date(b.checkIn).toISOString().slice(0, 10),
       checkOutDate: new Date(b.checkOut).toISOString().slice(0, 10),
-    }));
+    });
+  }
 
   const availability = {};
   for (const date of dates) {
@@ -132,7 +138,7 @@ export async function aiosellCalculateAvailability(
           date >= booking.checkInDate &&
           date < booking.checkOutDate
         ) {
-          occupiedCount++;
+          occupiedCount += booking.rooms;
         }
       }
 

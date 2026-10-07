@@ -4,6 +4,8 @@ import {
   searchGuests,
   getGuestById,
   updateGuest,
+  deleteGuest,
+  restoreGuest,
   getDocumentUploadUrls,
   updateGuestCredentials,
   deleteGuestDocument,
@@ -34,6 +36,10 @@ router.get("/:id", getGuestById);
 router.patch("/:id", updateGuest);
 
 router.patch("/:id/credentials", updateGuestCredentials);
+
+router.delete("/:id", deleteGuest);
+
+router.patch("/:id/restore", restoreGuest);
 
 router.delete("/:guestId/documents/:docId", deleteGuestDocument);
 

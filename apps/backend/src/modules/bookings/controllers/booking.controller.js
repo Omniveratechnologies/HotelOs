@@ -1033,7 +1033,7 @@ export const updateBooking = async (req, res) => {
     }
 
     const {
-      status,
+      status: rawStatus,
       checkIn,
       checkOut,
       roomId,
@@ -1053,13 +1053,45 @@ export const updateBooking = async (req, res) => {
       taxPercent,
       paymentStatus,
       note,
-    } = req.body;
+      name,
+      phone,
+      email,
+      nationality,
+      idType,
+      idNumber,
+    } = req.body || {};
+
+    const status = rawStatus ? String(rawStatus).toLowerCase() : undefined;
 
     const originalCheckIn = booking.checkIn;
     const originalCheckOut = booking.checkOut;
     const audit = [];
 
     const guestUser = await User.findById(booking.guestId).select("name");
+
+    // Update guest user personal info if provided
+    if (
+      booking.guestId &&
+      (name ||
+        phone ||
+        email !== undefined ||
+        nationality !== undefined ||
+        idType !== undefined ||
+        idNumber !== undefined)
+    ) {
+      const guestUpdates = {};
+      if (name) guestUpdates.name = name.trim();
+      if (phone) guestUpdates.phone = phone.trim();
+      if (email !== undefined) guestUpdates.email = email ? email.trim() : null;
+      if (nationality !== undefined)
+        guestUpdates.nationality = nationality ? nationality.trim() : null;
+      if (idType !== undefined) guestUpdates.idType = idType || null;
+      if (idNumber !== undefined)
+        guestUpdates.idNumber = idNumber ? idNumber.trim() : null;
+      if (Object.keys(guestUpdates).length > 0) {
+        await User.findByIdAndUpdate(booking.guestId, guestUpdates);
+      }
+    }
 
     // Room reassignment
     const targetCheckIn = checkIn ? parseDate(checkIn) : booking.checkIn;
@@ -1164,7 +1196,7 @@ export const updateBooking = async (req, res) => {
       booking.paymentStatus = paymentStatus;
     }
 
-    if (status) {
+    if (status && status !== booking.status) {
       if (!RESERVATION_STATUSES.includes(status)) {
         return badRequest(res, "Invalid booking status");
       }
@@ -1208,10 +1240,10 @@ export const updateBooking = async (req, res) => {
 
       if (status === "cancelled") {
         booking.cancellation = {
-          reason: req.body.reason?.trim() || null,
+          reason: req.body?.reason?.trim() || null,
           at: new Date(),
           by: req.user._id,
-          charge: Math.max(0, Number(req.body.cancellationCharge) || 0),
+          charge: Math.max(0, Number(req.body?.cancellationCharge) || 0),
         };
       }
 
@@ -1220,12 +1252,14 @@ export const updateBooking = async (req, res) => {
         action: "status-changed",
         from: previous,
         to: status,
-        note: note || req.body.reason || null,
+        note: note || req.body?.reason || null,
       });
     }
 
     // Re-price when a pricing input changed
-    const repriced = REPRICE_FIELDS.some((f) => req.body[f] !== undefined);
+    const repriced = REPRICE_FIELDS.some(
+      (f) => (req.body || {})[f] !== undefined,
+    );
     if (repriced) {
       const hotel = await Hotel.findById(req.user.hotelId)
         .select("taxPercent")

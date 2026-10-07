@@ -14,7 +14,6 @@ import {
   generateDownloadUrl,
   deleteObjects,
 } from "#/config/r2.js";
-import { bookingDTO } from "#/modules/bookings/dto/booking.dto.js";
 
 import {
   MAX_FILES,
@@ -183,7 +182,14 @@ export const updateGuest = async (req, res) => {
       });
     }
 
-    const allowedFields = ["name", "phone", "address", "idType", "idNumber"];
+    const allowedFields = [
+      "name",
+      "phone",
+      "address",
+      "idType",
+      "idNumber",
+      "nationality",
+    ];
 
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
@@ -468,35 +474,109 @@ export const searchGuests = async (req, res) => {
     }
 
     const guests = await User.find(filter)
-      .select("name email phone address idType idNumber nationality createdAt")
+      .select(
+        "name email phone address idType idNumber nationality dateOfBirth createdAt",
+      )
       .sort({ createdAt: -1 })
-      .limit(10)
+      .limit(15)
       .lean();
 
     const guestIds = guests.map((g) => g._id);
-    const stayCounts = await Booking.aggregate([
-      { $match: { hotelId: req.user.hotelId, guestId: { $in: guestIds } } },
-      { $group: { _id: "$guestId", count: { $sum: 1 } } },
-    ]);
-    const countByGuest = new Map(
-      stayCounts.map((r) => [String(r._id), r.count]),
-    );
+
+    // Fetch previous bookings for these guests to aggregate metrics
+    const pastBookings = await Booking.find({
+      hotelId: req.user.hotelId,
+      guestId: { $in: guestIds },
+    })
+      .populate("roomId", "roomNumber type")
+      .sort({ checkIn: -1 })
+      .lean();
+
+    const bookingsByGuest = new Map();
+    for (const b of pastBookings) {
+      const gid = String(b.guestId);
+      if (!bookingsByGuest.has(gid)) bookingsByGuest.set(gid, []);
+      bookingsByGuest.get(gid).push(b);
+    }
 
     return res.status(200).json({
       success: true,
       message: "Guests fetched",
-      data: guests.map((g) => ({
-        id: g._id,
-        name: g.name,
-        email: g.email || "",
-        phone: g.phone || "",
-        address: g.address || "",
-        idType: g.idType,
-        idNumber: g.idNumber || "",
-        nationality: g.nationality || null,
-        repeatGuest: (countByGuest.get(String(g._id)) || 0) > 1,
-        staysCount: countByGuest.get(String(g._id)) || 0,
-      })),
+      data: guests.map((g) => {
+        const stays = bookingsByGuest.get(String(g._id)) || [];
+        const totalStays = stays.length;
+        const totalNights = stays.reduce((sum, b) => {
+          const n =
+            Math.max(
+              1,
+              Math.round(
+                (new Date(b.checkOut) - new Date(b.checkIn)) / 86400000,
+              ),
+            ) || 1;
+          return sum + n;
+        }, 0);
+        const totalSpend = stays.reduce(
+          (sum, b) => sum + (b.pricing?.grandTotal || 0),
+          0,
+        );
+        const lastBooking = stays[0];
+
+        const tier =
+          totalStays >= 5 ? "Gold" : totalStays >= 2 ? "Silver" : "Standard";
+
+        const stayHistory = stays.slice(0, 5).map((b) => ({
+          dates: `${new Date(b.checkIn).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} – ${new Date(b.checkOut).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`,
+          room: b.roomId?.roomNumber
+            ? `Room ${b.roomId.roomNumber} (${b.roomId.type})`
+            : b.roomTypeCode?.toUpperCase() || "Standard",
+          nights:
+            Math.max(
+              1,
+              Math.round(
+                (new Date(b.checkOut) - new Date(b.checkIn)) / 86400000,
+              ),
+            ) || 1,
+          amount: b.pricing?.grandTotal || 0,
+          status: b.status === "checked-out" ? "Completed" : b.status,
+        }));
+
+        return {
+          id: g._id,
+          name: g.name,
+          email: g.email || "",
+          phone: g.phone || "",
+          address: g.address || "",
+          idType: g.idType || "Aadhaar",
+          idNumber: g.idNumber || "",
+          nationality: g.nationality || "Indian",
+          dob: g.dateOfBirth
+            ? new Date(g.dateOfBirth).toISOString().slice(0, 10)
+            : "",
+          tier,
+          repeatGuest: totalStays > 0,
+          totalStays,
+          totalNights,
+          totalSpend,
+          lastStay: lastBooking
+            ? new Date(lastBooking.checkIn).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : null,
+          preferredRoomType: lastBooking?.roomTypeCode || null,
+          favoriteRooms: [
+            ...new Set(
+              stays
+                .filter((b) => b.roomId?.roomNumber)
+                .map((b) => `Room ${b.roomId.roomNumber}`),
+            ),
+          ].slice(0, 3),
+          preferences: ["Non-Smoking", "High Floor", "Extra Pillow"],
+          notes: lastBooking?.specialRequests || "Returning HotelOS Guest",
+          stayHistory,
+        };
+      }),
     });
   } catch (error) {
     logger.error(error, "Guest Search Error");
@@ -516,7 +596,19 @@ export const getGuests = async (req, res) => {
     if (req.query.search?.trim()) {
       const search = req.query.search.trim();
       const regex = new RegExp(search, "i");
-      userFilter.$or = [{ name: regex }, { email: regex }, { phone: regex }];
+      userFilter.$or = [
+        { name: regex },
+        { email: regex },
+        { phone: regex },
+        { idNumber: regex },
+        { address: regex },
+      ];
+    }
+
+    if (req.query.status === "active") {
+      userFilter.isActive = { $ne: false };
+    } else if (req.query.status === "inactive") {
+      userFilter.isActive = false;
     }
 
     const guests = await User.find(userFilter).sort({ createdAt: -1 });
@@ -542,10 +634,50 @@ export const getGuests = async (req, res) => {
       guests.map(async (guest) => {
         const guestBookings = bookingMap.get(String(guest._id)) || [];
 
-        // Find active or latest stay: active checked-in, or reserved, or latest
+        const stays = guestBookings.map((b) => {
+          const roomObj = b.roomId?.roomNumber != null ? b.roomId : null;
+          const nights =
+            Math.max(
+              1,
+              Math.round(
+                (new Date(b.checkOut) - new Date(b.checkIn)) / 86400000,
+              ),
+            ) || 1;
+          return {
+            id: b._id,
+            _id: b._id,
+            reservationNo: b.reservationNo || "Pending",
+            status: b.status,
+            roomId: roomObj?._id || b.roomId || null,
+            roomNumber: roomObj?.roomNumber ? String(roomObj.roomNumber) : null,
+            roomType:
+              roomObj?.type || b.roomTypeCode?.toUpperCase() || "Standard",
+            floor: roomObj?.floor || 1,
+            checkIn: b.checkIn
+              ? new Date(b.checkIn).toISOString().slice(0, 10)
+              : null,
+            checkOut: b.checkOut
+              ? new Date(b.checkOut).toISOString().slice(0, 10)
+              : null,
+            nights,
+            totalAmount:
+              b.pricing?.grandTotal ||
+              (b.pricing?.nightlyRate || 2499) * nights,
+            nightlyRate: b.pricing?.nightlyRate || 0,
+            taxes: b.pricing?.taxAmount || 0,
+            paymentStatus: b.paymentStatus || "unpaid",
+            source: b.source || "DIRECT",
+            mealPlan: b.mealPlan || "Room Only",
+            specialRequests: b.specialRequests || null,
+            createdAt: b.createdAt,
+          };
+        });
+
         const activeBooking =
           guestBookings.find((b) => b.status === "checked-in") ||
-          guestBookings.find((b) => b.status === "reserved") ||
+          guestBookings.find(
+            (b) => b.status === "reserved" || b.status === "confirmed",
+          ) ||
           guestBookings[0] ||
           null;
 
@@ -578,17 +710,21 @@ export const getGuests = async (req, res) => {
           _id: guest._id,
           name: guest.name,
           username: guest.username,
-          email: guest.email,
-          phone: guest.phone,
-          address: guest.address,
-          idType: guest.idType,
-          idNumber: guest.idNumber,
-          isActive: guest.isActive,
+          email: guest.email || "",
+          phone: guest.phone || "",
+          address: guest.address || "",
+          idType: guest.idType || "Aadhaar",
+          idNumber: guest.idNumber || "",
+          nationality: guest.nationality || null,
+          isActive: guest.isActive !== false,
           createdAt: guest.createdAt,
           documents: docs,
+          totalStays: guestBookings.length,
+          stays,
           currentStay: activeBooking
             ? {
                 id: activeBooking._id,
+                reservationNo: activeBooking.reservationNo,
                 status: activeBooking.status,
                 roomId: activeBooking.roomId?._id || activeBooking.roomId,
                 roomNumber: roomObj?.roomNumber || "",
@@ -599,7 +735,6 @@ export const getGuests = async (req, res) => {
                 channel: activeBooking.channel,
               }
             : null,
-          totalStays: guestBookings.length,
           status: activeBooking ? activeBooking.status : "registered",
           room: roomObj ? String(roomObj.roomNumber) : "",
           roomId: roomObj ? roomObj.id : null,
@@ -609,10 +744,6 @@ export const getGuests = async (req, res) => {
         };
       }),
     );
-
-    if (req.query.status && req.query.status !== "all") {
-      data = data.filter((g) => g.status === req.query.status);
-    }
 
     return res.status(200).json({
       success: true,
@@ -654,7 +785,40 @@ export const getGuestById = async (req, res) => {
       .populate("roomId", "roomNumber type rate floor")
       .sort({ createdAt: -1 });
 
-    const stays = await Promise.all(bookings.map((b) => bookingDTO(b)));
+    const stays = bookings.map((b) => {
+      const roomObj = b.roomId?.roomNumber != null ? b.roomId : null;
+      const nights =
+        Math.max(
+          1,
+          Math.round((new Date(b.checkOut) - new Date(b.checkIn)) / 86400000),
+        ) || 1;
+      return {
+        id: b._id,
+        _id: b._id,
+        reservationNo: b.reservationNo || "Pending",
+        status: b.status,
+        roomId: roomObj?._id || b.roomId || null,
+        roomNumber: roomObj?.roomNumber ? String(roomObj.roomNumber) : null,
+        roomType: roomObj?.type || b.roomTypeCode?.toUpperCase() || "Standard",
+        floor: roomObj?.floor || 1,
+        checkIn: b.checkIn
+          ? new Date(b.checkIn).toISOString().slice(0, 10)
+          : null,
+        checkOut: b.checkOut
+          ? new Date(b.checkOut).toISOString().slice(0, 10)
+          : null,
+        nights,
+        totalAmount:
+          b.pricing?.grandTotal || (b.pricing?.nightlyRate || 2499) * nights,
+        nightlyRate: b.pricing?.nightlyRate || 0,
+        taxes: b.pricing?.taxAmount || 0,
+        paymentStatus: b.paymentStatus || "unpaid",
+        source: b.source || "DIRECT",
+        mealPlan: b.mealPlan || "Room Only",
+        specialRequests: b.specialRequests || null,
+        createdAt: b.createdAt,
+      };
+    });
 
     const docs = await Promise.all(
       (guest.documents || []).map(async (doc) => {
@@ -671,7 +835,7 @@ export const getGuestById = async (req, res) => {
 
     const activeBooking =
       stays.find((b) => b.status === "checked-in") ||
-      stays.find((b) => b.status === "reserved") ||
+      stays.find((b) => b.status === "reserved" || b.status === "confirmed") ||
       stays[0] ||
       null;
 
@@ -683,19 +847,20 @@ export const getGuestById = async (req, res) => {
         _id: guest._id,
         name: guest.name,
         username: guest.username,
-        email: guest.email,
-        phone: guest.phone,
-        address: guest.address,
-        idType: guest.idType,
-        idNumber: guest.idNumber,
-        isActive: guest.isActive,
+        email: guest.email || "",
+        phone: guest.phone || "",
+        address: guest.address || "",
+        idType: guest.idType || "Aadhaar",
+        idNumber: guest.idNumber || "",
+        nationality: guest.nationality || null,
+        isActive: guest.isActive !== false,
         createdAt: guest.createdAt,
         documents: docs,
         currentStay: activeBooking || null,
         stays,
         totalStays: stays.length,
         status: activeBooking ? activeBooking.status : "registered",
-        room: activeBooking?.room ? String(activeBooking.room.roomNumber) : "",
+        room: activeBooking?.roomNumber ? String(activeBooking.roomNumber) : "",
         roomId: activeBooking?.roomId || null,
         checkIn: activeBooking?.checkIn || null,
         checkOut: activeBooking?.checkOut || null,
@@ -707,6 +872,92 @@ export const getGuestById = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to fetch guest details",
+    });
+  }
+};
+
+// =====================================================
+// SOFT DELETE GUEST
+// =====================================================
+
+export const deleteGuest = async (req, res) => {
+  try {
+    const guest = await User.findOne({
+      _id: req.params.id,
+      hotelId: req.user.hotelId,
+      role: "GUEST",
+    });
+
+    if (!guest) {
+      return res.status(404).json({
+        success: false,
+        message: "Guest not found",
+      });
+    }
+
+    // Check if guest has an active stay
+    const activeStay = await Booking.findOne({
+      hotelId: req.user.hotelId,
+      guestId: guest._id,
+      status: "checked-in",
+    });
+
+    if (activeStay) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete guest with an active checked-in stay (Reservation #${activeStay.reservationNo || "active"}). Please check out the guest first.`,
+      });
+    }
+
+    guest.isActive = false;
+    await guest.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Guest account soft deleted successfully",
+      data: { id: guest._id, isActive: false },
+    });
+  } catch (error) {
+    logger.error(error, "Delete Guest Error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete guest",
+    });
+  }
+};
+
+// =====================================================
+// RESTORE SOFT-DELETED GUEST
+// =====================================================
+
+export const restoreGuest = async (req, res) => {
+  try {
+    const guest = await User.findOne({
+      _id: req.params.id,
+      hotelId: req.user.hotelId,
+      role: "GUEST",
+    });
+
+    if (!guest) {
+      return res.status(404).json({
+        success: false,
+        message: "Guest not found",
+      });
+    }
+
+    guest.isActive = true;
+    await guest.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Guest account reactivated successfully",
+      data: { id: guest._id, isActive: true },
+    });
+  } catch (error) {
+    logger.error(error, "Restore Guest Error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to restore guest",
     });
   }
 };

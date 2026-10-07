@@ -51,10 +51,10 @@ export const PAYMENT_STATUSES = ["unpaid", "partially-paid", "paid"];
 
 /** Allowed status transitions; missing key or empty list = terminal state. */
 export const STATUS_TRANSITIONS = {
-  draft: ["pending", "confirmed", "checked-in", "cancelled"],
-  pending: ["confirmed", "cancelled"],
-  confirmed: ["checked-in", "cancelled", "no-show"],
-  reserved: ["checked-in", "cancelled", "no-show"],
+  draft: ["pending", "confirmed", "reserved", "checked-in", "cancelled"],
+  pending: ["confirmed", "reserved", "cancelled"],
+  confirmed: ["reserved", "checked-in", "cancelled", "no-show"],
+  reserved: ["confirmed", "checked-in", "cancelled", "no-show"],
   "checked-in": ["checked-out"],
   "checked-out": [],
   cancelled: [],
@@ -70,6 +70,9 @@ export const STATUS_TRANSITIONS = {
  * @returns {boolean}
  */
 export function canTransition(from, to) {
-  if (from === to) return true;
-  return (STATUS_TRANSITIONS[from] || []).includes(to);
+  if (!from || !to) return false;
+  const f = String(from).toLowerCase();
+  const t = String(to).toLowerCase();
+  if (f === t) return true;
+  return (STATUS_TRANSITIONS[f] || []).includes(t);
 }
