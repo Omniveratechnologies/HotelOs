@@ -54,6 +54,11 @@ function CheckInForm({
     arrival.signatureImage || null,
   );
 
+  const [paymentMode, setPaymentMode] = useState("CASH");
+
+  const isProvisional = arrival.status === "reserved";
+  const isDepositDue = arrival.paymentStatus === "unpaid";
+
   const handleSubmit = () => {
     const assignedRoom = selectedRoomId || arrival.roomId;
     if (!assignedRoom) {
@@ -65,8 +70,10 @@ function CheckInForm({
       roomId: assignedRoom,
       keyCardNumber: keyCardNumber || undefined,
       depositAmount: Number(deposit) || 0,
-      paymentMode: "CASH",
-      notes: "Front desk manual check-in verification completed.",
+      paymentMode,
+      notes: isProvisional
+        ? "Provisional hold reconfirmed and checked in at Front Desk."
+        : "Front desk manual check-in verification completed.",
       idType,
       idNumber,
       isIdVerified,
@@ -82,6 +89,15 @@ function CheckInForm({
 
   return (
     <>
+      {/* Notice Banner for Provisional Hold Bookings */}
+      {isProvisional && (
+        <InlineBanner variant="warning">
+          <strong>Provisional Hold Reservation:</strong> This booking is on
+          tentative hold. Please collect an advance deposit or full stay tariff
+          to confirm and guarantee the stay before issuing the room key.
+        </InlineBanner>
+      )}
+
       {/* 1. Guest Profile Details with Edit Option */}
       <GuestDetailsCard guest={arrival} onEditClick={onEditGuest} />
 
@@ -138,6 +154,8 @@ function CheckInForm({
         guest={arrival}
         depositAmount={deposit}
         onDepositChange={(val) => setDeposit(val)}
+        paymentMode={paymentMode}
+        onPaymentModeChange={setPaymentMode}
       />
 
       {/* 6. Guest Signature Upload */}
@@ -152,6 +170,11 @@ function CheckInForm({
         <div className="text-xs text-gray-500">
           Room assigned:{" "}
           <strong className="text-gray-900">{assignedRoomDisplay}</strong>
+          {isProvisional && (
+            <span className="ml-2 inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
+              Hold will be confirmed upon check-in
+            </span>
+          )}
         </div>
         <div className="flex w-full gap-3 sm:w-auto">
           <Button variant="secondary" onClick={onCancel}>
@@ -162,8 +185,19 @@ function CheckInForm({
             icon={CheckCircle2}
             onClick={handleSubmit}
             disabled={isSubmitting}
+            className={
+              isProvisional || isDepositDue
+                ? "bg-amber-600 text-white hover:bg-amber-700"
+                : ""
+            }
           >
-            {isSubmitting ? "Checking In..." : "Complete Check-in & Assign Key"}
+            {isSubmitting
+              ? "Checking In..."
+              : isProvisional
+                ? "Confirm & Complete Check-in"
+                : isDepositDue
+                  ? "Collect Deposit & Check In"
+                  : "Complete Check-in & Assign Key"}
           </Button>
         </div>
       </div>

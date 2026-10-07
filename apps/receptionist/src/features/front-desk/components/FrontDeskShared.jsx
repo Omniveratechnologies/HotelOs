@@ -19,7 +19,9 @@ export function ArrivalsQueue({
   onSelectArrival,
   onSelect,
   tabs = [
-    { id: "all", label: "Expected" },
+    { id: "all", label: "All Expected" },
+    { id: "guaranteed", label: "Guaranteed" },
+    { id: "deposit-due", label: "Deposit Due" },
     { id: "express", label: "Express" },
     { id: "repeat", label: "Repeat" },
   ],
@@ -29,6 +31,13 @@ export function ArrivalsQueue({
   const [query, setQuery] = useState("");
 
   const filtered = arrivals.filter((a) => {
+    if (activeTab === "guaranteed" && a.status !== "confirmed") return false;
+    if (
+      activeTab === "deposit-due" &&
+      a.status !== "reserved" &&
+      a.paymentStatus === "paid"
+    )
+      return false;
     if (activeTab === "express" && !a.isExpress) return false;
     if (activeTab === "repeat" && a.source !== "REPEAT_GUEST" && !a.isRepeat)
       return false;
@@ -54,13 +63,13 @@ export function ArrivalsQueue({
         </div>
 
         {/* Filter Tabs */}
-        <div className="mb-3 flex gap-1.5 border-b border-gray-100 pb-2 text-xs">
+        <div className="mb-3 flex flex-wrap gap-1 border-b border-gray-100 pb-2 text-[11px]">
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className={`rounded-lg px-2.5 py-1 font-medium transition ${
+              className={`rounded-lg px-2 py-1 font-medium transition ${
                 activeTab === t.id
                   ? "bg-brand-900 font-semibold text-white"
                   : "text-gray-600 hover:bg-gray-100"
@@ -88,6 +97,9 @@ export function ArrivalsQueue({
       <div className="min-h-0 flex-1 divide-y divide-gray-100 overflow-y-auto">
         {filtered.map((item) => {
           const isSelected = selectedId === item.id;
+          const isProvisional = item.status === "reserved";
+          const isUnpaid = item.paymentStatus === "unpaid";
+
           return (
             <div
               key={item.id}
@@ -111,7 +123,31 @@ export function ArrivalsQueue({
                   <div className="mt-0.5 text-xs text-gray-500">
                     #{item.bookingNo} · {item.time || "2:00 PM"}
                   </div>
+
+                  {/* Status Pills */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                    {isProvisional ? (
+                      <span className="rounded-md border border-amber-200/60 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                        Hold
+                      </span>
+                    ) : (
+                      <span className="rounded-md border border-emerald-200/60 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                        Confirmed
+                      </span>
+                    )}
+
+                    {isUnpaid ? (
+                      <span className="rounded-md border border-rose-200/60 bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                        Deposit Due
+                      </span>
+                    ) : (
+                      <span className="rounded-md border border-blue-200/60 bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                        Prepaid
+                      </span>
+                    )}
+                  </div>
                 </div>
+
                 <div className="text-right">
                   <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700">
                     {item.source}
@@ -499,6 +535,8 @@ export function ChargesDepositCard({
   guest,
   depositAmount = "0",
   onDepositChange,
+  paymentMode = "CASH",
+  onPaymentModeChange,
 }) {
   const calculatedRoomCharges =
     roomCharges !== undefined
@@ -572,6 +610,28 @@ export function ChargesDepositCard({
           value={depositAmount}
           onChange={(e) => onDepositChange && onDepositChange(e.target.value)}
         />
+      </div>
+
+      <div className="pt-1">
+        <label className="mb-1.5 block text-[11px] font-semibold text-gray-700">
+          Deposit Collection Method
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {["CASH", "CARD", "UPI"].map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onPaymentModeChange && onPaymentModeChange(mode)}
+              className={`rounded-lg border py-1.5 text-xs font-semibold transition ${
+                (paymentMode || "CASH") === mode
+                  ? "bg-brand-900 border-brand-900 text-white shadow-2xs"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

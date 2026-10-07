@@ -502,9 +502,13 @@ export function ReservationDetailPane({
   const canCancel = ["draft", "pending", "confirmed", "reserved"].includes(
     booking.status,
   );
-  const canReconfirm = ["cancelled", "no-show", "pending", "draft"].includes(
-    booking.status,
-  );
+  const canReconfirm = [
+    "cancelled",
+    "no-show",
+    "pending",
+    "draft",
+    "reserved",
+  ].includes(booking.status);
   const canChangeRoom = [
     "pending",
     "confirmed",

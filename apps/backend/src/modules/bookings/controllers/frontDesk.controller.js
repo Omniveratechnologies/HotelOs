@@ -100,6 +100,16 @@ export const getArrivals = async (req, res) => {
         ratePlan: b.ratePlanId?.name || null,
         specialRequests: b.specialRequests || null,
         status: b.status,
+        paymentStatus: b.paymentStatus || "unpaid",
+        totalAmount: b.pricing?.grandTotal || b.totalAmountBeforeTax || 0,
+        isGuaranteed:
+          b.status === "confirmed" &&
+          (b.paymentStatus === "paid" ||
+            b.otaInfo?.paymentStatus === "prepaid-by-ota"),
+        requiresDeposit:
+          b.status === "reserved" ||
+          b.status === "pending" ||
+          b.paymentStatus !== "paid",
       }));
 
     return res.status(200).json({
