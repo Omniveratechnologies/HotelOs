@@ -80,6 +80,12 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    nationality: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+
     isActive: {
       type: Boolean,
       default: true,

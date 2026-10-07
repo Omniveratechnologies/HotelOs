@@ -1,414 +1,551 @@
-import React, { useState } from "react";
-import { Header, NewReservationModal } from "@hotelos/ui/components";
+import React, { useMemo, useState } from "react";
+import { useNavigate, useLocation } from "react-router";
 import {
-  useReservations,
-  useUpdateReservation,
-  useDeleteReservation,
-} from "../hooks/useReservations.js";
-import ReservationDetailsModal from "../components/ReservationDetailsModal.jsx";
-import EditReservationModal from "../components/EditReservationModal.jsx";
+  Header,
+  KpiTile,
+  KpiTileRow,
+  StatusChip,
+  TabsWithCounts,
+  FilterBar,
+  EmptyState,
+  InlineBanner,
+} from "@hotelos/ui/components";
+import {
+  CalendarRange,
+  Phone,
+  Globe,
+  Share2,
+  Users as UsersIcon,
+  Plus,
+  LogIn,
+  LogOut,
+  DoorOpen,
+} from "lucide-react";
+import { formatCurrency, formatDate } from "@hotelos/utils";
+import { useAllReservations } from "../hooks/useAllReservations.js";
+import { useReservationStats } from "../hooks/useReservationStats.js";
+import { useRoomTypes } from "../../room-types/hooks/useRoomTypes.js";
+import ReservationDetailPane from "../components/ReservationDetailPane.jsx";
+import {
+  STATUS_VARIANT,
+  STATUS_LABEL,
+  sourceLabel,
+  guestInitials,
+} from "../reservationUi.jsx";
 
-const statusBadges = {
-  "checked-in": "bg-blue-100 text-blue-700",
-  reserved: "bg-amber-100 text-amber-700",
-  "checked-out": "bg-gray-100 text-gray-600",
+const SOURCE_TABS = [
+  { id: "all", label: "All" },
+  { id: "DIRECT", label: "Direct" },
+  { id: "WEBSITE", label: "Website" },
+  { id: "PHONE", label: "Phone" },
+  { id: "CORPORATE", label: "Corporate" },
+  { id: "GROUP", label: "Group" },
+  { id: "REPEAT_GUEST", label: "Repeat Guest" },
+  { id: "OTA", label: "OTA" },
+  { id: "drafts", label: "Drafts" },
+];
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "draft", label: "Draft" },
+  { value: "checked-in", label: "Checked-in" },
+  { value: "checked-out", label: "Checked-out" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "no-show", label: "No-show" },
+];
+
+const OTA_CHANNEL_OPTIONS = [
+  { value: "BOOKING_COM", label: "Booking.com" },
+  { value: "AIRBNB", label: "Airbnb" },
+  { value: "AGODA", label: "Agoda" },
+  { value: "EXPEDIA", label: "Expedia" },
+  { value: "GOIBIBO", label: "Goibibo" },
+  { value: "MAKEMYTRIP", label: "MakeMyTrip" },
+  { value: "OTHER", label: "Other" },
+];
+
+const DEFAULT_FILTERS = {
+  tab: "all",
+  status: "",
+  otaChannel: "",
+  roomType: "",
+  q: "",
+  from: "",
+  to: "",
+  page: 1,
+  limit: 10,
+  sort: "-createdAt",
 };
 
 export default function ReservationsPage() {
-  const {
-    reservations = [],
-    isLoading: loading,
-    error: loadError,
-    refetch,
-  } = useReservations();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
-  const updateReservationMut = useUpdateReservation();
-  const deleteReservationMut = useDeleteReservation();
+  const urlSelectedId = useMemo(() => {
+    return new URLSearchParams(location.search).get("selected");
+  }, [location.search]);
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [clickedSelectedId, setClickedSelectedId] = useState(null);
+  const selectedId = clickedSelectedId || urlSelectedId || null;
+  const setSelectedId = setClickedSelectedId;
 
-  const [newModalOpen, setNewModalOpen] = useState(false);
-  const [viewingReservation, setViewingReservation] = useState(null);
-  const [editingReservation, setEditingReservation] = useState(null);
-  const [deletingReservation, setDeletingReservation] = useState(null);
-  const [actionError, setActionError] = useState("");
-  const [actionSuccess, setActionSuccess] = useState("");
+  const flash = location.state?.created
+    ? `Reservation ${location.state.created} created.`
+    : location.state?.updated
+      ? "Reservation updated."
+      : "";
 
-  const filtered = reservations.filter((r) => {
-    if (filter !== "all" && r.status !== filter) return false;
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      const matchName = r.name?.toLowerCase().includes(q);
-      const matchRoom = r.roomNumber?.toLowerCase().includes(q);
-      const matchPhone = r.phone?.toLowerCase().includes(q);
-      const matchEmail = r.email?.toLowerCase().includes(q);
-      const matchRef = r.id?.toLowerCase().includes(q);
-      if (!matchName && !matchRoom && !matchPhone && !matchEmail && !matchRef) {
-        return false;
-      }
-    }
-    return true;
-  });
+  const { stats } = useReservationStats();
+  const { roomTypes } = useRoomTypes();
+  const roomTypeOptions = useMemo(
+    () =>
+      (roomTypes || [])
+        .filter((t) => t.active !== false)
+        .map((t) => ({ value: t.roomCode, label: t.name })),
+    [roomTypes],
+  );
+  const { reservations, pagination, isLoading, isFetching } =
+    useAllReservations(
+      useMemo(
+        () => ({
+          status: filters.tab === "drafts" ? "draft" : filters.status || "",
+          source:
+            filters.tab === "all" || filters.tab === "drafts"
+              ? ""
+              : filters.tab,
+          otaChannel: filters.otaChannel,
+          roomType: filters.roomType,
+          q: filters.q,
+          from: filters.from,
+          to: filters.to,
+          page: filters.page,
+          limit: filters.limit,
+          sort: filters.sort,
+        }),
+        [filters],
+      ),
+    );
 
-  const totalCount = reservations.length;
-  const reservedCount = reservations.filter(
-    (r) => r.status === "reserved",
-  ).length;
-  const inHouseCount = reservations.filter(
-    (r) => r.status === "checked-in",
-  ).length;
-  const completedCount = reservations.filter(
-    (r) => r.status === "checked-out",
-  ).length;
+  const selected = useMemo(() => {
+    if (!selectedId) return null;
+    const match = (reservations || []).find(
+      (r) => r.id === selectedId || r._id === selectedId,
+    );
+    if (match) return match;
+    return { id: selectedId, _id: selectedId };
+  }, [selectedId, reservations]);
 
-  const handleQuickCheckIn = async (reservation) => {
-    setActionError("");
-    setActionSuccess("");
-    try {
-      await updateReservationMut.mutateAsync({
-        id: reservation.id,
-        updates: { status: "checked-in" },
-      });
-      setActionSuccess(
-        `Checked in ${reservation.name} to Room ${reservation.roomNumber || ""}.`,
-      );
-    } catch (err) {
-      console.error("Check-in error:", err);
-      setActionError(err.message || "Failed to check in guest.");
-    }
-  };
-
-  const handleQuickCheckOut = async (reservation) => {
-    setActionError("");
-    setActionSuccess("");
-    try {
-      await updateReservationMut.mutateAsync({
-        id: reservation.id,
-        updates: { status: "checked-out" },
-      });
-      setActionSuccess(
-        `Checked out ${reservation.name}. Room freed for cleaning.`,
-      );
-    } catch (err) {
-      console.error("Check-out error:", err);
-      setActionError(err.message || "Failed to check out guest.");
+  const handleCloseDetail = () => {
+    setSelectedId(null);
+    if (urlSelectedId) {
+      const nextParams = new URLSearchParams(location.search);
+      nextParams.delete("selected");
+      const qs = nextParams.toString();
+      navigate(`${location.pathname}${qs ? `?${qs}` : ""}`, { replace: true });
     }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!deletingReservation) return;
-    setActionError("");
-    setActionSuccess("");
-    try {
-      await deleteReservationMut.mutateAsync(deletingReservation.id);
-      setActionSuccess(
-        `Reservation for ${deletingReservation.name} was removed.`,
-      );
-      setDeletingReservation(null);
-    } catch (err) {
-      console.error("Delete reservation error:", err);
-      setActionError(err.message || "Failed to delete reservation.");
-    }
+  const setFilter = (key, value) =>
+    setFilters((f) => ({
+      ...f,
+      [key]: value,
+      page: key === "page" ? value : 1,
+    }));
+
+  const resetFilters = () => setFilters(DEFAULT_FILTERS);
+
+  const tabCounts = {
+    all: stats?.total || 0,
+    DIRECT: stats?.bySource?.DIRECT || 0,
+    WEBSITE: stats?.bySource?.WEBSITE || 0,
+    PHONE: stats?.bySource?.PHONE || 0,
+    CORPORATE: stats?.bySource?.CORPORATE || 0,
+    GROUP: stats?.bySource?.GROUP || 0,
+    REPEAT_GUEST: stats?.bySource?.REPEAT_GUEST || 0,
+    OTA: stats?.bySource?.OTA || 0,
+    drafts: stats?.byStatus?.draft || 0,
   };
 
   return (
     <>
       <Header
-        pageTitle="Reservations"
-        pageDescription={`${inHouseCount} in-house • ${reservedCount} upcoming bookings`}
+        pageTitle="All Reservations"
+        pageDescription="View, search and manage all types of reservations in one place"
       >
         <button
-          onClick={() => setNewModalOpen(true)}
-          className="bg-brand-900 hover:bg-brand-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
+          onClick={() => navigate("/reservations/new")}
+          className="bg-brand-900 hover:bg-brand-800 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
         >
-          + New Reservation
+          <Plus size={16} /> New Reservation
         </button>
       </Header>
 
-      <div className="p-6">
-        {/* KPI Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-xs">
-            <span className="text-xs font-medium text-gray-500">
-              All Reservations
-            </span>
-            <div className="text-brand-900 mt-1 text-2xl font-bold">
-              {totalCount}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-xs">
-            <span className="text-xs font-medium text-amber-600">
-              Upcoming (Reserved)
-            </span>
-            <div className="mt-1 text-2xl font-bold text-amber-700">
-              {reservedCount}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-xs">
-            <span className="text-xs font-medium text-blue-600">
-              Currently In-House
-            </span>
-            <div className="mt-1 text-2xl font-bold text-blue-700">
-              {inHouseCount}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-xs">
-            <span className="text-xs font-medium text-gray-500">
-              Completed Stays
-            </span>
-            <div className="mt-1 text-2xl font-bold text-gray-700">
-              {completedCount}
-            </div>
-          </div>
-        </div>
+      <div className="flex items-start gap-4 p-4 sm:p-6">
+        <div className="min-w-0 flex-1 space-y-4">
+          {flash && (
+            <InlineBanner
+              variant="success"
+              action={
+                <button
+                  onClick={() => navigate(location.pathname, { replace: true })}
+                  className="text-sm font-semibold underline-offset-2 hover:underline"
+                >
+                  Dismiss
+                </button>
+              }
+            >
+              {flash}
+            </InlineBanner>
+          )}
 
-        {/* Notifications */}
-        {actionSuccess && (
-          <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            {actionSuccess}
-          </div>
-        )}
-        {actionError && (
-          <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {actionError}
-          </div>
-        )}
-        {loadError && (
-          <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {loadError}
-          </div>
-        )}
+          {/* KPI tiles */}
+          <KpiTileRow>
+            <KpiTile
+              icon={CalendarRange}
+              value={stats?.total ?? "—"}
+              label="Total Reservations"
+              active={filters.tab === "all"}
+              onClick={() => setFilter("tab", "all")}
+            />
+            <KpiTile
+              icon={Phone}
+              iconClassName="bg-blue-50 text-blue-600"
+              value={tabCounts.DIRECT}
+              label="Direct"
+              active={filters.tab === "DIRECT"}
+              onClick={() => setFilter("tab", "DIRECT")}
+            />
+            <KpiTile
+              icon={Globe}
+              iconClassName="bg-emerald-50 text-emerald-600"
+              value={tabCounts.WEBSITE}
+              label="Website"
+              active={filters.tab === "WEBSITE"}
+              onClick={() => setFilter("tab", "WEBSITE")}
+            />
+            <KpiTile
+              icon={Share2}
+              iconClassName="bg-orange-50 text-orange-600"
+              value={tabCounts.OTA}
+              label="OTA"
+              active={filters.tab === "OTA"}
+              onClick={() => setFilter("tab", "OTA")}
+            />
+            <KpiTile
+              icon={LogIn}
+              iconClassName="bg-amber-50 text-amber-600"
+              value={stats?.today?.arrivals ?? "—"}
+              label="Today's Arrivals"
+            />
+            <KpiTile
+              icon={LogOut}
+              iconClassName="bg-brand-50 text-brand-700"
+              value={stats?.today?.departures ?? "—"}
+              label="Departures"
+            />
+            <KpiTile
+              icon={DoorOpen}
+              iconClassName="bg-violet-50 text-violet-600"
+              value={stats?.today?.inHouse ?? "—"}
+              label="In-house"
+            />
+          </KpiTileRow>
 
-        {/* Filter bar */}
-        <div className="mb-6 flex gap-3">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by guest, room, or ref ID..."
-            className="focus:border-brand-900 w-64 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-hidden"
-          />
-          <div className="flex gap-1 rounded-xl bg-gray-100 p-1">
-            {[
-              { id: "all", label: "All" },
-              { id: "reserved", label: "Reserved" },
-              { id: "checked-in", label: "Checked In" },
-              { id: "checked-out", label: "Checked Out" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFilter(tab.id)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${
-                  filter === tab.id
-                    ? "text-brand-900 bg-white shadow-xs"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
+          {/* Tabs */}
+          <div className="rounded-xl border border-gray-200 bg-white shadow-2xs">
+            <TabsWithCounts
+              className="px-3"
+              tabs={SOURCE_TABS.map((t) =>
+                Object.assign({}, t, { count: tabCounts[t.id] || 0 }),
+              )}
+              activeId={filters.tab === "drafts" ? "all" : filters.tab}
+              onChange={(id) => setFilter("tab", id)}
+            />
 
-        {/* Table */}
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs">
-          {loading ? (
-            <div className="py-16 text-center text-sm text-gray-400">
-              Loading reservations...
+            {/* Filter bar */}
+            <div className="border-t border-gray-100 p-3">
+              <FilterBar
+                dateRange={{ from: filters.from, to: filters.to }}
+                onDateRangeChange={(r) => {
+                  setFilters((f) => ({
+                    ...f,
+                    from: r.from,
+                    to: r.to,
+                    page: 1,
+                  }));
+                }}
+                selects={[
+                  {
+                    key: "status",
+                    label: "All Status",
+                    value: filters.status,
+                    options: STATUS_FILTER_OPTIONS,
+                  },
+                  ...(filters.tab === "OTA"
+                    ? [
+                        {
+                          key: "otaChannel",
+                          label: "All OTA Channels",
+                          value: filters.otaChannel,
+                          options: OTA_CHANNEL_OPTIONS,
+                        },
+                      ]
+                    : []),
+                  {
+                    key: "roomType",
+                    label: "All Room Types",
+                    value: filters.roomType,
+                    options: roomTypeOptions,
+                  },
+                ]}
+                onSelectChange={(key, value) => setFilter(key, value)}
+                search={filters.q}
+                onSearchChange={(v) => setFilter("q", v)}
+                searchPlaceholder="Search by name, reservation no., OTA booking id…"
+                onClear={resetFilters}
+              />
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="py-12 text-center text-gray-400">
-              No reservations found. Click “+ New Reservation” to create one.
-            </div>
-          ) : (
+
+            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                    <th className="px-4 py-3">Ref ID</th>
+                    <th className="w-10 px-4 py-3" aria-label="Select all" />
+                    <th className="px-4 py-3">Res. No.</th>
                     <th className="px-4 py-3">Guest</th>
-                    <th className="px-4 py-3">Room</th>
-                    <th className="px-4 py-3">Check In</th>
-                    <th className="px-4 py-3">Check Out</th>
+                    <th className="px-4 py-3">Source</th>
+                    <th className="px-4 py-3">Check-in</th>
+                    <th className="px-4 py-3">Check-out</th>
                     <th className="px-4 py-3">Nights</th>
-                    <th className="px-4 py-3">Channel</th>
+                    <th className="px-4 py-3">Rooms</th>
+                    <th className="px-4 py-3">Guests</th>
+                    <th className="px-4 py-3 text-right">Amount</th>
                     <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Actions</th>
+                    <th className="px-4 py-3" aria-label="Actions" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {filtered.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="transition-colors hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                        {String(r.id).slice(-6).toUpperCase()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="text-brand-900 font-semibold">
-                          {r.name}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {r.phone || r.email || "—"}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {r.roomNumber ? (
-                          <div>
-                            <span className="text-brand-900 font-bold">
-                              Room {r.roomNumber}
-                            </span>
-                            {r.roomType && (
-                              <span className="ml-1 text-xs text-gray-400">
-                                ({r.roomType})
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-amber-600">
-                            Unassigned
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {r.checkIn || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {r.checkOut || "—"}
-                      </td>
-                      <td className="text-brand-900 px-4 py-3 text-sm font-medium">
-                        {r.nights ? `${r.nights}n` : "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                          {r.channel || "DIRECT"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs font-semibold uppercase ${
-                            statusBadges[r.status] ||
-                            "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {r.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          {r.status === "reserved" && (
+                  {isLoading ? (
+                    Array.from({ length: 5 }, (rowIdx) => (
+                      <tr key={rowIdx}>
+                        {Array.from({ length: 12 }, (cellIdx) => (
+                          <td key={cellIdx} className="px-4 py-3">
+                            <div className="h-4 animate-pulse rounded bg-gray-100" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  ) : reservations.length === 0 ? (
+                    <tr>
+                      <td colSpan={12}>
+                        <EmptyState
+                          icon={CalendarRange}
+                          title="No reservations found"
+                          hint="Adjust the filters, or create a new reservation."
+                          action={
                             <button
-                              onClick={() => handleQuickCheckIn(r)}
-                              className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+                              onClick={() => navigate("/reservations/new")}
+                              className="bg-brand-900 hover:bg-brand-800 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-white"
                             >
-                              Check In
+                              <Plus size={14} /> New Reservation
                             </button>
-                          )}
-                          {r.status === "checked-in" && (
-                            <button
-                              onClick={() => handleQuickCheckOut(r)}
-                              className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100"
-                            >
-                              Check Out
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setViewingReservation(r)}
-                            className="text-brand-900 rounded-lg border border-gray-200 px-2 py-1 text-xs transition-colors hover:bg-gray-50"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() => setEditingReservation(r)}
-                            className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-blue-600 transition-colors hover:bg-blue-50"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setDeletingReservation(r)}
-                            className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-red-500 transition-colors hover:bg-red-50"
-                          >
-                            Cancel
-                          </button>
-                        </div>
+                          }
+                        />
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    reservations.map((r) => {
+                      const rId = r.id || r._id;
+                      const isSelected = selectedId === rId;
+                      return (
+                        <tr
+                          key={rId}
+                          onClick={() => setSelectedId(rId)}
+                          className={`hover:bg-background-50 cursor-pointer transition-colors ${
+                            isSelected ? "bg-brand-50/60" : ""
+                          }`}
+                        >
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              aria-label={`Select ${r.reservationNo || r.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="border-surface-300 h-4 w-4 rounded"
+                            />
+                          </td>
+                          <td className="text-brand-700 px-4 py-3 font-medium">
+                            {r.reservationNo || r.id.slice(-6).toUpperCase()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <span className="bg-brand-100 text-brand-800 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold">
+                                {guestInitials(r.name)}
+                              </span>
+                              <div>
+                                <p className="text-brand-900 font-medium">
+                                  {r.name}
+                                </p>
+                                <p className="text-surface-500 text-xs">
+                                  {r.phone || r.email || "—"}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+                                r.source === "OTA"
+                                  ? "border-orange-200 bg-orange-50 text-orange-700"
+                                  : r.source === "WEBSITE"
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                    : r.source === "PHONE"
+                                      ? "border-amber-200 bg-amber-50 text-amber-700"
+                                      : r.source === "CORPORATE"
+                                        ? "border-violet-200 bg-violet-50 text-violet-700"
+                                        : "border-blue-200 bg-blue-50 text-blue-700"
+                              }`}
+                            >
+                              {sourceLabel(r)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {formatDate(r.checkIn)}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {formatDate(r.checkOut)}
+                          </td>
+                          <td className="text-brand-900 px-4 py-3 font-medium">
+                            {r.nights ? `${r.nights}n` : "—"}
+                          </td>
+                          <td className="px-4 py-3">{r.rooms}</td>
+                          <td className="px-4 py-3">
+                            <span className="text-surface-600 inline-flex items-center gap-1">
+                              <UsersIcon size={13} />
+                              {r.adults + r.children}
+                            </span>
+                          </td>
+                          <td className="text-brand-900 px-4 py-3 text-right font-semibold">
+                            {formatCurrency(
+                              r.grandTotal ?? r.pricing?.grandTotal ?? 0,
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusChip
+                              variant={STATUS_VARIANT[r.status] || "neutral"}
+                            >
+                              {STATUS_LABEL[r.status] || r.status}
+                            </StatusChip>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              aria-label="Open reservation actions"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedId(rId);
+                              }}
+                              className="text-surface-400 rounded-lg p-1.5 hover:bg-gray-100 hover:text-gray-700"
+                            >
+                              ⋮
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Modals */}
-      <NewReservationModal
-        open={newModalOpen}
-        onClose={() => setNewModalOpen(false)}
-        onCreated={() => {
-          refetch();
-          setActionSuccess("Reservation created successfully.");
-        }}
-      />
-
-      <ReservationDetailsModal
-        open={!!viewingReservation}
-        onClose={() => setViewingReservation(null)}
-        reservation={viewingReservation}
-        onCheckIn={(r) => handleQuickCheckIn(r)}
-        onCheckOut={(r) => handleQuickCheckOut(r)}
-        onEdit={(r) => setEditingReservation(r)}
-      />
-
-      <EditReservationModal
-        open={!!editingReservation}
-        onClose={() => setEditingReservation(null)}
-        reservation={editingReservation}
-        onSaved={() => {
-          refetch();
-          setActionSuccess("Reservation updated successfully.");
-        }}
-      />
-
-      {/* Delete / Cancel Confirmation */}
-      {deletingReservation && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setDeletingReservation(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-brand-900 mb-2 text-lg font-bold">
-              Cancel Reservation?
-            </h3>
-            <p className="mb-1 text-sm text-gray-500">
-              Are you sure you want to cancel the booking for{" "}
-              <strong>{deletingReservation.name}</strong>?
-            </p>
-            <p className="mb-5 text-xs text-gray-400">
-              Room {deletingReservation.roomNumber || ""} will be freed for
-              other check-ins.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeletingReservation(null)}
-                className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
-              >
-                Keep Stay
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600"
-              >
-                Cancel Stay
-              </button>
+            {/* Pagination footer */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 px-4 py-3 text-sm text-gray-500">
+              <span>
+                {pagination.total === 0
+                  ? "No reservations"
+                  : `Showing ${(pagination.page - 1) * pagination.limit + 1}–${Math.min(
+                      pagination.page * pagination.limit,
+                      pagination.total,
+                    )} of ${pagination.total} reservations`}
+                {isFetching && !isLoading ? " · refreshing…" : ""}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={pagination.page <= 1}
+                  onClick={() =>
+                    setFilters((f) => ({ ...f, page: f.page - 1 }))
+                  }
+                  className="border-surface-200 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                {Array.from(
+                  { length: Math.min(5, pagination.pages) },
+                  (_, i) => i + 1,
+                ).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setFilters((f) => ({ ...f, page: p }))}
+                    className={`h-8 w-8 rounded-lg text-xs font-semibold ${
+                      pagination.page === p
+                        ? "bg-brand-900 text-white"
+                        : "border-surface-200 border bg-white"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  disabled={pagination.page >= pagination.pages}
+                  onClick={() =>
+                    setFilters((f) => ({ ...f, page: f.page + 1 }))
+                  }
+                  className="border-surface-200 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium disabled:opacity-40"
+                >
+                  Next
+                </button>
+                <select
+                  aria-label="Rows per page"
+                  value={filters.limit}
+                  onChange={(e) => setFilter("limit", Number(e.target.value))}
+                  className="border-surface-200 h-8 rounded-lg border bg-white px-2 text-xs"
+                >
+                  {[10, 20, 50].map((n) => (
+                    <option key={n} value={n}>
+                      {n} / page
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Docked detail pane (≥xl) */}
+        {selected && (
+          <div className="sticky top-24 hidden w-100 shrink-0 self-start xl:block">
+            <ReservationDetailPane
+              reservation={selected}
+              reservationId={selectedId}
+              variant="docked"
+              onClose={handleCloseDetail}
+              onChanged={() => {}}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Overlay detail pane (<xl) */}
+      <div className="xl:hidden">
+        <ReservationDetailPane
+          reservation={selected}
+          reservationId={selectedId}
+          variant="overlay"
+          onClose={handleCloseDetail}
+          onChanged={() => {}}
+        />
+      </div>
     </>
   );
 }

@@ -5,6 +5,7 @@ import {
   queryKeys,
 } from "@hotelos/query";
 import { reservationsApi } from "@hotelos/api";
+import { toLocalDateString } from "@hotelos/utils";
 
 /**
  * Normalizes a reservation object for consistent display.
@@ -28,8 +29,8 @@ export function normalizeReservation(item) {
     roomRate: room.rate != null ? room.rate : null,
     floor: room.floor,
     room,
-    checkIn: item.checkIn ? String(item.checkIn).split("T")[0] : null,
-    checkOut: item.checkOut ? String(item.checkOut).split("T")[0] : null,
+    checkIn: toLocalDateString(item.checkIn),
+    checkOut: toLocalDateString(item.checkOut),
     nights: item.nights ?? null,
     status: item.status || "reserved",
     channel: item.channel || "DIRECT",

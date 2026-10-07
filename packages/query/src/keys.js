@@ -12,6 +12,13 @@ export const queryKeys = {
     list: (filters) => [...queryKeys.reservations.lists(), filters || {}],
     details: () => [...queryKeys.reservations.all, "detail"],
     detail: (id) => [...queryKeys.reservations.details(), id],
+    stats: () => [...queryKeys.reservations.all, "stats"],
+    availability: (params) => [
+      ...queryKeys.reservations.all,
+      "availability",
+      params || {},
+    ],
+    history: (id) => [...queryKeys.reservations.details(), id, "history"],
   },
   guests: {
     all: ["guests"],
@@ -19,6 +26,7 @@ export const queryKeys = {
     list: (status) => [...queryKeys.guests.lists(), status || "all"],
     details: () => [...queryKeys.guests.all, "detail"],
     detail: (id) => [...queryKeys.guests.details(), id],
+    search: (q) => [...queryKeys.guests.all, "search", q || ""],
   },
   hotels: {
     all: ["hotels"],
@@ -122,5 +130,42 @@ export const queryKeys = {
       "dashboard",
       { period, startDate, endDate },
     ],
+  },
+  frontDesk: {
+    all: ["front-desk"],
+    arrivals: (params) => [
+      ...queryKeys.frontDesk.all,
+      "arrivals",
+      params || {},
+    ],
+    departures: (params) => [
+      ...queryKeys.frontDesk.all,
+      "departures",
+      params || {},
+    ],
+    stats: () => [...queryKeys.frontDesk.all, "stats"],
+    folio: (id) => [...queryKeys.frontDesk.all, "folio", id],
+  },
+  keyCards: {
+    all: ["key-cards"],
+    lists: () => [...queryKeys.keyCards.all, "list"],
+    list: (filters) => [...queryKeys.keyCards.lists(), filters || {}],
+    stats: () => [...queryKeys.keyCards.all, "stats"],
+    details: () => [...queryKeys.keyCards.all, "detail"],
+    detail: (id) => [...queryKeys.keyCards.details(), id],
+  },
+  corporateCompanies: {
+    all: ["corporate-companies"],
+    lists: () => [...queryKeys.corporateCompanies.all, "list"],
+    list: (filters) => [...queryKeys.corporateCompanies.lists(), filters || {}],
+    details: () => [...queryKeys.corporateCompanies.all, "detail"],
+    detail: (id) => [...queryKeys.corporateCompanies.details(), id],
+  },
+  kiosks: {
+    all: ["kiosks"],
+    lists: () => [...queryKeys.kiosks.all, "list"],
+    list: (filters) => [...queryKeys.kiosks.lists(), filters || {}],
+    details: () => [...queryKeys.kiosks.all, "detail"],
+    detail: (id) => [...queryKeys.kiosks.details(), id],
   },
 };

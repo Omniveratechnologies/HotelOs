@@ -1,5 +1,6 @@
 import Room from "#/modules/rooms/models/Room.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import RatePlan from "#/modules/rate-plans/models/RatePlan.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import aiosell from "#/shared/services/aiosell.service.js";
@@ -105,19 +106,25 @@ export async function aiosellCalculateAvailability(
 
   const activeBookings = await Booking.find({
     hotelId,
-    status: { $in: ["reserved", "checked-in"] },
+    status: { $in: ACTIVE_STAY_STATUSES },
     checkIn: { $lte: new Date(`${endDate}T23:59:59.999Z`) },
     checkOut: { $gt: new Date(`${startDate}T00:00:00.000Z`) },
   }).populate("roomId", "roomCode");
 
-  // Pre-normalize booking dates to ISO YYYY-MM-DD strings for fast, exact night comparisons
-  const normalizedBookings = activeBookings
-    .filter((b) => b.roomId?.roomCode && b.checkIn && b.checkOut)
-    .map((b) => ({
-      roomCode: b.roomId.roomCode,
+  // Pre-normalize booking dates to ISO YYYY-MM-DD strings for fast, exact night comparisons.
+  // Support both physical assigned rooms (b.roomId.roomCode) and room-type holds (b.roomTypeCode).
+  const normalizedBookings = [];
+  for (const b of activeBookings) {
+    if (!b.checkIn || !b.checkOut) continue;
+    const code = b.roomId?.roomCode || b.roomTypeCode;
+    if (!code) continue;
+    normalizedBookings.push({
+      roomCode: code,
+      rooms: Math.max(1, b.rooms || 1),
       checkInDate: new Date(b.checkIn).toISOString().slice(0, 10),
       checkOutDate: new Date(b.checkOut).toISOString().slice(0, 10),
-    }));
+    });
+  }
 
   const availability = {};
   for (const date of dates) {
@@ -131,7 +138,7 @@ export async function aiosellCalculateAvailability(
           date >= booking.checkInDate &&
           date < booking.checkOutDate
         ) {
-          occupiedCount++;
+          occupiedCount += booking.rooms;
         }
       }
 

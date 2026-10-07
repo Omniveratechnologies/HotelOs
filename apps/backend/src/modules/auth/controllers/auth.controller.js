@@ -1,5 +1,6 @@
 import User from "#/modules/users/models/User.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import { generateToken } from "#/shared/utils/jwt.js";
 import { generateInviteToken } from "#/shared/utils/invitation.js";
 import {
@@ -52,7 +53,7 @@ export const login = async (req, res) => {
     if (user.role === "GUEST") {
       const currentBooking = await Booking.findOne({
         guestId: user._id,
-        status: { $in: ["reserved", "checked-in"] },
+        status: { $in: ACTIVE_STAY_STATUSES },
       }).sort({ createdAt: -1 });
 
       roomId = currentBooking?.roomId ?? null;

@@ -166,10 +166,102 @@ const icons = {
 const items = [
   { id: "dashboard", label: "Dashboard", path: "/", icon: icons.dashboard },
   {
+    id: "frontDesk",
+    label: "Front Desk",
+    icon: (
+      /* Front Desk icon */ <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="h-5 w-5"
+      >
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <circle cx="12" cy="8" r="2" />
+      </svg>
+    ),
+    subMenu: [
+      {
+        id: "check-in",
+        label: "Front Desk Check-in",
+        path: "/front-desk/check-in",
+        end: true,
+      },
+      {
+        id: "express-check-in",
+        label: "Express Check-in",
+        path: "/front-desk/express-check-in",
+        end: true,
+      },
+      {
+        id: "digital-check-in-list",
+        label: "Digital Check-ins",
+        path: "/front-desk/digital-check-in-list",
+        end: true,
+      },
+      {
+        id: "check-out",
+        label: "Guest Check-out",
+        path: "/front-desk/check-out",
+        end: true,
+      },
+      {
+        id: "registration-cards",
+        label: "Registration Cards",
+        path: "/front-desk/registration-cards",
+        end: true,
+      },
+      {
+        id: "key-cards",
+        label: "Key Card Assignment",
+        path: "/front-desk/key-cards",
+        end: true,
+      },
+    ],
+  },
+  {
     id: "reservations",
     label: "Reservations",
     path: "/reservations",
     icon: icons.reservations,
+    subMenu: [
+      {
+        id: "all-reservations",
+        label: "All Reservations",
+        path: "/reservations",
+        end: true,
+      },
+      {
+        id: "new-reservation",
+        label: "New Reservation",
+        path: "/reservations/new",
+      },
+      {
+        id: "phone-reservation",
+        label: "Phone Reservation",
+        path: "/reservations/phone/new",
+      },
+      {
+        id: "website-reservation",
+        label: "Website Reservation",
+        path: "/reservations/website/new",
+      },
+      {
+        id: "corporate-reservation",
+        label: "Corporate Reservation",
+        path: "/reservations/corporate/new",
+      },
+      {
+        id: "group-reservation",
+        label: "Group Reservation",
+        path: "/reservations/group/new",
+      },
+      {
+        id: "repeat-guest-reservation",
+        label: "Repeat Guest Booking",
+        path: "/reservations/repeat/new",
+      },
+    ],
   },
   { id: "guests", label: "Guests", path: "/guests", icon: icons.guests },
   {
@@ -203,6 +295,40 @@ const items = [
         label: "Housekeeping",
         path: "/housekeeping",
         icon: icons.housekeeping,
+      },
+    ],
+  },
+  {
+    id: "management",
+    label: "Management",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="h-5 w-5"
+      >
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+      </svg>
+    ),
+    subMenu: [
+      {
+        id: "corporate-companies-manage",
+        label: "Corporate Companies",
+        path: "/manage/corporate-companies",
+      },
+      {
+        id: "key-cards-manage",
+        label: "Key Cards Inventory",
+        path: "/manage/key-cards",
+      },
+      {
+        id: "kiosks-manage",
+        label: "Kiosk Terminals",
+        path: "/manage/kiosk-devices",
       },
     ],
   },

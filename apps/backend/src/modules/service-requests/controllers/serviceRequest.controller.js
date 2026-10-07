@@ -1,5 +1,6 @@
 import ServiceRequest from "../models/ServiceRequest.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
 import {
@@ -118,13 +119,48 @@ export const getHotelRequests = async (req, res) => {
     const roomMap = new Map(rooms.map((r) => [r._id.toString(), r]));
     const guestMap = new Map(guests.map((g) => [g._id.toString(), g]));
 
-    const data = requests.map((request) =>
-      staffServiceRequestDTO(
-        request,
-        roomMap.get(request.roomId?.toString()),
-        guestMap.get(request.guestId?.toString()),
+    // Find any active bookings for requests that don't have a resolved room yet
+    const missingRoomGuestIds = [
+      ...new Set(
+        requests
+          .filter((r) => !roomMap.has(r.roomId?.toString()) && r.guestId)
+          .map((r) => r.guestId.toString()),
       ),
-    );
+    ];
+
+    let guestBookingRoomMap = new Map();
+    if (missingRoomGuestIds.length) {
+      const activeBookings = await Booking.find({
+        hotelId: req.user.hotelId,
+        guestId: { $in: missingRoomGuestIds },
+        roomId: { $ne: null },
+      })
+        .populate("roomId", "roomNumber")
+        .sort({ updatedAt: -1 });
+
+      for (const b of activeBookings) {
+        if (
+          b.guestId &&
+          b.roomId &&
+          !guestBookingRoomMap.has(b.guestId.toString())
+        ) {
+          guestBookingRoomMap.set(b.guestId.toString(), b.roomId);
+        }
+      }
+    }
+
+    const data = requests.map((request) => {
+      const directRoom = roomMap.get(request.roomId?.toString());
+      const fallbackRoom =
+        !directRoom && request.guestId
+          ? guestBookingRoomMap.get(request.guestId.toString())
+          : null;
+      return staffServiceRequestDTO(
+        request,
+        directRoom || fallbackRoom,
+        guestMap.get(request.guestId?.toString()),
+      );
+    });
 
     return res.status(200).json({
       success: true,
@@ -156,7 +192,7 @@ export const createDeskRequest = async (req, res) => {
     const booking = await Booking.findOne({
       roomId,
       hotelId: req.user.hotelId,
-      status: { $in: ["reserved", "checked-in"] },
+      status: { $in: ACTIVE_STAY_STATUSES },
     }).sort({ createdAt: -1 });
 
     if (!booking) {
