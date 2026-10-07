@@ -36,12 +36,23 @@ export default function HousekeepingPage() {
   };
 
   const typeIcon = {
+    Housekeeping: "🧹",
     "Housekeeping request": "🧹",
     "Amenity request": "🛁",
     Maintenance: "🔧",
+    "Dining / Room Service": "🍽",
     "Call restaurant": "📞",
+    "Front Desk": "🛎",
     "Reception request": "🗣",
     Laundry: "👕",
+    "Medicine / First Aid": "💊",
+    "Transport / Cab": "🚕",
+    "Spa & Wellness": "🧖",
+    Emergency: "🚨",
+    Concierge: "🎩",
+    "Wake-up Call": "⏰",
+    "Room Controls": "💡",
+    "Feedback / Inquiry": "📝",
     Other: "📝",
   };
 
@@ -196,7 +207,17 @@ export default function HousekeepingPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-brand-900 font-bold">
-                          {req.room ? `Room ${req.room}` : "-"}
+                          {req.room
+                            ? `Room ${req.room}`
+                            : req.roomId &&
+                                rooms?.find(
+                                  (r) =>
+                                    r.id === req.roomId || r._id === req.roomId,
+                                )
+                              ? `Room ${rooms.find((r) => r.id === req.roomId || r._id === req.roomId).roomNumber}`
+                              : req.guestName
+                                ? req.guestName
+                                : "Desk / General"}
                         </span>
                         <span className="text-gray-400">·</span>
                         <span className="text-brand-900 text-sm font-semibold">

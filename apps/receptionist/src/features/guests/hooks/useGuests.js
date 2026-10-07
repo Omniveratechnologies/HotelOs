@@ -31,6 +31,29 @@ export function useGuests(status = "all") {
 }
 
 /**
+ * Hook to fetch the full guest directory with stay histories and profile attributes.
+ *
+ * @param {object} [params={}] - Query params { status, search }
+ * @returns {object} Query result with guests array and loading/error states
+ */
+export function useGuestDirectory(params = {}) {
+  const query = useQuery({
+    queryKey: [...queryKeys.guests.all, "directory", params],
+    queryFn: async () => {
+      const data = await guestsApi.getGuestsList(params);
+      return (data || []).map(normalizeGuest);
+    },
+  });
+
+  return {
+    ...query,
+    guests: query.data || [],
+    isLoading: query.isLoading,
+    error: query.error ? query.error.message || "Failed to load guests" : null,
+  };
+}
+
+/**
  * Hook to fetch details for a single guest booking.
  *
  * @param {string} bookingId - Booking or guest ID
@@ -147,6 +170,38 @@ export function useDeleteGuestDocument() {
   return useMutation({
     mutationFn: ({ guestId, docId }) =>
       guestsApi.deleteGuestDocument(guestId, docId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.guests.all });
+    },
+  });
+}
+
+/**
+ * Mutation hook to soft delete a guest.
+ *
+ * @returns {import("@tanstack/react-query").UseMutationResult}
+ */
+export function useSoftDeleteGuest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (guestId) => guestsApi.softDeleteGuest(guestId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.guests.all });
+    },
+  });
+}
+
+/**
+ * Mutation hook to restore a soft-deleted guest.
+ *
+ * @returns {import("@tanstack/react-query").UseMutationResult}
+ */
+export function useRestoreGuest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (guestId) => guestsApi.restoreGuest(guestId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.guests.all });
     },

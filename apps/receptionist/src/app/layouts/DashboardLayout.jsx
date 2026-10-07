@@ -182,9 +182,40 @@ const items = [
     ),
     subMenu: [
       {
-        id: "digital-check-in",
-        label: "Digital Check-in",
+        id: "check-in",
+        label: "Front Desk Check-in",
         path: "/front-desk/check-in",
+        end: true,
+      },
+      {
+        id: "express-check-in",
+        label: "Express Check-in",
+        path: "/front-desk/express-check-in",
+        end: true,
+      },
+      {
+        id: "digital-check-in-list",
+        label: "Digital Check-ins",
+        path: "/front-desk/digital-check-in-list",
+        end: true,
+      },
+      {
+        id: "check-out",
+        label: "Guest Check-out",
+        path: "/front-desk/check-out",
+        end: true,
+      },
+      {
+        id: "registration-cards",
+        label: "Registration Cards",
+        path: "/front-desk/registration-cards",
+        end: true,
+      },
+      {
+        id: "key-cards",
+        label: "Key Card Assignment",
+        path: "/front-desk/key-cards",
+        end: true,
       },
     ],
   },
@@ -194,6 +225,12 @@ const items = [
     path: "/reservations",
     icon: icons.reservations,
     subMenu: [
+      {
+        id: "all-reservations",
+        label: "All Reservations",
+        path: "/reservations",
+        end: true,
+      },
       {
         id: "new-reservation",
         label: "New Reservation",
@@ -213,6 +250,16 @@ const items = [
         id: "corporate-reservation",
         label: "Corporate Reservation",
         path: "/reservations/corporate/new",
+      },
+      {
+        id: "group-reservation",
+        label: "Group Reservation",
+        path: "/reservations/group/new",
+      },
+      {
+        id: "repeat-guest-reservation",
+        label: "Repeat Guest Booking",
+        path: "/reservations/repeat/new",
       },
     ],
   },
@@ -248,6 +295,40 @@ const items = [
         label: "Housekeeping",
         path: "/housekeeping",
         icon: icons.housekeeping,
+      },
+    ],
+  },
+  {
+    id: "management",
+    label: "Management",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="h-5 w-5"
+      >
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+        <line x1="8" y1="21" x2="16" y2="21" />
+        <line x1="12" y1="17" x2="12" y2="21" />
+      </svg>
+    ),
+    subMenu: [
+      {
+        id: "corporate-companies-manage",
+        label: "Corporate Companies",
+        path: "/manage/corporate-companies",
+      },
+      {
+        id: "key-cards-manage",
+        label: "Key Cards Inventory",
+        path: "/manage/key-cards",
+      },
+      {
+        id: "kiosks-manage",
+        label: "Kiosk Terminals",
+        path: "/manage/kiosk-devices",
       },
     ],
   },
