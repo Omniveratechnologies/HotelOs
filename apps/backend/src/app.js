@@ -24,6 +24,9 @@ import ratePlanRoutes from "#/modules/rate-plans/index.js";
 import roomTypeRoutes from "#/modules/room-types/index.js";
 import inventoryRoutes from "#/modules/inventory/index.js";
 import reportRoutes from "#/modules/reports/index.js";
+import corporateCompanyRoutes from "#/modules/corporate-companies/index.js";
+import keyCardRoutes from "./modules/key-cards/routes/keyCard.routes.js";
+import kioskDeviceRoutes from "./modules/kiosks/routes/kioskDevice.routes.js";
 
 const app = express();
 
@@ -65,6 +68,9 @@ app.use("/api/v1/rate-plans", ratePlanRoutes);
 app.use("/api/v1/room-types", roomTypeRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/corporate-companies", corporateCompanyRoutes);
+app.use("/api/v1/key-cards", keyCardRoutes);
+app.use("/api/v1/kiosks", kioskDeviceRoutes);
 
 app.use((err, req, res, _next) => {
   logger.error(err, "Unhandled application error");

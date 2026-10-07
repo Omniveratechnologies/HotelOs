@@ -18,10 +18,28 @@ import {
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
 
+import {
+  getArrivals,
+  getDepartures,
+  getFrontDeskStats,
+  checkInBooking,
+  checkOutBooking,
+  getBookingFolio,
+} from "../controllers/frontDesk.controller.js";
+
 const router = express.Router();
 
 // Booking (guest stay) management — admin-scoped
 router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
+
+// Front Desk Operations endpoints
+router.get("/front-desk/arrivals", getArrivals);
+router.get("/front-desk/departures", getDepartures);
+router.get("/front-desk/stats", getFrontDeskStats);
+router.get("/:id/folio", getBookingFolio);
+router.post("/:id/check-in", checkInBooking);
+router.post("/:id/check-out", checkOutBooking);
+router.post("/:id/express-check-in", checkInBooking);
 
 // Static paths before /:id
 router.post("/quote", getQuote);
