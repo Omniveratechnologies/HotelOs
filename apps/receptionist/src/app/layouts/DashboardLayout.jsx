@@ -195,6 +195,11 @@ const items = [
     icon: icons.reservations,
     subMenu: [
       {
+        id: "new-reservation",
+        label: "New Reservation",
+        path: "/reservations/new",
+      },
+      {
         id: "phone-reservation",
         label: "Phone Reservation",
         path: "/reservations/phone/new",
@@ -203,6 +208,11 @@ const items = [
         id: "website-reservation",
         label: "Website Reservation",
         path: "/reservations/website/new",
+      },
+      {
+        id: "corporate-reservation",
+        label: "Corporate Reservation",
+        path: "/reservations/corporate/new",
       },
     ],
   },
