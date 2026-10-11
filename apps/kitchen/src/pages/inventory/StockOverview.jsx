@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiDownload, FiPlus } from "react-icons/fi";
 
 import Navbar from "../../components/ui/Navbar.jsx";
 import Sidebar from "../../components/Hamburger/SideBar.jsx";
 import { generateInventoryReport } from "../../utils/inventoryReport.js";
-
+import API_BASE_URL from "../../config/api.js";
 import StockOverviewCards from "../../components/stockOverview/StockOverviewCards.jsx";
 import StockOverviewTabs from "../../components/stockOverview/StockOverviewTabs.jsx";
 import StockOverviewTable from "../../components/stockOverview/StockOverviewTable.jsx";
@@ -19,6 +19,20 @@ const StockOverview = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [latestItems, setLatestItems] = useState([]);
 
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/inventory/items/categories`)
+      .then((res) => res.json())
+      .then((data) => {
+        const names = (data.data || [])
+          .filter((c) => c.category !== "ALL")
+          .map((c) => c.category);
+        setCategories(names);
+      })
+      .catch((err) => console.error("Failed to load categories:", err));
+  }, []);
+
   const navigate = useNavigate();
 
   const handleDownloadReport = () => {
@@ -30,8 +44,8 @@ const StockOverview = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar

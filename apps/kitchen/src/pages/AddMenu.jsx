@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import API_BASE_URL from "../config/api.js";
 
 import Navbar from "../components/ui/Navbar.jsx";
-import Sidebar from "../components/Hamburger/SideBar.jsx";
+import Sidebar from "../components/hamburger/Sidebar.jsx";
 import MenuForm from "../components/menu/MenuForm.jsx";
 
 const AddMenu = ({ onClose }) => {
@@ -36,8 +36,8 @@ const AddMenu = ({ onClose }) => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar

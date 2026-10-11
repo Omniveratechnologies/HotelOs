@@ -12,7 +12,7 @@ import SearchBar from "../../components/ui/SearchBar.jsx";
 import { MdInventory } from "react-icons/md";
 import API_BASE_URL from "../../config/api.js";
 import { duplicateRecipe } from "../../utils/recipeUtils.js";
-import { FiCopy } from "react-icons/fi";
+import { FiCopy, FiPlus } from "react-icons/fi";
 
 const RecipesLists = () => {
   const navigate = useNavigate();
@@ -138,8 +138,8 @@ const RecipesLists = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar
