@@ -1,0 +1,280 @@
+import { useState } from "react";
+import { Header } from "@hotelos/ui/components/Header";
+
+import StatCard from "../../../components/StatCard.jsx";
+import AddMembers from "../../members/components/AddMembers.jsx";
+import { useDashboardStats } from "../hooks/useDashboardStats.js";
+
+const statDefinitions = [
+  {
+    label: "Total Rooms",
+    icon: <path d="M3 21V9l9-6 9 6v12M9 21v-6h6v6" strokeLinejoin="round" />,
+    value: (data) => String(data.rooms?.total ?? 0),
+  },
+  {
+    label: "Available Rooms",
+    icon: (
+      <path
+        d="M9 12l2 2 4-4M12 3l9 4.5v9L12 21l-9-4.5v-9L12 3z"
+        strokeLinejoin="round"
+      />
+    ),
+    value: (data) => String(data.rooms?.available ?? 0),
+  },
+  {
+    label: "Occupied Rooms",
+    icon: (
+      <path
+        d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+    value: (data) => String(data.rooms?.occupied ?? 0),
+  },
+  {
+    label: "Total Check-ins",
+    sub: "Today",
+    icon: (
+      <path
+        d="M5 12h14M13 6l6 6-6 6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+    value: (data) => String(data.guests?.arrivalsToday ?? 0),
+  },
+  {
+    label: "Today's Checkouts",
+    icon: (
+      <path
+        d="M19 12H5M11 18l-6-6 6-6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+    value: (data) => String(data.guests?.departuresToday ?? 0),
+  },
+  {
+    label: "Pending Reservations",
+    icon: (
+      <path
+        d="M12 8v4l2.5 2.5M12 3a9 9 0 100 18 9 9 0 000-18z"
+        strokeLinecap="round"
+      />
+    ),
+    value: (data) => String(data.pendingReservations ?? 0),
+  },
+  {
+    label: "Today's Revenue",
+    icon: (
+      <path
+        d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"
+        strokeLinecap="round"
+      />
+    ),
+    value: (data) => `$${Number(data.revenueToday ?? 0).toLocaleString()}`,
+  },
+  {
+    label: "Pending Service Requests",
+    icon: (
+      <path
+        d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"
+        strokeLinejoin="round"
+      />
+    ),
+    value: (data) => String(data.pendingServiceRequests ?? 0),
+  },
+  {
+    label: "Active Staff",
+    icon: (
+      <path
+        d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    ),
+    value: (data) => String(data.activeStaff ?? 0),
+  },
+  {
+    label: "Current Occupancy",
+    icon: <path d="M4 20V10M11 20V4M18 20v-7" strokeLinecap="round" />,
+    value: (data) => `${data.occupancyPercent ?? 0}%`,
+  },
+];
+
+// =====================================================
+// RELATIVE TIME FORMATTER
+// =====================================================
+
+function formatRelativeTime(date) {
+  const diffMs = Date.now() - new Date(date).getTime();
+
+  const minutes = Math.floor(diffMs / 60000);
+
+  if (minutes < 1) return "Just now";
+
+  if (minutes < 60) return `${minutes} min ago`;
+
+  const hours = Math.floor(minutes / 60);
+
+  if (hours < 24) {
+    return hours === 1 ? "1 hr ago" : `${hours} hrs ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+
+  if (days === 1) return "Yesterday";
+
+  return `${days} days ago`;
+}
+
+export default function Dashboard() {
+  const [user] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("auth_user")) || {};
+    } catch {
+      return {};
+    }
+  });
+
+  const firstName = user.name?.trim().split(" ")[0] || "Admin";
+
+  const {
+    stats: statsData,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useDashboardStats();
+
+  const hotelName = statsData?.hotelName || "your hotel";
+
+  return (
+    <div className="bg-background-50 flex min-h-screen">
+      <div className="min-w-0 flex-1">
+        {/* =====================================================
+            TOPBAR
+        ===================================================== */}
+
+        <Header
+          pageTitle={`Welcome, ${firstName}`}
+          pageDescription={`Here's what's happening at ${hotelName} today.`}
+        >
+          <button
+            aria-label="Notifications"
+            className="bg-background-50 text-brand-900 relative flex h-10 w-10 items-center justify-center rounded-full border border-gray-200"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+
+            <span className="bg-primary-400 absolute top-1.5 right-2 h-2 w-2 rounded-full" />
+          </button>
+
+          <div className="flex items-center gap-2.5">
+            <span className="bg-brand-900 font-display flex h-10 w-10 items-center justify-center rounded-full font-semibold text-white">
+              {(firstName || "A").charAt(0).toUpperCase()}
+            </span>
+
+            <span className="text-brand-900 hidden text-sm font-medium sm:block">
+              {user.name || "Admin"}
+            </span>
+          </div>
+        </Header>
+
+        {/* =====================================================
+            CONTENT
+        ===================================================== */}
+
+        <main className="px-6 py-8 lg:px-10">
+          {/* ===================================================
+              ADD MEMBERS
+          =================================================== */}
+
+          <AddMembers />
+
+          {/* ===================================================
+              STATISTICS
+          =================================================== */}
+
+          {statsError && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {statsError}
+            </div>
+          )}
+
+          {statsLoading ? (
+            <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-10 text-center text-gray-500 shadow-xs">
+              Loading dashboard stats...
+            </div>
+          ) : statsData && !statsError ? (
+            <div className="mb-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {statDefinitions.map((s) => {
+                const { value, ...rest } = s;
+
+                return (
+                  <StatCard
+                    key={rest.label}
+                    {...rest}
+                    value={value(statsData)}
+                  />
+                );
+              })}
+            </div>
+          ) : null}
+
+          {/* ===================================================
+              RECENT ACTIVITIES
+          =================================================== */}
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-xs">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="font-display text-brand-900 text-xl font-semibold">
+                Recent Activities
+              </h2>
+
+              <a
+                href="#"
+                className="text-primary-400 hover:text-primary-500 text-sm font-medium"
+              >
+                View all
+              </a>
+            </div>
+
+            {statsData?.recentActivities?.length > 0 ? (
+              <div className="space-y-4">
+                {statsData.recentActivities.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between gap-4 border-b border-gray-100 pb-4 last:border-0 last:pb-0"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-gray-200" />
+
+                      <p className="text-brand-900/80 truncate text-sm">
+                        {a.text}
+                      </p>
+                    </div>
+
+                    <span className="shrink-0 text-xs text-gray-500">
+                      {formatRelativeTime(a.createdAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-sm text-gray-500">
+                No recent activity to show yet.
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

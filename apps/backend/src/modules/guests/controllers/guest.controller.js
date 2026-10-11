@@ -8,7 +8,12 @@ import { generateTemporaryPassword } from "#/shared/utils/generateCredentials.js
 
 import { sendGuestCredentialsEmail } from "#/shared/services/email.service.js";
 
-import { generateUploadUrl, deleteObjects } from "#/config/r2.js";
+import {
+  generateUploadUrl,
+  generateDownloadUrl,
+  deleteObjects,
+} from "#/config/r2.js";
+import { bookingDTO } from "#/modules/bookings/dto/booking.dto.js";
 
 import {
   MAX_FILES,
@@ -440,5 +445,214 @@ export const updateDND = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to update Do Not Disturb" });
+  }
+};
+
+// =====================================================
+// LIST GUESTS (directory & profiles)
+// =====================================================
+
+export const getGuests = async (req, res) => {
+  try {
+    const userFilter = {
+      hotelId: req.user.hotelId,
+      role: "GUEST",
+    };
+
+    if (req.query.search?.trim()) {
+      const search = req.query.search.trim();
+      const regex = new RegExp(search, "i");
+      userFilter.$or = [{ name: regex }, { email: regex }, { phone: regex }];
+    }
+
+    const guests = await User.find(userFilter).sort({ createdAt: -1 });
+    const guestIds = guests.map((g) => g._id);
+
+    const bookings = await Booking.find({
+      hotelId: req.user.hotelId,
+      guestId: { $in: guestIds },
+    })
+      .populate("roomId", "roomNumber type rate floor")
+      .sort({ createdAt: -1 });
+
+    const bookingMap = new Map();
+    for (const b of bookings) {
+      const gid = String(b.guestId);
+      if (!bookingMap.has(gid)) {
+        bookingMap.set(gid, []);
+      }
+      bookingMap.get(gid).push(b);
+    }
+
+    let data = await Promise.all(
+      guests.map(async (guest) => {
+        const guestBookings = bookingMap.get(String(guest._id)) || [];
+
+        // Find active or latest stay: active checked-in, or reserved, or latest
+        const activeBooking =
+          guestBookings.find((b) => b.status === "checked-in") ||
+          guestBookings.find((b) => b.status === "reserved") ||
+          guestBookings[0] ||
+          null;
+
+        const docs = await Promise.all(
+          (guest.documents || []).map(async (doc) => {
+            const key = String(doc.path || "");
+            return {
+              id: doc._id,
+              docType: doc.docType,
+              filename: doc.filename,
+              url: key ? await generateDownloadUrl(key) : null,
+              uploadedAt: doc.uploadedAt,
+            };
+          }),
+        );
+
+        const roomObj =
+          activeBooking?.roomId?.roomNumber != null
+            ? {
+                id: activeBooking.roomId._id,
+                roomNumber: activeBooking.roomId.roomNumber,
+                type: activeBooking.roomId.type,
+                rate: activeBooking.roomId.rate,
+                floor: activeBooking.roomId.floor,
+              }
+            : null;
+
+        return {
+          id: guest._id,
+          _id: guest._id,
+          name: guest.name,
+          username: guest.username,
+          email: guest.email,
+          phone: guest.phone,
+          address: guest.address,
+          idType: guest.idType,
+          idNumber: guest.idNumber,
+          isActive: guest.isActive,
+          createdAt: guest.createdAt,
+          documents: docs,
+          currentStay: activeBooking
+            ? {
+                id: activeBooking._id,
+                status: activeBooking.status,
+                roomId: activeBooking.roomId?._id || activeBooking.roomId,
+                roomNumber: roomObj?.roomNumber || "",
+                room: roomObj,
+                checkIn: activeBooking.checkIn,
+                checkOut: activeBooking.checkOut,
+                nights: activeBooking.nights,
+                channel: activeBooking.channel,
+              }
+            : null,
+          totalStays: guestBookings.length,
+          status: activeBooking ? activeBooking.status : "registered",
+          room: roomObj ? String(roomObj.roomNumber) : "",
+          roomId: roomObj ? roomObj.id : null,
+          checkIn: activeBooking?.checkIn || null,
+          checkOut: activeBooking?.checkOut || null,
+          nights: activeBooking?.nights ?? null,
+        };
+      }),
+    );
+
+    if (req.query.status && req.query.status !== "all") {
+      data = data.filter((g) => g.status === req.query.status);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Guests fetched successfully",
+      data,
+    });
+  } catch (error) {
+    logger.error(error, "Get Guests Error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch guests",
+    });
+  }
+};
+
+// =====================================================
+// GET GUEST BY ID
+// =====================================================
+
+export const getGuestById = async (req, res) => {
+  try {
+    const guest = await User.findOne({
+      _id: req.params.id,
+      hotelId: req.user.hotelId,
+      role: "GUEST",
+    });
+
+    if (!guest) {
+      return res.status(404).json({
+        success: false,
+        message: "Guest not found",
+      });
+    }
+
+    const bookings = await Booking.find({
+      hotelId: req.user.hotelId,
+      guestId: guest._id,
+    })
+      .populate("roomId", "roomNumber type rate floor")
+      .sort({ createdAt: -1 });
+
+    const stays = await Promise.all(bookings.map((b) => bookingDTO(b)));
+
+    const docs = await Promise.all(
+      (guest.documents || []).map(async (doc) => {
+        const key = String(doc.path || "");
+        return {
+          id: doc._id,
+          docType: doc.docType,
+          filename: doc.filename,
+          url: key ? await generateDownloadUrl(key) : null,
+          uploadedAt: doc.uploadedAt,
+        };
+      }),
+    );
+
+    const activeBooking =
+      stays.find((b) => b.status === "checked-in") ||
+      stays.find((b) => b.status === "reserved") ||
+      stays[0] ||
+      null;
+
+    return res.status(200).json({
+      success: true,
+      message: "Guest fetched successfully",
+      data: {
+        id: guest._id,
+        _id: guest._id,
+        name: guest.name,
+        username: guest.username,
+        email: guest.email,
+        phone: guest.phone,
+        address: guest.address,
+        idType: guest.idType,
+        idNumber: guest.idNumber,
+        isActive: guest.isActive,
+        createdAt: guest.createdAt,
+        documents: docs,
+        currentStay: activeBooking || null,
+        stays,
+        totalStays: stays.length,
+        status: activeBooking ? activeBooking.status : "registered",
+        room: activeBooking?.room ? String(activeBooking.room.roomNumber) : "",
+        roomId: activeBooking?.roomId || null,
+        checkIn: activeBooking?.checkIn || null,
+        checkOut: activeBooking?.checkOut || null,
+        nights: activeBooking?.nights ?? null,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Get Guest By Id Error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch guest details",
+    });
   }
 };

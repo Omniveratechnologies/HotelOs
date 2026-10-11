@@ -1,3 +1,108 @@
 @import "tailwindcss";
 @import "@hotelos/styles";
 @source "../../../packages/ui/src/**/*.{js,jsx,ts,tsx}";
+
+/* Print styles for Reports Print Page */
+@media print {
+  .print-page {
+    min-width: 1080px;
+    background: transparent !important;
+    padding: 0;
+  }
+
+  .print-header {
+    text-align: center;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    background: transparent !important;
+  }
+
+  .print-content {
+    display: block;
+    background: transparent !important;
+  }
+
+  .print-section,
+  .kpi-section,
+  .charts-section,
+  .table-section,
+  .guest-section,
+  .tables-section,
+  .metrics-summary,
+  .chart-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .chart-card {
+    margin-bottom: 24px;
+  }
+
+  .table-section {
+    page-break-inside: auto;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  .print-footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: 10px;
+    color: #9ca3af;
+    background: transparent !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remove white backgrounds from recharts */
+  .recharts-wrapper,
+  .recharts-surface {
+    background: transparent !important;
+  }
+}
+
+@media screen {
+  .print-page {
+    min-width: 1080px;
+    background: transparent;
+    padding: 24px;
+  }
+
+  .print-header {
+    text-align: center;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    background: transparent;
+  }
+
+  .print-footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: 10px;
+    color: #9ca3af;
+    background: transparent;
+  }
+}

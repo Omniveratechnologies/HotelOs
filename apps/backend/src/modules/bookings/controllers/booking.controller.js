@@ -135,6 +135,7 @@ export const registerStay = async (req, res) => {
       checkIn,
       checkOut,
       status,
+      purpose,
     } = req.body;
 
     // =================================================
@@ -283,6 +284,7 @@ export const registerStay = async (req, res) => {
       checkIn: checkIn ? new Date(checkIn) : undefined,
       checkOut: new Date(checkOut),
       status: guestStatus,
+      purpose: purpose?.trim() || null,
     });
 
     // =================================================
@@ -471,7 +473,7 @@ export const updateBooking = async (req, res) => {
       });
     }
 
-    const { status, checkIn, checkOut, roomId } = req.body;
+    const { status, checkIn, checkOut, roomId, purpose } = req.body;
 
     const originalCheckIn = booking.checkIn;
     const originalCheckOut = booking.checkOut;
@@ -558,6 +560,10 @@ export const updateBooking = async (req, res) => {
           reserved: status === "reserved",
         });
       }
+    }
+
+    if (purpose !== undefined) {
+      booking.purpose = purpose?.trim() || null;
     }
 
     await booking.save();

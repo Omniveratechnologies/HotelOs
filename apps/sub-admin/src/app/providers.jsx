@@ -1,27 +1,7 @@
-import { useMemo } from "react";
+import { AppProviders } from "./providers/AppProviders.jsx";
 
-import { clearAuth, getStoredUser } from "../services/auth.service.js";
-
-import { SubAdminContext } from "./subAdminContext.js";
+export { AppProviders };
 
 export function SubAdminProvider({ children }) {
-  const user = useMemo(() => getStoredUser(), []);
-
-  const value = useMemo(
-    () => ({
-      user,
-
-      logout: () => {
-        clearAuth();
-      },
-    }),
-
-    [user],
-  );
-
-  return (
-    <SubAdminContext.Provider value={value}>
-      {children}
-    </SubAdminContext.Provider>
-  );
+  return <AppProviders>{children}</AppProviders>;
 }

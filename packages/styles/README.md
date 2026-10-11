@@ -168,9 +168,9 @@ Prefer smaller, incremental migrations by importing only the layers you need:
 
 > This is a **CSS-only** package — there is no JS entry point and no runtime
 > token object. All consumption happens through CSS `@import`, so it is fully
-> framework-agnostic (React, Next.js, Vite, …). Next.js apps import it from
-> their global stylesheet; Vite apps from their main CSS entry. No plugins,
-> loaders, or JS configuration required.
+> framework-agnostic. In Vite apps across this monorepo, Tailwind v4 is integrated
+> via the official `@tailwindcss/vite` plugin in `vite.config.js` and styles are
+> imported in each app's main CSS entry (e.g. `src/index.css`).
 
 ---
 

@@ -1,17 +1,30 @@
 /**
- * @fileoverview This file serves as the entry point for the utils package, re-exporting various utility functions and modules.
- * It provides a centralized location for importing commonly used utilities, making it easier to manage dependencies and maintain code organization.
- *
+ * @fileoverview Entry point for the utils package, re-exporting utility functions, constants, normalizers, and helpers.
  * @module utils
  */
 
-// Re-export utility functions and modules from their respective files
 export { cn, clsx, twMerge, twJoin } from "./cn.js";
 
-// Re-export rate plan code utilities from the ratePlanCode.js file
 export {
   deriveRatePlanCode,
   parseRatePlanCode,
   OCCUPANCY_LETTER_BY_TYPE,
   OCCUPANCY_TYPE_BY_LETTER,
 } from "./ratePlanCode.js";
+
+export {
+  ORDER_STATUS_MAP,
+  UI_TO_ORDER_STATUS,
+  REQUEST_STATUS_MAP,
+  REQUEST_TYPE_MAP,
+} from "./constants.js";
+
+export { formatTime, formatDate, formatCurrency } from "./formatters.js";
+
+export {
+  normalizeRoom,
+  normalizeGuest,
+  normalizeFoodOrder,
+  normalizeRequest,
+  upsert,
+} from "./normalizers.js";

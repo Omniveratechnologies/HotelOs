@@ -1,0 +1,21 @@
+{
+  "name": "@hotelos/socket",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@hotelos/query": "workspace:*",
+    "@hotelos/utils": "workspace:*",
+    "socket.io-client": "^4.8.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  }
+}

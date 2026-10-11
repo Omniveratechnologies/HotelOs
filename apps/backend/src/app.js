@@ -19,6 +19,7 @@ import channelManagerRoutes from "#/modules/channel-manager/index.js";
 import ratePlanRoutes from "#/modules/rate-plans/index.js";
 import roomTypeRoutes from "#/modules/room-types/index.js";
 import inventoryRoutes from "#/modules/inventory/index.js";
+import reportRoutes from "#/modules/reports/index.js";
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use("/api/v1/channel-manager", channelManagerRoutes);
 app.use("/api/v1/rate-plans", ratePlanRoutes);
 app.use("/api/v1/room-types", roomTypeRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/v1/reports", reportRoutes);
 
 app.use((err, req, res, _next) => {
   logger.error(err, "Unhandled application error");

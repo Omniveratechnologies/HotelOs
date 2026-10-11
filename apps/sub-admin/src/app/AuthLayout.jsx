@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router";
 
-import { isAuthenticated } from "../services/auth.service.js";
+import { isAuthenticated } from "@hotelos/api";
 
 export default function AuthLayout() {
   const location = useLocation();

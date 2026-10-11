@@ -44,11 +44,14 @@ const newUser = await api.post("/api/v1/users", { name, role }, { auth: true });
 
 The package exports:
 
-| Export     | Description                                                     |
-| ---------- | --------------------------------------------------------------- |
-| `api`      | Convenience object with `get`, `post`, `put`, `patch`, `delete` |
-| `apiFetch` | Low-level fetch wrapper (used by `api`)                         |
-| `ApiError` | Error class carrying a `status` code                            |
+| Export                                | Description                                                     |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `api`                                 | Convenience object with `get`, `post`, `put`, `patch`, `delete` |
+| `apiFetch`                            | Low-level fetch wrapper (used by `api`)                         |
+| `ApiError`                            | Error class carrying HTTP `status` code and server message      |
+| `authApi`, `hotelsApi`, `roomsApi`... | Namespaced domain endpoint modules                              |
+| `isAuthenticated`, `getStoredToken`   | Auth session and local storage helper functions                 |
+| Direct endpoint functions             | Pre-typed domain functions (`getRooms`, `getRatePlans`, etc.)   |
 
 ---
 
@@ -247,8 +250,11 @@ const rooms = result.data; // array
 src/
 │
 ├── apiFetch.js         Low-level fetch wrapper (headers, auth, errors, timeout)
-├── index.js            Public exports: api, apiFetch, ApiError
+├── index.js            Public exports: api, apiFetch, ApiError, domain modules
 │
-└── config/
-    └── env.js          Resolves the backend base URL
+├── config/
+│   └── env.js          Resolves the backend base URL
+│
+└── endpoints/          Domain API modules (auth, hotels, rooms, roomTypes,
+                        ratePlans, guests, orders, serviceRequests, etc.)
 ```
