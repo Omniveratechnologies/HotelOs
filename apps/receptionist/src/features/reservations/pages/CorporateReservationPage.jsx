@@ -145,6 +145,12 @@ export default function CorporateReservationPage() {
           ...form.corporate,
         },
         additionalGuests: form.guests.slice(1),
+        guestRoster: (form.guests || []).map((g) => ({
+          name: g.name,
+          phone: g.phone ? `${g.phonePrefix || "+91"}${g.phone}` : null,
+          email: g.email || null,
+          designation: g.designation || null,
+        })),
       };
     },
   });

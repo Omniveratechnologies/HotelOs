@@ -199,6 +199,7 @@ export function useReservationWizard({
             (p.mealPlan || "EP") === "EP",
         );
         return {
+          roomCode: t.roomCode,
           roomTypeCode: t.roomCode,
           name: t.name,
           totalRooms: avail?.totalRooms ?? t.count,
@@ -222,10 +223,13 @@ export function useReservationWizard({
 
   // Live debounced server quote
   useEffect(() => {
-    if (nights < 1 || !form.roomTypeCode) return;
+    const hasRequirements =
+      Array.isArray(form.roomRequirements) && form.roomRequirements.length > 0;
+    if (nights < 1 || (!form.roomTypeCode && !hasRequirements)) return;
     const handle = setTimeout(() => {
       quoteMutateRef.current({
-        roomTypeCode: form.roomTypeCode,
+        roomTypeCode: form.roomTypeCode || undefined,
+        roomRequirements: hasRequirements ? form.roomRequirements : undefined,
         roomId: form.preferSpecificRoom ? form.roomId || undefined : undefined,
         ratePlanId: form.ratePlanId || undefined,
         mealPlan: form.mealPlan || undefined,
@@ -249,6 +253,7 @@ export function useReservationWizard({
     form.rooms,
     form.adults,
     form.roomTypeCode,
+    form.roomRequirements,
     form.ratePlanId,
     form.mealPlan,
     form.rateOverride,

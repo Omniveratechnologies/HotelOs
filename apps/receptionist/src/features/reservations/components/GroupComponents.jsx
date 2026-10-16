@@ -3,10 +3,15 @@ import { Users, BedDouble, Plus, Trash2, CheckCircle2 } from "lucide-react";
 import { SectionCard, Button, Input } from "@hotelos/ui/components";
 import { formatCurrency } from "@hotelos/utils";
 
+const EMPTY_OBJECT = Object.freeze({});
+const EMPTY_ARRAY = Object.freeze([]);
+
+const getRoomTypeCode = (t) => t?.roomTypeCode || t?.roomCode || "";
+
 /**
  * Step 1: Group Details
  */
-export function GroupDetailsSection({ form, onChange, errors = {} }) {
+export function GroupDetailsSection({ form, onChange, errors = EMPTY_OBJECT }) {
   return (
     <SectionCard
       title="Group Information"
@@ -162,26 +167,38 @@ export function GroupDetailsSection({ form, onChange, errors = {} }) {
 export function GroupRequirementsSection({
   form,
   onChange,
-  roomRequirements = [],
+  roomRequirements = EMPTY_ARRAY,
   onRequirementsChange,
-  roomTypes = [],
+  roomTypes = EMPTY_ARRAY,
 }) {
   const [newReq, setNewReq] = useState({
-    roomTypeCode: roomTypes[0]?.roomCode || "EXEC",
+    roomTypeCode: "",
     rooms: 1,
     adultsPerRoom: 2,
     childrenPerRoom: 0,
     notes: "",
   });
 
+  const effectiveTypeCode =
+    newReq.roomTypeCode || getRoomTypeCode(roomTypes[0]);
+
   const handleAddRequirement = () => {
+    if (!effectiveTypeCode) return;
     onRequirementsChange([
       ...roomRequirements,
       {
         id: `gr-${Date.now()}`,
         ...newReq,
+        roomTypeCode: effectiveTypeCode,
       },
     ]);
+    setNewReq({
+      roomTypeCode: effectiveTypeCode,
+      rooms: 1,
+      adultsPerRoom: 2,
+      childrenPerRoom: 0,
+      notes: "",
+    });
   };
 
   const handleRemoveRequirement = (idx) => {
@@ -249,7 +266,7 @@ export function GroupRequirementsSection({
               <tbody className="divide-y divide-gray-100 bg-white">
                 {roomRequirements.map((r, idx) => {
                   const typeObj = roomTypes.find(
-                    (t) => t.roomCode === r.roomTypeCode,
+                    (t) => getRoomTypeCode(t) === r.roomTypeCode,
                   );
                   return (
                     <tr
@@ -299,17 +316,20 @@ export function GroupRequirementsSection({
               </label>
               <select
                 id="req-room-type-select"
-                value={newReq.roomTypeCode}
+                value={effectiveTypeCode}
                 onChange={(e) =>
                   setNewReq({ ...newReq, roomTypeCode: e.target.value })
                 }
                 className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-xs text-gray-800"
               >
-                {roomTypes.map((t) => (
-                  <option key={t.roomCode} value={t.roomCode}>
-                    {t.name}
-                  </option>
-                ))}
+                {roomTypes.map((t) => {
+                  const code = getRoomTypeCode(t);
+                  return (
+                    <option key={code} value={code}>
+                      {t.name || code}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             <div className="col-span-4 sm:col-span-2">
@@ -431,7 +451,7 @@ export function GroupRequirementsSection({
  * Step 3 & 4: Guest List and Room Assignment Preview
  */
 export function GroupGuestListSection({
-  guests = [],
+  guests = EMPTY_ARRAY,
   onAddGuest,
   onRemoveGuest,
   onAutoAssign,
@@ -594,7 +614,8 @@ export function GroupGuestListSection({
  */
 export function GroupAllocationSummary({
   form,
-  roomRequirements = [],
+  roomRequirements = EMPTY_ARRAY,
+  quote,
   nights = 1,
 }) {
   const totalRooms = roomRequirements.reduce(
@@ -606,13 +627,20 @@ export function GroupAllocationSummary({
     0,
   );
 
-  // Fallback estimates if backend quote is loading
-  const baseRateEstimate = totalRooms * 2499 * nights;
-  const discountRate = Number(form.discount || 5) / 100;
-  const discountAmount = Math.round(baseRateEstimate * discountRate);
-  const taxable = baseRateEstimate - discountAmount;
-  const taxAmount = Math.round(taxable * 0.12);
-  const totalAmount = taxable + taxAmount;
+  const pricing = quote?.pricing;
+
+  // Real server pricing when available, fallback to estimates while calculating
+  const roomCharges = pricing ? pricing.roomCharge : totalRooms * 2499 * nights;
+  const discountPercent = Number(form.discount || 0);
+  const discountAmount = pricing
+    ? pricing.discount?.amount || 0
+    : Math.round(roomCharges * (discountPercent / 100));
+  const taxAmount = pricing
+    ? pricing.taxAmount
+    : Math.round((roomCharges - discountAmount) * 0.12);
+  const totalAmount = pricing
+    ? pricing.grandTotal
+    : roomCharges - discountAmount + taxAmount;
 
   return (
     <div className="space-y-6">
@@ -669,6 +697,7 @@ export function GroupAllocationSummary({
               </span>
               <span className="text-gray-600">
                 {r.rooms} room(s) · {r.rooms * r.adultsPerRoom} guests
+                {r.notes ? ` (${r.notes})` : ""}
               </span>
             </div>
           ))}
@@ -686,11 +715,11 @@ export function GroupAllocationSummary({
               Room Charges ({nights} Nights)
             </span>
             <span className="font-medium text-amber-950">
-              {formatCurrency(baseRateEstimate)}
+              {formatCurrency(roomCharges)}
             </span>
           </div>
           <div className="flex justify-between text-rose-600">
-            <span>Group Discount ({form.discount || 5}%)</span>
+            <span>Group Discount ({discountPercent}%)</span>
             <span>- {formatCurrency(discountAmount)}</span>
           </div>
           <div className="flex justify-between">
