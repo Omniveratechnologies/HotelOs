@@ -16,8 +16,8 @@ import RecentActivitiesCard from "../../components/stockOverview/RecentActivitie
 const StockOverview = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("ALL");
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [latestItems, setLatestItems] = useState([]);
+  const [refreshKey] = useState(0);
+  const [latestItems] = useState([]);
 
   const navigate = useNavigate();
 

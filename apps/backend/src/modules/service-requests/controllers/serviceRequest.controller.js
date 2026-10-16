@@ -193,6 +193,42 @@ export const createDeskRequest = async (req, res) => {
   }
 };
 
+export const createTableServiceRequest = async (req, res) => {
+  try {
+    const { hotelId, tableId, type, description } = req.body;
+    if (!hotelId || !tableId || !type) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "hotelId, tableId and type are required",
+        });
+    }
+
+    const request = await ServiceRequest.create({
+      hotelId,
+      tableId,
+      guestId: null,
+      type,
+      description,
+      status: "REQUESTED",
+    });
+
+    getIo()
+      .to(`hotel:${hotelId}`)
+      .emit("request:update", serviceRequestDTO(request));
+
+    return res
+      .status(201)
+      .json({ success: true, data: serviceRequestDTO(request) });
+  } catch (error) {
+    logger.error(error, "Create table service request error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to send request" });
+  }
+};
+
 export const updateHotelRequestStatus = async (req, res) => {
   try {
     const { status } = req.body;

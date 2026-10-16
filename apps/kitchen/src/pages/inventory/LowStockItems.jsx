@@ -1,3 +1,4 @@
+/* oxlint-disable react/set-state-in-effect */
 import { useEffect, useState } from "react";
 
 import API_BASE_URL from "../../config/api.js";
@@ -38,8 +39,8 @@ const LowStockItems = () => {
 
   const [lowStockItems, setLowStockItems] = useState([]);
   const [purchaseHistory, setPurchaseHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [, setLoading] = useState(false);
+  const [, setIsFilterOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
 
   const [filterValues, setFilterValues] = useState({

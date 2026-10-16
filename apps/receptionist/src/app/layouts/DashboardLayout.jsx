@@ -149,6 +149,18 @@ const icons = {
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
   ),
+  billing: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className="h-5 w-5"
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 10h18M7 15h3" />
+    </svg>
+  ),
   settings: (
     <svg
       viewBox="0 0 24 24"
@@ -203,6 +215,44 @@ const items = [
         label: "Housekeeping",
         path: "/housekeeping",
         icon: icons.housekeeping,
+      },
+    ],
+  },
+  {
+    id: "billing",
+    label: "Billing & Folio",
+    icon: icons.billing,
+    subMenu: [
+      { id: "folio", label: "Guest Folio", path: "/billing/folio" },
+      { id: "payments", label: "Payments", path: "/billing/payments" },
+      { id: "invoices", label: "Invoices", path: "/billing/invoices" },
+      {
+        id: "taxesCharges",
+        label: "Taxes & Charges",
+        path: "/billing/taxes-charges",
+      },
+      {
+        id: "corporateBilling",
+        label: "Corporate Billing",
+        path: "/billing/corporate",
+      },
+      {
+        id: "receivables",
+        label: "Receivables",
+        path: "/billing/receivables",
+      },
+      { id: "payables", label: "Payables", path: "/billing/payables" },
+      { id: "expenses", label: "Expenses", path: "/billing/expenses" },
+      { id: "cashier", label: "Cashier", path: "/billing/cashier" },
+      {
+        id: "reconciliation",
+        label: "Reconciliation",
+        path: "/billing/reconciliation",
+      },
+      {
+        id: "nightAudit",
+        label: "Night Audit",
+        path: "/billing/night-audit",
       },
     ],
   },

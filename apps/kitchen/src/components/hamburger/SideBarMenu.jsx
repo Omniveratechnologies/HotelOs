@@ -49,6 +49,12 @@ const SideBarMenu = () => {
     },
 
     {
+      name: "Add Tables",
+      path: "/add-tables",
+      icon: <FiPlusCircle />,
+    },
+
+    {
       name: "Add Menu",
       path: "/add-menu",
       icon: <FiPlusCircle />,
@@ -63,6 +69,7 @@ const SideBarMenu = () => {
         { name: "Add-ons / Modifiers", path: "/menu/add-ons" },
         { name: "Pricing & Taxes", path: "/menu/pricing-taxes" },
         { name: "Menu Availability", path: "/menu/availability" },
+        { name: "Combinations & Upselling", path: "/menu/upselling" },
       ],
     },
 
@@ -115,7 +122,7 @@ const SideBarMenu = () => {
         { name: "Refunds", path: "/billing/refunds" },
         { name: "KOT History", path: "/billing/kot-history" },
         { name: "Tax & Discounts", path: "/billing/tax-discounts" },
-        { name: "Billing Settings", path: "/billing/setting" },
+        { name: "Billing Settings", path: "/billing/settings" },
       ],
     },
 

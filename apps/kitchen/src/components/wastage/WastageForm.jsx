@@ -1,3 +1,4 @@
+/* oxlint-disable react/set-state-in-effect */
 import { useState, useEffect } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import FormField from "../ui/FormField.jsx";

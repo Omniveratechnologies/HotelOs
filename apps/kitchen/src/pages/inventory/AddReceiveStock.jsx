@@ -13,7 +13,7 @@ import {
   generatePurchaseOrderPDF,
 } from "../../utils/addReceivePurchaseOrderUtils.js";
 
-const AddReceiveStock = ({ onClose }) => {
+const AddReceiveStock = ({ onClose: _onClose }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [navbarSearchTerm, setNavbarSearchTerm] = useState("");
   const [purchaseOrder, setPurchaseOrder] = useState([]);

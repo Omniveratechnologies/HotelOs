@@ -38,10 +38,10 @@ const OrdersTable = ({
     },
 
     {
-      key: "roomNumber",
+      key: "locationLabel",
       label: "Room",
       render: (order) => (
-        <span className="text-gray-300">{order.roomNumber || "-"}</span>
+        <span className="text-gray-300">{order.locationLabel || "-"}</span>
       ),
     },
 
