@@ -38,6 +38,11 @@ const menuItems = [
     icon: <FiMonitor />,
   },
   {
+    name: "Add Tables",
+    path: "/add-tables",
+    icon: <FiPlusCircle />,
+  },
+  {
     name: "Add Menu",
     path: "/add-menu",
     icon: <FiPlusCircle />,
@@ -51,6 +56,7 @@ const menuItems = [
       { name: "Add-ons / Modifiers", path: "/menu/add-ons" },
       { name: "Pricing & Taxes", path: "/menu/pricing-taxes" },
       { name: "Menu Availability", path: "/menu/availability" },
+      { name: "Combinations & Upselling", path: "/menu/upselling" },
     ],
   },
   {
@@ -180,7 +186,7 @@ const menuItems = [
       { name: "Refunds", path: "/billing/refunds" },
       { name: "KOT History", path: "/billing/kot-history" },
       { name: "Tax & Discounts", path: "/billing/tax-discounts" },
-      { name: "Billing Settings", path: "/billing/setting" },
+      { name: "Billing Settings", path: "/billing/settings" },
     ],
   },
   {
@@ -220,7 +226,8 @@ const SideBarMenu = () => {
 
   const renderMenuItem = (menuItem, parentKey = "", level = 0) => {
     const key = parentKey ? `${parentKey}/${menuItem.name}` : menuItem.name;
-    const hasSubmenu = Array.isArray(menuItem.submenu) && menuItem.submenu.length > 0;
+    const hasSubmenu =
+      Array.isArray(menuItem.submenu) && menuItem.submenu.length > 0;
     const isOpen = Boolean(openSubmenus[key]);
 
     const label = (
@@ -233,7 +240,6 @@ const SideBarMenu = () => {
       </div>
     );
 
-    
     if (!hasSubmenu) {
       return (
         <Link
@@ -257,11 +263,7 @@ const SideBarMenu = () => {
           }`}
         >
           {label}
-          {isOpen ? (
-            <FiChevronDown size={16} />
-          ) : (
-            <FiChevronRight size={16} />
-          )}
+          {isOpen ? <FiChevronDown size={16} /> : <FiChevronRight size={16} />}
         </button>
 
         {isOpen && (

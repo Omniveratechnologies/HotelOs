@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import API_BASE_URL from "../config/api.js";
 
 import Navbar from "../components/ui/Navbar.jsx";
-import Sidebar from "../components/hamburger/Sidebar.jsx";
+import Sidebar from "../components/hamburger/SideBar.jsx";
 import DashboardStatus from "../components/dashboard/DashboardStatus.jsx";
 import OrderBoard from "../components/dashboard/OrderBoard.jsx";
 

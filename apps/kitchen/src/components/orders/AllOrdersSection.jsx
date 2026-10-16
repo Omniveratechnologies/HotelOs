@@ -39,7 +39,7 @@ const AllOrdersSection = ({
       required: true,
     },
     {
-      name: "roomNumber",
+      name: "locationLabel",
       label: "Room Number",
       type: "text",
       placeholder: "Enter room number",
@@ -205,7 +205,7 @@ const AllOrdersSection = ({
                 ...order,
                 ...responseData,
                 guestName: data.guestName,
-                roomNumber: data.roomNumber,
+                locationLabel: data.locationLabel,
               }
             : order,
         ),

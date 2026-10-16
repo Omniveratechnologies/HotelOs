@@ -1,10 +1,11 @@
+/* oxlint-disable react/set-state-in-effect */
 import { useState, useEffect } from "react";
 
 import Navbar from "../../components/ui/Navbar.jsx";
 import Sidebar from "../../components/Hamburger/SideBar.jsx";
 import { MdInventory } from "react-icons/md";
 import StatusBadge from "../../components/ui/StatusBadge.jsx";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import API_BASE_URL from "../../config/api.js";
 import PurchaseOrderDetailCard from "../../components/purchaseOrders/PurchaseOrderDetailCard.jsx";
 import Tabs from "../../components/ui/Tabs.jsx";

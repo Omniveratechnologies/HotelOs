@@ -1,0 +1,55 @@
+export const upsellRuleDTO = (r) => ({
+  id: r._id,
+  triggerItemId: r.triggerItemId,
+  type: r.type,
+  recommendedItems: r.recommendedItems,
+  priority: r.priority,
+  status: r.status,
+  bundlePrice: r.bundlePrice,
+  discountType: r.discountType,
+  discountValue: r.discountValue,
+  minSelection: r.minSelection,
+  maxSelection: r.maxSelection,
+});
+export const postOrderOfferDTO = (o) => ({
+  id: o._id,
+  triggerTiming: o.triggerTiming,
+  offerType: o.offerType,
+  validForMinutes: o.validForMinutes,
+  offerItemId: o.offerItemId,
+  offerPrice: o.offerPrice,
+  displayPriority: o.displayPriority,
+  status: o.status,
+});
+export const fastItemDTO = (f) => ({
+  id: f._id,
+  foodItemId: f.foodItemId,
+  prepTimeMinutes: f.prepTimeMinutes,
+  offerPrice: f.offerPrice,
+  displayPriority: f.displayPriority,
+  status: f.status,
+});
+export const smartRuleDTO = (s) => ({
+  id: s._id,
+  category: s.category,
+  itemId: s.itemId,
+  minOrderValue: s.minOrderValue,
+  timeOfDay: s.timeOfDay,
+  dayOfWeek: s.dayOfWeek,
+  tableType: s.tableType,
+  showIfNotOrderedBefore: s.showIfNotOrderedBefore,
+  onlyIfInStock: s.onlyIfInStock,
+  maxPrepTimeMinutes: s.maxPrepTimeMinutes,
+  weatherEvent: s.weatherEvent,
+  limitFrequency: s.limitFrequency,
+  maxPerOrder: s.maxPerOrder,
+  status: s.status,
+});
+export const upsellEventDTO = (e) => ({
+  id: e._id,
+  ruleId: e.ruleId,
+  postOrderOfferId: e.postOrderOfferId,
+  eventType: e.eventType,
+  revenue: e.revenue,
+  hotelId: e.hotelId,
+});

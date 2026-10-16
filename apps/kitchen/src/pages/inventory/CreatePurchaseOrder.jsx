@@ -12,8 +12,6 @@ const CreatePurchaseOrder = () => {
 
   const isEditMode = Boolean(id);
 
-  const title = isEditMode ? "Edit Purchase Order" : "Create Purchase Order";
-
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 

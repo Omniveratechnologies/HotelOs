@@ -24,6 +24,11 @@ import ratePlanRoutes from "#/modules/rate-plans/index.js";
 import roomTypeRoutes from "#/modules/room-types/index.js";
 import inventoryRoutes from "#/modules/inventory/index.js";
 import reportRoutes from "#/modules/reports/index.js";
+import tableRoutes from "#/modules/tables/routes/table.routes.js";
+import menuRoutes from "#/modules/menu/routes/menu.routes.js";
+import billingRoutes from "#/modules/billing/routes/billing.routes.js";
+import upsellingRoutes from "#/modules/upselling/routes/upselling.routes.js";
+import pmsIntegrationRoutes from "#/modules/integrations/routes/pmsIntegration.routes.js";
 import corporateCompanyRoutes from "#/modules/corporate-companies/index.js";
 import keyCardRoutes from "./modules/key-cards/routes/keyCard.routes.js";
 import kioskDeviceRoutes from "./modules/kiosks/routes/kioskDevice.routes.js";
@@ -39,8 +44,10 @@ app.use(
   }),
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+app.use("/api/v1/tables", tableRoutes);
 
 app.get("/api/v1/health", (req, res) => {
   res.json({
@@ -61,6 +68,7 @@ app.use("/api/v1/food-items", foodItemRoutes);
 app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/service-requests", serviceRequestRoutes);
 app.use("/api/kitchen/orders", kitchenOrdersRouter);
+
 app.use("/api/v1/channel-manager", channelManagerRoutes);
 app.use("/api/v1/check-in", checkInRouter);
 app.use("/api/v1/public/check-in", publicCheckInRouter);
@@ -71,6 +79,11 @@ app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/corporate-companies", corporateCompanyRoutes);
 app.use("/api/v1/key-cards", keyCardRoutes);
 app.use("/api/v1/kiosks", kioskDeviceRoutes);
+
+app.use("/api/v1/menu", menuRoutes);
+app.use("/api/v1/upselling", upsellingRoutes);
+app.use("/api/v1/billing", billingRoutes);
+app.use("/api/v1/integrations/pms", pmsIntegrationRoutes);
 
 app.use((err, req, res, _next) => {
   logger.error(err, "Unhandled application error");

@@ -1,3 +1,4 @@
+/* oxlint-disable react/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdFastfood } from "react-icons/md";
@@ -9,7 +10,6 @@ import StatusBadge from "../../components/ui/StatusBadge.jsx";
 import EditButton from "../../components/ui/button/EditButton.jsx";
 import DeleteButton from "../../components/ui/button/DeleteButton.jsx";
 import SearchBar from "../../components/ui/SearchBar.jsx";
-import { MdInventory } from "react-icons/md";
 import API_BASE_URL from "../../config/api.js";
 import { duplicateRecipe } from "../../utils/recipeUtils.js";
 import { FiCopy, FiPlus } from "react-icons/fi";
