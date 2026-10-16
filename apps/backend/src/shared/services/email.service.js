@@ -194,6 +194,88 @@ export const sendGuestCredentialsEmail = async ({
 };
 
 // =====================================================
+// GENERIC CHECK-IN EMAIL (link / correction / reject / approve)
+// =====================================================
+
+/**
+ * Sends a check-in notification email (link, correction, approval, rejection).
+ *
+ * @param {Object} input
+ * @param {string} input.email
+ * @param {string} input.name - Guest name.
+ * @param {string} input.hotelName
+ * @param {string} input.subject
+ * @param {string} input.heading
+ * @param {string} input.body - Plain-text-ish body (rendered as a paragraph).
+ * @param {string|null} [input.actionUrl] - CTA link.
+ * @param {string} [input.actionLabel] - CTA button label.
+ */
+export const sendCheckInEmail = async ({
+  email,
+  name,
+  hotelName,
+  subject,
+  heading,
+  body,
+  actionUrl,
+  actionLabel,
+}) => {
+  const html = `
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+      "
+    >
+      <h2>${heading}</h2>
+
+      <p>Hello ${name},</p>
+
+      <p>${body}</p>
+
+      ${
+        actionUrl
+          ? `<p>
+        <a
+          href="${actionUrl}"
+          style="
+            display: inline-block;
+            padding: 12px 20px;
+            background: #0f1f3d;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+          "
+        >
+          ${actionLabel || "Open"}
+        </a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 12px;">
+        If the button does not work, copy this link into your browser:<br />
+        ${actionUrl}
+      </p>`
+          : ""
+      }
+
+      <p>If you need help, please contact the reception desk.</p>
+
+      <br />
+
+      <p>${hotelName} Team</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: `${subject} - ${hotelName}`,
+    html,
+  });
+};
+
+// =====================================================
 // PASSWORD RESET EMAIL
 // =====================================================
 

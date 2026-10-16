@@ -84,6 +84,14 @@ const hotelSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+
+    // Default tax applied to reservations (whole percent, e.g. 12). Can be
+    // overridden per reservation at booking time.
+    taxPercent: {
+      type: Number,
+      default: 12,
+      min: 0,
+    },
   },
   {
     timestamps: true,

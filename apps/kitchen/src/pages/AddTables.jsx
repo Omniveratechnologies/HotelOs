@@ -19,7 +19,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import Navbar from "../components/ui/Navbar.jsx";
-import Sidebar from "../components/Hamburger/SideBar.jsx";
+import Sidebar from "../components/hamburger/SideBar.jsx";
 import StatusCard from "../components/ui/StatusCard.jsx";
 import {
   createTable,

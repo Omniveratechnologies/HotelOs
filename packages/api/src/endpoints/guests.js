@@ -200,3 +200,21 @@ export const deleteGuestDocument = async (guestId, docId) => {
 export const deleteGuest = async (bookingId) => {
   return api.delete(`/api/v1/bookings/${bookingId}`, { auth: true });
 };
+
+/**
+ * Soft deletes a guest profile (isActive = false).
+ * @param {string} guestId
+ * @returns {Promise<object>}
+ */
+export const softDeleteGuest = async (guestId) => {
+  return api.delete(`/api/v1/guests/${guestId}`, { auth: true });
+};
+
+/**
+ * Reactivates / restores a soft-deleted guest profile (isActive = true).
+ * @param {string} guestId
+ * @returns {Promise<object>}
+ */
+export const restoreGuest = async (guestId) => {
+  return api.patch(`/api/v1/guests/${guestId}/restore`, {}, { auth: true });
+};

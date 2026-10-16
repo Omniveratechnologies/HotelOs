@@ -51,6 +51,160 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "reservations/new",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/NewReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/:id/edit",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/NewReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/phone/new",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/PhoneReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/phone/:id/edit",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/PhoneReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/website/new",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/WebsiteReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/website/:id/edit",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/WebsiteReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/corporate/new",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/CorporateReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/corporate/:id/edit",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/CorporateReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/group/new",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/GroupReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/group/:id/edit",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/GroupReservationPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/repeat/new",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/RepeatGuestPage.jsx"),
+                ),
+              },
+              {
+                path: "reservations/repeat/:id/edit",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/reservations/pages/RepeatGuestPage.jsx"),
+                ),
+              },
+              {
+                path: "check-in/:token",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/check-in/pages/SelfCheckInPage.jsx"),
+                ),
+              },
+              {
+                path: "front-desk/check-in",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/front-desk/pages/FrontDeskCheckInPage.jsx"),
+                ),
+              },
+              {
+                path: "front-desk/express-check-in",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/front-desk/pages/ExpressCheckInPage.jsx"),
+                ),
+              },
+              {
+                path: "front-desk/digital-check-in-list",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/check-in/pages/DigitalCheckInDashboardPage.jsx"),
+                ),
+              },
+              {
+                path: "front-desk/check-out",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/front-desk/pages/GuestCheckOutPage.jsx"),
+                ),
+              },
+              {
+                path: "front-desk/registration-cards",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/front-desk/pages/GuestRegistrationCardPage.jsx"),
+                ),
+              },
+              {
+                path: "front-desk/key-cards",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/front-desk/pages/KeyCardAssignmentPage.jsx"),
+                ),
+              },
+              {
+                path: "manage/corporate-companies",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/management/pages/CorporateCompaniesPage.jsx"),
+                ),
+              },
+              {
+                path: "manage/key-cards",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/management/pages/KeyCardsInventoryPage.jsx"),
+                ),
+              },
+              {
+                path: "manage/kiosk-devices",
+                lazy: lazyPage(
+                  () =>
+                    import("../../features/management/pages/KioskDevicesPage.jsx"),
+                ),
+              },
+              {
                 path: "rooms",
                 lazy: lazyPage(
                   () => import("../../features/rooms/pages/RoomsPage.jsx"),
@@ -94,6 +248,12 @@ export const router = createBrowserRouter([
                 lazy: lazyPage(
                   () =>
                     import("../../features/room-types/pages/RoomTypesPage.jsx"),
+                ),
+              },
+              {
+                path: "dev/ui-scratch",
+                lazy: lazyPage(
+                  () => import("../../features/dev/UiScratchPage.jsx"),
                 ),
               },
               {

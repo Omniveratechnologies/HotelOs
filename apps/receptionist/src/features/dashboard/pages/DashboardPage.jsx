@@ -9,6 +9,8 @@ import FoodOrdersList from "../components/FoodOrdersList.jsx";
 import RecentActivity from "../components/RecentActivity.jsx";
 import { Header } from "@hotelos/ui/components/Header";
 
+import { useNavigate } from "react-router";
+
 function getGreetingInfo() {
   const now = new Date();
   const currentHour = now.getHours();
@@ -32,11 +34,13 @@ function getGreetingInfo() {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const {
     rooms,
     serviceRequests,
     foodOrders,
     updateRoomStatus,
+    updateRoom,
     acknowledgeRequest,
     completeRequest,
     guests,
@@ -58,17 +62,17 @@ export default function Dashboard() {
         pageTitle={`${greeting}, ${firstName} 👋`}
         pageDescription={`${date} • ${hotelName}`}
       >
-        {/* TODO: Add search and notification implementation */}
-        <button className="bg-brand-900 hover:bg-brand-800 rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors">
+        <button
+          onClick={() => navigate("/reservations/new")}
+          className="bg-brand-900 hover:bg-brand-800 cursor-pointer rounded-xl px-4 py-2 text-sm font-medium text-white transition-colors"
+        >
           + New Booking
         </button>
-        <button className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+        <button className="cursor-pointer rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
           Export Report
         </button>
       </Header>
       <div className="space-y-6 p-6">
-        {/* <DashboardHeader firstName={firstName} hotelName={hotelName} /> */}
-
         <StatCards
           rooms={rooms}
           serviceRequests={serviceRequests}
@@ -81,6 +85,8 @@ export default function Dashboard() {
           <div className="space-y-4">
             <ServiceRequestsList
               serviceRequests={serviceRequests}
+              rooms={rooms}
+              guests={guests}
               acknowledgeRequest={acknowledgeRequest}
               completeRequest={completeRequest}
             />
@@ -97,6 +103,7 @@ export default function Dashboard() {
             room={selectedRoom}
             onClose={() => setSelectedRoom(null)}
             updateRoomStatus={updateRoomStatus}
+            updateRoom={updateRoom}
             guests={guests}
           />
         )}

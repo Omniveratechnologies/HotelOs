@@ -87,7 +87,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
               onChange={handleChange}
               placeholder="Enter item name"
               required
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -102,7 +102,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
               value={formData.shortDescription}
               onChange={handleChange}
               placeholder="Enter short description"
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -117,7 +117,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
               onChange={handleChange}
               rows={4}
               placeholder="Describe the menu item..."
-              className="w-full resize-none rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full resize-none rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -130,7 +130,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             >
               <option value="">Select category</option>
               <option value="Starters">Starters</option>
@@ -162,7 +162,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
               placeholder="₹ 0.00"
               min="0"
               required
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -178,7 +178,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
               onChange={handleChange}
               placeholder="Enter stock"
               min="0"
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
         </div>
@@ -198,7 +198,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
             name="availability"
             value={formData.availability}
             onChange={handleChange}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
           >
             <option value="Always">Always</option>
             <option value="Breakfast Only">Breakfast Only</option>
@@ -298,7 +298,7 @@ const Checkbox = ({ name, checked, onChange, label }) => {
         name={name}
         checked={checked}
         onChange={onChange}
-        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+        className="focus:ring-white-500 h-4 w-4 rounded border-slate-300 text-emerald-600"
       />
 
       <span className="text-sm text-slate-700 dark:text-slate-300">

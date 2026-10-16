@@ -1,9 +1,15 @@
 import "dotenv/config";
 import mongoose from "mongoose";
+import dns from "node:dns";
+
+// Atlas SRV lookups need public DNS (matches config/db.js).
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import FoodItem from "#/modules/food-items/models/FoodItem.js";
 import logger from "#/utils/logger.js";
 
@@ -69,7 +75,7 @@ const seed = async () => {
 
   const activeBooking = await Booking.findOne({
     guestId: guest._id,
-    status: { $in: ["reserved", "checked-in"] },
+    status: { $in: ACTIVE_STAY_STATUSES },
   });
 
   if (!activeBooking) {

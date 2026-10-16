@@ -11,7 +11,8 @@ export const serviceRequestDTO = (r) => ({
 
 export const staffServiceRequestDTO = (req, room, guest) => ({
   id: req._id,
-  roomNumber: room ? room.roomNumber : req.roomId || null,
+  roomId: req.roomId || null,
+  roomNumber: room?.roomNumber ? String(room.roomNumber) : null,
   guestName: guest?.name || "",
   type: req.type,
   description: req.description,

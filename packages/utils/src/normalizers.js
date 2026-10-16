@@ -3,7 +3,7 @@ import {
   REQUEST_STATUS_MAP,
   REQUEST_TYPE_MAP,
 } from "./constants.js";
-import { formatTime } from "./formatters.js";
+import { formatTime, toLocalDateString } from "./formatters.js";
 
 /**
  * Normalizes a raw backend room DTO into the consistent shape expected by the UI.
@@ -22,8 +22,8 @@ export const normalizeRoom = (room) => {
     status: room.status,
     rate: room.rate,
     guest: room.currentGuest || null,
-    checkIn: room.checkIn ? String(room.checkIn).split("T")[0] : null,
-    checkOut: room.checkOut ? String(room.checkOut).split("T")[0] : null,
+    checkIn: toLocalDateString(room.checkIn),
+    checkOut: toLocalDateString(room.checkOut),
     roomCode: room.roomCode || null,
     channelSyncStatus: room.channelSyncStatus || "completed",
     channelVerified: room.channelVerified !== false,
@@ -43,15 +43,21 @@ export const normalizeGuest = (g) => {
     _id: g._id || g.id,
     guestId: g.guestId,
     name: g.name,
+    username: g.username || "",
     email: g.email,
     phone: g.phone,
     address: g.address,
+    nationality: g.nationality || "",
+    isActive: g.isActive !== false,
+    totalStays:
+      typeof g.totalStays === "number" ? g.totalStays : g.stays?.length || 0,
+    stays: g.stays || [],
     idType: g.idType,
     idNumber: g.idNumber,
     room: g.room ? String(g.room.roomNumber || g.room) : "",
     roomId: g.roomId,
-    checkIn: g.checkIn ? String(g.checkIn).split("T")[0] : null,
-    checkOut: g.checkOut ? String(g.checkOut).split("T")[0] : null,
+    checkIn: toLocalDateString(g.checkIn),
+    checkOut: toLocalDateString(g.checkOut),
     nights: g.nights ?? null,
     status: g.status,
     documents: g.documents || [],
@@ -91,10 +97,18 @@ export const normalizeFoodOrder = (order) => {
  */
 export const normalizeRequest = (request) => {
   if (!request) return null;
+  // If roomNumber looks like a 24-character hexadecimal MongoDB ObjectId, it is not a valid human-readable room number
+  const isObjectId =
+    typeof request.roomNumber === "string" &&
+    /^[a-f\d]{24}$/i.test(request.roomNumber);
+  const cleanRoom = isObjectId ? null : request.roomNumber || null;
+
   return {
     id: request.id || request._id,
     _id: request._id || request.id,
-    room: request.roomNumber || null,
+    roomId: request.roomId || (isObjectId ? request.roomNumber : null),
+    room: cleanRoom,
+    guestName: request.guestName || "",
     type: REQUEST_TYPE_MAP[request.type] || request.type,
     rawType: request.type,
     detail: request.description || "",

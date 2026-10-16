@@ -16,6 +16,10 @@ import foodItemRoutes from "#/modules/food-items/index.js";
 import { orderRouter, kitchenOrdersRouter } from "#/modules/orders/index.js";
 import serviceRequestRoutes from "#/modules/service-requests/index.js";
 import channelManagerRoutes from "#/modules/channel-manager/index.js";
+import {
+  checkInRouter,
+  publicCheckInRouter,
+} from "#/modules/check-ins/index.js";
 import ratePlanRoutes from "#/modules/rate-plans/index.js";
 import roomTypeRoutes from "#/modules/room-types/index.js";
 import inventoryRoutes from "#/modules/inventory/index.js";
@@ -25,6 +29,9 @@ import menuRoutes from "#/modules/menu/routes/menu.routes.js";
 import billingRoutes from "#/modules/billing/routes/billing.routes.js";
 import upsellingRoutes from "#/modules/upselling/routes/upselling.routes.js";
 import pmsIntegrationRoutes from "#/modules/integrations/routes/pmsIntegration.routes.js";
+import corporateCompanyRoutes from "#/modules/corporate-companies/index.js";
+import keyCardRoutes from "./modules/key-cards/routes/keyCard.routes.js";
+import kioskDeviceRoutes from "./modules/kiosks/routes/kioskDevice.routes.js";
 
 const app = express();
 
@@ -63,10 +70,15 @@ app.use("/api/v1/service-requests", serviceRequestRoutes);
 app.use("/api/kitchen/orders", kitchenOrdersRouter);
 
 app.use("/api/v1/channel-manager", channelManagerRoutes);
+app.use("/api/v1/check-in", checkInRouter);
+app.use("/api/v1/public/check-in", publicCheckInRouter);
 app.use("/api/v1/rate-plans", ratePlanRoutes);
 app.use("/api/v1/room-types", roomTypeRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/corporate-companies", corporateCompanyRoutes);
+app.use("/api/v1/key-cards", keyCardRoutes);
+app.use("/api/v1/kiosks", kioskDeviceRoutes);
 
 app.use("/api/v1/menu", menuRoutes);
 app.use("/api/v1/upselling", upsellingRoutes);

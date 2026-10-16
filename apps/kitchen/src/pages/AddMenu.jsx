@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Navbar from "../components/ui/Navbar.jsx";
-import Sidebar from "../components/Hamburger/SideBar.jsx";
+import Sidebar from "../components/hamburger/SideBar.jsx";
 import MenuForm from "../components/menu/MenuForm.jsx";
 
 const AddMenu = ({ onClose }) => {
@@ -16,8 +16,8 @@ const AddMenu = ({ onClose }) => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar

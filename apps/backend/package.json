@@ -9,7 +9,10 @@
   },
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed": "node src/seed/superAdmin.seed.js",
+    "seed:guest": "node src/seed/testGuest.seed.js",
+    "seed:reservations": "node src/seed/reservations.seed.js"
   },
   "keywords": [
     "hospitalos",
