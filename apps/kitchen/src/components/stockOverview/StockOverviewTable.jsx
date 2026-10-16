@@ -142,45 +142,30 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
       });
     }
 
-    /*
-     * Supplier filter
-     */
     if (filterValues.supplier !== "ALL") {
       filteredItems = filteredItems.filter(
         (item) => item.supplierName === filterValues.supplier,
       );
     }
 
-    /*
-     * Status filter
-     */
     if (filterValues.status !== "ALL") {
       filteredItems = filteredItems.filter(
         (item) => item.status === filterValues.status,
       );
     }
 
-    /*
-     * Category filter
-     */
     if (filterValues.category !== "ALL") {
       filteredItems = filteredItems.filter(
         (item) => item.category === filterValues.category,
       );
     }
 
-    /*
-     * Category tab filter
-     */
     if (activeCategory && activeCategory !== "ALL") {
       filteredItems = filteredItems.filter(
         (item) => item.category === activeCategory,
       );
     }
 
-    /*
-     * Sorting
-     */
     if (filterValues.sortBy === "name") {
       filteredItems = filteredItems.toSorted((a, b) =>
         (a.name || "").localeCompare(b.name || ""),
@@ -211,9 +196,6 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
       });
     }
 
-    /*
-     * Pagination
-     */
     const totalRecords = filteredItems.length;
 
     const totalPages = Math.max(Math.ceil(totalRecords / limit), 1);
@@ -243,12 +225,6 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
     page,
   ]);
 
-  /*
-   * Load inventory data.
-   *
-   * fetchItems() only returns data.
-   * State is updated here after the async operation completes.
-   */
   useEffect(() => {
     const loadItems = async () => {
       try {
@@ -276,17 +252,11 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
     loadItems();
   }, [fetchItems, refreshKey, reloadKey, onDataLoaded]);
 
-  /*
-   * Search change
-   */
   const handleSearchChange = (value) => {
     setPage(1);
     setSearchTerm(value);
   };
 
-  /*
-   * Filter change
-   */
   const handleFilterChange = (name, value) => {
     setPage(1);
 
@@ -296,9 +266,6 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
     }));
   };
 
-  /*
-   * Delete item
-   */
   const handleDelete = async (row) => {
     const confirmed = window.confirm(`Delete "${row.name}" from inventory?`);
 
@@ -320,9 +287,6 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
         throw new Error(data.message || "Failed to delete item");
       }
 
-      /*
-       * Trigger the loading effect again.
-       */
       setReloadKey((previous) => previous + 1);
     } catch (error) {
       console.error("Delete item error:", error);
