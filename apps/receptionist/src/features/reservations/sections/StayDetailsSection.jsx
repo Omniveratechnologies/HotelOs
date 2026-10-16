@@ -7,30 +7,24 @@ import {
   BOOKING_SOURCE_OPTIONS,
   GUEST_TYPE_OPTIONS,
 } from "./options.js";
+import { RoomRequirementsMatrix } from "../components/RoomRequirementsMatrix.jsx";
 
 const selectClass =
   "text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm transition outline-none focus:ring-2";
 
 const NO_ERRORS = {};
+const EMPTY_ARRAY = Object.freeze([]);
 
 /**
  * Wizard step 1 — dates, nights, occupancy, source, purpose and requests.
  * Fully controlled by the parent form state.
- *
- * @param {Object} props
- * @param {{ checkIn: string, checkOut: string, rooms: number, adults: number,
- *   children: number, infants: number, purpose: string, source: string,
- *   guestType: string, specialRequests: string }} props.value
- * @param {(field: string, value: any) => void} props.onChange
- * @param {Record<string, string>} [props.errors]
- * @param {boolean} [props.open]
- * @param {string} [props.summary] - One-line summary when collapsed.
- * @param {() => void} [props.onEdit]
- * @returns {React.ReactElement}
  */
 export function StayDetailsSection({
   value,
   onChange,
+  roomRequirements = EMPTY_ARRAY,
+  onRequirementsChange,
+  roomTypes = EMPTY_ARRAY,
   errors = NO_ERRORS,
   open = true,
   summary,
@@ -176,6 +170,20 @@ export function StayDetailsSection({
             onChange={(v) => onChange("infants", v)}
           />
         </div>
+
+        {(value.rooms > 1 ||
+          (roomRequirements && roomRequirements.length > 0)) && (
+          <div className="border-brand-100 bg-brand-50/20 col-span-12 rounded-xl border p-4">
+            <RoomRequirementsMatrix
+              roomRequirements={roomRequirements}
+              onChange={onRequirementsChange}
+              roomTypes={roomTypes}
+              targetRooms={value.rooms}
+              title="Room Allocation Matrix"
+              compact={true}
+            />
+          </div>
+        )}
 
         <div className="col-span-12 sm:col-span-4">
           <label
