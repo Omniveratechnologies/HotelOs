@@ -263,6 +263,83 @@ export const router = createBrowserRouter([
                     import("../../features/settings/pages/SettingsPage.jsx"),
                 ),
               },
+              {
+                path: "billing/folio",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "folio" }),
+              },
+              {
+                path: "billing/payments",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "payments" }),
+              },
+              {
+                path: "billing/invoices",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "invoices" }),
+              },
+              {
+                path: "billing/taxes-charges",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "taxes-charges" }),
+              },
+              {
+                path: "billing/corporate",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "corporate" }),
+              },
+              {
+                path: "billing/receivables",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "receivables" }),
+              },
+              {
+                path: "billing/payables",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "payables" }),
+              },
+              {
+                path: "billing/expenses",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "expenses" }),
+              },
+              {
+                path: "billing/cashier",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "cashier" }),
+              },
+              {
+                path: "billing/reconciliation",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "reconciliation" }),
+              },
+              {
+                path: "billing/night-audit",
+                lazy: lazyPage(
+                  () => import("../../features/billing/pages/BillingRoute.jsx"),
+                ),
+                loader: () => ({ section: "night-audit" }),
+              },
             ],
           },
         ],

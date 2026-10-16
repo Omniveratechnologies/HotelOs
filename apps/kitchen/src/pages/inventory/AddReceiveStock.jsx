@@ -13,7 +13,7 @@ import {
   generatePurchaseOrderPDF,
 } from "../../utils/addReceivePurchaseOrderUtils.js";
 
-const AddReceiveStock = ({ onClose }) => {
+const AddReceiveStock = ({ onClose: _onClose }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [navbarSearchTerm, setNavbarSearchTerm] = useState("");
   const [purchaseOrder, setPurchaseOrder] = useState([]);
@@ -40,8 +40,8 @@ const AddReceiveStock = ({ onClose }) => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar

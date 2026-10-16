@@ -1,10 +1,11 @@
+/* oxlint-disable react/set-state-in-effect */
 import { useState, useEffect } from "react";
 
 import Navbar from "../../components/ui/Navbar.jsx";
 import Sidebar from "../../components/Hamburger/SideBar.jsx";
 import { MdInventory } from "react-icons/md";
 import StatusBadge from "../../components/ui/StatusBadge.jsx";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import API_BASE_URL from "../../config/api.js";
 import PurchaseOrderDetailCard from "../../components/purchaseOrders/PurchaseOrderDetailCard.jsx";
 import Tabs from "../../components/ui/Tabs.jsx";
@@ -194,8 +195,8 @@ const PurchaseOrderDetail = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar

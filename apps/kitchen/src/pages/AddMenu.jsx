@@ -1,43 +1,23 @@
-import { useEffect, useState } from "react";
-
-import API_BASE_URL from "../config/api.js";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import Navbar from "../components/ui/Navbar.jsx";
-import Sidebar from "../components/Hamburger/SideBar.jsx";
+import Sidebar from "../components/hamburger/SideBar.jsx";
 import MenuForm from "../components/menu/MenuForm.jsx";
 
 const AddMenu = ({ onClose }) => {
-  const [orders, setOrders] = useState([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [navbarSearchTerm, setNavbarSearchTerm] = useState("");
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/kitchen/orders`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch orders");
-        }
-
-        const data = await response.json();
-
-        setOrders(data);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-      }
-    };
-
-    fetchOrders();
-  }, []);
+  const navigate = useNavigate();
+  const close = onClose || (() => navigate("/menu/manage-menu"));
 
   return (
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar
@@ -50,7 +30,7 @@ const AddMenu = ({ onClose }) => {
         />
 
         <main className="mt-3 px-4">
-          <MenuForm onCancel={onClose} />
+          <MenuForm onCancel={close} />
         </main>
       </div>
     </div>

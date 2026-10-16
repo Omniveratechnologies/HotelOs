@@ -1,3 +1,4 @@
+/* oxlint-disable react/set-state-in-effect */
 import { useState, useEffect } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import FormField from "../ui/FormField.jsx";
@@ -87,7 +88,7 @@ const WastageForm = ({ editingRecord, onSaved, onCancelEdit }) => {
     try {
       const url = isEditing
         ? `${API_BASE_URL}/inventory/wastage/${editingRecord._id}`
-        : `${API_BASE_URL}/inventory`;
+        : `${API_BASE_URL}/inventory/wastage`;
       const method = isEditing ? "PUT" : "POST";
 
       const response = await fetch(url, {

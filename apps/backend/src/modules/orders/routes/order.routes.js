@@ -7,6 +7,10 @@ import {
   getHotelOrders,
   createDeskOrder,
   updateHotelOrderStatus,
+  createTableOrder,
+  verifyTableOrderPayment,
+  markPaymentFailed,
+  getPublicOrder,
 } from "../controllers/order.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
@@ -40,5 +44,8 @@ router.post("/", authenticate, authorize("GUEST"), createOrder);
 router.post("/verify-payment", authenticate, authorize("GUEST"), verifyPayment);
 router.get("/", authenticate, authorize("GUEST"), getMyOrders);
 router.get("/:id", authenticate, authorize("GUEST"), getOrderById);
-
+router.post("/table-order", createTableOrder);
+router.post("/table-order/verify-payment", verifyTableOrderPayment);
+router.get("/table-order/:id", getPublicOrder);
+router.post("/table-order/payment-failed", markPaymentFailed);
 export default router;

@@ -29,6 +29,8 @@ const orderItemSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+    addons: { type: [{ name: String, price: Number }], default: [] },
+    specialInstructions: { type: String, default: null },
   },
   { _id: false },
 );
@@ -38,7 +40,7 @@ const orderSchema = new mongoose.Schema(
     guestId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
     },
 
     hotelId: {
@@ -84,6 +86,21 @@ const orderSchema = new mongoose.Schema(
       enum: ["PENDING", "PAID", "FAILED"],
       default: "PENDING",
     },
+
+    orderType: {
+      type: String,
+      enum: ["DINE_IN", "TAKEAWAY", "DELIVERY", "ROOM_SERVICE"],
+      default: "ROOM_SERVICE", // keeps your existing Guest Dashboard orders unaffected
+    },
+    tableId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Table",
+      default: null,
+    },
+    couponCode: { type: String, default: null },
+    discount: { type: Number, default: 0 },
+    gst: { type: Number, default: 0 },
+    notes: { type: String, default: null },
 
     status: {
       type: String,

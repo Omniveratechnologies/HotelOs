@@ -1,0 +1,11 @@
+html {
+  background: #fdfbf7;
+}
+#root {
+  min-height: 100svh;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}

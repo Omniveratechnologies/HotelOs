@@ -5,7 +5,12 @@ const serviceRequestSchema = new mongoose.Schema(
     guestId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
+    },
+    tableId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Table",
+      default: null,
     },
     hotelId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -30,6 +35,11 @@ const serviceRequestSchema = new mongoose.Schema(
         "WAKEUP_CALL",
         "ROOM_CONTROL",
         "FEEDBACK",
+        "CALL_WAITER",
+        "REQUEST_WATER",
+        "REQUEST_CUTLERY",
+        "REQUEST_BILL",
+        "OTHER",
       ],
       required: true,
     },

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import API_BASE_URL from "../../config/api.js";
+import { createMenuItem } from "../../services/menu.js";
 
-const MenuForm = ({ onCancel }) => {
+const MenuForm = ({ onCancel = () => window.history.back() }) => {
   const [formData, setFormData] = useState({
     name: "",
     shortDescription: "",
@@ -32,33 +32,37 @@ const MenuForm = ({ onCancel }) => {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/food-items`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          price: Number(formData.price),
-          category: formData.category,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to create menu item");
+      let image = "";
+      if (formData.image) {
+        if (formData.image.size > 2 * 1024 * 1024)
+          throw new Error("Image must be smaller than 2MB");
+        image = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(formData.image);
+        });
       }
 
-      console.log("Menu item created:", data);
+      await createMenuItem({
+        name: formData.name,
+        description: formData.description || formData.shortDescription,
+        price: Number(formData.price),
+        category: formData.category,
+        image,
+        stock: Number(formData.stock || 0),
+        availability: formData.availability,
+        isVeg: formData.isVeg,
+        isSpicy: formData.isSpicy,
+        isChefSpecial: formData.isChefSpecial,
+        isRoomServiceAvailable: formData.isRoomServiceAvailable,
+        isAvailable: formData.isAvailable,
+      });
 
       alert("Menu item added successfully!");
 
       onCancel();
     } catch (error) {
-      console.error("Error adding menu item:", error);
       alert(error.message || "Failed to add menu item");
     }
   };
@@ -83,7 +87,7 @@ const MenuForm = ({ onCancel }) => {
               onChange={handleChange}
               placeholder="Enter item name"
               required
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -98,7 +102,7 @@ const MenuForm = ({ onCancel }) => {
               value={formData.shortDescription}
               onChange={handleChange}
               placeholder="Enter short description"
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -113,7 +117,7 @@ const MenuForm = ({ onCancel }) => {
               onChange={handleChange}
               rows={4}
               placeholder="Describe the menu item..."
-              className="w-full resize-none rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full resize-none rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -126,7 +130,7 @@ const MenuForm = ({ onCancel }) => {
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             >
               <option value="">Select category</option>
               <option value="Starters">Starters</option>
@@ -158,7 +162,7 @@ const MenuForm = ({ onCancel }) => {
               placeholder="₹ 0.00"
               min="0"
               required
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
 
@@ -174,7 +178,7 @@ const MenuForm = ({ onCancel }) => {
               onChange={handleChange}
               placeholder="Enter stock"
               min="0"
-              className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+              className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
             />
           </div>
         </div>
@@ -194,7 +198,7 @@ const MenuForm = ({ onCancel }) => {
             name="availability"
             value={formData.availability}
             onChange={handleChange}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+            className="focus:border-white-500 focus:ring-white-500/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm transition outline-none focus:ring-2 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
           >
             <option value="Always">Always</option>
             <option value="Breakfast Only">Breakfast Only</option>
@@ -277,7 +281,7 @@ const MenuForm = ({ onCancel }) => {
 
         <button
           type="submit"
-          className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white-700"
+          className="hover:bg-white-700 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition"
         >
           Add Item
         </button>
@@ -294,7 +298,7 @@ const Checkbox = ({ name, checked, onChange, label }) => {
         name={name}
         checked={checked}
         onChange={onChange}
-        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+        className="focus:ring-white-500 h-4 w-4 rounded border-slate-300 text-emerald-600"
       />
 
       <span className="text-sm text-slate-700 dark:text-slate-300">
