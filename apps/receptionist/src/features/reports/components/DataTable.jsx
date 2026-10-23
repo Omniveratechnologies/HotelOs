@@ -76,9 +76,9 @@ export const RoomTypeTable = ({ roomsByType }) => (
         render: (row) => formatCurrency(row.avgRate),
       },
       {
-        key: "currentRateTotal",
-        header: "Current Rate Total",
-        render: (row) => formatCurrency(row.currentRateTotal),
+        key: "revenue",
+        header: "Revenue",
+        render: (row) => formatCurrency(row.revenue),
       },
     ]}
     data={roomsByType}

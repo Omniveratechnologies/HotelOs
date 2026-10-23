@@ -101,20 +101,6 @@ export const router = createBrowserRouter([
                     import("../../features/settings/pages/SettingsPage.jsx"),
                 ),
               },
-              {
-                path: "/intelligence/:module/:dashboard",
-                lazy: lazyPage(
-                  () =>
-                    import("../../features/intelligence/pages/IntelligenceDashboardPage.jsx"),
-                ),
-              },
-              {
-                path: "/intelligence/reports",
-                lazy: lazyPage(
-                  () =>
-                    import("../../features/intelligence/pages/IntelligenceReportsPage.jsx"),
-                ),
-              },
             ],
           },
         ],

@@ -48,28 +48,32 @@ export function useReports(options = {}) {
 
       // Booking metrics
       checkedIn: bookings.checkedIn,
-      arrivalsToday: bookings.arrivals,
-      departuresToday: bookings.departures,
+      arrivalsToday: bookings.arrivalsToday,
+      departuresToday: bookings.departuresToday,
       totalBookings: bookings.totalBookings,
       bookingsInPeriod: bookings.bookingsInPeriod,
       avgStayDuration: bookings.avgStayDuration,
       bookingSources: bookings.bookingSources,
       recentBookings: bookings.recentBookings,
-      checkedInGuests: bookings.checkedInGuests,
-      reservedGuests: bookings.arrivalGuests,
-      checkedOutGuests: bookings.departureGuests,
+      checkedInGuests: bookings.recentBookings
+        .filter((b) => b.status === "checked-in")
+        .map((b) => ({ name: b.guestName })),
+      reservedGuests: bookings.recentBookings
+        .filter((b) => b.status === "reserved")
+        .map((b) => ({ name: b.guestName })),
+      checkedOutGuests: bookings.recentBookings
+        .filter((b) => b.status === "checked-out")
+        .map((b) => ({ name: b.guestName })),
 
       // Revenue metrics
       roomRevenue: revenue.roomRevenue,
       foodRevenue: revenue.foodRevenue,
       totalRevenue: revenue.totalRevenue,
-      collectedRevenue: revenue.collectedRevenue,
       avgDailyRate: revenue.avgDailyRate,
       revPAR: revenue.revPAR,
       foodOrderCount: revenue.foodOrderCount,
       avgOrderValue: revenue.avgOrderValue,
       revenueByType: revenue.revenueByType,
-      dailyFoodRevenue: revenue.dailyFoodRevenue ?? revenue.dailyRevenue,
       dailyRevenue: revenue.dailyRevenue,
       dailyRoomRevenue: revenue.dailyRoomRevenue,
       topFoodItems: revenue.topFoodItems,
@@ -79,7 +83,6 @@ export function useReports(options = {}) {
       serviceRequestsByStatus: serviceRequests.byStatus,
       serviceRequestsByType: serviceRequests.byType,
       serviceRequestsByPriority: serviceRequests.byPriority,
-      avgCompletionTimeMinutes: serviceRequests.avgCompletionTimeMinutes,
       avgResponseTimeMinutes: serviceRequests.avgResponseTimeMinutes,
 
       // Trends
