@@ -299,7 +299,7 @@ export default function ReportsPage() {
           <KPICard
             label="F&B Revenue"
             value={formatCurrency(foodRevenue)}
-            sub={`${foodOrderCount} delivered orders`}
+            sub={`${foodOrderCount} linked orders`}
             color="text-blue-600"
             bg="bg-blue-50"
             icon="🍽️"
@@ -378,14 +378,14 @@ export default function ReportsPage() {
             emptyText="No guests in-house"
           />
           <GuestActivityCard
-            label="Upcoming Arrivals"
+            label="Expected Arrivals (Selected Period)"
             value={arrivalsToday}
             color="text-amber-600"
             guests={reservedGuests}
             emptyText="No upcoming reservations"
           />
           <GuestActivityCard
-            label="Departures Today"
+            label="Expected Departures (Selected Period)"
             value={departuresToday}
             color="text-gray-500"
             guests={checkedOutGuests}
@@ -451,7 +451,7 @@ export default function ReportsPage() {
               color="text-white"
             />
             <MetricSummaryCard
-              label="Avg Response (min)"
+              label="Avg Completion (min)"
               value={avgResponseTimeMinutes}
               color="text-white"
             />

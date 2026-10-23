@@ -48,22 +48,16 @@ export function useReports(options = {}) {
 
       // Booking metrics
       checkedIn: bookings.checkedIn,
-      arrivalsToday: bookings.arrivalsToday,
-      departuresToday: bookings.departuresToday,
+      arrivalsToday: bookings.arrivals,
+      departuresToday: bookings.departures,
       totalBookings: bookings.totalBookings,
       bookingsInPeriod: bookings.bookingsInPeriod,
       avgStayDuration: bookings.avgStayDuration,
       bookingSources: bookings.bookingSources,
       recentBookings: bookings.recentBookings,
-      checkedInGuests: bookings.recentBookings
-        .filter((b) => b.status === "checked-in")
-        .map((b) => ({ name: b.guestName })),
-      reservedGuests: bookings.recentBookings
-        .filter((b) => b.status === "reserved")
-        .map((b) => ({ name: b.guestName })),
-      checkedOutGuests: bookings.recentBookings
-        .filter((b) => b.status === "checked-out")
-        .map((b) => ({ name: b.guestName })),
+      checkedInGuests: bookings.checkedInGuests,
+      reservedGuests: bookings.arrivalGuests,
+      checkedOutGuests: bookings.departureGuests,
 
       // Revenue metrics
       roomRevenue: revenue.roomRevenue,
@@ -83,7 +77,7 @@ export function useReports(options = {}) {
       serviceRequestsByStatus: serviceRequests.byStatus,
       serviceRequestsByType: serviceRequests.byType,
       serviceRequestsByPriority: serviceRequests.byPriority,
-      avgResponseTimeMinutes: serviceRequests.avgResponseTimeMinutes,
+      avgResponseTimeMinutes: serviceRequests.avgCompletionTimeMinutes,
 
       // Trends
       occupancyTrend,
