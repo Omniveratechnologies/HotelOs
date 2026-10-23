@@ -1,3 +1,4 @@
+@import "./features/intelligence/legacy/intelligence.css";
 @import "tailwindcss";
 @import "@hotelos/styles";
 @source "../../../packages/ui/src/**/*.{js,jsx,ts,tsx}";
