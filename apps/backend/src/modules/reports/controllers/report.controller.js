@@ -333,7 +333,7 @@ const getBookingMetrics = async (hotelId, startDate, endDate) => {
       checkIn: booking.checkIn,
       checkOut: booking.checkOut,
       status: booking.status,
-      channel: booking.source || "DIRECT",
+      channel: booking.channel || "DIRECT",
       createdAt: booking.createdAt,
     })),
   };
