@@ -4,6 +4,7 @@ import ServiceRequest from "#/modules/service-requests/models/ServiceRequest.js"
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Bill from "#/modules/billing/models/Bill.js";
 import Payment from "#/modules/billing/models/Payment.js";
+import Order from "#/modules/orders/models/Order.js";
 import logger from "#/utils/logger.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -86,6 +87,15 @@ const parseDateRange = (query) => {
   } else if (period === "custom") {
     if (!startDate || !endDate) {
       throw new Error("Custom date range requires startDate and endDate");
+    }
+
+    if (
+      typeof startDate !== "string" ||
+      typeof endDate !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(endDate)
+    ) {
+      throw new Error("Invalid custom date range");
     }
 
     const startInput = new Date(`${startDate}T00:00:00.000Z`);
@@ -342,8 +352,8 @@ const getBookingMetrics = async (hotelId, startDate, endDate) => {
 /**
  * Get revenue metrics.
  *
- * Billed revenue is based on finalized bills created in the selected period.
- * Collected revenue is based on successful payment records in that period.
+ * Billed amounts include saved and paid bills created in the selected period.
+ * Collections include successful payment records by business date.
  * Linked food orders are counted through bills, avoiding double counting.
  */
 const getRevenueMetrics = async (hotelId, startDate, endDate) => {
@@ -398,12 +408,44 @@ const getRevenueMetrics = async (hotelId, startDate, endDate) => {
 
   const foodBills = bills.filter(isFoodBill);
 
+  const linkedOrderIds = [
+    ...new Set(
+      foodBills
+        .flatMap((bill) => bill.linkedOrderIds || [])
+        .map((orderId) => orderId.toString()),
+    ),
+  ];
+  const orders = linkedOrderIds.length
+    ? await Order.find({
+        hotelId,
+        _id: { $in: linkedOrderIds },
+      })
+        .select("_id status paymentStatus")
+        .lean()
+    : [];
+  const eligibleOrderIds = new Set(
+    orders
+      .filter(
+        (order) =>
+          !["CANCELLED", "REJECTED"].includes(order.status) &&
+          order.paymentStatus !== "FAILED",
+      )
+      .map((order) => order._id.toString()),
+  );
+  const eligibleFoodBills = foodBills.filter(
+    (bill) =>
+      !isLinkedOrderBill(bill) ||
+      bill.linkedOrderIds.every((orderId) =>
+        eligibleOrderIds.has(orderId.toString()),
+      ),
+  );
+
   const roomRevenue = roomBills.reduce(
     (total, bill) => total + amountOf(bill),
     0,
   );
 
-  const foodRevenue = foodBills.reduce(
+  const foodRevenue = eligibleFoodBills.reduce(
     (total, bill) => total + amountOf(bill),
     0,
   );
@@ -412,19 +454,36 @@ const getRevenueMetrics = async (hotelId, startDate, endDate) => {
   const collectedRevenue = Number(paymentTotals[0]?.total || 0);
 
   const foodOrderIds = new Set(
-    foodBills
+    eligibleFoodBills
       .flatMap((bill) => bill.linkedOrderIds || [])
       .map((orderId) => orderId.toString()),
   );
   const foodOrderCount = foodOrderIds.size;
-  const linkedFoodRevenue = foodBills
+  const linkedFoodRevenue = eligibleFoodBills
     .filter(isLinkedOrderBill)
     .reduce((total, bill) => total + amountOf(bill), 0);
 
   const avgOrderValue =
     foodOrderCount > 0 ? Math.round(linkedFoodRevenue / foodOrderCount) : 0;
 
-  // Only assigned room IDs can be counted as physical room-nights.
+  const billRoomIds = roomBills
+    .map((bill) => bill.roomId?.toString())
+    .filter(Boolean);
+  const bookingRoomIds = bookings
+    .map((booking) => booking.roomId?.toString())
+    .filter(Boolean);
+  const roomIds = [...new Set([...billRoomIds, ...bookingRoomIds])];
+  const rooms = roomIds.length
+    ? await Room.find({ _id: { $in: roomIds }, hotelId })
+        .select("_id type")
+        .lean()
+    : [];
+  const validRoomIds = new Set(rooms.map((room) => room._id.toString()));
+  const roomTypes = new Map(
+    rooms.map((room) => [room._id.toString(), room.type || "Unknown"]),
+  );
+
+  // Only assigned room IDs belonging to this hotel can be counted.
   const days = dateRange(startDate, endDate);
   const occupiedRoomsByDate = new Map(
     days.map((day) => [formatDate(day), new Set()]),
@@ -432,6 +491,7 @@ const getRevenueMetrics = async (hotelId, startDate, endDate) => {
 
   for (const booking of bookings) {
     if (!booking.checkIn || !booking.checkOut || !booking.roomId) continue;
+    if (!validRoomIds.has(booking.roomId.toString())) continue;
 
     for (const day of days) {
       const nextDay = new Date(day);
@@ -460,22 +520,6 @@ const getRevenueMetrics = async (hotelId, startDate, endDate) => {
   const revPAR =
     availableRoomNights > 0 ? Math.round(roomRevenue / availableRoomNights) : 0;
 
-  const roomIds = [
-    ...new Set(
-      roomBills.map((bill) => bill.roomId?.toString()).filter(Boolean),
-    ),
-  ];
-
-  const rooms = roomIds.length
-    ? await Room.find({ _id: { $in: roomIds }, hotelId })
-        .select("_id type")
-        .lean()
-    : [];
-
-  const roomTypes = new Map(
-    rooms.map((room) => [room._id.toString(), room.type || "Unknown"]),
-  );
-
   const revenueByTypeMap = new Map();
 
   for (const bill of roomBills) {
@@ -501,29 +545,32 @@ const getRevenueMetrics = async (hotelId, startDate, endDate) => {
 
   const foodBillMatch = {
     ...billMatch,
+    _id: { $in: eligibleFoodBills.map((bill) => bill._id) },
     $or: [
       { linkedOrderIds: { $exists: true, $ne: [] } },
       { billType: { $in: ["dine-in", "takeaway", "delivery"] } },
     ],
   };
 
-  const dailyRevenue = await Bill.aggregate([
-    { $match: foodBillMatch },
-    {
-      $group: {
-        _id: {
-          $dateToString: {
-            format: "%Y-%m-%d",
-            date: "$createdAt",
-            timezone: "UTC",
+  const dailyFoodRevenue = eligibleFoodBills.length
+    ? await Bill.aggregate([
+        { $match: foodBillMatch },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$createdAt",
+                timezone: "UTC",
+              },
+            },
+            revenue: { $sum: "$totalAmount" },
+            orders: { $addToSet: { $ifNull: ["$linkedOrderIds", []] } },
           },
         },
-        revenue: { $sum: "$totalAmount" },
-        orders: { $addToSet: { $ifNull: ["$linkedOrderIds", []] } },
-      },
-    },
-    { $sort: { _id: 1 } },
-  ]);
+        { $sort: { _id: 1 } },
+      ])
+    : [];
 
   const dailyRoomRevenue = await Bill.aggregate([
     {
@@ -552,26 +599,39 @@ const getRevenueMetrics = async (hotelId, startDate, endDate) => {
     { $sort: { _id: 1 } },
   ]);
 
-  const topFoodItems = await Bill.aggregate([
-    { $match: foodBillMatch },
-    { $unwind: "$items" },
-    {
-      $group: {
-        _id: "$items.name",
-        quantity: { $sum: "$items.quantity" },
-        revenue: {
-          $sum: {
-            $multiply: [
-              { $ifNull: ["$items.price", 0] },
-              { $ifNull: ["$items.quantity", 1] },
-            ],
+  const topFoodItems = eligibleFoodBills.length
+    ? await Bill.aggregate([
+        { $match: foodBillMatch },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.name",
+            quantity: { $sum: "$items.quantity" },
+            revenue: {
+              $sum: {
+                $multiply: [
+                  { $ifNull: ["$items.price", 0] },
+                  { $ifNull: ["$items.quantity", 1] },
+                ],
+              },
+            },
           },
         },
-      },
-    },
-    { $sort: { revenue: -1 } },
-    { $limit: 10 },
-  ]);
+        { $sort: { revenue: -1 } },
+        { $limit: 10 },
+      ])
+    : [];
+
+  const dailyFoodRevenueByDate = dailyFoodRevenue.map((day) => ({
+    date: day._id,
+    revenue: day.revenue,
+    orders: new Set(
+      (day.orders || [])
+        .flat()
+        .filter(Boolean)
+        .map((orderId) => orderId.toString()),
+    ).size,
+  }));
 
   return {
     roomRevenue,
@@ -583,16 +643,9 @@ const getRevenueMetrics = async (hotelId, startDate, endDate) => {
     foodOrderCount,
     avgOrderValue,
     revenueByType,
-    dailyRevenue: dailyRevenue.map((day) => ({
-      date: day._id,
-      revenue: day.revenue,
-      orders: new Set(
-        (day.orders || [])
-          .flat()
-          .filter(Boolean)
-          .map((orderId) => orderId.toString()),
-      ).size,
-    })),
+    dailyFoodRevenue: dailyFoodRevenueByDate,
+    // Keep the legacy key for clients that still read the food-only series by this name.
+    dailyRevenue: dailyFoodRevenueByDate,
     dailyRoomRevenue: dailyRoomRevenue.map((day) => ({
       date: day._id,
       revenue: day.revenue,
@@ -612,68 +665,43 @@ const getRevenueMetrics = async (hotelId, startDate, endDate) => {
  * Get service request metrics.
  */
 const getServiceRequestMetrics = async (hotelId, startDate, endDate) => {
-  const [statusCounts, typeCounts, priorityCounts, avgResponseTime] =
-    await Promise.all([
-      ServiceRequest.aggregate([
-        {
-          $match: {
-            hotelId,
-            createdAt: { $gte: startDate, $lt: endDate },
-          },
+  const [statusCounts, typeCounts, priorityCounts] = await Promise.all([
+    ServiceRequest.aggregate([
+      {
+        $match: {
+          hotelId,
+          createdAt: { $gte: startDate, $lt: endDate },
         },
-        { $group: { _id: "$status", count: { $sum: 1 } } },
-      ]),
+      },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]),
 
-      ServiceRequest.aggregate([
-        {
-          $match: {
-            hotelId,
-            createdAt: { $gte: startDate, $lt: endDate },
-          },
+    ServiceRequest.aggregate([
+      {
+        $match: {
+          hotelId,
+          createdAt: { $gte: startDate, $lt: endDate },
         },
-        { $group: { _id: "$type", count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ]),
+      },
+      { $group: { _id: "$type", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]),
 
-      ServiceRequest.aggregate([
-        {
-          $match: {
-            hotelId,
-            createdAt: { $gte: startDate, $lt: endDate },
-          },
+    ServiceRequest.aggregate([
+      {
+        $match: {
+          hotelId,
+          createdAt: { $gte: startDate, $lt: endDate },
         },
-        { $group: { _id: "$priority", count: { $sum: 1 } } },
-      ]),
-
-      ServiceRequest.aggregate([
-        {
-          $match: {
-            hotelId,
-            status: "COMPLETED",
-            createdAt: { $gte: startDate, $lt: endDate },
-            updatedAt: { $exists: true },
-          },
-        },
-        {
-          $project: {
-            responseTime: {
-              $divide: [{ $subtract: ["$updatedAt", "$createdAt"] }, 1000 * 60],
-            },
-          },
-        },
-        { $group: { _id: null, avgMinutes: { $avg: "$responseTime" } } },
-      ]),
-    ]);
+      },
+      { $group: { _id: "$priority", count: { $sum: 1 } } },
+    ]),
+  ]);
 
   const totalRequests = statusCounts.reduce(
     (sum, status) => sum + status.count,
     0,
   );
-  const avgCompletionTimeMinutes =
-    avgResponseTime[0]?.avgMinutes != null
-      ? Math.round(avgResponseTime[0].avgMinutes * 10) / 10
-      : 0;
-
   return {
     totalRequests,
     byStatus: statusCounts.map((status) => ({
@@ -688,8 +716,9 @@ const getServiceRequestMetrics = async (hotelId, startDate, endDate) => {
       priority: priority._id,
       count: priority.count,
     })),
-    avgCompletionTimeMinutes,
-    avgResponseTimeMinutes: avgCompletionTimeMinutes,
+    // Completion timestamps are not persisted; keep legacy fields but mark them unavailable.
+    avgCompletionTimeMinutes: null,
+    avgResponseTimeMinutes: null,
   };
 };
 
@@ -712,6 +741,17 @@ const getOccupancyTrend = async (hotelId, startDate, endDate) => {
   ]);
 
   const days = dateRange(startDate, endDate);
+  const assignedRoomIds = [
+    ...new Set(
+      bookings.map((booking) => booking.roomId?.toString()).filter(Boolean),
+    ),
+  ];
+  const validRooms = assignedRoomIds.length
+    ? await Room.find({ _id: { $in: assignedRoomIds }, hotelId })
+        .select("_id")
+        .lean()
+    : [];
+  const validRoomIds = new Set(validRooms.map((room) => room._id.toString()));
   const dailyOccupancy = new Map();
 
   for (const day of days) {
@@ -724,6 +764,7 @@ const getOccupancyTrend = async (hotelId, startDate, endDate) => {
     const checkIn = new Date(booking.checkIn);
     const checkOut = new Date(booking.checkOut);
     const roomKey = booking.roomId.toString();
+    if (!validRoomIds.has(roomKey)) continue;
 
     for (const day of days) {
       const nextDay = new Date(day);

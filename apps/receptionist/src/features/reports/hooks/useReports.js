@@ -63,11 +63,13 @@ export function useReports(options = {}) {
       roomRevenue: revenue.roomRevenue,
       foodRevenue: revenue.foodRevenue,
       totalRevenue: revenue.totalRevenue,
+      collectedRevenue: revenue.collectedRevenue,
       avgDailyRate: revenue.avgDailyRate,
       revPAR: revenue.revPAR,
       foodOrderCount: revenue.foodOrderCount,
       avgOrderValue: revenue.avgOrderValue,
       revenueByType: revenue.revenueByType,
+      dailyFoodRevenue: revenue.dailyFoodRevenue ?? revenue.dailyRevenue,
       dailyRevenue: revenue.dailyRevenue,
       dailyRoomRevenue: revenue.dailyRoomRevenue,
       topFoodItems: revenue.topFoodItems,
@@ -77,7 +79,8 @@ export function useReports(options = {}) {
       serviceRequestsByStatus: serviceRequests.byStatus,
       serviceRequestsByType: serviceRequests.byType,
       serviceRequestsByPriority: serviceRequests.byPriority,
-      avgResponseTimeMinutes: serviceRequests.avgCompletionTimeMinutes,
+      avgCompletionTimeMinutes: serviceRequests.avgCompletionTimeMinutes,
+      avgResponseTimeMinutes: serviceRequests.avgResponseTimeMinutes,
 
       // Trends
       occupancyTrend,
