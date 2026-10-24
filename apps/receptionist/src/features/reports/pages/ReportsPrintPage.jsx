@@ -101,19 +101,20 @@ export default function ReportsPrintPage() {
     roomRevenue,
     foodRevenue,
     totalRevenue,
+    collectedRevenue,
     avgDailyRate,
     revPAR,
     foodOrderCount,
     avgOrderValue,
     revenueByType,
-    dailyRevenue,
+    dailyFoodRevenue,
     dailyRoomRevenue,
     topFoodItems,
     // Service request metrics
     totalRequests,
     serviceRequestsByStatus,
     serviceRequestsByType,
-    avgResponseTimeMinutes,
+    avgCompletionTimeMinutes,
     // Trends
     occupancyTrend,
   } = reportData;
@@ -157,7 +158,7 @@ export default function ReportsPrintPage() {
           <h2 className="text-brand-900 mb-4 text-xl font-bold">
             Key Performance Indicators
           </h2>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
             <KPICard
               label="Occupancy Rate"
               value={`${occupancyRate}%`}
@@ -168,40 +169,49 @@ export default function ReportsPrintPage() {
               icon="🏨"
             />
             <KPICard
-              label="Room Revenue"
+              label="Room Billed Revenue"
               value={formatCurrency(roomRevenue)}
-              sub={`${occupied} occupied rooms`}
+              sub="Saved/paid room-charge bills in period"
               color="text-green-600"
               bg="bg-green-50"
               cardBg="bg-background-50"
               icon="💰"
             />
             <KPICard
-              label="F&B Revenue"
+              label="F&B Billed Revenue"
               value={formatCurrency(foodRevenue)}
-              sub={`${foodOrderCount} delivered orders`}
+              sub={`${foodOrderCount} linked orders`}
               color="text-blue-600"
               bg="bg-blue-50"
               cardBg="bg-background-100"
               icon="🍽️"
             />
             <KPICard
-              label="Total Revenue"
+              label="Total Billed Revenue"
               value={formatCurrency(totalRevenue)}
-              sub={`RevPAR: ${formatCurrency(revPAR)}`}
+              sub={`Billed per available room-night: ${formatCurrency(revPAR)}`}
               color="text-purple-600"
               bg="bg-purple-50"
               cardBg="bg-background-100"
               icon="📈"
             />
             <KPICard
-              label="Avg Daily Rate"
+              label="Billed per Occupied Room-Night"
               value={formatCurrency(avgDailyRate)}
-              sub="Per occupied room"
+              sub="Room-charge bills / occupied room-nights"
               color="text-amber-600"
               bg="bg-amber-50"
               cardBg="bg-background-50"
               icon="📊"
+            />
+            <KPICard
+              label="Recorded Collections"
+              value={formatCurrency(collectedRevenue)}
+              sub="Successful payment records in period"
+              color="text-emerald-600"
+              bg="bg-emerald-50"
+              cardBg="bg-background-50"
+              icon="💳"
             />
           </div>
         </section>
@@ -219,7 +229,7 @@ export default function ReportsPrintPage() {
               Revenue Trend
             </h3>
             <RevenueTrendChart
-              dailyRevenue={dailyRevenue}
+              dailyFoodRevenue={dailyFoodRevenue}
               dailyRoomRevenue={dailyRoomRevenue}
               animationDuration={0}
             />
@@ -271,7 +281,7 @@ export default function ReportsPrintPage() {
             emptyText="No guests in-house"
           />
           <GuestActivityCard
-            label="Upcoming Arrivals"
+            label="Expected Arrivals (Selected Period)"
             value={arrivalsToday}
             color="text-amber-600"
             cardBg="bg-background-100"
@@ -279,7 +289,7 @@ export default function ReportsPrintPage() {
             emptyText="No upcoming reservations"
           />
           <GuestActivityCard
-            label="Departures Today"
+            label="Expected Departures (Selected Period)"
             value={departuresToday}
             color="text-gray-500"
             cardBg="bg-background-50"
@@ -353,8 +363,8 @@ export default function ReportsPrintPage() {
               color="text-white"
             />
             <MetricSummaryCard
-              label="Avg Response (min)"
-              value={avgResponseTimeMinutes}
+              label="Avg Completion (min)"
+              value={avgCompletionTimeMinutes ?? "N/A"}
               color="text-white"
             />
             <MetricSummaryCard
@@ -363,7 +373,7 @@ export default function ReportsPrintPage() {
               color="text-white"
             />
             <MetricSummaryCard
-              label="Avg Order Value"
+              label="Avg Linked Order Value"
               value={formatCurrency(avgOrderValue)}
               color="text-white"
             />

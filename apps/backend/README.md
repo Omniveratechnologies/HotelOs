@@ -342,18 +342,20 @@ cp apps/backend/.env.example apps/backend/.env
 
 Required variables (validated in `src/config/env.js`):
 
-| Variable                                                                   | Required | Description                                                         |
-| -------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------- |
-| `MONGODB_URI`                                                              | Yes      | MongoDB connection string                                           |
-| `JWT_SECRET`                                                               | Yes      | Long random secret used to sign tokens                              |
-| `PORT`                                                                     | No       | Server port. **Frontends expect `5001`**                            |
-| `JWT_EXPIRES_IN`                                                           | No       | Token lifetime (default `1d`)                                       |
-| `CLIENT_URL`                                                               | No       | Frontend origin for CORS                                            |
-| `SUB_ADMIN_FRONTEND_URL`                                                   | No       | Base URL for invite / reset links (default `http://localhost:5175`) |
-| `SUPER_ADMIN_PASSWORD`                                                     | No       | Used by the seed script                                             |
-| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD` | No       | SMTP config for transactional emails                                |
-| `NODE_ENV`                                                                 | No       | `development` (default) or `production`. Controls log formatting    |
-| `LOG_LEVEL`                                                                | No       | Minimum log level (default `info`). e.g. `debug`, `warn`, `error`   |
+| Variable                                                                   | Required | Description                                                          |
+| -------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------- |
+| `MONGODB_URI`                                                              | Yes      | MongoDB connection string                                            |
+| `JWT_SECRET`                                                               | Yes      | Long random secret used to sign tokens                               |
+| `PORT`                                                                     | No       | Server port. **Frontends expect `5001`**                             |
+| `JWT_EXPIRES_IN`                                                           | No       | Token lifetime (default `1d`)                                        |
+| `CLIENT_URL`                                                               | No       | Frontend origin for CORS                                             |
+| `SUB_ADMIN_FRONTEND_URL`                                                   | No       | Base URL for invite / reset links (default `http://localhost:5175`)  |
+| `SUPER_ADMIN_PASSWORD`                                                     | No       | Used by the seed script                                              |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD` | No       | SMTP config for transactional emails                                 |
+| `NODE_ENV`                                                                 | No       | `development` (default) or `production`. Controls log formatting     |
+| `LOG_LEVEL`                                                                | No       | Minimum log level (default `info`). e.g. `debug`, `warn`, `error`    |
+| `GROQ_API_KEY`                                                             | No       | Enables Groq narration; aggregate dashboard metrics are sent to Groq |
+| `MODEL`                                                                    | No       | Groq model ID (defaults to `qwen/qwen3.8-27b`)                       |
 
 > **Note:** the port default is `5001` in `src/server.js`. Make sure your
 > `.env` sets `PORT=5001` (or leaves it unset) so the frontends, which
