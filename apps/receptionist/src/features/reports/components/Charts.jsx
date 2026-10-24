@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
   LineChart,
   Line,
@@ -71,7 +71,7 @@ export const OccupancyTrendChart = ({
           />
           <XAxis
             dataKey="date"
-            tickFormatter={(date) => format(new Date(date), "MMM d")}
+            tickFormatter={(date) => format(parseISO(date), "MMM d")}
             tick={{ fontSize: 11, fill: "#6b7280" }}
             axisLine={{ stroke: "#e5e7eb" }}
           />
@@ -82,7 +82,7 @@ export const OccupancyTrendChart = ({
           />
           <Tooltip
             contentStyle={tooltipStyle}
-            labelFormatter={(date) => format(new Date(date), "MMM d, yyyy")}
+            labelFormatter={(date) => format(parseISO(date), "MMM d, yyyy")}
             formatter={(value) => [value, "Occupancy %"]}
           />
           <Line
@@ -101,19 +101,19 @@ export const OccupancyTrendChart = ({
 };
 
 export const RevenueTrendChart = ({
-  dailyRevenue,
+  dailyFoodRevenue,
   dailyRoomRevenue,
   height = 300,
   animationDuration = 1000,
 }) => {
   const combinedData = [];
   const allDates = new Set([
-    ...(dailyRevenue || []).map((d) => d.date),
+    ...(dailyFoodRevenue || []).map((d) => d.date),
     ...(dailyRoomRevenue || []).map((d) => d.date),
   ]);
 
   allDates.forEach((date) => {
-    const food = dailyRevenue?.find((d) => d.date === date) || {
+    const food = dailyFoodRevenue?.find((d) => d.date === date) || {
       revenue: 0,
       orders: 0,
     };
@@ -152,7 +152,7 @@ export const RevenueTrendChart = ({
           />
           <XAxis
             dataKey="date"
-            tickFormatter={(date) => format(new Date(date), "MMM d")}
+            tickFormatter={(date) => format(parseISO(date), "MMM d")}
             tick={{ fontSize: 11, fill: "#6b7280" }}
             axisLine={{ stroke: "#e5e7eb" }}
           />
@@ -164,7 +164,7 @@ export const RevenueTrendChart = ({
           />
           <Tooltip
             contentStyle={tooltipStyle}
-            labelFormatter={(date) => format(new Date(date), "MMM d, yyyy")}
+            labelFormatter={(date) => format(parseISO(date), "MMM d, yyyy")}
             formatter={(value, name) => [
               formatCurrency(value),
               name === "foodRevenue"
