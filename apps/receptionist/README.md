@@ -26,6 +26,7 @@ exercised in this app:
 - View food orders and housekeeping queues
 - View operational reports
 - Manage hotel settings (contact details, check-in/check-out times, Aiosell room types)
+- Monitor lobby kiosk terminals, view live online/offline presence and battery level, and toggle front-desk maintenance mode ("Turn On Maintenance" / "Turn Off Maintenance")
 
 > Room and guest data is always scoped to the receptionist's own hotel by
 > the backend via `req.user.hotelId`.
@@ -44,17 +45,18 @@ exercised in this app:
 
 ### Dashboard
 
-| Area         | Page                            | Notes                                                       |
-| ------------ | ------------------------------- | ----------------------------------------------------------- |
-| Dashboard    | `dashboard/DashboardPage`       | Summary stats + activity feed                               |
-| Guests       | `guests/GuestsPage`             | List / register / check-in / check-out guests               |
-| Rooms        | `rooms/RoomsPage`               | Room list + add / update / delete (with `roomCode` mapping) |
-| Room Types   | `room-types/RoomTypesPage`      | Room types listing & modal                                  |
-| Rate Plans   | `rate-plans/RatePlansPage`      | Rate plans CRUD & Aiosell live rates matrix                 |
-| Food Orders  | `food-orders/FoodOrdersPage`    | Realtime food order queue                                   |
-| Housekeeping | `housekeeping/HousekeepingPage` | Realtime housekeeping / service request queue               |
-| Reports      | `reports/ReportsPage`           | Daily performance & occupancy reports                       |
-| Settings     | `settings/SettingsPage`         | Hotel contact details, check-in/out times, staff            |
+| Area         | Page                                | Notes                                                           |
+| ------------ | ----------------------------------- | --------------------------------------------------------------- |
+| Dashboard    | `dashboard/DashboardPage`           | Summary stats + activity feed                                   |
+| Guests       | `guests/GuestsPage`                 | List / register / check-in / check-out guests                   |
+| Rooms        | `rooms/RoomsPage`                   | Room list + add / update / delete (with `roomCode` mapping)     |
+| Room Types   | `room-types/RoomTypesPage`          | Room types listing & modal                                      |
+| Rate Plans   | `rate-plans/RatePlansPage`          | Rate plans CRUD & Aiosell live rates matrix                     |
+| Food Orders  | `food-orders/FoodOrdersPage`        | Realtime food order queue                                       |
+| Housekeeping | `housekeeping/HousekeepingPage`     | Realtime housekeeping / service request queue                   |
+| Kiosks       | `management/pages/KioskDevicesPage` | Monitor lobby terminals, view online status, toggle maintenance |
+| Reports      | `reports/ReportsPage`               | Daily performance & occupancy reports                           |
+| Settings     | `settings/SettingsPage`             | Hotel contact details, check-in/out times, staff                |
 
 ---
 

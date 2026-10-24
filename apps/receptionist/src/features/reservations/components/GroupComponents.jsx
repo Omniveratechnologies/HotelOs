@@ -1,12 +1,16 @@
 import React, { useState } from "react";
-import { Users, BedDouble, Plus, Trash2, CheckCircle2 } from "lucide-react";
-import { SectionCard, Button, Input } from "@hotelos/ui/components";
+import { Users, BedDouble, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { SectionCard, Input, Button } from "@hotelos/ui/components";
 import { formatCurrency } from "@hotelos/utils";
+import { RoomRequirementsMatrix } from "./RoomRequirementsMatrix.jsx";
+
+const EMPTY_OBJECT = Object.freeze({});
+const EMPTY_ARRAY = Object.freeze([]);
 
 /**
  * Step 1: Group Details
  */
-export function GroupDetailsSection({ form, onChange, errors = {} }) {
+export function GroupDetailsSection({ form, onChange, errors = EMPTY_OBJECT }) {
   return (
     <SectionCard
       title="Group Information"
@@ -162,43 +166,10 @@ export function GroupDetailsSection({ form, onChange, errors = {} }) {
 export function GroupRequirementsSection({
   form,
   onChange,
-  roomRequirements = [],
+  roomRequirements = EMPTY_ARRAY,
   onRequirementsChange,
-  roomTypes = [],
+  roomTypes = EMPTY_ARRAY,
 }) {
-  const [newReq, setNewReq] = useState({
-    roomTypeCode: roomTypes[0]?.roomCode || "EXEC",
-    rooms: 1,
-    adultsPerRoom: 2,
-    childrenPerRoom: 0,
-    notes: "",
-  });
-
-  const handleAddRequirement = () => {
-    onRequirementsChange([
-      ...roomRequirements,
-      {
-        id: `gr-${Date.now()}`,
-        ...newReq,
-      },
-    ]);
-  };
-
-  const handleRemoveRequirement = (idx) => {
-    const next = [...roomRequirements];
-    next.splice(idx, 1);
-    onRequirementsChange(next);
-  };
-
-  const totalRooms = roomRequirements.reduce(
-    (acc, r) => acc + Number(r.rooms || 0),
-    0,
-  );
-  const totalGuests = roomRequirements.reduce(
-    (acc, r) => acc + Number(r.rooms || 0) * Number(r.adultsPerRoom || 1),
-    0,
-  );
-
   return (
     <SectionCard
       title="Stay & Room Requirements"
@@ -226,162 +197,12 @@ export function GroupRequirementsSection({
           </div>
         </div>
 
-        {/* Room Requirement Matrix Table */}
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <h4 className="text-sm font-bold text-gray-900">
-              Room Type Matrix ({totalRooms} rooms for ~{totalGuests} guests)
-            </h4>
-          </div>
-
-          <div className="mb-4 overflow-x-auto rounded-xl border border-gray-200">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-gray-200 bg-gray-50 font-semibold tracking-wider text-gray-600 uppercase">
-                <tr>
-                  <th className="px-4 py-3">Room Type</th>
-                  <th className="px-4 py-3">No. of Rooms</th>
-                  <th className="px-4 py-3">Adults/Room</th>
-                  <th className="px-4 py-3">Children</th>
-                  <th className="px-4 py-3">Notes</th>
-                  <th className="px-4 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 bg-white">
-                {roomRequirements.map((r, idx) => {
-                  const typeObj = roomTypes.find(
-                    (t) => t.roomCode === r.roomTypeCode,
-                  );
-                  return (
-                    <tr
-                      key={r.id || `req-${idx}`}
-                      className="hover:bg-gray-50/80"
-                    >
-                      <td className="px-4 py-3 font-semibold text-gray-900">
-                        {typeObj?.name || r.roomTypeCode}
-                      </td>
-                      <td className="text-brand-900 px-4 py-3 font-bold">
-                        {r.rooms}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {r.adultsPerRoom}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {r.childrenPerRoom || 0}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 italic">
-                        {r.notes || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveRequirement(idx)}
-                          className="p-1 text-gray-400 transition hover:text-rose-600"
-                          title="Remove block"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Add Row Controls */}
-          <div className="grid grid-cols-12 items-end gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-xs">
-            <div className="col-span-12 sm:col-span-3">
-              <label
-                htmlFor="req-room-type-select"
-                className="mb-1 block font-medium text-gray-700"
-              >
-                Room Type
-              </label>
-              <select
-                id="req-room-type-select"
-                value={newReq.roomTypeCode}
-                onChange={(e) =>
-                  setNewReq({ ...newReq, roomTypeCode: e.target.value })
-                }
-                className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-xs text-gray-800"
-              >
-                {roomTypes.map((t) => (
-                  <option key={t.roomCode} value={t.roomCode}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-span-4 sm:col-span-2">
-              <label
-                htmlFor="req-rooms-input"
-                className="mb-1 block font-medium text-gray-700"
-              >
-                Rooms
-              </label>
-              <input
-                id="req-rooms-input"
-                type="number"
-                min="1"
-                value={newReq.rooms}
-                onChange={(e) =>
-                  setNewReq({ ...newReq, rooms: Number(e.target.value) || 1 })
-                }
-                className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-xs"
-              />
-            </div>
-            <div className="col-span-4 sm:col-span-2">
-              <label
-                htmlFor="req-adults-input"
-                className="mb-1 block font-medium text-gray-700"
-              >
-                Adults/Room
-              </label>
-              <input
-                id="req-adults-input"
-                type="number"
-                min="1"
-                value={newReq.adultsPerRoom}
-                onChange={(e) =>
-                  setNewReq({
-                    ...newReq,
-                    adultsPerRoom: Number(e.target.value) || 1,
-                  })
-                }
-                className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-xs"
-              />
-            </div>
-            <div className="col-span-12 sm:col-span-3">
-              <label
-                htmlFor="req-notes-input"
-                className="mb-1 block font-medium text-gray-700"
-              >
-                Special Notes
-              </label>
-              <input
-                id="req-notes-input"
-                type="text"
-                placeholder="e.g. VIP speaker suite"
-                value={newReq.notes}
-                onChange={(e) =>
-                  setNewReq({ ...newReq, notes: e.target.value })
-                }
-                className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-xs"
-              />
-            </div>
-            <div className="col-span-12 sm:col-span-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAddRequirement}
-                className="h-9 w-full gap-1"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Block
-              </Button>
-            </div>
-          </div>
-        </div>
+        {/* Room Requirement Matrix Table & Add Controls */}
+        <RoomRequirementsMatrix
+          roomRequirements={roomRequirements}
+          onChange={onRequirementsChange}
+          roomTypes={roomTypes}
+        />
 
         {/* Rate Plan & Discount info */}
         <div className="grid grid-cols-12 gap-4 border-t border-gray-100 pt-3">
@@ -431,7 +252,7 @@ export function GroupRequirementsSection({
  * Step 3 & 4: Guest List and Room Assignment Preview
  */
 export function GroupGuestListSection({
-  guests = [],
+  guests = EMPTY_ARRAY,
   onAddGuest,
   onRemoveGuest,
   onAutoAssign,
@@ -594,7 +415,8 @@ export function GroupGuestListSection({
  */
 export function GroupAllocationSummary({
   form,
-  roomRequirements = [],
+  roomRequirements = EMPTY_ARRAY,
+  quote,
   nights = 1,
 }) {
   const totalRooms = roomRequirements.reduce(
@@ -606,13 +428,20 @@ export function GroupAllocationSummary({
     0,
   );
 
-  // Fallback estimates if backend quote is loading
-  const baseRateEstimate = totalRooms * 2499 * nights;
-  const discountRate = Number(form.discount || 5) / 100;
-  const discountAmount = Math.round(baseRateEstimate * discountRate);
-  const taxable = baseRateEstimate - discountAmount;
-  const taxAmount = Math.round(taxable * 0.12);
-  const totalAmount = taxable + taxAmount;
+  const pricing = quote?.pricing;
+
+  // Real server pricing when available, fallback to estimates while calculating
+  const roomCharges = pricing ? pricing.roomCharge : totalRooms * 2499 * nights;
+  const discountPercent = Number(form.discount || 0);
+  const discountAmount = pricing
+    ? pricing.discount?.amount || 0
+    : Math.round(roomCharges * (discountPercent / 100));
+  const taxAmount = pricing
+    ? pricing.taxAmount
+    : Math.round((roomCharges - discountAmount) * 0.12);
+  const totalAmount = pricing
+    ? pricing.grandTotal
+    : roomCharges - discountAmount + taxAmount;
 
   return (
     <div className="space-y-6">
@@ -669,6 +498,7 @@ export function GroupAllocationSummary({
               </span>
               <span className="text-gray-600">
                 {r.rooms} room(s) · {r.rooms * r.adultsPerRoom} guests
+                {r.notes ? ` (${r.notes})` : ""}
               </span>
             </div>
           ))}
@@ -686,11 +516,11 @@ export function GroupAllocationSummary({
               Room Charges ({nights} Nights)
             </span>
             <span className="font-medium text-amber-950">
-              {formatCurrency(baseRateEstimate)}
+              {formatCurrency(roomCharges)}
             </span>
           </div>
           <div className="flex justify-between text-rose-600">
-            <span>Group Discount ({form.discount || 5}%)</span>
+            <span>Group Discount ({discountPercent}%)</span>
             <span>- {formatCurrency(discountAmount)}</span>
           </div>
           <div className="flex justify-between">

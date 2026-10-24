@@ -35,10 +35,22 @@ export function BookingSummary({
   const pricing = quote?.pricing;
 
   if (pricing) {
-    items.push({
-      label: `${formatCurrency(pricing.nightlyRate)} × ${pricing.nights} night${pricing.nights === 1 ? "" : "s"}${pricing.rooms > 1 ? ` × ${pricing.rooms} rooms` : ""}`,
-      amount: formatCurrency(pricing.roomCharge),
-    });
+    if (
+      Array.isArray(pricing.itemizedLines) &&
+      pricing.itemizedLines.length > 1
+    ) {
+      pricing.itemizedLines.forEach((line) => {
+        items.push({
+          label: `${line.roomTypeCode} × ${line.rooms} room${line.rooms > 1 ? "s" : ""} (${line.nights}n @ ${formatCurrency(line.nightlyRate)})`,
+          amount: formatCurrency(line.lineTotal),
+        });
+      });
+    } else {
+      items.push({
+        label: `${formatCurrency(pricing.nightlyRate)} × ${pricing.nights} night${pricing.nights === 1 ? "" : "s"}${pricing.rooms > 1 ? ` × ${pricing.rooms} rooms` : ""}`,
+        amount: formatCurrency(pricing.roomCharge),
+      });
+    }
     if (pricing.addOnsTotal > 0) {
       items.push({
         label: "Add-ons & Packages",

@@ -15,6 +15,7 @@ for (const variable of requiredEnvVariables) {
 // the backend keeps working without them.
 export default {
   port: process.env.PORT || 5001,
+  host: process.env.HOST || "0.0.0.0",
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",

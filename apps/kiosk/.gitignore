@@ -1,0 +1,22 @@
+node_modules/
+.pnpm/
+/android/
+/ios/
+.expo/
+dist/
+*.log
+.env
+.env.*
+
+# Signing material — NEVER commit these
+*.jks
+*.keystore
+keystore.properties
+
+# Native build outputs / IDE
+build/
+.gradle/
+.kotlin/
+.idea/
+*.iml
+local.properties

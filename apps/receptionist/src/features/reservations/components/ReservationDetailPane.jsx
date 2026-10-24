@@ -804,30 +804,119 @@ export function ReservationDetailPane({
         )}
 
         {tab === "stay" && (
-          <PaneCard title="Stay Details">
-            <DetailRow label="Check-in" value={formatDate(booking.checkIn)} />
-            <DetailRow label="Check-out" value={formatDate(booking.checkOut)} />
-            <DetailRow label="Nights" value={booking.nights} />
-            <DetailRow
-              label="Room Type"
-              value={booking.roomTypeCode || booking.room?.type || "—"}
-            />
-            <DetailRow
-              label="Assigned Room"
-              value={
-                booking.room?.roomNumber
-                  ? `Room ${booking.room.roomNumber}`
-                  : "Auto-assign"
-              }
-            />
-            <DetailRow label="Rooms" value={booking.rooms} />
-            <DetailRow
-              label="Occupancy"
-              value={`${booking.adults} adults, ${booking.children} children, ${booking.infants} infants`}
-            />
-            <DetailRow label="Purpose" value={booking.purpose || "—"} />
-            <DetailRow label="Guest Type" value={booking.guestType} />
-          </PaneCard>
+          <>
+            <PaneCard title="Stay Details">
+              <DetailRow label="Check-in" value={formatDate(booking.checkIn)} />
+              <DetailRow
+                label="Check-out"
+                value={formatDate(booking.checkOut)}
+              />
+              <DetailRow label="Nights" value={booking.nights} />
+              <DetailRow
+                label="Room Type"
+                value={booking.roomTypeCode || booking.room?.type || "—"}
+              />
+              <DetailRow
+                label="Assigned Room"
+                value={
+                  booking.room?.roomNumber
+                    ? `Room ${booking.room.roomNumber}`
+                    : booking.roomAllocations?.some((a) => a.roomNumber)
+                      ? booking.roomAllocations
+                          .map((a) =>
+                            a.roomNumber ? `№ ${a.roomNumber}` : "Auto",
+                          )
+                          .join(", ")
+                      : "Auto-assign"
+                }
+              />
+              <DetailRow label="Rooms" value={booking.rooms} />
+              <DetailRow
+                label="Occupancy"
+                value={`${booking.adults} adults, ${booking.children} children, ${booking.infants} infants`}
+              />
+              <DetailRow label="Purpose" value={booking.purpose || "—"} />
+              <DetailRow label="Guest Type" value={booking.guestType} />
+            </PaneCard>
+
+            {Array.isArray(booking.roomAllocations) &&
+              booking.roomAllocations.length > 0 && (
+                <PaneCard
+                  title={`Room Allocations (${booking.roomAllocations.length})`}
+                >
+                  <div className="divide-y divide-gray-100">
+                    {booking.roomAllocations.map((alloc, idx) => (
+                      <div
+                        key={alloc.id || alloc.allocationId || idx}
+                        className="py-2.5 text-xs first:pt-0 last:pb-0"
+                      >
+                        <div className="text-surface-900 flex items-center justify-between font-medium">
+                          <span>
+                            Room {idx + 1}:{" "}
+                            {alloc.roomNumber
+                              ? `№ ${alloc.roomNumber}`
+                              : "Auto-assign"}
+                          </span>
+                          <span className="text-surface-700 rounded bg-gray-100 px-2 py-0.5 text-[11px] font-semibold">
+                            {alloc.roomTypeCode}
+                          </span>
+                        </div>
+                        <div className="text-surface-500 mt-1 flex items-center gap-3">
+                          <span>
+                            {alloc.adults || 1} Ad, {alloc.children || 0} Ch
+                          </span>
+                          {alloc.occupantName && (
+                            <span>• Guest: {alloc.occupantName}</span>
+                          )}
+                          {alloc.status && (
+                            <span className="capitalize">• {alloc.status}</span>
+                          )}
+                        </div>
+                        {alloc.notes && (
+                          <p className="text-surface-600 mt-1 italic">
+                            “{alloc.notes}”
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </PaneCard>
+              )}
+
+            {(!booking.roomAllocations ||
+              booking.roomAllocations.length === 0) &&
+              Array.isArray(booking.roomRequirements) &&
+              booking.roomRequirements.length > 0 && (
+                <PaneCard
+                  title={`Room Requirements (${booking.roomRequirements.length})`}
+                >
+                  <div className="divide-y divide-gray-100">
+                    {booking.roomRequirements.map((req, idx) => (
+                      <div
+                        // oxlint-disable-next-line react/no-array-index-key
+                        key={idx}
+                        className="py-2.5 text-xs first:pt-0 last:pb-0"
+                      >
+                        <div className="text-surface-900 flex items-center justify-between font-medium">
+                          <span>
+                            {req.rooms} × {req.roomTypeCode}
+                          </span>
+                          <span className="text-surface-500">
+                            {req.adultsPerRoom || 1} Ad /{" "}
+                            {req.childrenPerRoom || 0} Ch per room
+                          </span>
+                        </div>
+                        {req.notes && (
+                          <p className="text-surface-600 mt-1 italic">
+                            “{req.notes}”
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </PaneCard>
+              )}
+          </>
         )}
 
         {tab === "billing" && (

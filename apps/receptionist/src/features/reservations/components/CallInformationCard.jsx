@@ -2,13 +2,15 @@ import React from "react";
 import { Phone, PhoneCall } from "lucide-react";
 import { SectionCard, Input } from "@hotelos/ui/components";
 
+const EMPTY_OBJECT = Object.freeze({});
+
 export default function CallInformationCard({
   callerName,
   callerPhone,
   callerPhonePrefix = "+91",
   callTime,
   callNotes,
-  errors = {},
+  errors = EMPTY_OBJECT,
   onChange,
 }) {
   return (

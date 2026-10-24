@@ -3,6 +3,7 @@
   "ui": "tui",
   "globalEnv": [
     "PORT",
+    "HOST",
     "NODE_ENV",
     "LOG_LEVEL",
     "MONGODB_URI",
@@ -22,7 +23,12 @@
     "R2_BUCKET_NAME",
     "R2_URL_TTL_SECONDS",
     "VITE_API_URL",
-    "TABLE_ORDER_FRONTEND_URL"
+    "EXPO_PUBLIC_API_URL",
+    "EXPO_PUBLIC_SOCKET_URL",
+    "KIOSK_DEMO_PORTAL_URL",
+    "KIOSK_GUEST_CHECKIN_URL",
+    "KIOSK_TABLE_ORDER_URL",
+    "KIOSK_RECEPTIONIST_URL"
   ],
   "tasks": {
     "build": {

@@ -61,6 +61,7 @@ export function defaultInitialForm(source = "DIRECT", extra = {}) {
     addOns: [],
     discount: "",
     status: "CONFIRMED",
+    roomRequirements: [],
     ...extra,
   };
 }
@@ -199,6 +200,7 @@ export function useReservationWizard({
             (p.mealPlan || "EP") === "EP",
         );
         return {
+          roomCode: t.roomCode,
           roomTypeCode: t.roomCode,
           name: t.name,
           totalRooms: avail?.totalRooms ?? t.count,
@@ -222,10 +224,13 @@ export function useReservationWizard({
 
   // Live debounced server quote
   useEffect(() => {
-    if (nights < 1 || !form.roomTypeCode) return;
+    const hasRequirements =
+      Array.isArray(form.roomRequirements) && form.roomRequirements.length > 0;
+    if (nights < 1 || (!form.roomTypeCode && !hasRequirements)) return;
     const handle = setTimeout(() => {
       quoteMutateRef.current({
-        roomTypeCode: form.roomTypeCode,
+        roomTypeCode: form.roomTypeCode || undefined,
+        roomRequirements: hasRequirements ? form.roomRequirements : undefined,
         roomId: form.preferSpecificRoom ? form.roomId || undefined : undefined,
         ratePlanId: form.ratePlanId || undefined,
         mealPlan: form.mealPlan || undefined,
@@ -249,6 +254,7 @@ export function useReservationWizard({
     form.rooms,
     form.adults,
     form.roomTypeCode,
+    form.roomRequirements,
     form.ratePlanId,
     form.mealPlan,
     form.rateOverride,
@@ -307,6 +313,39 @@ export function useReservationWizard({
     });
   };
 
+  const onRequirementsChange = (nextReqs) => {
+    const reqs = Array.isArray(nextReqs) ? nextReqs : [];
+    const totalRooms = reqs.reduce((acc, r) => acc + Number(r.rooms || 0), 0);
+    const totalAdults = reqs.reduce(
+      (acc, r) => acc + Number(r.rooms || 0) * Number(r.adultsPerRoom || 1),
+      0,
+    );
+    const totalChildren = reqs.reduce(
+      (acc, r) => acc + Number(r.rooms || 0) * Number(r.childrenPerRoom || 0),
+      0,
+    );
+    const primaryCode = reqs[0]?.roomTypeCode || "";
+
+    setForm((f) => ({
+      ...f,
+      roomRequirements: reqs,
+      rooms: totalRooms > 0 ? totalRooms : f.rooms,
+      adults: totalAdults > 0 ? totalAdults : f.adults,
+      children:
+        totalChildren >= 0 && totalRooms > 0 ? totalChildren : f.children,
+      roomTypeCode: primaryCode || f.roomTypeCode,
+    }));
+
+    if (errors.roomTypeCode || errors.roomRequirements) {
+      setErrors((err) => {
+        const next = { ...err };
+        delete next.roomTypeCode;
+        delete next.roomRequirements;
+        return next;
+      });
+    }
+  };
+
   // Step validation
   const validateStep = (stepIdx) => {
     const errs = {};
@@ -336,11 +375,21 @@ export function useReservationWizard({
     }
 
     if (stepId === "room") {
-      if (!form.roomTypeCode) {
-        errs.roomTypeCode = "Please select a room type";
-      }
-      if (form.preferSpecificRoom && !form.roomId) {
-        errs.roomId = "Please select a specific room number";
+      const hasReqs =
+        Array.isArray(form.roomRequirements) &&
+        form.roomRequirements.length > 0;
+      if (form.rooms > 1 || hasReqs) {
+        if (!hasReqs) {
+          errs.roomRequirements =
+            "Please add at least one room block to the matrix";
+        }
+      } else {
+        if (!form.roomTypeCode) {
+          errs.roomTypeCode = "Please select a room type";
+        }
+        if (form.preferSpecificRoom && !form.roomId) {
+          errs.roomId = "Please select a specific room number";
+        }
       }
     }
 
@@ -407,6 +456,13 @@ export function useReservationWizard({
     if (buildCustomPayload) {
       return buildCustomPayload(form, effectiveStatus, quote.data);
     }
+
+    const hasRequirements =
+      Array.isArray(form.roomRequirements) && form.roomRequirements.length > 0;
+    const primaryRoomTypeCode = hasRequirements
+      ? form.roomRequirements[0].roomTypeCode
+      : form.roomTypeCode;
+
     return {
       status: effectiveStatus,
       source: form.source || source,
@@ -419,7 +475,8 @@ export function useReservationWizard({
       purpose: form.purpose,
       guestType: form.guestType,
       specialRequests: form.specialRequests,
-      roomTypeCode: form.roomTypeCode,
+      roomTypeCode: primaryRoomTypeCode || form.roomTypeCode,
+      roomRequirements: hasRequirements ? form.roomRequirements : undefined,
       ratePlanId: form.ratePlanId || undefined,
       mealPlan: form.mealPlan || undefined,
       rateOverride:
@@ -497,6 +554,7 @@ export function useReservationWizard({
     form,
     setForm,
     onFieldChange,
+    onRequirementsChange,
     onGuestField,
     onSelectExistingGuest,
     currentStep,

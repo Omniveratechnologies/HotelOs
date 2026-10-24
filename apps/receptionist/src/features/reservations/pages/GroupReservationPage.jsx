@@ -66,35 +66,61 @@ export default function GroupReservationPage() {
       }
       return errs;
     },
-    buildCustomPayload: (form, status) => ({
-      status,
-      source: "GROUP",
-      checkIn: form.checkIn,
-      checkOut: form.checkOut,
-      rooms: roomRequirements.reduce((acc, r) => acc + Number(r.rooms || 0), 0),
-      adults: roomRequirements.reduce(
+    buildCustomPayload: (form, status) => {
+      const primaryRoomTypeCode =
+        roomRequirements[0]?.roomTypeCode || form.roomTypeCode || "executive";
+
+      const totalRooms = roomRequirements.reduce(
+        (acc, r) => acc + Number(r.rooms || 0),
+        0,
+      );
+      const totalAdults = roomRequirements.reduce(
         (acc, r) => acc + Number(r.rooms || 0) * Number(r.adultsPerRoom || 1),
         0,
-      ),
-      children: 0,
-      infants: 0,
-      purpose: form.eventPurpose || "Group Event",
-      guestType: "group",
-      specialRequests: form.specialRequests,
-      roomTypeCode: form.roomTypeCode || "EXEC",
-      name: form.organizerName.trim(),
-      phone: `+91${form.organizerPhone.trim()}`,
-      email: form.organizerEmail?.trim() || undefined,
-      discount: { type: "percent", value: Number(form.discount || 5) },
-      metadata: {
-        groupName: form.groupName,
-        groupType: form.groupType,
-        companyName: form.companyName,
+      );
+
+      const cleanPhone = form.organizerPhone
+        ? `+91${form.organizerPhone.trim().replace(/^\+91/, "").replace(/\s+/g, "")}`
+        : "";
+
+      return {
+        status,
+        source: "GROUP",
+        checkIn: form.checkIn,
+        checkOut: form.checkOut,
+        rooms: Math.max(1, totalRooms),
+        adults: Math.max(1, totalAdults),
+        children: 0,
+        infants: 0,
+        purpose: form.eventPurpose || "Group Event",
+        guestType: "group",
+        specialRequests: form.specialRequests,
+        roomTypeCode: primaryRoomTypeCode,
         roomRequirements,
-        guests,
-        billingMode: "Master Folio",
-      },
-    }),
+        name: form.organizerName.trim(),
+        phone: cleanPhone,
+        email: form.organizerEmail?.trim() || undefined,
+        discount: { type: "percent", value: Number(form.discount || 0) },
+        groupInfo: {
+          groupName: form.groupName,
+          groupType: form.groupType,
+          companyName: form.companyName,
+          organizerName: form.organizerName.trim(),
+          organizerPhone: cleanPhone,
+          organizerEmail: form.organizerEmail?.trim() || undefined,
+          billingMode: "Master Folio",
+        },
+        guestRoster: guests,
+        metadata: {
+          groupName: form.groupName,
+          groupType: form.groupType,
+          companyName: form.companyName,
+          roomRequirements,
+          guests,
+          billingMode: "Master Folio",
+        },
+      };
+    },
   });
 
   const {
@@ -115,6 +141,24 @@ export default function GroupReservationPage() {
     isSubmitting,
     navigate,
   } = wizard;
+
+  const handleRequirementsChange = (nextReqs) => {
+    setRoomRequirements(nextReqs);
+    onFieldChange("roomRequirements", nextReqs);
+    if (nextReqs[0]?.roomTypeCode) {
+      onFieldChange("roomTypeCode", nextReqs[0].roomTypeCode);
+    }
+    const totalRooms = nextReqs.reduce(
+      (acc, r) => acc + Number(r.rooms || 0),
+      0,
+    );
+    const totalAdults = nextReqs.reduce(
+      (acc, r) => acc + Number(r.rooms || 0) * Number(r.adultsPerRoom || 1),
+      0,
+    );
+    onFieldChange("rooms", Math.max(1, totalRooms));
+    onFieldChange("adults", Math.max(1, totalAdults));
+  };
 
   const handleAutoAssign = () => {
     let nextRoomNum = 101;
@@ -173,16 +217,8 @@ export default function GroupReservationPage() {
           form={form}
           onChange={onFieldChange}
           roomRequirements={roomRequirements}
-          onRequirementsChange={setRoomRequirements}
-          roomTypes={
-            typeItems.length
-              ? typeItems
-              : [
-                  { roomCode: "EXEC", name: "Executive Room" },
-                  { roomCode: "DLX", name: "Deluxe Room" },
-                  { roomCode: "STE", name: "Suite Room" },
-                ]
-          }
+          onRequirementsChange={handleRequirementsChange}
+          roomTypes={typeItems}
         />
       )}
 

@@ -76,11 +76,29 @@ export const getArrivals = async (req, res) => {
               minute: "2-digit",
             })
           : null,
-        room: b.roomId?.roomNumber ? `Room ${b.roomId.roomNumber}` : null,
+        room: b.roomId?.roomNumber
+          ? `Room ${b.roomId.roomNumber}`
+          : b.roomAllocations && b.roomAllocations.length > 1
+            ? `${
+                b.roomAllocations
+                  .filter((a) => a.roomNumber)
+                  .map((a) => a.roomNumber)
+                  .join(", ") || `${b.roomAllocations.length} Rooms`
+              }`
+            : null,
         roomId: b.roomId?._id || null,
-        roomType: b.roomTypeCode
-          ? b.roomTypeCode.toUpperCase()
-          : b.roomId?.type || null,
+        roomsCount: b.rooms || b.roomAllocations?.length || 1,
+        roomType:
+          b.roomRequirements && b.roomRequirements.length > 0
+            ? b.roomRequirements
+                .map((r) => `${r.rooms} ${r.roomTypeCode.toUpperCase()}`)
+                .join(", ")
+            : b.roomTypeCode
+              ? b.roomTypeCode.toUpperCase()
+              : b.roomId?.type || null,
+        roomAllocations: b.roomAllocations || [],
+        roomRequirements: b.roomRequirements || [],
+        groupInfo: b.groupInfo || null,
         source: b.source || "DIRECT",
         isRepeat: b.source === "REPEAT_GUEST",
         isVip: b.source === "REPEAT_GUEST" || b.guestType === "vip",
