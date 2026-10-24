@@ -77,3 +77,12 @@ NOTES.md
 
 # Local planning notes (reference only, never commit)
 PLANS.md
+
+# ------------------------------------------------------
+# 📱 Kiosk / Android
+# ------------------------------------------------------
+.expo/
+apps/kiosk/android/
+*.jks
+*.keystore
+keystore.properties

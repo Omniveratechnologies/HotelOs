@@ -27,9 +27,10 @@ The backend is designed to serve multiple role-specific frontends:
 | Reception Dashboard   | `RECEPTIONIST` |
 | Kitchen Dashboard     | `KITCHEN`      |
 | Guest Dashboard       | `GUEST`        |
+| Kiosk Touchscreen App | `KIOSK`        |
 
 The repository currently ships the Super Admin, Sub Admin, Receptionist,
-Kitchen, and Guest apps (see the root `README.md`).
+Kitchen, Guest, and Kiosk apps (see the root `README.md`).
 
 ---
 
@@ -1025,6 +1026,33 @@ room's active stay, same as desk orders.
 
 Valid status updates: `ACKNOWLEDGED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`.
 
+### Kiosks & Hardware Terminals (`/kiosks`)
+
+Manages standalone Android touchscreen kiosks for guest self-check-in, table ordering, and express services.
+
+| Method | Endpoint                           | Auth | Roles              | Description                                     |
+| ------ | ---------------------------------- | ---- | ------------------ | ----------------------------------------------- |
+| POST   | `/kiosks/pair`                     | No   | Public / Hardware  | One-time activation via 6-digit pair code       |
+| POST   | `/kiosks/heartbeat`                | Yes  | KIOSK              | 30s heartbeat & telemetry (battery, version)    |
+| GET    | `/kiosks/status`                   | Yes  | KIOSK              | Device status & assigned dashboard URL query    |
+| GET    | `/kiosks/dashboards`               | Yes  | SUPER_ADMIN, STAFF | Supported dashboard targets list                |
+| GET    | `/kiosks`                          | Yes  | SUPER_ADMIN, STAFF | List terminals (hotel-scoped for staff)         |
+| POST   | `/kiosks`                          | Yes  | SUPER_ADMIN        | Register terminal & issue 6-digit pair code     |
+| PATCH  | `/kiosks/:id`                      | Yes  | SUPER_ADMIN, STAFF | Update kiosk (staff limited to status toggle)   |
+| POST   | `/kiosks/:id/regenerate-pair-code` | Yes  | SUPER_ADMIN        | Issue new 6-digit pairing code                  |
+| POST   | `/kiosks/:id/command`              | Yes  | SUPER_ADMIN        | Send remote hardware command (`reload`, `exit`) |
+| DELETE | `/kiosks/:id`                      | Yes  | SUPER_ADMIN        | Remove terminal from fleet                      |
+
+**Device Pairing** (`POST /kiosks/pair`):
+Body: `{ "pairCode": "839201", "deviceId": "KIOSK-A1B2C3D4", "model": "Samsung Tab A9", "osVersion": "Android 14" }`
+Response: `{ "token": "<jwt>", "kiosk": { "id", "deviceId", "name", "hotelId", "status", "assignedUrl" } }`. The device stores this JWT and authenticates with `role: "KIOSK"`.
+
+**Device Heartbeat** (`POST /kiosks/heartbeat`):
+Sends battery level, app version, and IP. Returns `{ "received": true, "config": { "targetDashboard", "assignedUrl", "status" } }`.
+
+**Remote Commands** (`POST /kiosks/:id/command`):
+Body: `{ "command": "device:reload" | "device:exit-kiosk", "payload": {} }`. Dispatched live over Socket.IO to the specific kiosk terminal.
+
 ---
 
 ## Realtime events (WebSocket)
@@ -1038,6 +1066,7 @@ the backend from the verified JWT:
 - Staff roles (`SUB_ADMIN`, `RECEPTIONIST`, `KITCHEN`, `SUPER_ADMIN`) are
   joined to `hotel:<hotelId>`.
 - `GUEST` sockets are joined to `guest:<userId>`.
+- `KIOSK` hardware sockets authenticate using their terminal JWT. On connection, the server immediately pushes `device:config-updated` to the connected socket with its latest MongoDB configuration and status so offline changes take effect instantly.
 - Guests and staff of other hotels never receive another hotel's events.
   Client-emitted `join:*` events are never trusted.
 
@@ -1045,12 +1074,16 @@ Modules emit through `src/shared/services/socket.service.js` (`emitToHotel`,
 `emitToGuest`); event names are shared constants in
 `src/config/socket-events.js` (`SOCKET_EVENTS`).
 
-| Event                    | Payload                   | Emitted when                           | Rooms              |
-| ------------------------ | ------------------------- | -------------------------------------- | ------------------ |
-| `order:created`          | Staff / guest order DTO   | A guest or desk order is created       | `hotel:`, `guest:` |
-| `order:updated`          | Staff / guest order DTO   | Order status or payment status changes | `hotel:`, `guest:` |
-| `serviceRequest:created` | Staff / guest request DTO | A guest or desk request is created     | `hotel:`, `guest:` |
-| `serviceRequest:updated` | Staff / guest request DTO | A request status changes               | `hotel:`, `guest:` |
+| Event                    | Payload                    | Emitted when                           | Rooms              |
+| ------------------------ | -------------------------- | -------------------------------------- | ------------------ |
+| `order:created`          | Staff / guest order DTO    | A guest or desk order is created       | `hotel:`, `guest:` |
+| `order:updated`          | Staff / guest order DTO    | Order status or payment status changes | `hotel:`, `guest:` |
+| `serviceRequest:created` | Staff / guest request DTO  | A guest or desk request is created     | `hotel:`, `guest:` |
+| `serviceRequest:updated` | Staff / guest request DTO  | A request status changes               | `hotel:`, `guest:` |
+| `device:navigate`        | `{ url, targetDashboard }` | Dashboard URL updated for a kiosk      | Terminal socket    |
+| `device:reload`          | `{}`                       | Admin requests remote WebView reload   | Terminal socket    |
+| `device:exit-kiosk`      | `{ reason }`               | Admin remotely exits Lock Task mode    | Terminal socket    |
+| `device:config-updated`  | `{ status, assignedUrl }`  | Status/URL updated or socket connects  | Terminal socket    |
 
 The receptionist dashboard subscribes to these events and merges them into its
 live lists, so front-desk, guest, and kitchen activity stay in sync across

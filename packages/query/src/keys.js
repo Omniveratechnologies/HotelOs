@@ -165,6 +165,7 @@ export const queryKeys = {
     all: ["kiosks"],
     lists: () => [...queryKeys.kiosks.all, "list"],
     list: (filters) => [...queryKeys.kiosks.lists(), filters || {}],
+    dashboards: () => [...queryKeys.kiosks.all, "dashboards"],
     details: () => [...queryKeys.kiosks.all, "detail"],
     detail: (id) => [...queryKeys.kiosks.details(), id],
   },

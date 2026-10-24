@@ -43,6 +43,7 @@ This is a **pnpm + Turborepo** monorepo. Workspaces are defined in
 | `apps/receptionist` | `receptionist`    | Front-desk dashboard (React + Vite)                      | `5175`   |
 | `apps/kitchen`      | `kitchen`         | Kitchen display system & live order board (React + Vite) | `5176`   |
 | `apps/guest`        | `guest`           | Hotel room guest dashboard & portal (React + Vite)       | `5177`   |
+| `apps/kiosk`        | `kiosk`           | Standalone Android touchscreen kiosk app (Expo + Kotlin) | `8081`   |
 | `packages/api`      | `@hotelos/api`    | Shared fetch client used by frontends                    | —        |
 | `packages/query`    | `@hotelos/query`  | Shared TanStack Query v5 client, provider & query keys   | —        |
 | `packages/socket`   | `@hotelos/socket` | Shared Socket.IO client & query cache realtime sync      | —        |
@@ -62,6 +63,7 @@ This is a **pnpm + Turborepo** monorepo. Workspaces are defined in
 | `RECEPTIONIST` | One hotel | Register guests, assign rooms, check-in/out, rate plans matrix    |
 | `KITCHEN`      | One hotel | Kitchen operations (live food orders, order lifecycle & KDS)      |
 | `GUEST`        | One hotel | Guest room dashboard, amenity booking, and food ordering          |
+| `KIOSK`        | Hardware  | Self-service guest check-in, dining orders & express reception    |
 
 Every role is validated on the backend. Frontend role checks are for UI
 navigation only and are never a security boundary.
@@ -75,6 +77,7 @@ navigation only and are never a security boundary.
   Nodemailer, Pino (struct/log + HTTP request logging), Cloudflare R2, Razorpay,
   Aiosell Channel Manager (approvals, distribution, sync, webhooks)
 - **Frontend** — React 19, Vite (`@tailwindcss/vite`), Tailwind CSS v4, React Router
+- **Kiosk & Hardware** — React Native, Expo SDK 54+, Expo Modules (Kotlin native module), Android Device Owner + Lock Task Mode, react-native-webview
 - **State management** — TanStack Query v5 (server state), Zustand (UI state)
 - **Realtime** — Socket.IO (unified hub + automatic TanStack Query cache invalidation)
 - **Shared packages** — `@hotelos/api`, `@hotelos/query`, `@hotelos/socket`, `@hotelos/stores`, `@hotelos/styles`, `@hotelos/ui`, `@hotelos/utils`

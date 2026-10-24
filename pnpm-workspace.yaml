@@ -1,6 +1,32 @@
+# pnpm 12 settings live her.
+#
 packages:
   - "apps/*"
   - "packages/*"
+#
+# Approve dependency build scripts explicitly.
 allowBuilds:
   core-js: true
   esbuild: true
+  unrs-resolver: true
+#
+# Put the virtual store at the project root (./.pnpm) instead of the default
+# node_modules/.pnpm. This removes the `node_modules/` path segment from every
+# installed package, which matters for the deeply nested native-module paths
+# (react-native-reanimated / worklets / screens C++ builds): CMake object paths
+# otherwise blow past CMAKE_OBJECT_PATH_MAX (~250 chars) on Windows and ninja
+# loops with "manifest 'build.ninja' still dirty after 100 tries".
+virtualStoreDir: .pnpm
+#
+# Cap the length of virtual-store directory names.
+# Windows defaults this to 60, which is not short enough here.
+virtualStoreDirMaxLength: 32
+#
+# Hoist @expo/config-plugins into node_modules/ so the project-local plugin
+# files (plugins/*.ts and modules/kiosk-manager/app.plugin.js) can
+# `require("@expo/config-plugins")`. Expo's config loader runs those with
+# Node's plain resolver, which only looks in the project root — pnpm's strict
+# layout otherwise leaves it only inside .pnpm, breaking `expo prebuild`
+# (Gradle's :expo-constants:createExpoConfig) and `tsc`.
+publicHoistPattern:
+  - "@expo/config-plugins"
