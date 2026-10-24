@@ -5,18 +5,6 @@ import { Sidebar } from "@hotelos/ui/components/Sidebar";
 import { useSidebarStore } from "@hotelos/stores";
 import { getStoredUser, clearAuth } from "@hotelos/api";
 import { AppProviders } from "../providers/AppProviders.jsx";
-import {
-  DASHBOARD_IDS,
-  DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/intelligence-data.js";
-import {
-  POS_DASHBOARD_IDS,
-  POS_DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/pos/intelligence-data.js";
-import {
-  BI_DASHBOARD_IDS,
-  BI_DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/bi/intelligence-data.js";
 
 const icon = (paths) => (
   <svg
@@ -147,48 +135,6 @@ const items = [
     path: "/reports",
     icon: icon(
       <path d="M4 20V10M11 20V4M18 20v-7" fill="none" strokeLinecap="round" />,
-    ),
-  },
-  { section: "AI ANALYTICS", id: "ai-analytics-section" },
-  {
-    label: "PMS Intelligence",
-    path: "/intelligence/pms/revenue",
-    defaultOpen: true,
-    icon: icon(
-      <path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7" strokeLinecap="round" />,
-    ),
-    subMenu: DASHBOARD_IDS.map((id) => ({
-      label: DASHBOARDS[id].title,
-      path: `/intelligence/pms/${id}`,
-    })),
-  },
-  {
-    label: "POS Intelligence",
-    path: "/intelligence/pos/sales",
-    icon: icon(
-      <path d="M3 4h2l2.2 10.2a2 2 0 002 1.6h8.6a2 2 0 002-1.6L22 8H6M10 20a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />,
-    ),
-    subMenu: POS_DASHBOARD_IDS.map((id) => ({
-      label: POS_DASHBOARDS[id].title,
-      path: `/intelligence/pos/${id}`,
-    })),
-  },
-  {
-    label: "Business Intelligence",
-    path: "/intelligence/bi/total-revenue",
-    icon: icon(
-      <path d="M4 19V5m0 14h16M7 15l4-4 3 3 6-7" strokeLinecap="round" />,
-    ),
-    subMenu: BI_DASHBOARD_IDS.map((id) => ({
-      label: BI_DASHBOARDS[id].title,
-      path: `/intelligence/bi/${id}`,
-    })),
-  },
-  {
-    label: "Analytics Reports",
-    path: "/intelligence/reports",
-    icon: icon(
-      <path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5" strokeLinecap="round" />,
     ),
   },
   {
