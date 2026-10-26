@@ -13,8 +13,7 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
   const [name, setName] = useState("");
   const [deviceId, setDeviceId] = useState("");
   const [location, setLocation] = useState("Main Lobby");
-  const [targetDashboard, setTargetDashboard] = useState("DEMO_PORTAL");
-  const [customUrl, setCustomUrl] = useState("");
+  const [targetDashboard, setTargetDashboard] = useState("GUEST_DASHBOARD");
   const [errors, setErrors] = useState({});
 
   function resetForm() {
@@ -22,8 +21,7 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
     setName("");
     setDeviceId("");
     setLocation("Main Lobby");
-    setTargetDashboard("DEMO_PORTAL");
-    setCustomUrl("");
+    setTargetDashboard("GUEST_DASHBOARD");
     setErrors({});
   }
 
@@ -37,9 +35,6 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
     if (!hotelId) errs.hotelId = "Please select an assigned hotel";
     if (!name.trim()) errs.name = "Terminal name is required";
     if (!deviceId.trim()) errs.deviceId = "Device ID is required";
-    if (targetDashboard === "CUSTOM_URL" && !customUrl.trim()) {
-      errs.customUrl = "Custom URL is required when custom mode is chosen";
-    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -55,7 +50,6 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
         deviceId: deviceId.trim().toUpperCase(),
         location: location.trim(),
         targetDashboard,
-        customUrl: targetDashboard === "CUSTOM_URL" ? customUrl.trim() : null,
       });
 
       if (onCreated) {
@@ -165,7 +159,6 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
                   {d.name}
                 </option>
               ))}
-              <option value="CUSTOM_URL">Custom Embedded Web URL</option>
             </select>
           </div>
         </div>
@@ -178,20 +171,6 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
               {selectedPreset.url}
             </code>
             <p className="mt-1 text-gray-500">{selectedPreset.description}</p>
-          </div>
-        )}
-
-        {targetDashboard === "CUSTOM_URL" && (
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Custom Embedded Web URL *
-            </label>
-            <Input
-              placeholder="https://demo.hotelos.com/custom-terminal"
-              value={customUrl}
-              onChange={(e) => setCustomUrl(e.target.value)}
-              error={errors.customUrl}
-            />
           </div>
         )}
 

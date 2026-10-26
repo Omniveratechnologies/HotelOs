@@ -213,7 +213,7 @@ export default function KioskDevicesPage() {
                       <div className="flex justify-between text-gray-500">
                         <span>Dashboard Mode:</span>
                         <span className="rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800">
-                          {k.targetDashboard || "DEMO_URL"}
+                          {k.targetDashboard || "GUEST_DASHBOARD"}
                         </span>
                       </div>
                       <div className="flex justify-between text-gray-500">

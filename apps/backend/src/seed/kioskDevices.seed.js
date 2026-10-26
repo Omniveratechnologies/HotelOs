@@ -32,9 +32,7 @@ const seedKioskDevices = async () => {
       name: "Main Lobby Terminal #1",
       location: "Main Lobby - East Entrance",
       status: "ONLINE",
-      targetDashboard: "DEMO_URL",
-      assignedUrl:
-        process.env.KIOSK_DEMO_URL || "https://example.com/demo-kiosk",
+      targetDashboard: "GUEST_DASHBOARD",
       pairCode: "123456",
       isPaired: false,
       firmwareVersion: "v1.4.0",

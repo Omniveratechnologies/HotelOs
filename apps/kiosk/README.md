@@ -23,7 +23,7 @@ All native Android capabilities are managed through **Expo Modules** and **Expo 
 2. **Centralized Fleet Control (Super Admin)**:
    - Full lifecycle management from `apps/super-admin` (`/kiosks`).
    - Reassign terminals between hotels with one click.
-   - Switch target dashboard modes: `GUEST_CHECKIN`, `TABLE_ORDER`, `RECEPTIONIST_EXPRESS`, `CUSTOM_URL`, or `DEMO_PORTAL`.
+   - Switch target dashboard modes: `GUEST_DASHBOARD`, `SELF_CHECKIN`, or `DIGITAL_MENU`.
    - Real-time remote controls: **Reload** WebView and **Exit Kiosk** mode over WebSocket.
 
 3. **Front-Desk Maintenance Mode (Receptionist)**:

@@ -40,7 +40,7 @@ export function DeviceInfoCard({ info, auth }: Props) {
           )}
           <Row
             label="Dashboard Mode"
-            value={auth.targetDashboard || "DEMO_URL"}
+            value={auth.targetDashboard || "GUEST_DASHBOARD"}
           />
           <Row label="Server" value={auth.serverUrl} />
         </>

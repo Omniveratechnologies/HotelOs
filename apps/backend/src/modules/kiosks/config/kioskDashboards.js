@@ -1,70 +1,52 @@
+import env from "#/config/env.js";
+
 /**
  * Embedded dashboard configurations for HotelOS Kiosks.
  *
- * Each dashboard has a descriptive name, unique id, and default demo URL
- * that can be overridden via environment variables.
- *
- * TODO: In production, these URLs should be configured per hotel deployment
- * or dynamically parameterized with hotelId / kioskId query parameters:
- * e.g. `${dashboard.url}?hotelId=${kiosk.hotelId}&kioskId=${kiosk._id}`
+ * Each dashboard has a descriptive name, unique id, and designated URL
+ * retrieved directly from the validated backend environment configuration.
  */
-
 export const KIOSK_DASHBOARDS = [
   {
-    id: "DEMO_PORTAL",
-    name: "HotelOS Interactive Demo",
-    description: "Default interactive kiosk showcase and feature demo",
-    url:
-      process.env.KIOSK_DEMO_PORTAL_URL ||
-      "https://demo.hotelos.com/kiosk-showcase",
-  },
-  {
-    id: "GUEST_CHECKIN",
-    name: "Guest Self Check-In",
+    id: "GUEST_DASHBOARD",
+    name: "Guest Dashboard",
     description:
-      "Touchscreen guest self check-in, registration, and room key access",
-    url:
-      process.env.KIOSK_GUEST_CHECKIN_URL ||
-      "https://demo.hotelos.com/guest-checkin",
+      "Touchscreen guest self-service hub, amenities, and room services",
+    url: env.kiosk.guestDashboardUrl,
   },
   {
-    id: "TABLE_ORDER",
-    name: "Restaurant & Table Ordering",
+    id: "SELF_CHECKIN",
+    name: "Self Check-In",
+    description:
+      "Guest self check-in, ID verification, and digital room key access",
+    url: env.kiosk.selfCheckinUrl,
+  },
+  {
+    id: "DIGITAL_MENU",
+    name: "Digital Menu",
     description: "Digital restaurant menu, dining order, and guest billing",
-    url:
-      process.env.KIOSK_TABLE_ORDER_URL ||
-      "https://demo.hotelos.com/table-order",
-  },
-  {
-    id: "RECEPTIONIST_EXPRESS",
-    name: "Receptionist Express Terminal",
-    description: "Fast-track front desk concierge and self-service station",
-    url:
-      process.env.KIOSK_RECEPTIONIST_EXPRESS_URL ||
-      "https://demo.hotelos.com/receptionist-express",
+    url: env.kiosk.digitalMenuUrl,
   },
 ];
 
 /**
- * Resolves the assigned URL for a kiosk terminal based on dashboard type or custom URL.
+ * Resolves the assigned URL for a kiosk terminal based on dashboard type.
+ * Note: assignedUrl is not stored in MongoDB; it is computed dynamically from this config.
+ *
+ * @param {string|object} targetDashboard - Target dashboard ID or kiosk device object
+ * @returns {string} The resolved dashboard URL
  */
-export function resolveKioskAssignedUrl(kiosk) {
-  // If a custom URL is explicitly provided, use it
-  if (kiosk.customUrl?.trim()) {
-    return kiosk.customUrl.trim();
-  }
+export function resolveKioskAssignedUrl(targetDashboard) {
+  const mode =
+    typeof targetDashboard === "object" && targetDashboard !== null
+      ? targetDashboard.targetDashboard
+      : targetDashboard;
 
-  // Find matching dashboard preset
-  const preset = KIOSK_DASHBOARDS.find((d) => d.id === kiosk.targetDashboard);
+  const preset = KIOSK_DASHBOARDS.find((d) => d.id === mode);
   if (preset) {
-    // TODO: In production, parameterize the URL as per hotel setup:
-    // e.g. `${preset.url}?hotelId=${kiosk.hotelId}&kioskId=${kiosk._id}`
     return preset.url;
   }
 
-  // Fallback default
-  return (
-    process.env.KIOSK_DEMO_PORTAL_URL ||
-    "https://demo.hotelos.com/kiosk-showcase"
-  );
+  // Fallback to the primary Guest Dashboard if unknown/unassigned
+  return KIOSK_DASHBOARDS[0].url;
 }

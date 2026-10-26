@@ -21,9 +21,8 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
   const [location, setLocation] = useState(kiosk?.location || "Main Lobby");
   const [status, setStatus] = useState(kiosk?.status || "ONLINE");
   const [targetDashboard, setTargetDashboard] = useState(
-    kiosk?.targetDashboard || "DEMO_PORTAL",
+    kiosk?.targetDashboard || "GUEST_DASHBOARD",
   );
-  const [customUrl, setCustomUrl] = useState(kiosk?.customUrl || "");
   const [commandFeedback, setCommandFeedback] = useState("");
   const [errors, setErrors] = useState({});
 
@@ -33,10 +32,6 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
     e.preventDefault();
     if (!name.trim()) {
       setErrors({ name: "Terminal name is required" });
-      return;
-    }
-    if (targetDashboard === "CUSTOM_URL" && !customUrl.trim()) {
-      setErrors({ customUrl: "Custom URL is required for custom mode" });
       return;
     }
 
@@ -49,7 +44,6 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
           location: location.trim(),
           status,
           targetDashboard,
-          customUrl: targetDashboard === "CUSTOM_URL" ? customUrl.trim() : null,
         },
       });
 
@@ -159,7 +153,6 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
                   {d.name}
                 </option>
               ))}
-              <option value="CUSTOM_URL">Custom Embedded Web URL</option>
             </select>
           </div>
 
@@ -188,19 +181,6 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
               {selectedPreset.url}
             </code>
             <p className="mt-1 text-gray-500">{selectedPreset.description}</p>
-          </div>
-        )}
-
-        {targetDashboard === "CUSTOM_URL" && (
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Custom Embedded Web URL *
-            </label>
-            <Input
-              value={customUrl}
-              onChange={(e) => setCustomUrl(e.target.value)}
-              error={errors.customUrl}
-            />
           </div>
         )}
 

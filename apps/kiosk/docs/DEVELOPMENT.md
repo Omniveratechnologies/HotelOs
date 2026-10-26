@@ -87,7 +87,7 @@ Active admin set to component ...
 3. Click **Register Terminal**:
    - Provide a device name (e.g. _Lobby Touchscreen 1_).
    - Select the assigned hotel.
-   - Choose a target dashboard (e.g. _Interactive Demo_, _Guest Check-in_, or _Custom Web_).
+   - Choose a target dashboard (_Guest Dashboard_, _Self Check-In_, or _Digital Menu_).
    - Click **Register & Generate Pair Code** and copy the **6-digit pairing code** (e.g., `839201`).
 4. On the tablet, open the **HotelOS Kiosk** app:
    - Enter your HotelOS server URL (e.g. `http://10.0.2.2:5001`).

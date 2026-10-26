@@ -31,11 +31,9 @@ import CreateKioskModal from "../components/CreateKioskModal.jsx";
 import EditKioskModal from "../components/EditKioskModal.jsx";
 
 const DASHBOARD_LABELS = {
-  DEMO_PORTAL: "Interactive Demo",
-  GUEST_CHECKIN: "Guest Check-in",
-  TABLE_ORDER: "Table Ordering",
-  RECEPTIONIST_EXPRESS: "Express Reception",
-  CUSTOM_URL: "Custom Web",
+  GUEST_DASHBOARD: "Guest Dashboard",
+  SELF_CHECKIN: "Self Check-In",
+  DIGITAL_MENU: "Digital Menu",
 };
 
 export default function KioskDevicesPage() {

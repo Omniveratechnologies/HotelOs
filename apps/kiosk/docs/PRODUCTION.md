@@ -128,7 +128,7 @@ Once deployed, the physical tablet is managed 100% remotely through the HotelOS 
   - Staff can click **Turn On Maintenance** whenever the tablet requires cleaning or physical maintenance. The tablet displays a guest-friendly notice advising guests to approach the concierge.
   - Staff can click **Turn Off Maintenance** to instantly resume guest check-in or ordering operations.
 - **Super Admin Central Control**:
-  - Super Admin can reassign terminals to different hotels or switch target dashboards (`GUEST_CHECKIN`, `TABLE_ORDER`, `RECEPTIONIST_EXPRESS`, `CUSTOM_URL`, `DEMO_PORTAL`).
+  - Super Admin can reassign terminals to different hotels or switch target dashboards (`GUEST_DASHBOARD`, `SELF_CHECKIN`, `DIGITAL_MENU`).
   - Super Admin can remotely trigger **Reload** or **Exit Kiosk** over WebSocket.
 - **Applying App Updates**:
   - To install an updated APK on a deployed tablet, connect via USB and run `adb install -r <new-apk-path>`. Because the keystore is identical, the APK updates seamlessly without losing Device Owner provisioning.

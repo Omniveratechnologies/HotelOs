@@ -346,6 +346,9 @@ Required variables (validated in `src/config/env.js`):
 | -------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------- |
 | `MONGODB_URI`                                                              | Yes      | MongoDB connection string                                            |
 | `JWT_SECRET`                                                               | Yes      | Long random secret used to sign tokens                               |
+| `KIOSK_GUEST_DASHBOARD_URL`                                                | Yes      | URL for Kiosk Guest Dashboard preset                                 |
+| `KIOSK_SELF_CHECKIN_URL`                                                   | Yes      | URL for Kiosk Self Check-In preset                                   |
+| `KIOSK_DIGITAL_MENU_URL`                                                   | Yes      | URL for Kiosk Digital Menu preset                                    |
 | `PORT`                                                                     | No       | Server port. **Frontends expect `5001`**                             |
 | `JWT_EXPIRES_IN`                                                           | No       | Token lifetime (default `1d`)                                        |
 | `CLIENT_URL`                                                               | No       | Frontend origin for CORS                                             |

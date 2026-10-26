@@ -45,9 +45,7 @@ export function KioskScreen() {
         return;
       }
       setAuth(storedAuth);
-      setUrl(
-        storedAuth.assignedUrl || "https://demo.hotelos.com/kiosk-showcase",
-      );
+      setUrl(storedAuth.assignedUrl || "");
 
       // Auto-sync status immediately on mount
       kioskApi
