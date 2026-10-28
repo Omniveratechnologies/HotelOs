@@ -37,11 +37,13 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default("1d"),
   REDIS_URL: z.string().min(1, "REDIS_URL is required"),
 
-  // Client & Service URLs (Optional)
-  CLIENT_URL: optionalUrl(),
-  FRONTEND_URL: optionalUrl(),
+  // Frontend URLs (Optional with dev fallbacks)
+  SUPER_ADMIN_FRONTEND_URL: optionalUrl(),
   SUB_ADMIN_FRONTEND_URL: optionalUrl(),
   RECEPTIONIST_FRONTEND_URL: optionalUrl(),
+  KITCHEN_FRONTEND_URL: optionalUrl(),
+  GUEST_FRONTEND_URL: optionalUrl(),
+  SELF_CHECKIN_FRONTEND_URL: optionalUrl(),
   TABLE_ORDER_FRONTEND_URL: optionalUrl(),
   SOCKET_CORS_ORIGINS: optionalString(),
 
@@ -77,20 +79,6 @@ const envSchema = z.object({
 
   // Super Admin Password Seed (Optional)
   SUPER_ADMIN_PASSWORD: optionalString(),
-
-  // Kiosk Dashboards (Required - strictly validated without in-code fallbacks)
-  KIOSK_GUEST_DASHBOARD_URL: z
-    .string()
-    .trim()
-    .url("KIOSK_GUEST_DASHBOARD_URL is required and must be a valid URL"),
-  KIOSK_SELF_CHECKIN_URL: z
-    .string()
-    .trim()
-    .url("KIOSK_SELF_CHECKIN_URL is required and must be a valid URL"),
-  KIOSK_DIGITAL_MENU_URL: z
-    .string()
-    .trim()
-    .url("KIOSK_DIGITAL_MENU_URL is required and must be a valid URL"),
 });
 
 const parsedResult = envSchema.safeParse(process.env);
@@ -104,6 +92,12 @@ if (!parsedResult.success) {
 
 const parsed = parsedResult.data;
 
+const normalizeBaseUrl = (val, defaultUrl) => {
+  const raw =
+    val && typeof val === "string" && val.trim() !== "" ? val : defaultUrl;
+  return raw.trim().replace(/\/+$/, "");
+};
+
 export const env = {
   port: parsed.PORT,
   host: parsed.HOST,
@@ -113,11 +107,33 @@ export const env = {
   jwtSecret: parsed.JWT_SECRET,
   jwtExpiresIn: parsed.JWT_EXPIRES_IN,
   redisUrl: parsed.REDIS_URL,
-  clientUrl: parsed.CLIENT_URL,
-  frontendUrl: parsed.FRONTEND_URL,
-  subAdminFrontendUrl: parsed.SUB_ADMIN_FRONTEND_URL,
-  receptionistFrontendUrl: parsed.RECEPTIONIST_FRONTEND_URL,
-  tableOrderFrontendUrl: parsed.TABLE_ORDER_FRONTEND_URL,
+  frontendUrls: {
+    superAdmin: normalizeBaseUrl(
+      parsed.SUPER_ADMIN_FRONTEND_URL,
+      "http://localhost:5173",
+    ),
+    subAdmin: normalizeBaseUrl(
+      parsed.SUB_ADMIN_FRONTEND_URL,
+      "http://localhost:5174",
+    ),
+    receptionist: normalizeBaseUrl(
+      parsed.RECEPTIONIST_FRONTEND_URL,
+      "http://localhost:5175",
+    ),
+    kitchen: normalizeBaseUrl(
+      parsed.KITCHEN_FRONTEND_URL,
+      "http://localhost:5176",
+    ),
+    guest: normalizeBaseUrl(parsed.GUEST_FRONTEND_URL, "http://localhost:5177"),
+    selfCheckin: normalizeBaseUrl(
+      parsed.SELF_CHECKIN_FRONTEND_URL,
+      "http://localhost:5178",
+    ),
+    tableOrder: normalizeBaseUrl(
+      parsed.TABLE_ORDER_FRONTEND_URL,
+      "http://localhost:5179",
+    ),
+  },
   socketCorsOrigins: parsed.SOCKET_CORS_ORIGINS,
   r2: {
     accountId: parsed.R2_ACCOUNT_ID,
@@ -148,11 +164,6 @@ export const env = {
     enabled: parsed.AIOSELL_ENABLED === "true",
   },
   superAdminPassword: parsed.SUPER_ADMIN_PASSWORD,
-  kiosk: {
-    guestDashboardUrl: parsed.KIOSK_GUEST_DASHBOARD_URL,
-    selfCheckinUrl: parsed.KIOSK_SELF_CHECKIN_URL,
-    digitalMenuUrl: parsed.KIOSK_DIGITAL_MENU_URL,
-  },
 };
 
 export default env;

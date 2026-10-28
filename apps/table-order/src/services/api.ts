@@ -7,11 +7,14 @@ import type {
   TableDetails,
 } from "../types";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:5001/api/v1";
+const raw = (import.meta.env.VITE_API_URL ?? "http://localhost:5001")
+  .trim()
+  .replace(/\/+$/, "");
+const API_BASE_URL = raw.endsWith("/api/v1") ? raw : `${raw}/api/v1`;
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const res = await fetch(`${API_BASE_URL}${normalizedPath}`, {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers },
   });

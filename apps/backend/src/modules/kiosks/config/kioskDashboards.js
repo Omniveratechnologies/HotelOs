@@ -12,20 +12,20 @@ export const KIOSK_DASHBOARDS = [
     name: "Guest Dashboard",
     description:
       "Touchscreen guest self-service hub, amenities, and room services",
-    url: env.kiosk.guestDashboardUrl,
+    url: env.frontendUrls.guest,
   },
   {
     id: "SELF_CHECKIN",
     name: "Self Check-In",
     description:
       "Guest self check-in, ID verification, and digital room key access",
-    url: env.kiosk.selfCheckinUrl,
+    url: env.frontendUrls.selfCheckin,
   },
   {
     id: "DIGITAL_MENU",
     name: "Digital Menu",
     description: "Digital restaurant menu, dining order, and guest billing",
-    url: env.kiosk.digitalMenuUrl,
+    url: env.frontendUrls.tableOrder,
   },
 ];
 

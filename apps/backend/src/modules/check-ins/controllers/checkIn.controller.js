@@ -16,16 +16,6 @@ const BOOKABLE_STATUSES = new Set([
   "checked-in",
 ]);
 
-function buildCheckInUrl(token) {
-  // Guest self check-in lives in standalone self-checkin app.
-  const base = (
-    env.kiosk.selfCheckinUrl ||
-    process.env.SELF_CHECKIN_FRONTEND_URL ||
-    "http://localhost:5178"
-  ).replace(/\/$/, "");
-  return `${base}/check-in/${token}`;
-}
-
 function expiresAtFor(reservation) {
   // The link stays valid until the end of the check-out day.
   const expiresAt = new Date(reservation.checkOut);
@@ -110,7 +100,7 @@ export const createCheckInLink = async (req, res) => {
 
     const hotel = await Hotel.findById(req.user.hotelId).select("name").lean();
 
-    const url = buildCheckInUrl(token);
+    const url = `${env.frontendUrls.selfCheckin}/check-in/${token}`;
     let emailSent = true;
     try {
       await sendCheckInEmail({
@@ -407,7 +397,7 @@ export const resendCheckInLink = async (req, res) => {
           subject: "Complete your online check-in",
           heading: "Your check-in link",
           body: "Please complete your check-in online before arrival.",
-          actionUrl: buildCheckInUrl(token),
+          actionUrl: `${env.frontendUrls.selfCheckin}/check-in/${token}`,
           actionLabel: "Continue Check-in",
         });
       } catch (error) {
@@ -544,7 +534,7 @@ async function reviewSession(req, res, decision) {
           body: config.body,
           actionUrl:
             decision === "correction-requested"
-              ? buildCheckInUrl(token)
+              ? `${env.frontendUrls.selfCheckin}/check-in/${token}`
               : undefined,
           actionLabel: "Open Check-in",
         });

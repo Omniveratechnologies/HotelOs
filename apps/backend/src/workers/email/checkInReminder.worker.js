@@ -83,13 +83,7 @@ export async function processCheckInReminderJob(job) {
     });
   }
 
-  const baseUrl = (
-    env.kiosk.selfCheckinUrl ||
-    process.env.SELF_CHECKIN_FRONTEND_URL ||
-    "http://localhost:5178"
-  ).replace(/\/$/, "");
-
-  const checkInUrl = `${baseUrl}/check-in/${token}`;
+  const checkInUrl = `${env.frontendUrls.selfCheckin}/check-in/${token}`;
   const hotelName = booking.hotelId?.name || "Our Hotel";
   const guestName = booking.guestId?.name || "Guest";
   const checkInTime = booking.hotelId?.checkInTime || "14:00";

@@ -7,6 +7,7 @@ import {
   sendUsernameReminderEmail,
   sendPasswordResetEmail,
 } from "#/shared/services/email.service.js";
+import env from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 export const login = async (req, res) => {
@@ -237,10 +238,7 @@ export const forgotPassword = async (req, res) => {
 
     await user.save();
 
-    const subAdminFrontendUrl =
-      process.env.SUB_ADMIN_FRONTEND_URL || "http://localhost:5175";
-
-    const resetUrl = `${subAdminFrontendUrl}/reset-password?token=${resetToken}`;
+    const resetUrl = `${env.frontendUrls.subAdmin}/reset-password?token=${resetToken}`;
 
     await sendPasswordResetEmail({
       email: user.email,

@@ -5,7 +5,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 5177",
+    "dev": "vite dev --port 5177 --host",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview"

@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "turbo dev",
+    "dev:kiosk": "node scripts/sync-kiosk-ip.mjs && turbo dev --filter=backend --filter=guest --filter=self-checkin --filter=table-order --filter=kiosk",
+    "sync:ip": "node scripts/sync-kiosk-ip.mjs",
     "build": "turbo build",
     "preview": "turbo preview",
     "lint": "oxlint .",
