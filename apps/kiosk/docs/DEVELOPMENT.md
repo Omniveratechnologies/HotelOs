@@ -45,7 +45,7 @@ EXPO_PUBLIC_SOCKET_URL=http://10.0.2.2:5001
 ```
 
 > [!TIP]
-> For end-to-end kiosk testing on physical hardware, run `pnpm dev:kiosk` from the repository root. It auto-detects your LAN IP, syncs all `.env` files, and runs the 3 dashboards with `--host` alongside the backend and kiosk dev server.
+> For end-to-end kiosk testing on physical hardware, run `pnpm dev:kiosk` from the repository root. It auto-detects your LAN IP, syncs all `.env` files, launches the Expo development server in a dedicated interactive terminal window with direct keyboard shortcut support (`a`, `r`), and runs the backend and 3 LAN web dashboards in Turborepo.
 
 ---
 

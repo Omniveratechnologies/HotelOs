@@ -8,6 +8,19 @@ const rootDir = path.resolve(scriptDir, "..");
 
 const IPV4_REGEX = /^(\d{1,3}\.){3}\d{1,3}$/;
 
+// Color helpers for terminal output
+const c = {
+  reset: "\x1b[0m",
+  bold: (s) => `\x1b[1m${s}\x1b[0m`,
+  red: (s) => `\x1b[31m${s}\x1b[0m`,
+  green: (s) => `\x1b[32m${s}\x1b[0m`,
+  yellow: (s) => `\x1b[33m${s}\x1b[0m`,
+  blue: (s) => `\x1b[34m${s}\x1b[0m`,
+  cyan: (s) => `\x1b[36m${s}\x1b[0m`,
+  boldCyan: (s) => `\x1b[1m\x1b[36m${s}\x1b[0m`,
+  boldGreen: (s) => `\x1b[1m\x1b[32m${s}\x1b[0m`,
+};
+
 /**
  * Detect the host LAN IPv4 address.
  */
@@ -15,10 +28,10 @@ function detectHostIp() {
   const cliArg = process.argv[2]?.trim();
   if (cliArg) {
     if (!IPV4_REGEX.test(cliArg)) {
-      console.error(`Invalid IP address provided: "${cliArg}"`);
+      console.error(c.red(`Invalid IP address provided: "${cliArg}"`));
       process.exit(1);
     }
-    console.log(`Using manually provided IP: ${cliArg}`);
+    console.log(c.cyan(`Using manually provided IP: ${cliArg}`));
     return cliArg;
   }
 
@@ -57,13 +70,17 @@ function detectHostIp() {
   if (candidates.length > 0) {
     const selected = candidates[0];
     console.log(
-      `Detected LAN IP: ${selected.address} on interface "${selected.name}"`,
+      c.cyan(
+        `Detected LAN IP: ${c.bold(selected.address)} on interface "${selected.name}"`,
+      ),
     );
     return selected.address;
   }
 
   console.warn(
-    "Could not detect active physical LAN interface. Defaulting to 127.0.0.1",
+    c.yellow(
+      "Could not detect active physical LAN interface. Defaulting to 127.0.0.1",
+    ),
   );
   return "127.0.0.1";
 }
@@ -95,16 +112,16 @@ function updateEnvFile(relativeFilePath, updates, keysToRemove = []) {
 
   fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
   fs.writeFileSync(absolutePath, content, "utf8");
-  console.log(`  Updated ${relativeFilePath}`);
+  console.log(c.green(`  ✔ Updated ${relativeFilePath}`));
 }
 
 function main() {
-  console.log("HotelOS Kiosk LAN IP Synchronization");
-  console.log("========================================");
+  console.log(c.boldCyan("HotelOS Kiosk LAN IP Synchronization"));
+  console.log(c.cyan("========================================"));
 
   const ip = detectHostIp();
 
-  console.log(`\nSyncing configuration for LAN IP: ${ip}...`);
+  console.log(c.yellow(`\nSyncing configuration for LAN IP: ${ip}...`));
 
   // 1. Guest Dashboard
   updateEnvFile("apps/guest/.env", {
@@ -142,13 +159,23 @@ function main() {
     ],
   );
 
-  console.log("\nSync completed successfully!");
-  console.log("Endpoints summary:");
-  console.log(`  Backend API:             http://${ip}:5001`);
-  console.log(`  Guest Dashboard:         http://${ip}:5177`);
-  console.log(`  Self Check-In:           http://${ip}:5178`);
-  console.log(`  Table Order (Menu):      http://${ip}:5179`);
-  console.log(`  Kiosk App Target Server: http://${ip}:5001\n`);
+  console.log(c.boldGreen("\nSync completed successfully!"));
+  console.log(c.bold("Endpoints summary:"));
+  console.log(
+    `  ${c.blue("Backend API:")}             ${c.cyan(`http://${ip}:5001`)}`,
+  );
+  console.log(
+    `  ${c.blue("Guest Dashboard:")}         ${c.cyan(`http://${ip}:5177`)}`,
+  );
+  console.log(
+    `  ${c.blue("Self Check-In:")}           ${c.cyan(`http://${ip}:5178`)}`,
+  );
+  console.log(
+    `  ${c.blue("Table Order (Menu):")}      ${c.cyan(`http://${ip}:5179`)}`,
+  );
+  console.log(
+    `  ${c.blue("Kiosk App Target Server:")} ${c.cyan(`http://${ip}:5001`)}\n`,
+  );
 }
 
 main();

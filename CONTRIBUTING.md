@@ -165,7 +165,7 @@ The apps will spin up at the following local addresses:
 For physical Android kiosk tablet testing or guest mobile phone testing over local Wi-Fi:
 
 ```bash
-# Automatically sync host machine's LAN IP and expose dashboards over --host:
+# Automatically sync host machine's LAN IP, launch Expo in a separate interactive terminal, and run remaining apps via Turbo:
 pnpm dev:kiosk
 ```
 

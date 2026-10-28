@@ -176,7 +176,7 @@ Each app is served on its own port:
 When testing with physical Android kiosk tablets or mobile devices on your local Wi-Fi:
 
 ```bash
-# Automatically detects host LAN IPv4 and launches all dashboards with --host + kiosk dev server
+# Automatically detects host LAN IPv4, syncs .env files, opens Expo in an independent interactive terminal, and starts backend + dashboards in Turbo
 pnpm dev:kiosk
 
 # Or sync IP standalone:
@@ -197,15 +197,17 @@ GET http://localhost:5001/api/v1/health
 
 All scripts run from the repository root:
 
-| Command             | Description                                            |
-| ------------------- | ------------------------------------------------------ |
-| `pnpm dev`          | Start all apps in development mode (Turbo, persistent) |
-| `pnpm build`        | Build all apps for production (Turbo, cached)          |
-| `pnpm preview`      | Preview production builds locally                      |
-| `pnpm lint`         | Lint the whole repo with oxlint                        |
-| `pnpm lint:fix`     | Lint and auto-fix with oxlint                          |
-| `pnpm format`       | Format all source files with Prettier                  |
-| `pnpm format:check` | Check formatting without writing                       |
+| Command             | Description                                                           |
+| ------------------- | --------------------------------------------------------------------- |
+| `pnpm dev`          | Start all apps in development mode (Turbo, persistent)                |
+| `pnpm dev:kiosk`    | Sync LAN IP, open Expo in interactive terminal, and run apps in Turbo |
+| `pnpm sync:ip`      | Auto-detect physical LAN IPv4 and sync across all .env files          |
+| `pnpm build`        | Build all apps for production (Turbo, cached)                         |
+| `pnpm preview`      | Preview production builds locally                                     |
+| `pnpm lint`         | Lint the whole repo with oxlint                                       |
+| `pnpm lint:fix`     | Lint and auto-fix with oxlint                                         |
+| `pnpm format`       | Format all source files with Prettier                                 |
+| `pnpm format:check` | Check formatting without writing                                      |
 
 ### Install pnpm
 
