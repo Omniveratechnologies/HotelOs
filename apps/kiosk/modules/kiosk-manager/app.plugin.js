@@ -40,7 +40,7 @@ function withKioskManagerPermissions(config) {
       }
     }
 
-    return config;
+    return modConfig;
   });
 }
 
