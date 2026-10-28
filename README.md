@@ -35,22 +35,24 @@ authenticated user's JWT (`req.user.hotelId`).
 This is a **pnpm + Turborepo** monorepo. Workspaces are defined in
 `pnpm-workspace.yaml` (`apps/*` and `packages/*`).
 
-| Path                | Name              | Description                                              | Dev port |
-| ------------------- | ----------------- | -------------------------------------------------------- | -------- |
-| `apps/backend`      | `backend`         | Express + MongoDB REST API                               | `5001`   |
-| `apps/super-admin`  | `super-admin`     | Platform operator dashboard (React + Vite)               | `5173`   |
-| `apps/sub-admin`    | `sub-admin`       | Hotel admin dashboard + marketing site (React + Vite)    | `5174`   |
-| `apps/receptionist` | `receptionist`    | Front-desk dashboard (React + Vite)                      | `5175`   |
-| `apps/kitchen`      | `kitchen`         | Kitchen display system & live order board (React + Vite) | `5176`   |
-| `apps/guest`        | `guest`           | Hotel room guest dashboard & portal (React + Vite)       | `5177`   |
-| `apps/kiosk`        | `kiosk`           | Standalone Android touchscreen kiosk app (Expo + Kotlin) | `8081`   |
-| `packages/api`      | `@hotelos/api`    | Shared fetch client used by frontends                    | —        |
-| `packages/query`    | `@hotelos/query`  | Shared TanStack Query v5 client, provider & query keys   | —        |
-| `packages/socket`   | `@hotelos/socket` | Shared Socket.IO client & query cache realtime sync      | —        |
-| `packages/stores`   | `@hotelos/stores` | Shared Zustand stores for UI state (sidebar, modals)     | —        |
-| `packages/styles`   | `@hotelos/styles` | Shared Tailwind CSS v4 design tokens and theme styles    | —        |
-| `packages/ui`       | `@hotelos/ui`     | Shared UI components (header, sidebar, screens, icons)   | —        |
-| `packages/utils`    | `@hotelos/utils`  | Shared formatters, normalizers, rate plan code utils, cn | —        |
+| Path                | Name              | Description                                                | Dev port |
+| ------------------- | ----------------- | ---------------------------------------------------------- | -------- |
+| `apps/backend`      | `backend`         | Express + MongoDB REST API & BullMQ workers                | `5001`   |
+| `apps/super-admin`  | `super-admin`     | Platform operator dashboard (React + Vite)                 | `5173`   |
+| `apps/sub-admin`    | `sub-admin`       | Hotel admin dashboard + marketing site (React + Vite)      | `5174`   |
+| `apps/receptionist` | `receptionist`    | Front-desk dashboard (React + Vite)                        | `5175`   |
+| `apps/kitchen`      | `kitchen`         | Kitchen display system & live order board (React + Vite)   | `5176`   |
+| `apps/guest`        | `guest`           | Hotel room guest dashboard & portal (React + Vite)         | `5177`   |
+| `apps/self-checkin` | `self-checkin`    | Standalone guest self check-in wizard & kiosk webapp       | `5178`   |
+| `apps/table-order`  | `table-order`     | Guest digital dining menu & table order app (React + Vite) | `5179`   |
+| `apps/kiosk`        | `kiosk`           | Standalone Android touchscreen kiosk app (Expo + Kotlin)   | `8081`   |
+| `packages/api`      | `@hotelos/api`    | Shared fetch client used by frontends                      | —        |
+| `packages/query`    | `@hotelos/query`  | Shared TanStack Query v5 client, provider & query keys     | —        |
+| `packages/socket`   | `@hotelos/socket` | Shared Socket.IO client & query cache realtime sync        | —        |
+| `packages/stores`   | `@hotelos/stores` | Shared Zustand stores for UI state (sidebar, modals)       | —        |
+| `packages/styles`   | `@hotelos/styles` | Shared Tailwind CSS v4 design tokens and theme styles      | —        |
+| `packages/ui`       | `@hotelos/ui`     | Shared UI components (header, sidebar, screens, icons)     | —        |
+| `packages/utils`    | `@hotelos/utils`  | Shared formatters, normalizers, rate plan code utils, cn   | —        |
 
 ---
 
@@ -115,17 +117,25 @@ cp apps/sub-admin/.env.example apps/sub-admin/.env
 cp apps/receptionist/.env.example apps/receptionist/.env
 cp apps/kitchen/.env.example apps/kitchen/.env
 cp apps/guest/.env.example apps/guest/.env
+cp apps/self-checkin/.env.example apps/self-checkin/.env
+cp apps/table-order/.env.example apps/table-order/.env
+cp apps/kiosk/.env.example apps/kiosk/.env
 ```
 
 Required backend variables (see `apps/backend/.env.example`):
 
 - `MONGODB_URI` — MongoDB connection string (required)
 - `JWT_SECRET` — long random secret (required)
-- `PORT` — defaults to `5000`, the frontends expect `5001`
+- `REDIS_URL` — Redis connection string for BullMQ queues & email workers (required)
+- `PORT` — defaults to `5001`
 - `JWT_EXPIRES_IN` — defaults to `1d`
-- `CLIENT_URL` — allowed frontend origin
-- `SUB_ADMIN_FRONTEND_URL` — base URL used when building invite / password
-  reset links (defaults to `http://localhost:5175`)
+- `SUPER_ADMIN_FRONTEND_URL` — base URL for Super Admin app (`http://localhost:5173`)
+- `SUB_ADMIN_FRONTEND_URL` — base URL used for invite and password reset links (`http://localhost:5174`)
+- `RECEPTIONIST_FRONTEND_URL` — base URL for Receptionist app (`http://localhost:5175`)
+- `KITCHEN_FRONTEND_URL` — base URL for Kitchen Display app (`http://localhost:5176`)
+- `GUEST_FRONTEND_URL` — base URL for Guest Dashboard & Kiosk Preset (`http://localhost:5177`)
+- `SELF_CHECKIN_FRONTEND_URL` — base URL for Guest Self Check-In & Kiosk Preset (`http://localhost:5178`)
+- `TABLE_ORDER_FRONTEND_URL` — base URL for Table QR links & Kiosk Preset (`http://localhost:5179`)
 - `NODE_ENV` — `development` (default) or `production`; controls log formatting
 - `LOG_LEVEL` — minimum log level, defaults to `info` (e.g. `debug`, `warn`)
 
@@ -142,12 +152,13 @@ pnpm seed -F backend
 
 ### 4. Run the development servers
 
+Start all apps via Turborepo in parallel:
+
 ```bash
 pnpm dev
 ```
 
-This starts all apps via Turborepo in parallel. Each app is served on its
-own port:
+Each app is served on its own port:
 
 | App            | Scope / Role                | Local URL               |
 | -------------- | --------------------------- | ----------------------- |
@@ -157,6 +168,22 @@ own port:
 | `receptionist` | Front-Desk Operations       | `http://localhost:5175` |
 | `kitchen`      | Kitchen Display System      | `http://localhost:5176` |
 | `guest`        | Guest Harmony Portal        | `http://localhost:5177` |
+| `self-checkin` | Standalone Self Check-In    | `http://localhost:5178` |
+| `table-order`  | Digital Menu & Table Orders | `http://localhost:5179` |
+
+### 5. Kiosk & Tablet Hardware Testing over LAN
+
+When testing with physical Android kiosk tablets or mobile devices on your local Wi-Fi:
+
+```bash
+# Automatically detects host LAN IPv4 and launches all dashboards with --host + kiosk dev server
+pnpm dev:kiosk
+
+# Or sync IP standalone:
+pnpm sync:ip
+# Or with a manual IP:
+pnpm sync:ip 192.168.1.100
+```
 
 The backend health check is available at:
 

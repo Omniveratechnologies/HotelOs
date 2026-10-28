@@ -36,10 +36,16 @@ Configure `EXPO_PUBLIC_API_URL` based on your testing environment:
 ```ini
 # Android Studio Emulator (10.0.2.2 points to host machine localhost)
 EXPO_PUBLIC_API_URL=http://10.0.2.2:5001
+EXPO_PUBLIC_SOCKET_URL=http://10.0.2.2:5001
 
-# Physical Tablet over Wi-Fi (replace with your computer's local LAN IP)
+# Physical Tablet over Wi-Fi:
+# Run `pnpm sync:ip` at repo root to automatically detect and sync your computer's LAN IP across all dashboards and kiosk!
 # EXPO_PUBLIC_API_URL=http://192.168.1.50:5001
+# EXPO_PUBLIC_SOCKET_URL=http://192.168.1.50:5001
 ```
+
+> [!TIP]
+> For end-to-end kiosk testing on physical hardware, run `pnpm dev:kiosk` from the repository root. It auto-detects your LAN IP, syncs all `.env` files, and runs the 3 dashboards with `--host` alongside the backend and kiosk dev server.
 
 ---
 

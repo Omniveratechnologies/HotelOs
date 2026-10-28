@@ -342,23 +342,26 @@ cp apps/backend/.env.example apps/backend/.env
 
 Required variables (validated in `src/config/env.js`):
 
-| Variable                                                                   | Required | Description                                                          |
-| -------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------- |
-| `MONGODB_URI`                                                              | Yes      | MongoDB connection string                                            |
-| `JWT_SECRET`                                                               | Yes      | Long random secret used to sign tokens                               |
-| `KIOSK_GUEST_DASHBOARD_URL`                                                | Yes      | URL for Kiosk Guest Dashboard preset                                 |
-| `KIOSK_SELF_CHECKIN_URL`                                                   | Yes      | URL for Kiosk Self Check-In preset                                   |
-| `KIOSK_DIGITAL_MENU_URL`                                                   | Yes      | URL for Kiosk Digital Menu preset                                    |
-| `PORT`                                                                     | No       | Server port. **Frontends expect `5001`**                             |
-| `JWT_EXPIRES_IN`                                                           | No       | Token lifetime (default `1d`)                                        |
-| `CLIENT_URL`                                                               | No       | Frontend origin for CORS                                             |
-| `SUB_ADMIN_FRONTEND_URL`                                                   | No       | Base URL for invite / reset links (default `http://localhost:5175`)  |
-| `SUPER_ADMIN_PASSWORD`                                                     | No       | Used by the seed script                                              |
-| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD` | No       | SMTP config for transactional emails                                 |
-| `NODE_ENV`                                                                 | No       | `development` (default) or `production`. Controls log formatting     |
-| `LOG_LEVEL`                                                                | No       | Minimum log level (default `info`). e.g. `debug`, `warn`, `error`    |
-| `GROQ_API_KEY`                                                             | No       | Enables Groq narration; aggregate dashboard metrics are sent to Groq |
-| `MODEL`                                                                    | No       | Groq model ID (defaults to `qwen/qwen3.8-27b`)                       |
+| Variable                                                                   | Required | Description                                                               |
+| -------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------- |
+| `MONGODB_URI`                                                              | Yes      | MongoDB connection string                                                 |
+| `JWT_SECRET`                                                               | Yes      | Long random secret used to sign tokens                                    |
+| `REDIS_URL`                                                                | Yes      | Redis connection URL for BullMQ queues and background workers             |
+| `PORT`                                                                     | No       | Server port. **Frontends expect `5001`**                                  |
+| `JWT_EXPIRES_IN`                                                           | No       | Token lifetime (default `1d`)                                             |
+| `SUPER_ADMIN_FRONTEND_URL`                                                 | No       | Base URL for Super Admin app (default `http://localhost:5173`)            |
+| `SUB_ADMIN_FRONTEND_URL`                                                   | No       | Base URL for invite / reset links (default `http://localhost:5174`)       |
+| `RECEPTIONIST_FRONTEND_URL`                                                | No       | Base URL for Receptionist app (default `http://localhost:5175`)           |
+| `KITCHEN_FRONTEND_URL`                                                     | No       | Base URL for Kitchen display app (default `http://localhost:5176`)        |
+| `GUEST_FRONTEND_URL`                                                       | No       | Base URL for Guest Dashboard / Kiosk (default `http://localhost:5177`)    |
+| `SELF_CHECKIN_FRONTEND_URL`                                                | No       | Base URL for Self Check-in / Kiosk (default `http://localhost:5178`)      |
+| `TABLE_ORDER_FRONTEND_URL`                                                 | No       | Base URL for Table Order / Digital Menu (default `http://localhost:5179`) |
+| `SUPER_ADMIN_PASSWORD`                                                     | No       | Used by the seed script                                                   |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD` | No       | SMTP config for transactional emails                                      |
+| `NODE_ENV`                                                                 | No       | `development` (default) or `production`. Controls log formatting          |
+| `LOG_LEVEL`                                                                | No       | Minimum log level (default `info`). e.g. `debug`, `warn`, `error`         |
+| `GROQ_API_KEY`                                                             | No       | Enables Groq narration; aggregate dashboard metrics are sent to Groq      |
+| `MODEL`                                                                    | No       | Groq model ID (defaults to `qwen/qwen3.8-27b`)                            |
 
 > **Note:** the port default is `5001` in `src/server.js`. Make sure your
 > `.env` sets `PORT=5001` (or leaves it unset) so the frontends, which
@@ -373,12 +376,28 @@ pnpm seed -F backend
 This creates a `SUPER_ADMIN` user with username `superadmin` and the
 password from `SUPER_ADMIN_PASSWORD` (skips if one already exists).
 
-### 4. Run the server
+### 4. Run the server & workers
+
+In development, `pnpm dev` launches both Express and the background worker concurrently:
 
 ```bash
-pnpm dev -F backend        # nodemon (dev)
-pnpm start -F backend      # node
+pnpm dev -F backend           # Launches API server + BullMQ worker concurrently (nodemon)
+pnpm dev:server -F backend    # Launches only the Express API server
+pnpm dev:worker -F backend    # Launches only the BullMQ background worker
+
+# In production:
+pnpm start -F backend         # node src/server.js
+pnpm start:worker -F backend  # node src/workers/index.js
 ```
+
+#### BullMQ & Redis Email Scheduling
+
+The backend includes a crash-resilient asynchronous job queue powered by **BullMQ + Redis**:
+
+- **Check-In Reminder Queue (`check-in-email`)**: When reservations are confirmed or dates update, a delayed job is scheduled for **2 hours prior to the hotel's `checkInTime`** on arrival day.
+- **Worker Execution (`src/workers/email/checkInReminder.worker.js`)**: Validates the reservation status, generates a secure check-in session token, and emails the guest their self check-in magic link (`SELF_CHECKIN_FRONTEND_URL/check-in/:token`).
+- **Retry Mechanism**: Up to 5 attempts with exponential backoff on transient SMTP failures.
+- **Crash Recovery**: On worker startup, `reconcileCheckInReminders()` audits MongoDB against Redis to guarantee zero missed reminders across server restarts.
 
 Health check:
 

@@ -1,32 +1,55 @@
-# React + TypeScript + Vite
+# Table Order & Digital Menu
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Guest-facing digital dining menu, table ordering, payment, and assistance request web application for **HotelOS**. Also serves as the **Digital Menu** preset for HotelOS touchscreen kiosks.
 
-Currently, two official plugins are available:
+- **Port**: `5179`
+- **Package name**: `table-order`
+- **Tech Stack**: React 19, TypeScript, Vite, Tailwind CSS
+- **Backend API**: `apps/backend` (Express API on port `5001`)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Table QR Code Landing**:
+   - Guests scan physical table QR codes (`/:hotelId/table/:tableId`).
+   - Automatically loads hotel restaurant menus and table session context.
+2. **Food Item Catalog & Customization**:
+   - Categorized menu browsing, dietary tags (Veg/Non-Veg), upsell recommendations.
+   - Real-time cart management and coupon validation.
+3. **Checkout & Online Payments**:
+   - Direct dining order creation (`POST /api/v1/orders/table-order`).
+   - Integrated Razorpay online payment verification and order status tracking.
+4. **Staff Assistance Requests**:
+   - Quick table service requests (waiter assistance, cutlery, bill requests).
+5. **Kiosk Digital Menu Preset**:
+   - Runs in full-screen on dedicated tablet kiosks mounted at dining counters or restaurant lobbies.
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Environment Variables
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+| Variable       | Description                                     | Default                 |
+| :------------- | :---------------------------------------------- | :---------------------- |
+| `VITE_API_URL` | Base URL of HotelOS backend (without `/api/v1`) | `http://localhost:5001` |
+
+> [!NOTE]
+> The internal API client automatically prefixes `/api/v1` to all request endpoints, ensuring consistency with the backend server.
+
+---
+
+## Development
+
+```bash
+# Run locally on port 5179 with LAN host exposure
+pnpm dev
+
+# Build for production
+pnpm build
+```
