@@ -1,11 +1,21 @@
 import { CheckCircle2 } from "lucide-react";
 import { StatusChip } from "@hotelos/ui/components";
+import type { BookingSummary, GuestSummary } from "../../types/checkIn.types";
 
-/** Step 10 — Success: submitted for verification (status chip amber). */
-export function SuccessStep({ booking, guest, approved = false }) {
+interface SuccessStepProps {
+  booking: BookingSummary;
+  guest: GuestSummary;
+  approved?: boolean;
+}
+
+export function SuccessStep({
+  booking,
+  guest,
+  approved = false,
+}: SuccessStepProps) {
   return (
     <div className="text-center">
-      <span className="mx-auto flex h-18 w-18 items-center justify-center rounded-full bg-emerald-500">
+      <span className="mx-auto flex h-18 w-18 items-center justify-center rounded-full bg-emerald-500 shadow-md">
         <CheckCircle2 size={36} className="text-white" />
       </span>
       <p className="text-brand-900 mt-4 text-xl font-bold">
@@ -21,12 +31,14 @@ export function SuccessStep({ booking, guest, approved = false }) {
         <div className="flex items-center justify-between py-1.5 text-sm">
           <span className="text-surface-500">Booking No.</span>
           <span className="text-brand-900 font-bold">
-            {booking.reservationNo}
+            {booking.reservationNo || "—"}
           </span>
         </div>
         <div className="flex items-center justify-between py-1.5 text-sm">
           <span className="text-surface-500">Guest Name</span>
-          <span className="text-brand-900 font-medium">{guest.name}</span>
+          <span className="text-brand-900 font-medium">
+            {guest.name || "Guest"}
+          </span>
         </div>
         <div className="flex items-center justify-between py-1.5 text-sm">
           <span className="text-surface-500">Status</span>
@@ -41,7 +53,10 @@ export function SuccessStep({ booking, guest, approved = false }) {
           You will be notified once your check-in is approved.
         </p>
       )}
-      <p className="text-surface-400 mt-2 text-xs">You can close this page.</p>
+      <p className="text-surface-400 mt-2 text-xs">
+        Thank you! You may collect your digital key card or room key from the
+        reception desk.
+      </p>
     </div>
   );
 }

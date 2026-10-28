@@ -8,6 +8,7 @@ packages:
 allowBuilds:
   core-js: true
   esbuild: true
+  msgpackr-extract: true
   unrs-resolver: true
 #
 # Put the virtual store at the project root (./.pnpm) instead of the default

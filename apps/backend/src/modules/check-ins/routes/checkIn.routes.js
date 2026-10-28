@@ -13,6 +13,8 @@ import {
   saveCheckInStep,
   getCheckInUploadUrls,
   submitCheckIn,
+  lookupBookingForCheckIn,
+  verifyCheckInOtp,
 } from "../controllers/publicCheckIn.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
@@ -32,8 +34,10 @@ checkInRouter.post(
   requestCheckInCorrection,
 );
 
-// Public token-scoped guest check-in routes.
+// Public token-scoped and kiosk guest check-in routes.
 export const publicCheckInRouter = Router();
+publicCheckInRouter.post("/lookup", lookupBookingForCheckIn);
+publicCheckInRouter.post("/verify-otp", verifyCheckInOtp);
 publicCheckInRouter.get("/:token", resolveCheckIn);
 publicCheckInRouter.put("/:token/steps/:step", saveCheckInStep);
 publicCheckInRouter.post("/:token/uploads", getCheckInUploadUrls);

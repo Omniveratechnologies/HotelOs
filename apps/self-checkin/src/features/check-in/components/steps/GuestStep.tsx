@@ -1,17 +1,23 @@
-const EMPTY_ERRORS = {};
+import type { GuestSummary } from "../../types/checkIn.types";
 
-const inputClass = (err) =>
+interface GuestStepProps {
+  value: GuestSummary;
+  onChange: (field: string, val: string) => void;
+  errors?: Record<string, string>;
+}
+
+const EMPTY_ERRORS: Record<string, string> = {};
+
+const inputClass = (err?: string) =>
   `text-brand-900 focus:border-brand-500 focus:ring-brand-200 h-11 w-full rounded-lg border bg-white px-3.5 text-sm transition outline-none focus:ring-2 ${
     err ? "border-rose-500" : "border-gray-200"
   }`;
 
-/** Step 3 — Guest Details (verify/edit prefilled contact details). */
-export function GuestStep({ value, onChange, errors = EMPTY_ERRORS }) {
-  const field = (name) => ({
-    value: value[name] || "",
-    onChange: (e) => onChange(name, e.target.value),
-  });
-
+export function GuestStep({
+  value,
+  onChange,
+  errors = EMPTY_ERRORS,
+}: GuestStepProps) {
   return (
     <div>
       <p className="text-brand-900 text-center text-lg font-semibold">
@@ -31,13 +37,14 @@ export function GuestStep({ value, onChange, errors = EMPTY_ERRORS }) {
           </label>
           <input
             id="guestName"
-            className={inputClass(errors.guestName)}
+            className={inputClass(errors.name)}
             placeholder="e.g. Rohit Sharma"
-            {...field("guestName")}
+            value={value.name || ""}
+            onChange={(e) => onChange("name", e.target.value)}
           />
-          {errors.guestName && (
+          {errors.name && (
             <p className="mt-1 text-xs font-medium text-rose-500">
-              {errors.guestName}
+              {errors.name}
             </p>
           )}
         </div>
@@ -54,7 +61,8 @@ export function GuestStep({ value, onChange, errors = EMPTY_ERRORS }) {
             type="email"
             className={inputClass(errors.email)}
             placeholder="you@example.com"
-            {...field("email")}
+            value={value.email || ""}
+            onChange={(e) => onChange("email", e.target.value)}
           />
           {errors.email && (
             <p className="mt-1 text-xs font-medium text-rose-500">
@@ -77,7 +85,8 @@ export function GuestStep({ value, onChange, errors = EMPTY_ERRORS }) {
               inputMode="tel"
               className={`${inputClass(errors.phone)} flex-1`}
               placeholder="+91 98765 43210"
-              {...field("phone")}
+              value={value.phone || ""}
+              onChange={(e) => onChange("phone", e.target.value)}
             />
           </div>
           {errors.phone && (
@@ -98,7 +107,8 @@ export function GuestStep({ value, onChange, errors = EMPTY_ERRORS }) {
             id="guestNationality"
             className={inputClass()}
             placeholder="Indian"
-            {...field("nationality")}
+            value={value.nationality || ""}
+            onChange={(e) => onChange("nationality", e.target.value)}
           />
         </div>
       </div>

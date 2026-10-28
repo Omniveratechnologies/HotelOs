@@ -118,6 +118,11 @@ const checkInSessionSchema = new mongoose.Schema(
 
     sentAt: { type: Date, default: null },
 
+    // Lobby Kiosk 6-digit OTP verification fields
+    otpHash: { type: String, default: null },
+    otpExpiresAt: { type: Date, default: null },
+    otpAttempts: { type: Number, default: 0 },
+
     currentStep: { type: Number, default: 1, min: 1 },
 
     stepData: {

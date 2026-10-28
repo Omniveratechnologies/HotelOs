@@ -1,24 +1,41 @@
 import { formatDate } from "@hotelos/utils";
+import type {
+  BookingSummary,
+  GuestSummary,
+  StepData,
+} from "../../types/checkIn.types";
 
-/** Step 6 — Registration Card (read-only recap rendered like a paper form). */
-export function RegistrationCardStep({ booking, guest, stepData }) {
+interface RegistrationCardStepProps {
+  booking: BookingSummary & {
+    roomType?: string;
+    roomNumber?: string;
+    guests?: { adults?: number; children?: number };
+  };
+  guest: GuestSummary;
+  stepData?: StepData;
+}
+
+export function RegistrationCardStep({
+  booking,
+  guest,
+  stepData,
+}: RegistrationCardStepProps) {
+  const adults = booking.adults ?? booking.guests?.adults ?? 1;
+  const children = booking.children ?? booking.guests?.children ?? 0;
+  const roomDisplay =
+    booking.roomId?.roomNumber || booking.roomNumber
+      ? `Room ${booking.roomId?.roomNumber || booking.roomNumber}`
+      : booking.roomId?.type || booking.roomType || "Standard";
+
   const rows = [
-    ["Name", guest.name],
+    ["Name", guest.name || "—"],
     ["Nationality", guest.nationality || "—"],
     ["ID Type", stepData?.idType || "—"],
     ["ID Number", stepData?.idNumber || "—"],
-    ["Check-in", formatDate(booking.checkIn)],
-    ["Check-out", formatDate(booking.checkOut)],
-    [
-      "Room",
-      booking.roomNumber
-        ? `Room ${booking.roomNumber}`
-        : booking.roomType || "—",
-    ],
-    [
-      "Guests",
-      `${booking.guests?.adults ?? 1} Adults, ${booking.guests?.children ?? 0} Children`,
-    ],
+    ["Check-in", booking.checkIn ? formatDate(booking.checkIn) : "—"],
+    ["Check-out", booking.checkOut ? formatDate(booking.checkOut) : "—"],
+    ["Room", roomDisplay],
+    ["Guests", `${adults} Adults, ${children} Children`],
   ];
 
   return (
@@ -30,7 +47,7 @@ export function RegistrationCardStep({ booking, guest, stepData }) {
         Please review your details and confirm
       </p>
 
-      <div className="border-surface-200 mx-auto mt-5 max-w-md rounded-xl border bg-white p-5 shadow-2xs">
+      <div className="border-surface-200 mx-auto mt-5 max-w-md rounded-xl border bg-white p-5 shadow-sm">
         <p className="text-brand-900 text-center text-xs font-semibold tracking-[0.2em] uppercase">
           Guest Registration Card
         </p>

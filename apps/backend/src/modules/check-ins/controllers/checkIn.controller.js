@@ -4,6 +4,7 @@ import CheckInSession, { CHECKIN_STATUSES } from "../models/CheckInSession.js";
 import { checkInSessionDTO } from "../dto/checkIn.dto.js";
 import { createSessionToken, hashToken } from "../services/token.service.js";
 import { sendCheckInEmail } from "#/shared/services/email.service.js";
+import env from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 // Receptionist-facing digital check-in link management + review.
@@ -16,11 +17,11 @@ const BOOKABLE_STATUSES = new Set([
 ]);
 
 function buildCheckInUrl(token) {
-  // Guest self check-in lives in the receptionist app (public route).
+  // Guest self check-in lives in standalone self-checkin app.
   const base = (
-    process.env.RECEPTIONIST_FRONTEND_URL ||
-    process.env.CLIENT_URL ||
-    "http://localhost:5175"
+    env.kiosk.selfCheckinUrl ||
+    process.env.SELF_CHECKIN_FRONTEND_URL ||
+    "http://localhost:5178"
   ).replace(/\/$/, "");
   return `${base}/check-in/${token}`;
 }

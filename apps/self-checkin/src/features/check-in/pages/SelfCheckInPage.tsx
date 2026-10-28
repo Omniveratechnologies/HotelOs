@@ -8,22 +8,23 @@ import {
   saveCheckInStep,
   submitCheckIn,
   uploadCheckInFile,
-} from "../checkInApi.js";
-import WelcomeStep from "../components/steps/WelcomeStep.jsx";
-import BookingStep from "../components/steps/BookingStep.jsx";
-import GuestStep from "../components/steps/GuestStep.jsx";
-import CaptureIdStep from "../components/steps/CaptureIdStep.jsx";
-import PhotoStep from "../components/steps/PhotoStep.jsx";
-import RegistrationCardStep from "../components/steps/RegistrationCardStep.jsx";
-import SignatureStep from "../components/steps/SignatureStep.jsx";
-import PreferencesStep from "../components/steps/PreferencesStep.jsx";
-import ReviewStep from "../components/steps/ReviewStep.jsx";
-import SuccessStep from "../components/steps/SuccessStep.jsx";
+} from "../api/checkInApi";
+import WelcomeStep from "../components/steps/WelcomeStep";
+import BookingStep from "../components/steps/BookingStep";
+import GuestStep from "../components/steps/GuestStep";
+import CaptureIdStep, { type IdValue } from "../components/steps/CaptureIdStep";
+import PhotoStep from "../components/steps/PhotoStep";
+import RegistrationCardStep from "../components/steps/RegistrationCardStep";
+import SignatureStep from "../components/steps/SignatureStep";
+import PreferencesStep from "../components/steps/PreferencesStep";
+import ReviewStep from "../components/steps/ReviewStep";
+import SuccessStep from "../components/steps/SuccessStep";
+import type { CheckInSessionData, FileRef } from "../types/checkIn.types";
 
 const STEP_COUNT = 10;
 
-// saveStep payload key per step index (wizard steps 0..9).
-const STEP_KEYS = {
+// saveStep payload key per step index (wizard steps 0..9)
+const STEP_KEYS: Record<number, string> = {
   2: "guest",
   3: "id",
   4: "photo",
@@ -32,28 +33,42 @@ const STEP_KEYS = {
 };
 
 export default function SelfCheckInPage() {
-  const { token } = useParams();
-  const [session, setSession] = useState(null);
-  const [state, setState] = useState({ kind: "loading" }); // loading | error | ready
+  const { token } = useParams<{ token: string }>();
+  const [session, setSession] = useState<CheckInSessionData | null>(null);
+  const [state, setState] = useState<{
+    kind: "loading" | "error" | "ready";
+    message?: string;
+  }>(() =>
+    token
+      ? { kind: "loading" }
+      : { kind: "error", message: "Check-in token is missing" },
+  );
   const [step, setStep] = useState(0);
 
-  // Form fields seeded from the session's stored stepData.
+  // Form fields seeded from session's stored stepData
   const [guest, setGuest] = useState({
     name: "",
     email: "",
     phone: "",
     nationality: "",
   });
-  const [id, setId] = useState({
+
+  const [id, setId] = useState<IdValue>({
     idType: "Aadhaar",
     idNumber: "",
     idFront: null,
     idBack: null,
   });
-  const [selfie, setSelfie] = useState(null); // { key, filename, previewUrl }
-  const [signature, setSignature] = useState(null); // { dataUrl, ref }
+
+  const [selfie, setSelfie] = useState<
+    (FileRef & { previewUrl?: string; file?: File }) | null
+  >(null);
+  const [signature, setSignature] = useState<{
+    dataUrl: string;
+    ref: FileRef;
+  } | null>(null);
   const [terms, setTerms] = useState(false);
-  const [prefs, setPrefs] = useState([]);
+  const [prefs, setPrefs] = useState<string[]>([]);
   const [remarks, setRemarks] = useState("");
 
   const [uploading, setUploading] = useState(false);
@@ -68,8 +83,10 @@ export default function SelfCheckInPage() {
   const guestPhone = guest.phone || sessionGuest?.phone || "";
   const guestNationality = guest.nationality || sessionGuest?.nationality || "";
 
-  // ---- resolve on mount ----
+  // Resolve check-in on mount
   useEffect(() => {
+    if (!token) return;
+
     let cancelled = false;
     resolveCheckIn(token)
       .then((data) => {
@@ -77,7 +94,7 @@ export default function SelfCheckInPage() {
         setSession(data);
         setState({ kind: "ready" });
 
-        // Seed form from stored stepData (resume-friendly).
+        // Seed form from stored stepData
         const sd = data.stepData || {};
         setGuest({
           name: sd.guestName || data.guest?.name || "",
@@ -85,6 +102,7 @@ export default function SelfCheckInPage() {
           phone: sd.phone || data.guest?.phone || "",
           nationality: sd.nationality || data.guest?.nationality || "",
         });
+
         setId({
           idType: sd.idType || "Aadhaar",
           idNumber: sd.idNumber || "",
@@ -95,43 +113,51 @@ export default function SelfCheckInPage() {
             ? { ...sd.idBack, previewUrl: sd.idBack.url }
             : null,
         });
+
         setSelfie(
           sd.selfie ? { ...sd.selfie, previewUrl: sd.selfie.url } : null,
         );
+
         setSignature(
           sd.signature
-            ? { dataUrl: sd.signature.url, ref: sd.signature }
+            ? { dataUrl: sd.signature.url || "", ref: sd.signature }
             : null,
         );
         setTerms(Boolean(sd.termsAcceptedAt));
         setPrefs(sd.preferences || []);
         setRemarks(sd.remarks || "");
 
-        setStep(Math.min(data.currentStep ? data.currentStep - 1 : 0, 8));
+        // If already submitted or approved, jump straight to success screen
+        if (data.status === "submitted" || data.status === "approved") {
+          setStep(9);
+        } else {
+          setStep(Math.min(data.currentStep ? data.currentStep - 1 : 0, 8));
+        }
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (cancelled) return;
-        const msg = err?.message || "";
+        const msg = err instanceof Error ? err.message : "";
         setState({
           kind: "error",
           message: msg.includes("no longer valid")
             ? msg
-            : msg || "This check-in link is invalid.",
+            : msg || "This check-in link is invalid or expired.",
         });
       });
+
     return () => {
       cancelled = true;
     };
   }, [token]);
 
-  // Steps that require a value before continuing.
+  // Steps that require input before continuing
   const canContinue = useMemo(() => {
     switch (step) {
       case 0:
       case 1:
         return true;
       case 2:
-        return guestName.trim() && guestPhone.trim();
+        return Boolean(guestName.trim() && guestPhone.trim());
       case 3:
         return Boolean(id.idNumber.trim()) && Boolean(id.idFront);
       case 4:
@@ -141,7 +167,6 @@ export default function SelfCheckInPage() {
       case 6:
         return Boolean(signature && terms);
       case 7:
-        return true;
       case 8:
         return true;
       default:
@@ -159,9 +184,10 @@ export default function SelfCheckInPage() {
   ]);
 
   const saveStep = useCallback(async () => {
+    if (!token) return false;
     setStepError("");
     try {
-      const payload = {};
+      const payload: Record<string, unknown> = {};
       switch (step) {
         case 2:
           Object.assign(payload, {
@@ -222,13 +248,15 @@ export default function SelfCheckInPage() {
       }
 
       const noOps = [0, 1, 5, 8].includes(step);
-      if (!noOps) {
-        const data = await saveCheckInStep(token, STEP_KEYS[step + 1], payload);
+      const stepKey = STEP_KEYS[step + 1];
+      if (!noOps && stepKey) {
+        const data = await saveCheckInStep(token, stepKey, payload);
         setSession(data);
       }
       return true;
-    } catch (err) {
-      setStepError(err?.message || "Unable to save step");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unable to save step";
+      setStepError(msg);
       return false;
     }
   }, [token, step, guest, id, selfie, signature, terms, prefs, remarks]);
@@ -247,12 +275,15 @@ export default function SelfCheckInPage() {
     }
 
     if (step === 8) {
+      if (!token) return;
       try {
         const data = await submitCheckIn(token);
         setSession(data);
         setStep(9);
-      } catch (err) {
-        setActionError(err?.message || "Failed to submit");
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "Failed to submit check-in";
+        setActionError(msg);
       }
       return;
     }
@@ -267,47 +298,53 @@ export default function SelfCheckInPage() {
     setStep((s) => Math.max(0, s - 1));
   };
 
-  const onIdFile = async (kind, file) => {
+  const onIdFile = async (kind: "idFront" | "idBack", file: File) => {
+    if (!token) return;
     setUploading(true);
     setStepError("");
     try {
       const ref = await uploadCheckInFile(token, file);
       const entry = { ...ref, previewUrl: URL.createObjectURL(file) };
       setId((s) => ({ ...s, [kind]: entry }));
-    } catch (err) {
-      setStepError(err?.message || "Upload failed");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setStepError(msg);
     } finally {
       setUploading(false);
     }
   };
 
-  const onPhotoCapture = async (file) => {
+  const onPhotoCapture = async (file: File) => {
+    if (!token) return;
     setUploading(true);
     setStepError("");
     try {
       const ref = await uploadCheckInFile(token, file);
       setSelfie({ file, previewUrl: URL.createObjectURL(file), ...ref });
-    } catch (err) {
-      setStepError(err?.message || "Upload failed");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setStepError(msg);
     } finally {
       setUploading(false);
     }
   };
 
-  const onSignature = async (dataUrl) => {
+  const onSignature = async (dataUrl: string | null) => {
+    if (!token) return;
     if (!dataUrl) {
       setSignature(null);
       return;
     }
-    const blob = await (await fetch(dataUrl)).blob();
-    const file = new File([blob], "signature.png", { type: "image/png" });
     setUploading(true);
     setStepError("");
     try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "signature.png", { type: "image/png" });
       const ref = await uploadCheckInFile(token, file);
       setSignature({ dataUrl, ref });
-    } catch (err) {
-      setStepError(err?.message || "Upload failed");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setStepError(msg);
     } finally {
       setUploading(false);
     }
@@ -339,10 +376,11 @@ export default function SelfCheckInPage() {
             <AlertCircle size={22} className="text-rose-600" />
           </span>
           <p className="text-brand-900 text-lg font-semibold">
-            This check-in link is invalid or expired.
+            {state.message || "This check-in link is invalid or expired."}
           </p>
           <p className="text-surface-500 mt-2 text-sm">
-            Please contact the reception desk for a fresh link.
+            Please contact the reception desk or use the kiosk home screen to
+            request a fresh code.
           </p>
         </div>
       </div>
@@ -352,17 +390,17 @@ export default function SelfCheckInPage() {
   const isTerminal = step === 0 || step === 9;
   const progressPct = Math.round((step / (STEP_COUNT - 1)) * 100);
   const correctionMsg = session?.correctionMessage;
-  const hotelName = "Stayscape Hotel";
+  const hotelName = "HotelOS";
 
   return (
-    <div className="bg-brand-950 min-h-screen">
+    <div className="bg-brand-950 relative min-h-screen text-slate-900">
       <div
         aria-hidden="true"
-        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,#1e3a5f_0%,#0f1f3d_50%,#091423_100%)]"
+        className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,#1e3a5f_0%,#0f1f3d_50%,#091423_100%)]"
       />
 
       {/* Top bar */}
-      <header className="fixed inset-x-0 top-0 z-20 flex h-14 items-center justify-between px-4 text-white sm:px-6">
+      <header className="fixed inset-x-0 top-0 z-20 flex h-14 items-center justify-between border-b border-white/10 px-4 text-white backdrop-blur-md sm:px-6">
         <div className="flex items-center gap-2.5">
           <span className="bg-primary-400 text-brand-950 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold">
             ✦
@@ -380,9 +418,9 @@ export default function SelfCheckInPage() {
         </button>
       </header>
 
-      <main className="flex min-h-screen items-start justify-center px-4 pt-18 pb-8 sm:pt-12">
-        <div className="w-full max-w-md">
-          <div className="rounded-2xl bg-white shadow-[0_10px_30px_rgba(0,0,0,.25)] sm:rounded-3xl">
+      <main className="relative z-10 flex min-h-screen items-start justify-center px-4 pt-20 pb-8 sm:pt-20">
+        <div className="w-full max-w-lg">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-[0_10px_30px_rgba(0,0,0,.25)] sm:rounded-3xl">
             {!isTerminal && (
               <div className="px-5 pt-4 sm:px-6">
                 <div className="flex items-center justify-between text-xs text-gray-400">
@@ -393,7 +431,7 @@ export default function SelfCheckInPage() {
                 </div>
                 <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                   <div
-                    className="bg-brand-700 h-full rounded-full transition-all"
+                    className="h-full rounded-full bg-blue-600 transition-all"
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -527,11 +565,11 @@ export default function SelfCheckInPage() {
             </div>
 
             {step > 0 && step < 9 && (
-              <div className="flex gap-2 border-t border-gray-100 px-5 py-3 sm:px-6">
+              <div className="flex gap-2 border-t border-gray-100 bg-slate-50 px-5 py-3 sm:px-6">
                 <button
                   type="button"
                   onClick={onBack}
-                  className="border-surface-300 text-brand-900 hover:bg-background-100 flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium disabled:opacity-40"
+                  className="border-surface-300 text-brand-900 hover:bg-background-100 flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium disabled:opacity-40"
                   disabled={uploading}
                 >
                   <ArrowLeft size={16} /> Back
@@ -540,7 +578,7 @@ export default function SelfCheckInPage() {
                   type="button"
                   onClick={onContinue}
                   disabled={!canContinue || uploading}
-                  className="bg-brand-900 hover:bg-brand-800 flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {step === 8 ? (
                     <>

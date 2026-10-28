@@ -1,10 +1,26 @@
 import { Users, Calendar, BedDouble } from "lucide-react";
 import { StatusChip } from "@hotelos/ui/components";
 import { formatDate } from "@hotelos/utils";
+import type { BookingSummary, GuestSummary } from "../../types/checkIn.types";
 
-/** Step 2 — Booking Details (read-only summary from the reservation). */
-export function BookingStep({ booking, guest }) {
-  const guestsLine = `${booking.guests?.adults ?? 1} Adult${booking.guests?.adults === 1 ? "" : "s"}${booking.guests?.children ? `, ${booking.guests.children} Child${booking.guests.children === 1 ? "" : "ren"}` : ""}`;
+interface BookingStepProps {
+  booking: BookingSummary & {
+    roomType?: string;
+    roomNumber?: string;
+    guests?: { adults?: number; children?: number };
+  };
+  guest: GuestSummary;
+}
+
+export function BookingStep({ booking, guest }: BookingStepProps) {
+  const adults = booking.adults ?? booking.guests?.adults ?? 1;
+  const children = booking.children ?? booking.guests?.children ?? 0;
+  const guestsLine = `${adults} Adult${adults === 1 ? "" : "s"}${children ? `, ${children} Child${children === 1 ? "" : "ren"}` : ""}`;
+
+  const roomDisplayType =
+    booking.roomId?.type || booking.roomType || "Standard Room";
+  const roomDisplayNumber =
+    booking.roomId?.roomNumber || booking.roomNumber || null;
 
   return (
     <div>
@@ -23,11 +39,11 @@ export function BookingStep({ booking, guest }) {
             </span>
             <div>
               <p className="text-brand-900 text-sm font-semibold capitalize">
-                {booking.roomType || "Room"}
+                {roomDisplayType}
               </p>
               <p className="text-surface-500 text-xs">
-                {booking.roomNumber
-                  ? `Room ${booking.roomNumber}`
+                {roomDisplayNumber
+                  ? `Room ${roomDisplayNumber}`
                   : "Room assigned at check-in"}
               </p>
             </div>
@@ -41,8 +57,9 @@ export function BookingStep({ booking, guest }) {
               <Calendar size={14} /> Dates
             </dt>
             <dd className="text-brand-900 font-medium">
-              {formatDate(booking.checkIn)} – {formatDate(booking.checkOut)} (
-              {booking.nights} night{booking.nights === 1 ? "" : "s"})
+              {booking.checkIn ? formatDate(booking.checkIn) : "—"} –{" "}
+              {booking.checkOut ? formatDate(booking.checkOut) : "—"} (
+              {booking.nights || 1} night{booking.nights === 1 ? "" : "s"})
             </dd>
           </div>
           <div className="flex items-center justify-between">
@@ -56,10 +73,10 @@ export function BookingStep({ booking, guest }) {
         <div className="bg-background-100 rounded-lg p-3 text-center">
           <p className="text-surface-500 text-xs">Booking No.</p>
           <p className="text-brand-900 text-sm font-bold tracking-wide">
-            {booking.reservationNo}
+            {booking.reservationNo || "—"}
           </p>
           <p className="text-surface-500 mt-1 text-xs">
-            {guest.name} · {guest.phone}
+            {guest.name || "Guest"} {guest.phone ? `· ${guest.phone}` : ""}
           </p>
         </div>
       </div>

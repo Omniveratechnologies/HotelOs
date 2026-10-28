@@ -35,6 +35,7 @@ const envSchema = z.object({
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_EXPIRES_IN: z.string().default("1d"),
+  REDIS_URL: z.string().min(1, "REDIS_URL is required"),
 
   // Client & Service URLs (Optional)
   CLIENT_URL: optionalUrl(),
@@ -111,6 +112,7 @@ export const env = {
   mongoUri: parsed.MONGODB_URI,
   jwtSecret: parsed.JWT_SECRET,
   jwtExpiresIn: parsed.JWT_EXPIRES_IN,
+  redisUrl: parsed.REDIS_URL,
   clientUrl: parsed.CLIENT_URL,
   frontendUrl: parsed.FRONTEND_URL,
   subAdminFrontendUrl: parsed.SUB_ADMIN_FRONTEND_URL,

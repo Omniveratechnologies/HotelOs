@@ -1,8 +1,12 @@
 import crypto from "crypto";
+import mongoose from "mongoose";
 
 import CheckInSession from "../models/CheckInSession.js";
+import Booking from "#/modules/bookings/models/Booking.js";
+import User from "#/modules/users/models/User.js";
 import { publicCheckInSessionDTO } from "../dto/checkIn.dto.js";
-import { hashToken } from "../services/token.service.js";
+import { hashToken, createSessionToken } from "../services/token.service.js";
+import { sendCheckInOtpEmail } from "#/shared/services/email.service.js";
 import { generateUploadUrl } from "#/config/r2.js";
 import {
   ALLOWED_MIME_TYPES,
@@ -322,5 +326,249 @@ export const submitCheckIn = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to submit check-in" });
+  }
+};
+
+// =====================================================
+// KIOSK / PUBLIC BOOKING LOOKUP & OTP VERIFICATION
+// =====================================================
+
+function maskEmail(email) {
+  if (!email || typeof email !== "string") return "";
+  const parts = email.split("@");
+  if (parts.length !== 2) return email;
+  const [local, domain] = parts;
+  if (local.length <= 2) {
+    return `${local[0] || "*"}***@${domain}`;
+  }
+  return `${local[0]}***${local[local.length - 1]}@${domain}`;
+}
+
+function expiresAtFor(reservation) {
+  const expiresAt = new Date(reservation.checkOut);
+  expiresAt.setHours(23, 59, 59, 999);
+  return expiresAt;
+}
+
+/**
+ * Public kiosk endpoint to look up an active booking by booking ID,
+ * reservation number, or guest email, and dispatch an email OTP.
+ */
+export const lookupBookingForCheckIn = async (req, res) => {
+  try {
+    const { identifier } = req.body || {};
+    if (!identifier || typeof identifier !== "string" || !identifier.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Please enter your Booking ID or registered Email address",
+      });
+    }
+
+    const cleanInput = identifier.trim();
+    let bookingQuery = null;
+
+    if (mongoose.Types.ObjectId.isValid(cleanInput)) {
+      bookingQuery = { _id: cleanInput };
+    } else if (cleanInput.includes("@")) {
+      const user = await User.findOne({
+        email: cleanInput.toLowerCase(),
+      }).select("_id");
+      if (user) {
+        bookingQuery = { guestId: user._id };
+      }
+    }
+
+    if (!bookingQuery) {
+      bookingQuery = { reservationNo: cleanInput.toUpperCase() };
+    }
+
+    const booking = await Booking.findOne({
+      ...bookingQuery,
+      status: { $in: ["confirmed", "reserved"] },
+    })
+      .sort({ checkIn: -1 })
+      .populate("guestId", "name email phone")
+      .populate("hotelId", "name checkInTime");
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "No active reservation found for the provided details. Please check your information or visit the front desk.",
+      });
+    }
+
+    const guestEmail = booking.guestId?.email;
+    if (!guestEmail) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "No email address is linked to this reservation. Please see the front desk for check-in assistance.",
+      });
+    }
+
+    // Check if stay check-out has already passed
+    const now = new Date();
+    const endOfStay = new Date(booking.checkOut);
+    endOfStay.setHours(23, 59, 59, 999);
+    if (now > endOfStay) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "This reservation has already ended. Please see the reception desk.",
+      });
+    }
+
+    // Generate 6-digit numeric OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Find or create session
+    let session = await CheckInSession.findOne({ reservationId: booking._id });
+    if (!session) {
+      const { tokenHash } = createSessionToken();
+      session = new CheckInSession({
+        hotelId: booking.hotelId._id,
+        reservationId: booking._id,
+        tokenHash,
+        expiresAt: expiresAtFor(booking),
+        status: "link-sent",
+        sentVia: "EMAIL",
+      });
+    }
+
+    session.otpHash = otpHash;
+    session.otpExpiresAt = otpExpiresAt;
+    session.otpAttempts = 0;
+    session.auditTrail.push({
+      action: "kiosk-otp-requested",
+      note: `Verification code generated at kiosk`,
+    });
+
+    await session.save();
+
+    // Dispatch verification code to guest email
+    await sendCheckInOtpEmail({
+      email: guestEmail,
+      name: booking.guestId.name || "Guest",
+      otp,
+      hotelName: booking.hotelId?.name || "HotelOS",
+    });
+
+    logger.info(
+      { bookingId: booking._id, guestEmail },
+      "Kiosk check-in verification OTP dispatched",
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification code sent to your email",
+      data: {
+        reservationId: booking._id,
+        maskedEmail: maskEmail(guestEmail),
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Kiosk lookup check-in error");
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to look up reservation. Please try again or visit reception.",
+    });
+  }
+};
+
+/**
+ * Public kiosk endpoint to verify the 6-digit OTP code and return the check-in session token.
+ */
+export const verifyCheckInOtp = async (req, res) => {
+  try {
+    const { reservationId, code } = req.body || {};
+
+    if (!reservationId || !code) {
+      return res.status(400).json({
+        success: false,
+        message: "Reservation ID and 6-digit verification code are required",
+      });
+    }
+
+    const session = await CheckInSession.findOne({ reservationId }).populate({
+      path: "reservationId",
+      populate: ["guestId", "roomId"],
+    });
+
+    if (!session || !session.otpHash) {
+      return res.status(404).json({
+        success: false,
+        message:
+          "No active verification request found. Please request a new code.",
+      });
+    }
+
+    if (session.otpAttempts >= 5) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "Too many failed attempts. Please request a new verification code.",
+      });
+    }
+
+    if (new Date() > new Date(session.otpExpiresAt)) {
+      return res.status(400).json({
+        success: false,
+        message: "Verification code has expired. Please request a new code.",
+      });
+    }
+
+    const providedHash = crypto
+      .createHash("sha256")
+      .update(String(code).trim())
+      .digest("hex");
+
+    if (providedHash !== session.otpHash) {
+      session.otpAttempts = (session.otpAttempts || 0) + 1;
+      await session.save();
+      const remainingAttempts = Math.max(0, 5 - session.otpAttempts);
+      return res.status(400).json({
+        success: false,
+        message: `Invalid verification code. ${remainingAttempts} attempts remaining.`,
+      });
+    }
+
+    // Successful verification: clear OTP and generate fresh session token
+    const { token, tokenHash } = createSessionToken();
+    session.tokenHash = tokenHash;
+    session.otpHash = null;
+    session.otpExpiresAt = null;
+    session.otpAttempts = 0;
+    session.status =
+      session.status === "link-sent" ? "in-progress" : session.status;
+    session.auditTrail.push({
+      action: "kiosk-verified",
+      note: "Successfully verified identity via email OTP at kiosk",
+    });
+
+    await session.save();
+
+    logger.info(
+      { sessionId: session._id, reservationId },
+      "Kiosk OTP verified successfully",
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Identity verified successfully",
+      data: {
+        token,
+        session: await publicCheckInSessionDTO(session),
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Kiosk OTP verification error");
+    return res.status(500).json({
+      success: false,
+      message: "Verification failed. Please try again.",
+    });
   }
 };

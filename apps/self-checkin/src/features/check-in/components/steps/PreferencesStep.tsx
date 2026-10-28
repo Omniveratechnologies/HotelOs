@@ -28,8 +28,19 @@ const PREFERENCES = [
   },
 ];
 
-/** Step 8 — Preferences & Requests (toggle rows + free-text remarks). */
-export function PreferencesStep({ value, onToggle, remarks, onRemarksChange }) {
+interface PreferencesStepProps {
+  value: string[];
+  onToggle: (key: string) => void;
+  remarks: string;
+  onRemarksChange: (remarks: string) => void;
+}
+
+export function PreferencesStep({
+  value,
+  onToggle,
+  remarks,
+  onRemarksChange,
+}: PreferencesStepProps) {
   return (
     <div>
       <p className="text-brand-900 text-center text-lg font-semibold">

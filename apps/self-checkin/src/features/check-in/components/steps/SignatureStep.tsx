@@ -1,16 +1,20 @@
 import { SignaturePad, InlineBanner } from "@hotelos/ui/components";
 
-/**
- * Step 7 — Signature: signature pad + terms checkbox. `signed` tracks ink,
- * `dataUrl` is the PNG data URL uploaded with the step save.
- */
+interface SignatureStepProps {
+  onSignatureChange: (dataUrl: string | null) => void;
+  termsAccepted: boolean;
+  onTermsChange: (accepted: boolean) => void;
+  hasSignature: boolean;
+  error?: string;
+}
+
 export function SignatureStep({
   onSignatureChange,
   termsAccepted,
   onTermsChange,
   hasSignature,
   error,
-}) {
+}: SignatureStepProps) {
   return (
     <div>
       <p className="text-brand-900 text-center text-lg font-semibold">
@@ -27,12 +31,12 @@ export function SignatureStep({
           onChange={onSignatureChange}
         />
 
-        <label className="flex items-start gap-2.5 text-left">
+        <label className="flex cursor-pointer items-start gap-2.5 text-left">
           <input
             type="checkbox"
             checked={termsAccepted}
             onChange={(e) => onTermsChange(e.target.checked)}
-            className="border-surface-300 text-brand-700 focus:ring-brand-200 mt-0.5 h-4 w-4 rounded"
+            className="border-surface-300 text-brand-700 focus:ring-brand-200 mt-0.5 h-4 w-4 cursor-pointer rounded"
           />
           <span className="text-surface-600 text-xs leading-relaxed">
             I agree to the hotel&apos;s terms and conditions, privacy policy and

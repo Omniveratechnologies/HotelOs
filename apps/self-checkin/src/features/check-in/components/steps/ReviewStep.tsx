@@ -1,8 +1,33 @@
 import { CheckCircle2, Lock } from "lucide-react";
 import { formatDate } from "@hotelos/utils";
+import type { BookingSummary, GuestSummary } from "../../types/checkIn.types";
 
-/** Step 9 — Review & Submit checklist (each row jumps back to its step). */
-export function ReviewStep({ booking, guest, checks, onJump }) {
+export interface CheckItem {
+  key: string;
+  label: string;
+  step: number;
+  done: boolean;
+}
+
+export interface ReviewChecks {
+  selfieDone?: string;
+  selfieUrl?: string | null;
+  items: CheckItem[];
+}
+
+interface ReviewStepProps {
+  booking: BookingSummary;
+  guest: GuestSummary;
+  checks: ReviewChecks;
+  onJump: (step: number) => void;
+}
+
+export function ReviewStep({
+  booking,
+  guest,
+  checks,
+  onJump,
+}: ReviewStepProps) {
   return (
     <div>
       <p className="text-brand-900 text-center text-lg font-semibold">
@@ -22,16 +47,19 @@ export function ReviewStep({ booking, guest, checks, onJump }) {
           />
         ) : (
           <span className="bg-brand-100 text-brand-700 flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold">
-            {(guest.name || "G").charAt(0)}
+            {(guest.name || "G").charAt(0).toUpperCase()}
           </span>
         )}
         <div className="min-w-0">
-          <p className="text-brand-900 text-sm font-semibold">{guest.name}</p>
+          <p className="text-brand-900 text-sm font-semibold">
+            {guest.name || "Guest"}
+          </p>
           <p className="text-surface-500 text-xs">
             {guest.email || guest.phone || "—"}
           </p>
           <p className="text-surface-500 text-xs">
-            {formatDate(booking.checkIn)} – {formatDate(booking.checkOut)}
+            {booking.checkIn ? formatDate(booking.checkIn) : "—"} –{" "}
+            {booking.checkOut ? formatDate(booking.checkOut) : "—"}
           </p>
         </div>
       </div>
@@ -43,11 +71,15 @@ export function ReviewStep({ booking, guest, checks, onJump }) {
             key={item.key}
             type="button"
             onClick={() => onJump(item.step)}
-            className="border-surface-200 flex items-center gap-2.5 rounded-lg border bg-white px-3 py-2.5 text-left transition hover:bg-gray-50"
+            className="border-surface-200 flex cursor-pointer items-center gap-2.5 rounded-lg border bg-white px-3 py-2.5 text-left transition hover:bg-gray-50"
           >
             <CheckCircle2
               size={18}
-              className={item.done ? "text-emerald-600" : "text-surface-300"}
+              className={
+                item.done
+                  ? "shrink-0 text-emerald-600"
+                  : "text-surface-300 shrink-0"
+              }
             />
             <span className="min-w-0">
               <span className="text-brand-900 block text-sm font-medium">

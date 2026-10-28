@@ -1,7 +1,14 @@
 import { Phone, Timer, ShieldCheck, Zap } from "lucide-react";
 
-/** Step 1 — Welcome: brand mark, tagline, feature bullets, Start CTA. */
-export function WelcomeStep({ hotelName, onStart }) {
+interface WelcomeStepProps {
+  hotelName?: string;
+  onStart: () => void;
+}
+
+export function WelcomeStep({
+  hotelName = "HotelOS",
+  onStart,
+}: WelcomeStepProps) {
   return (
     <div className="text-center">
       <p className="text-brand-700 text-xs font-semibold tracking-[0.2em] uppercase">
@@ -30,14 +37,14 @@ export function WelcomeStep({ hotelName, onStart }) {
       <button
         type="button"
         onClick={onStart}
-        className="bg-primary-500 hover:bg-primary-600 text-brand-900 mt-8 w-full rounded-xl py-3.5 text-sm font-bold transition-colors"
+        className="bg-primary-500 hover:bg-primary-600 text-brand-900 mt-8 w-full cursor-pointer rounded-xl py-3.5 text-sm font-bold shadow-md transition-colors"
       >
         Start Check-in →
       </button>
 
       <a
         href="tel:+911800000000"
-        className="text-surface-500 mt-4 inline-flex items-center gap-1.5 text-xs"
+        className="text-surface-500 hover:text-surface-700 mt-4 inline-flex items-center gap-1.5 text-xs"
       >
         <Phone size={12} /> Need help? Call reception
       </a>

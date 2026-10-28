@@ -101,3 +101,68 @@ export const deleteCheckInSession = async (sessionId) => {
   });
   return result.data;
 };
+
+// =====================================================
+// PUBLIC SELF-CHECKIN & KIOSK ENDPOINTS
+// =====================================================
+
+/**
+ * Public kiosk endpoint to search a booking by reference or email and request OTP.
+ * @param {string} identifier
+ * @returns {Promise<{ reservationId: string, maskedEmail: string }>}
+ */
+export const lookupCheckInBooking = async (identifier) => {
+  const result = await api.post("/api/v1/public/check-in/lookup", {
+    identifier,
+  });
+  return result.data;
+};
+
+/**
+ * Public kiosk endpoint to verify 6-digit email OTP.
+ * @param {string} reservationId
+ * @param {string} code
+ * @returns {Promise<{ token: string, session: Object }>}
+ */
+export const verifyCheckInOtp = async (reservationId, code) => {
+  const result = await api.post("/api/v1/public/check-in/verify-otp", {
+    reservationId,
+    code,
+  });
+  return result.data;
+};
+
+/**
+ * Resolves a public check-in session by token.
+ * @param {string} token
+ * @returns {Promise<Object>}
+ */
+export const resolvePublicCheckIn = async (token) => {
+  const result = await api.get(`/api/v1/public/check-in/${token}`);
+  return result.data;
+};
+
+/**
+ * Saves a single step in the public self check-in wizard.
+ * @param {string} token
+ * @param {string} step
+ * @param {Object} payload
+ * @returns {Promise<Object>}
+ */
+export const savePublicCheckInStep = async (token, step, payload) => {
+  const result = await api.put(
+    `/api/v1/public/check-in/${token}/steps/${step}`,
+    payload,
+  );
+  return result.data;
+};
+
+/**
+ * Submits the completed self check-in wizard.
+ * @param {string} token
+ * @returns {Promise<Object>}
+ */
+export const submitPublicCheckIn = async (token) => {
+  const result = await api.post(`/api/v1/public/check-in/${token}/submit`, {});
+  return result.data;
+};

@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, CheckCircle2, RefreshCcw } from "lucide-react";
+import type { FileRef } from "../../types/checkIn.types";
 
 const TIPS = ["Look at the camera", "Good lighting", "No mask or sunglasses"];
 
-/**
- * Step 5 — Take Photo: live camera preview with face guide + capture; falls
- * back to device upload when no camera. Captures JPEG via canvas (quality 0.85).
- */
-export function PhotoStep({ selfie, onCapture, uploading = false }) {
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const [cameraState, setCameraState] = useState("idle"); // idle | on | error
+interface PhotoStepProps {
+  selfie: (FileRef & { previewUrl?: string; file?: File }) | null;
+  onCapture: (file: File) => void;
+  uploading?: boolean;
+}
+
+export function PhotoStep({
+  selfie,
+  onCapture,
+  uploading = false,
+}: PhotoStepProps) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cameraState, setCameraState] = useState<"idle" | "on" | "error">(
+    "idle",
+  );
 
   useEffect(() => {
     return () => {
@@ -39,7 +48,9 @@ export function PhotoStep({ selfie, onCapture, uploading = false }) {
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
-    canvas.getContext("2d").drawImage(video, 0, 0);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
@@ -65,7 +76,7 @@ export function PhotoStep({ selfie, onCapture, uploading = false }) {
       <div className="mt-5 space-y-4">
         {/* Preview / captured image */}
         <div className="relative mx-auto w-full max-w-xs">
-          <div className="bg-brand-950 aspect-3/4 overflow-hidden rounded-2xl">
+          <div className="bg-brand-950 relative aspect-3/4 overflow-hidden rounded-2xl">
             {selfie ? (
               <img
                 src={selfie.previewUrl || selfie.url}
@@ -81,7 +92,7 @@ export function PhotoStep({ selfie, onCapture, uploading = false }) {
                 className="h-full w-full scale-x-[-1] object-cover"
               />
             ) : (
-              <div className="text-surface-300 flex h-full flex-col items-center justify-center gap-2 text-sm">
+              <div className="text-surface-300 flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm">
                 <Camera size={32} />
                 {cameraState === "error"
                   ? "Camera not available — use upload below"
@@ -102,7 +113,7 @@ export function PhotoStep({ selfie, onCapture, uploading = false }) {
               onClick={capture}
               disabled={uploading}
               aria-label="Capture photo"
-              className="bg-brand-700 hover:bg-brand-800 absolute bottom-3 left-1/2 flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full text-white shadow-lg transition disabled:opacity-50"
+              className="bg-brand-700 hover:bg-brand-800 absolute bottom-3 left-1/2 flex h-14 w-14 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full text-white shadow-lg transition disabled:opacity-50"
             >
               <Camera size={22} />
             </button>
@@ -125,22 +136,20 @@ export function PhotoStep({ selfie, onCapture, uploading = false }) {
             <button
               type="button"
               onClick={startCamera}
-              className="border-surface-300 text-brand-900 hover:bg-background-100 flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium"
+              className="border-surface-300 text-brand-900 hover:bg-background-100 flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium"
             >
               <Camera size={16} /> Use Camera
             </button>
           )}
           {selfie ? (
-            <>
-              <button
-                type="button"
-                onClick={startCamera}
-                disabled={uploading}
-                className="border-surface-300 text-brand-900 hover:bg-background-100 flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium disabled:opacity-50"
-              >
-                <RefreshCcw size={15} /> Retake
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={startCamera}
+              disabled={uploading}
+              className="border-surface-300 text-brand-900 hover:bg-background-100 flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium disabled:opacity-50"
+            >
+              <RefreshCcw size={15} /> Retake
+            </button>
           ) : cameraState !== "on" ? (
             <label className="border-surface-300 text-brand-900 hover:bg-background-100 flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border bg-white text-sm font-medium">
               Upload photo

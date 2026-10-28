@@ -1,11 +1,25 @@
 import { FileCaptureField } from "@hotelos/ui/components";
-import { ID_TYPE_OPTIONS } from "../../../reservations/sections/options.js";
+import type { FileRef } from "../../types/checkIn.types";
 
-/**
- * Step 4 — Capture ID: type + number + front/back photo via FileCaptureField
- * (camera on mobile, upload fallback).
- */
-const EMPTY_ERRORS = {};
+const ID_TYPE_OPTIONS = ["Aadhaar", "Passport", "Driving License", "Voter ID"];
+
+const EMPTY_ERRORS: Record<string, string> = {};
+
+export interface IdValue {
+  idType: string;
+  idNumber: string;
+  idFront: FileRef | null;
+  idBack: FileRef | null;
+}
+
+interface CaptureIdStepProps {
+  value: IdValue;
+  onChange: (field: string, val: unknown) => void;
+  onFile: (field: "idFront" | "idBack", file: File) => void;
+  uploading?: boolean;
+  error?: string;
+  errors?: Record<string, string>;
+}
 
 export function CaptureIdStep({
   value,
@@ -14,7 +28,7 @@ export function CaptureIdStep({
   uploading = false,
   error,
   errors = EMPTY_ERRORS,
-}) {
+}: CaptureIdStepProps) {
   const needsBack = ["Aadhaar", "Driving License"].includes(value.idType);
 
   return (
@@ -72,8 +86,15 @@ export function CaptureIdStep({
 
         <FileCaptureField
           label="ID — Front"
-          file={value.idFront}
-          onCapture={(file) => onFile("idFront", file)}
+          file={
+            value.idFront
+              ? {
+                  ...value.idFront,
+                  name: value.idFront.filename || "id_front",
+                }
+              : null
+          }
+          onCapture={(file: File) => onFile("idFront", file)}
           onClear={() => onChange("idFront", null)}
           disabled={uploading}
           successMessage="ID captured successfully"
@@ -83,8 +104,15 @@ export function CaptureIdStep({
         {needsBack && (
           <FileCaptureField
             label="ID — Back"
-            file={value.idBack}
-            onCapture={(file) => onFile("idBack", file)}
+            file={
+              value.idBack
+                ? {
+                    ...value.idBack,
+                    name: value.idBack.filename || "id_back",
+                  }
+                : null
+            }
+            onCapture={(file: File) => onFile("idBack", file)}
             onClear={() => onChange("idBack", null)}
             disabled={uploading}
             error={errors.idBack}

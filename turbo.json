@@ -27,7 +27,8 @@
     "EXPO_PUBLIC_SOCKET_URL",
     "KIOSK_GUEST_DASHBOARD_URL",
     "KIOSK_SELF_CHECKIN_URL",
-    "KIOSK_DIGITAL_MENU_URL"
+    "KIOSK_DIGITAL_MENU_URL",
+    "REDIS_URL"
   ],
   "tasks": {
     "build": {
