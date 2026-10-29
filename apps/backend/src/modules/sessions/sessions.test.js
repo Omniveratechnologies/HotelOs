@@ -18,6 +18,7 @@ import { authenticateSession } from "#/shared/middleware/sessionAuth.middleware.
 import {
   createTableOrder,
   markPaymentFailed,
+  getSessionOrders,
 } from "#/modules/orders/controllers/order.controller.js";
 
 // Helper mock response object
@@ -493,6 +494,51 @@ describe("HotelOS Session Authentication & Security", () => {
         "NEW",
         "Order status must remain NEW and open for retry",
       );
+    });
+  });
+
+  describe("Session Orders Retrieval (getSessionOrders)", () => {
+    it("returns session orders for authenticated session", async () => {
+      const sessionId = new mongoose.Types.ObjectId();
+      const mockOrder = {
+        _id: new mongoose.Types.ObjectId(),
+        hotelId: fakeHotelId,
+        tableId: fakeTableId,
+        sessionId,
+        items: [{ name: "Paneer Tikka", price: 250, quantity: 2 }],
+        totalAmount: 500,
+        subtotal: 500,
+        discount: 0,
+        gst: 25,
+        status: "NEW",
+        paymentStatus: "PENDING",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      Order.find = () => ({
+        sort: () => ({
+          limit: () => [mockOrder],
+        }),
+      });
+
+      const req = {
+        session: {
+          _id: sessionId,
+          hotelId: fakeHotelId,
+          tableId: fakeTableId,
+          createdAt: new Date(),
+        },
+      };
+      const res = createMockResponse();
+
+      await getSessionOrders(req, res);
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.success, true);
+      assert.equal(res.body.data.length, 1);
+      assert.equal(res.body.data[0].id.toString(), mockOrder._id.toString());
+      assert.equal(res.body.data[0].totalAmount, 500);
     });
   });
 });

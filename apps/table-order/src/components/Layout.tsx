@@ -17,7 +17,6 @@ import {
   ChevronRight,
   ClipboardList,
   Clock,
-  Flame,
   Heart,
   Home,
   Leaf,
@@ -33,6 +32,7 @@ import { CartProvider, useCart } from "../context/CartContext";
 import { SessionProvider } from "../context/SessionContext";
 import { OrdersProvider, useOrders } from "../context/OrdersContext";
 import { LocationPromptModal } from "./LocationPromptModal";
+import { OrderProgressCarousel } from "./OrderProgressCarousel";
 import type { FoodItem } from "../types";
 
 export function AppLayout() {
@@ -109,41 +109,6 @@ export function BottomNav() {
     </nav>
   );
 }
-function getStageLabel(status: string) {
-  switch (status) {
-    case "NEW":
-      return "Order Placed";
-    case "CONFIRMED":
-      return "Confirmed";
-    case "PREPARING":
-      return "Preparing";
-    case "READY":
-      return "Ready to Serve";
-    case "OUT_FOR_DELIVERY":
-      return "Serving";
-    case "DELIVERED":
-      return "Served";
-    default:
-      return status;
-  }
-}
-
-function getStagePercent(status: string) {
-  switch (status) {
-    case "NEW":
-      return 25;
-    case "CONFIRMED":
-      return 50;
-    case "PREPARING":
-      return 75;
-    case "READY":
-    case "OUT_FOR_DELIVERY":
-    case "DELIVERED":
-      return 100;
-    default:
-      return 20;
-  }
-}
 
 function Shell({
   children,
@@ -210,49 +175,12 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           </button>
         </div>
 
-        {/* Highlighted Live Order Progress Card in Sidebar */}
-        {activeOrders.length > 0 && (
-          <div className="sidebar-order-highlight">
-            <div className="soh-header">
-              <span className="soh-badge">
-                <span className="soh-pulse" />
-                ORDER IN PROGRESS
-              </span>
-              <span className="soh-id">
-                #{activeOrders[0].id.slice(-6).toUpperCase()}
-              </span>
-            </div>
-            <Link
-              to={`${base}/order/${activeOrders[0].id}`}
-              onClick={onClose}
-              className="soh-body"
-            >
-              <div className="soh-status-row">
-                <span className="soh-status">
-                  <Flame size={13} className="soh-flame" />
-                  {getStageLabel(activeOrders[0].status)}
-                </span>
-                <span className="soh-count">
-                  {activeOrders.length > 1
-                    ? `${activeOrders.length} active`
-                    : "Cooking"}
-                </span>
-              </div>
-              <div className="soh-progress-bar">
-                <div
-                  className="soh-progress-fill"
-                  style={{
-                    width: `${getStagePercent(activeOrders[0].status)}%`,
-                  }}
-                />
-              </div>
-              <div className="soh-tap-cta">
-                <span>View Full Progress</span>
-                <ChevronRight size={13} />
-              </div>
-            </Link>
-          </div>
-        )}
+        {/* Highlighted Live Order Progress Carousel in Sidebar */}
+        <OrderProgressCarousel
+          activeOrders={activeOrders}
+          base={base}
+          onClose={onClose}
+        />
 
         <nav className="sidebar-nav">
           {links.map(([to, label, Icon]) => (

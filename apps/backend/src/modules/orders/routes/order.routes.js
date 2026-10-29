@@ -51,11 +51,7 @@ router.patch(
   updateHotelOrderStatus,
 );
 
-// ---- Guest-facing routes ----
-router.post("/", authenticate, authorize("GUEST"), createOrder);
-router.post("/verify-payment", authenticate, authorize("GUEST"), verifyPayment);
-router.get("/", authenticate, authorize("GUEST"), getMyOrders);
-router.get("/:id", authenticate, authorize("GUEST"), getOrderById);
+// ---- Table-Order (Guest dining table & kiosk sessions) routes ----
 router.post(
   "/table-order",
   authenticateSession({ requireLocation: true }),
@@ -82,4 +78,10 @@ router.post(
   authenticateSession({ requireLocation: false }),
   markPaymentFailed,
 );
+
+// ---- In-room Guest routes ----
+router.post("/", authenticate, authorize("GUEST"), createOrder);
+router.post("/verify-payment", authenticate, authorize("GUEST"), verifyPayment);
+router.get("/", authenticate, authorize("GUEST"), getMyOrders);
+router.get("/:id", authenticate, authorize("GUEST"), getOrderById);
 export default router;
