@@ -6,18 +6,30 @@ import {
   Sparkles,
   Utensils,
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { isKioskEnvironment } from "@hotelos/utils";
 import { api } from "../services/api";
 import { useCart } from "../context/CartContext";
+import { useSession } from "../context/SessionContext";
 import { useMenu } from "../components/Layout";
 import type { TableDetails } from "../types";
 
 export default function Landing() {
   const { hotelId = "", tableId = "" } = useParams();
+  const navigate = useNavigate();
+  const { isKiosk, sessionType } = useSession();
   const { setTableNumber } = useCart();
   const menu = useMenu();
   const [table, setTable] = useState<TableDetails | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isKiosk || sessionType === "KIOSK" || isKioskEnvironment()) {
+      navigate(`/${hotelId}/table/${tableId}/menu${window.location.search}`, {
+        replace: true,
+      });
+    }
+  }, [hotelId, tableId, isKiosk, sessionType, navigate]);
 
   useEffect(() => {
     api

@@ -53,7 +53,7 @@ export function initSocket(httpServer) {
             socket.emit("device:config-updated", {
               status: kiosk.status,
               targetDashboard: kiosk.targetDashboard,
-              assignedUrl: resolveKioskAssignedUrl(kiosk.targetDashboard),
+              assignedUrl: resolveKioskAssignedUrl(kiosk),
             });
           }
         })

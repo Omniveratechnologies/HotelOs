@@ -5,9 +5,12 @@ import { jsPDF } from "jspdf";
 import { api } from "../services/api";
 import { formatMoney, PageHeader } from "../components/Layout";
 import { useCart } from "../context/CartContext";
+import { useSession } from "../context/SessionContext";
+
 export default function Bill() {
   const { orderId: routeOrderId } = useParams();
   const { hotelId, tableId } = useCart();
+  const { ensureAuthenticatedSession } = useSession();
   const [order, setOrder] = useState<Awaited<
     ReturnType<typeof api.getOrder>
   > | null>(null);
@@ -76,6 +79,7 @@ export default function Bill() {
   async function rate(value: number) {
     setRating(value);
     try {
+      await ensureAuthenticatedSession();
       await api.createServiceRequest({
         hotelId,
         tableId,

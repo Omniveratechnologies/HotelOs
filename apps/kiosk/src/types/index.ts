@@ -115,3 +115,16 @@ export interface KioskManagerModuleType {
   consumeLaunchedFromBoot(): Promise<boolean>;
   getDeviceId(): Promise<string>;
 }
+
+/** JavaScript bridge object exposed to embedded dashboard WebViews */
+export interface HotelOSKioskBridge {
+  readonly isKiosk: true;
+  readonly platform: "hotelos";
+  readonly version: string;
+}
+
+declare global {
+  interface Window {
+    kiosk?: HotelOSKioskBridge;
+  }
+}

@@ -107,4 +107,32 @@ export const kioskApi = {
 
     return data;
   },
+
+  /**
+   * Requests a cryptographically random, single-use 60-second handoff code
+   * for securely authenticating the embedded dashboard WebView.
+   */
+  async getHandoffCode(
+    serverUrl: string,
+    token: string,
+  ): Promise<{ handoffCode: string; expiresInSeconds: number }> {
+    const url = cleanUrl(serverUrl, "/api/v1/kiosks/handoff-code");
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const json = await res.json();
+    if (!res.ok || !json.data?.handoffCode) {
+      throw new Error(
+        json.message || `Handoff code request failed (HTTP ${res.status})`,
+      );
+    }
+
+    return json.data;
+  },
 };

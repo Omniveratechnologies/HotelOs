@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { api } from "../services/api";
 import { CartProvider, useCart } from "../context/CartContext";
+import { SessionProvider } from "../context/SessionContext";
+import { LocationPromptModal } from "./LocationPromptModal";
 import type { FoodItem } from "../types";
 
 export function AppLayout() {
@@ -42,13 +44,16 @@ export function AppLayout() {
       .finally(() => setMenuReady(true));
   }, [hotelId]);
   return (
-    <CartProvider hotelId={hotelId} tableId={tableId}>
-      <MenuDataContext.Provider value={{ menu, ready: menuReady }}>
-        <Shell drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen}>
-          <Outlet />
-        </Shell>
-      </MenuDataContext.Provider>
-    </CartProvider>
+    <SessionProvider hotelId={hotelId} tableId={tableId}>
+      <CartProvider hotelId={hotelId} tableId={tableId}>
+        <MenuDataContext.Provider value={{ menu, ready: menuReady }}>
+          <Shell drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen}>
+            <Outlet />
+          </Shell>
+          <LocationPromptModal />
+        </MenuDataContext.Provider>
+      </CartProvider>
+    </SessionProvider>
   );
 }
 export function MenuLayout() {

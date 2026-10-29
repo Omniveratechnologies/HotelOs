@@ -30,23 +30,36 @@ export const KIOSK_DASHBOARDS = [
 ];
 
 /**
- * Resolves the assigned URL for a kiosk terminal based on dashboard type.
+ * Resolves the assigned URL for a kiosk terminal based on dashboard type and optional table mapping.
  * Note: assignedUrl is not stored in MongoDB; it is computed dynamically from this config.
  *
  * @param {string|object} targetDashboard - Target dashboard ID or kiosk device object
+ * @param {string} [hotelId] - Optional hotel ID (if not on targetDashboard object)
+ * @param {string} [tableId] - Optional dining table ID (if not on targetDashboard object)
  * @returns {string} The resolved dashboard URL
  */
-export function resolveKioskAssignedUrl(targetDashboard) {
-  const mode =
-    typeof targetDashboard === "object" && targetDashboard !== null
-      ? targetDashboard.targetDashboard
-      : targetDashboard;
+export function resolveKioskAssignedUrl(targetDashboard, hotelId, tableId) {
+  const isObj = typeof targetDashboard === "object" && targetDashboard !== null;
+  const mode = isObj ? targetDashboard.targetDashboard : targetDashboard;
 
   const preset = KIOSK_DASHBOARDS.find((d) => d.id === mode);
-  if (preset) {
-    return preset.url;
+  if (!preset) {
+    return KIOSK_DASHBOARDS[0].url;
   }
 
-  // Fallback to the primary Guest Dashboard if unknown/unassigned
-  return KIOSK_DASHBOARDS[0].url;
+  // When Digital Menu is selected and an assigned table is specified, route directly to that table's menu
+  if (mode === "DIGITAL_MENU") {
+    const hId = isObj
+      ? targetDashboard.hotelId?._id || targetDashboard.hotelId
+      : hotelId;
+    const tId = isObj
+      ? targetDashboard.tableId?._id || targetDashboard.tableId
+      : tableId;
+
+    if (hId && tId) {
+      return `${preset.url}/${hId}/table/${tId}/menu`;
+    }
+  }
+
+  return preset.url;
 }

@@ -33,6 +33,7 @@ import pmsIntegrationRoutes from "#/modules/integrations/routes/pmsIntegration.r
 import corporateCompanyRoutes from "#/modules/corporate-companies/index.js";
 import keyCardRoutes from "./modules/key-cards/routes/keyCard.routes.js";
 import kioskDeviceRoutes from "./modules/kiosks/routes/kioskDevice.routes.js";
+import sessionRoutes from "./modules/sessions/routes/session.routes.js";
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.use("/api/v1/intelligence", intelligenceRoutes);
 app.use("/api/v1/corporate-companies", corporateCompanyRoutes);
 app.use("/api/v1/key-cards", keyCardRoutes);
 app.use("/api/v1/kiosks", kioskDeviceRoutes);
+app.use("/api/v1/sessions", sessionRoutes);
 
 app.use("/api/v1/menu", menuRoutes);
 app.use("/api/v1/upselling", upsellingRoutes);

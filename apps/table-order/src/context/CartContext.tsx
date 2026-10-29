@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import { api } from "../services/api";
 import type { CartItem, FoodItem, OrderType } from "../types";
 
 interface CartContextValue {
@@ -35,6 +42,17 @@ export function CartProvider({
   const [orderType, setOrderType] = useState<OrderType>("DINE_IN");
   const [tableNumber, setTableNumber] = useState("");
   const [items, setItems] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    if (hotelId && tableId) {
+      api
+        .getTable(hotelId, tableId)
+        .then((t) => {
+          if (t?.tableNumber) setTableNumber(t.tableNumber);
+        })
+        .catch((err) => console.warn("Failed to load table details:", err));
+    }
+  }, [hotelId, tableId]);
   const addItem = (
     foodItem: FoodItem,
     quantity = 1,

@@ -4,7 +4,7 @@ import {
   useQueryClient,
   queryKeys,
 } from "@hotelos/query";
-import { kioskDevicesApi } from "@hotelos/api";
+import { kioskDevicesApi, tablesApi } from "@hotelos/api";
 
 /**
  * Fetch all kiosks with optional filters (hotelId, status, q)
@@ -49,6 +49,27 @@ export function useKioskDashboards() {
   return {
     ...query,
     dashboards: query.data || [],
+    isLoading: query.isLoading,
+  };
+}
+
+/**
+ * Fetch dining tables for a selected hotel (used for Digital Menu table assignment)
+ */
+export function useHotelTables(hotelId) {
+  const query = useQuery({
+    queryKey: queryKeys.tables.list({ hotelId }),
+    queryFn: async () => {
+      if (!hotelId) return [];
+      const res = await tablesApi.getTables({ hotelId });
+      return res?.data || res || [];
+    },
+    enabled: Boolean(hotelId),
+  });
+
+  return {
+    ...query,
+    tables: query.data || [],
     isLoading: query.isLoading,
   };
 }

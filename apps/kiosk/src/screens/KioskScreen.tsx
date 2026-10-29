@@ -35,6 +35,41 @@ export function KioskScreen() {
   >("ONLINE");
   const [canGoBack, setCanGoBack] = useState(false);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
+  const [webViewUri, setWebViewUri] = useState<string | null>(null);
+  const [handoffCode, setHandoffCode] = useState<string | null>(null);
+
+  // Acquire a single-use handoff code whenever base URL or credentials change
+  useEffect(() => {
+    if (!url || !auth?.serverUrl || !auth?.token) {
+      setWebViewUri(url);
+      setHandoffCode(null);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const { handoffCode: code } = await kioskApi.getHandoffCode(
+          auth.serverUrl,
+          auth.token,
+        );
+        if (!isMounted) return;
+        setHandoffCode(code);
+        const separator = url.includes("?") ? "&" : "?";
+        setWebViewUri(`${url}${separator}kioskHandoffCode=${code}`);
+      } catch (err: any) {
+        console.warn("[KioskScreen] Handoff code fallback:", err?.message);
+        if (isMounted) {
+          setHandoffCode(null);
+          setWebViewUri(url);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [url, auth]);
 
   useEffect(() => {
     (async () => {
@@ -271,7 +306,18 @@ export function KioskScreen() {
     <View style={styles.container}>
       <WebView
         ref={webviewRef}
-        source={{ uri: url }}
+        source={{ uri: webViewUri || url }}
+        injectedJavaScriptBeforeContentLoaded={`
+          window.kiosk = Object.freeze({
+            isKiosk: true,
+            platform: "hotelos",
+            version: "1.0.0",
+            ${handoffCode ? `handoffCode: ${JSON.stringify(handoffCode)},` : ""}
+            ${auth?.deviceId ? `deviceId: ${JSON.stringify(auth.deviceId)},` : ""}
+          });
+
+          true;
+        `}
         style={styles.webview}
         onNavigationStateChange={handleNavigationStateChange}
         onShouldStartLoadWithRequest={handleShouldStartLoad}

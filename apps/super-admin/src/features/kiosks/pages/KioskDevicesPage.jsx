@@ -17,8 +17,10 @@ import {
   MapPin,
   CheckCircle2,
   AlertCircle,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Header, Button, KpiTile, KpiTileRow } from "@hotelos/ui/components";
+import { formatTime, KIOSK_DASHBOARDS_METADATA } from "@hotelos/utils";
 import {
   useKiosks,
   useRegeneratePairCode,
@@ -29,12 +31,6 @@ import {
 import { useHotels } from "../../hotels/hooks/useHotels.js";
 import CreateKioskModal from "../components/CreateKioskModal.jsx";
 import EditKioskModal from "../components/EditKioskModal.jsx";
-
-const DASHBOARD_LABELS = {
-  GUEST_DASHBOARD: "Guest Dashboard",
-  SELF_CHECKIN: "Self Check-In",
-  DIGITAL_MENU: "Digital Menu",
-};
 
 export default function KioskDevicesPage() {
   const { hotels } = useHotels();
@@ -339,8 +335,37 @@ export default function KioskDevicesPage() {
                       <div className="flex items-center justify-between">
                         <span className="text-gray-500">Dashboard Mode:</span>
                         <span className="rounded bg-sky-50 px-2 py-0.5 font-semibold text-sky-800">
-                          {DASHBOARD_LABELS[kiosk.targetDashboard] ||
-                            kiosk.targetDashboard}
+                          {KIOSK_DASHBOARDS_METADATA[kiosk.targetDashboard]
+                            ?.name || kiosk.targetDashboard}
+                        </span>
+                      </div>
+
+                      {kiosk.targetDashboard === "DIGITAL_MENU" && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Dining Table:</span>
+                          {kiosk.tableId ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-0.5 font-bold text-amber-900">
+                              <UtensilsCrossed className="h-3 w-3 text-amber-600" />
+                              Table #{kiosk.tableId.tableNumber}
+                              {kiosk.tableId.section
+                                ? ` (${kiosk.tableId.section})`
+                                : ""}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">
+                              Unassigned (Landing scan)
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500">Assigned URL:</span>
+                        <span
+                          className="text-brand-700 max-w-42.5 truncate font-mono text-[11px]"
+                          title={kiosk.assignedUrl}
+                        >
+                          {kiosk.assignedUrl || "—"}
                         </span>
                       </div>
 
@@ -380,14 +405,7 @@ export default function KioskDevicesPage() {
 
                       <div className="flex items-center justify-between">
                         <span className="text-gray-500">Last Heartbeat:</span>
-                        <span>
-                          {kiosk.lastHeartbeat
-                            ? new Date(kiosk.lastHeartbeat).toLocaleTimeString(
-                                [],
-                                { hour: "2-digit", minute: "2-digit" },
-                              )
-                            : "—"}
-                        </span>
+                        <span>{formatTime(kiosk.lastHeartbeat) || "—"}</span>
                       </div>
 
                       {typeof kiosk.batteryLevel === "number" && (
@@ -402,11 +420,11 @@ export default function KioskDevicesPage() {
                     </div>
 
                     {/* Remote Hardware Controls Bar */}
-                    <div className="mt-3 flex items-center justify-between rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs">
+                    <div className="mt-3 flex justify-between gap-2 rounded-lg bg-gray-50 px-2.5 py-1.5 text-xs">
                       <span className="font-semibold text-gray-600">
                         Remote:
                       </span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center justify-around gap-1.5">
                         {kiosk.status === "MAINTENANCE" ? (
                           <button
                             type="button"
@@ -500,14 +518,17 @@ export default function KioskDevicesPage() {
         }}
       />
 
-      <EditKioskModal
-        kiosk={editKiosk}
-        open={Boolean(editKiosk)}
-        onClose={() => setEditKiosk(null)}
-        onUpdated={(updated) => {
-          showBanner(`Terminal "${updated.name}" updated successfully.`);
-        }}
-      />
+      {editKiosk && (
+        <EditKioskModal
+          key={editKiosk._id}
+          kiosk={editKiosk}
+          open={Boolean(editKiosk)}
+          onClose={() => setEditKiosk(null)}
+          onUpdated={(updated) => {
+            showBanner(`Terminal "${updated.name}" updated successfully.`);
+          }}
+        />
+      )}
     </div>
   );
 }

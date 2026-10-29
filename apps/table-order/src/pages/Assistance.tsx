@@ -10,6 +10,7 @@ import {
 import { useParams } from "react-router-dom";
 import { PageHeader } from "../components/Layout";
 import { useCart } from "../context/CartContext";
+import { useSession } from "../context/SessionContext";
 import { api } from "../services/api";
 import type { ServiceRequestType } from "../types";
 const actions: Array<[ServiceRequestType, string, string, typeof Bell]> = [
@@ -30,6 +31,7 @@ const actions: Array<[ServiceRequestType, string, string, typeof Bell]> = [
 ];
 export default function Assistance() {
   const { hotelId = "", tableId = "" } = useParams();
+  const { ensureAuthenticatedSession } = useSession();
   useCart();
   const [message, setMessage] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -38,6 +40,7 @@ export default function Assistance() {
   const [custom, setCustom] = useState("");
   async function send(type: ServiceRequestType, description = "") {
     try {
+      await ensureAuthenticatedSession();
       await api.createServiceRequest({ hotelId, tableId, type, description });
       setMessage("Request sent. We’ll be with you shortly.");
       window.setTimeout(() => setMessage(""), 3000);

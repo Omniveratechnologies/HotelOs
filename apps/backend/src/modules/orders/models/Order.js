@@ -115,6 +115,17 @@ const orderSchema = new mongoose.Schema(
       ],
       default: "NEW",
     },
+    sessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Session",
+      default: null,
+      index: true,
+    },
+    idempotencyKey: {
+      type: String,
+      default: null,
+      index: true,
+    },
     acceptedAt: {
       type: Date,
       default: null,

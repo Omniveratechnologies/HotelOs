@@ -6,5 +6,8 @@ export const tableDTO = (t) => ({
   seats: t.seats,
   section: t.section,
   status: t.status,
+  sessionGeneration: t.sessionGeneration || 1,
+  isOrderingEnabled: t.isOrderingEnabled !== false,
+  coordinates: t.coordinates || null,
   qrUrl: `${env.frontendUrls.tableOrder}/${t.hotelId}/table/${t._id}`,
 });

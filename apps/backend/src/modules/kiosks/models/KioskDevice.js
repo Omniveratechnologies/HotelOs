@@ -38,6 +38,12 @@ const kioskDeviceSchema = new mongoose.Schema(
       enum: ["GUEST_DASHBOARD", "SELF_CHECKIN", "DIGITAL_MENU"],
       default: "GUEST_DASHBOARD",
     },
+    // Optional dining table assignment (specifically when targetDashboard is DIGITAL_MENU)
+    tableId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Table",
+      default: null,
+    },
     // One-time pairing code; cleared once device completes pairing
     pairCode: {
       type: String,
@@ -94,7 +100,7 @@ const kioskDeviceSchema = new mongoose.Schema(
 
 // Virtual property to dynamically resolve assignedUrl based on targetDashboard config without persisting in DB
 kioskDeviceSchema.virtual("assignedUrl").get(function () {
-  return resolveKioskAssignedUrl(this.targetDashboard);
+  return resolveKioskAssignedUrl(this);
 });
 
 kioskDeviceSchema.index({ hotelId: 1, deviceId: 1 });

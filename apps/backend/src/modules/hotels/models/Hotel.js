@@ -92,6 +92,20 @@ const hotelSchema = new mongoose.Schema(
       default: 12,
       min: 0,
     },
+
+    // Physical coordinates for proximity verification
+    coordinates: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
+    },
+
+    // Geolocation verification policy settings
+    locationSettings: {
+      tableRadiusMeters: { type: Number, default: 50 },
+      hotelRadiusMeters: { type: Number, default: 100 },
+      maxAccuracyMeters: { type: Number, default: 50 },
+      isLocationVerificationRequired: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,

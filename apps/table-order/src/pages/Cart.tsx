@@ -3,11 +3,13 @@ import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatMoney } from "../components/Layout";
 import { useCart } from "../context/CartContext";
+import { useSession } from "../context/SessionContext";
 import { api } from "../services/api";
 import { openRazorpayCheckout } from "../services/razorpayCheckout";
 import type { PaymentMode } from "../types";
 
 export default function Cart() {
+  const { ensureAuthenticatedSession } = useSession();
   const {
     hotelId,
     tableId,
@@ -133,20 +135,29 @@ export default function Cart() {
     setBusy(true);
     setError("");
     try {
-      const order = await api.createOrder({
-        hotelId,
-        tableId,
-        orderType,
-        couponCode: couponApplied || undefined,
-        notes: notes || undefined,
-        paymentMode,
-        items: items.map((item) => ({
-          foodItemId: item.foodItemId,
-          quantity: item.quantity,
-          addons: item.addons ?? [],
-          specialInstructions: item.specialInstructions,
-        })),
-      });
+      // Ensure physical presence verification & valid session before submitting order
+      await ensureAuthenticatedSession();
+
+      const idempotencyKey =
+        "ord_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+
+      const order = await api.createOrder(
+        {
+          hotelId,
+          tableId,
+          orderType,
+          couponCode: couponApplied || undefined,
+          notes: notes || undefined,
+          paymentMode,
+          items: items.map((item) => ({
+            foodItemId: item.foodItemId,
+            quantity: item.quantity,
+            addons: item.addons ?? [],
+            specialInstructions: item.specialInstructions,
+          })),
+        },
+        idempotencyKey,
+      );
       window.sessionStorage.setItem(
         `table-order:last-order:${hotelId}:${tableId}`,
         order.id,
@@ -166,16 +177,19 @@ export default function Cart() {
             navigate(`../order/${order.id}`);
           },
           onDismiss: async () => {
-            await api.markPaymentFailed({ orderId: order.id }).catch(() => {});
+            // Dismissing checkout window leaves order pending so guest can retry or switch payment mode
             setPaymentFailure(true);
+            setError(
+              "Payment window closed. Your order was saved and can be completed or paid via cash at your table.",
+            );
           },
         });
       } else {
         clearCart();
         navigate(`../order/${order.id}`);
       }
-    } catch (err) {
-      setError((err as Error).message);
+    } catch (err: any) {
+      setError(err?.message || "Failed to place order");
     } finally {
       setBusy(false);
     }
