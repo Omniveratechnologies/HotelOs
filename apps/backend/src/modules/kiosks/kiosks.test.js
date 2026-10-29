@@ -58,7 +58,7 @@ describe("Kiosk Dashboard Assignment & Role Authorization", () => {
       const resolved = resolveKioskAssignedUrl(deviceObj);
       assert.equal(
         resolved,
-        `${env.frontendUrls.tableOrder}/${hotelIdA}/table/${tableId1}/menu`,
+        `${env.frontendUrls.tableOrder}/${hotelIdA}/table/${tableId1}`,
       );
     });
 
@@ -189,7 +189,7 @@ describe("Kiosk Dashboard Assignment & Role Authorization", () => {
       assert.equal(res.body.success, true);
       assert.equal(
         res.body.data.assignedUrl,
-        `${env.frontendUrls.tableOrder}/${hotelIdB}/table/${tableId1}/menu`,
+        `${env.frontendUrls.tableOrder}/${hotelIdB}/table/${tableId1}`,
       );
     });
   });

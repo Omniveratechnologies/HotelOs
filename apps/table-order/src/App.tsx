@@ -54,7 +54,7 @@ function ScanRequired() {
             // ignore storage quota errors
           }
           setApiSessionCredentials(data.token, data.csrfToken);
-          navigate(`/${data.hotelId}/table/${data.tableId}/menu`, {
+          navigate(`/${data.hotelId}/table/${data.tableId}`, {
             replace: true,
           });
         } else {
@@ -103,7 +103,9 @@ export default function App() {
           <Route path="menu/:category/:itemId" element={<ItemDetail />} />
         </Route>
         <Route path="cart" element={<Cart />} />
+        <Route path="order" element={<Tracking />} />
         <Route path="order/:orderId" element={<Tracking />} />
+        <Route path="orders" element={<Tracking />} />
         <Route path="assistance" element={<Assistance />} />
         <Route path="bill" element={<Bill />} />
         <Route path="bill/:orderId" element={<Bill />} />

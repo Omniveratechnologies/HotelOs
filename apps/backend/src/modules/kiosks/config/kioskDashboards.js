@@ -47,7 +47,7 @@ export function resolveKioskAssignedUrl(targetDashboard, hotelId, tableId) {
     return KIOSK_DASHBOARDS[0].url;
   }
 
-  // When Digital Menu is selected and an assigned table is specified, route directly to that table's menu
+  // When Digital Menu is selected and an assigned table is specified, route directly to that table's home
   if (mode === "DIGITAL_MENU") {
     const hId = isObj
       ? targetDashboard.hotelId?._id || targetDashboard.hotelId
@@ -57,7 +57,7 @@ export function resolveKioskAssignedUrl(targetDashboard, hotelId, tableId) {
       : tableId;
 
     if (hId && tId) {
-      return `${preset.url}/${hId}/table/${tId}/menu`;
+      return `${preset.url}/${hId}/table/${tId}`;
     }
   }
 

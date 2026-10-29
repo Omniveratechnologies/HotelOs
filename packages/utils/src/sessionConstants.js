@@ -46,4 +46,6 @@ export const SESSION_STORAGE_KEYS = Object.freeze({
   KIOSK_CURRENT: "hotelos_kiosk_current_session",
   getSessionKey: (hotelId, tableId) =>
     `hotelos_session_${hotelId || "kiosk"}_${tableId || "kiosk"}`,
+  ORDERS: (hotelId, tableId) =>
+    `hotelos_session_orders_${hotelId || "kiosk"}_${tableId || "kiosk"}`,
 });

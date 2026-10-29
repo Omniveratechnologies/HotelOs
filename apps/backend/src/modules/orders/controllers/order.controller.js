@@ -621,6 +621,51 @@ export const markPaymentFailed = async (req, res) => {
   }
 };
 
+/**
+ * GET /orders/table-order
+ * Retrieves all orders created during the caller's active dining session.
+ */
+export const getSessionOrders = async (req, res) => {
+  try {
+    const { session } = req;
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        message: "Session authentication required",
+      });
+    }
+
+    const conditions = [{ sessionId: session._id }];
+
+    if (session.tableId) {
+      const sessionWindowStart =
+        session.createdAt || new Date(Date.now() - 8 * 60 * 60 * 1000);
+      conditions.push({
+        tableId: session.tableId,
+        createdAt: { $gte: sessionWindowStart },
+      });
+    }
+
+    const query = {
+      hotelId: session.hotelId,
+      $or: conditions,
+    };
+
+    const orders = await Order.find(query).sort({ createdAt: -1 }).limit(30);
+
+    return res.status(200).json({
+      success: true,
+      data: orders.map(orderDTO),
+    });
+  } catch (error) {
+    logger.error(error, "Get session orders error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve session orders",
+    });
+  }
+};
+
 export const getPublicOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);

@@ -91,7 +91,7 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
   // Compute live preview of assigned URL
   let resolvedUrl = selectedPreset?.url || "";
   if (targetDashboard === "DIGITAL_MENU" && hotelId && tableId) {
-    resolvedUrl = `${resolvedUrl}/${hotelId}/table/${tableId}/menu`;
+    resolvedUrl = `${resolvedUrl}/${hotelId}/table/${tableId}`;
   }
 
   return (

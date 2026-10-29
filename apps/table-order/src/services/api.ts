@@ -170,6 +170,8 @@ export const api = {
   getOrder: (orderId: string) =>
     request<Order>(`/orders/table-order/${orderId}`),
 
+  getSessionOrders: () => request<Order[]>("/orders/table-order"),
+
   verifyPayment: (input: PaymentVerificationInput) =>
     request<Order>("/orders/verify-payment", {
       method: "POST",

@@ -10,6 +10,7 @@ import {
   createTableOrder,
   verifyTableOrderPayment,
   markPaymentFailed,
+  getSessionOrders,
   getPublicOrder,
 } from "../controllers/order.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
@@ -60,6 +61,11 @@ router.post(
   authenticateSession({ requireLocation: true }),
   orderCreateLimiter,
   createTableOrder,
+);
+router.get(
+  "/table-order",
+  authenticateSession({ requireLocation: false }),
+  getSessionOrders,
 );
 router.post(
   "/table-order/verify-payment",

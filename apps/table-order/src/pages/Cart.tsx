@@ -4,12 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { formatMoney } from "../components/Layout";
 import { useCart } from "../context/CartContext";
 import { useSession } from "../context/SessionContext";
+import { useOrders } from "../context/OrdersContext";
 import { api } from "../services/api";
 import { openRazorpayCheckout } from "../services/razorpayCheckout";
 import type { PaymentMode } from "../types";
 
 export default function Cart() {
   const { ensureAuthenticatedSession } = useSession();
+  const { addSessionOrder } = useOrders();
   const {
     hotelId,
     tableId,
@@ -158,6 +160,7 @@ export default function Cart() {
         },
         idempotencyKey,
       );
+      addSessionOrder(order);
       window.sessionStorage.setItem(
         `table-order:last-order:${hotelId}:${tableId}`,
         order.id,
