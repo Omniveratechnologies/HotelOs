@@ -1,135 +1,118 @@
-# Guest Dashboard - Frontend
+# Guest Dashboard & In-Room Kiosk Portal
 
-A modern, responsive, in-room guest services web application designed for hotel tablet interfaces and QR-code entry points. Guests can manage room preferences, order dining and amenities, contact hotel staff instantly, and monitor request progress in real time.
+The guest-facing in-room dining, amenity requests, and concierge portal for **HotelOS**. Operates seamlessly across both personal mobile devices (via QR code or guest credentials) and dedicated in-room touchscreen Android kiosk tablets.
 
----
-
-## Key Features
-
-- **Guest Personalization & Context**: Displays suite number, guest greeting, and live room clock based on URL parameters or QR session tokens.
-- **Do Not Disturb (DND) Management**: Instant state toggle with built-in debouncing to notify housekeeping and front desk without duplicate events.
-- **In-Room Dining Ordering**: Categorized food menu, item quantity steppers, live subtotal computation, payment method selection (Cash on Delivery or Online Payment), and multi-stage order lifecycle tracking.
-- **Guest Amenities Requests**: Selectable housekeeping items (extra towels, pillows, toiletries, water, iron & board, blankets) with request tracking.
-- **One-Touch Staff Contact**: Quick requests to dial or ping Reception and Restaurant services.
-- **Live Request Tracker**: Summary card showing all active and past requests with state machine badges (Requested, Assigned, In Progress, Delivered, Completed).
-- **Resilient Mock API**: Built-in mock service layer (`src/data/mock-api.ts`) simulating async network latency and network error fallbacks to keep UI state machines verified under edge cases.
+- **Port**: `5177`
+- **Package name**: `guest`
+- **Tech Stack**: React 19, TypeScript, Vite, TanStack Router, TanStack Start, Tailwind CSS v4, Socket.IO Client
+- **Backend API**: `apps/backend` (Express API on port `5001`)
 
 ---
 
-## Tech Stack
+## Dual Operational Modes
 
-- **Framework**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
-- **Routing & SSR**: [TanStack Router](https://tanstack.com/router/latest) & [TanStack Start](https://tanstack.com/start/latest)
-- **State Management & Async Data**: [TanStack Query](https://tanstack.com/query/latest) + React Context FSM
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **UI Components & Icons**: [shadcn/ui](https://ui.shadcn.com/) (Radix UI primitives) + [Lucide React](https://lucide.dev/)
-- **Form & Schema Validation**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
+The Guest app automatically detects and configures its behavior based on how it is accessed:
+
+```
+               +-------------------------------------------------+
+               |                   apps/guest                    |
+               +-------------------------------------------------+
+                                       |
+                   Detects URL parameters & credentials
+                                       |
+                   +-------------------+-------------------+
+                   |                                       |
+                   v                                       v
+        [In-Room Kiosk Tablet]                  [Personal Guest Mobile]
+        URL: /?kioskCode=...                    URL: / or QR scan
+        - Hardware device identity              - Standard JWT authentication
+        - Vacant standby screen                 - Self-service room portal
+        - Auto-login on check-in                - Interaction gating when checked out
+        - Auto-logout on check-out
+```
+
+### 1. In-Room Kiosk Tablet Mode (`?kioskCode=...`)
+
+When running inside the native Android Kiosk shell (`apps/kiosk`) or an in-room tablet browser:
+
+- **Standby Mode (`KioskRoomStandby.tsx`)**: When the assigned room is vacant (`status: "cleaning"` or `"available"`), the tablet displays a serene hotel standby screen showing hotel branding, live room clock, Wi-Fi network name and password, and front-desk concierge instructions.
+- **Handoff Exchange (`POST /api/v1/sessions/kiosk-exchange`)**: When launched with a single-use handoff code, the app exchanges it for either an authenticated guest session (if a guest is already checked in) or a standby token (if vacant). Active stays are queried with `createdAt: -1` sorting to guarantee the latest guest identity is always loaded.
+- **Idempotent Reload Status Check (`GET /api/v1/sessions/kiosk-room-status`)**: If an in-room tablet is reloaded during an active guest stay, it uses its persistent device token to check room status idempotently, preventing 401 Unauthorized errors and rate-limiting blocks.
+- **Instant Auto-Login**: When Front Desk checks in a guest into this room, the backend emits `kiosk:guest-checked-in`. The tablet immediately transitions in-place from standby mode to the authenticated guest dashboard without requiring manual login.
+- **Instant Auto-Logout**: When Front Desk checks out the room via Room Grid (`POST /api/v1/rooms/:id/check-out`), the backend emits `kiosk:guest-checked-out`. The tablet immediately returns to the clean standby screen, purging guest state.
+
+### 2. Personal Mobile Device Mode
+
+When accessed by guests on their smartphones via room QR codes or direct login:
+
+- Guests authenticate via username/password or QR session token.
+- Full access to room services, food ordering, and DND controls.
+- **Stay Lifecycle Gating**: If a guest views their dashboard after checkout, the app displays a graceful "Stay Concluded" status banner and disables ordering and service action buttons to prevent orphaned charges.
 
 ---
 
-## Getting Started
+## Features
 
-### Prerequisites
+1. **Personalized Room Dashboard**:
+   - Live room clock, guest greeting, hotel Wi-Fi details, and room number.
+2. **Do Not Disturb (DND) Management**:
+   - 1-click toggle with backend debouncing to inform housekeeping and reception in real time.
+3. **In-Room Dining**:
+   - Categorized food catalog, dietary filters (Veg / Non-Veg), item quantities, delivery notes, and multi-stage tracking (`REQUESTED` &rarr; `ACCEPTED` &rarr; `PREPARING` &rarr; `READY` &rarr; `DELIVERED`).
+4. **Housekeeping & Amenities Requests**:
+   - Quick requests for towels, pillows, toiletries, water, adapters, and room cleaning.
+5. **Real-time Order & Request Tracker**:
+   - Real-time Socket.IO synchronization reflecting kitchen and front-desk progress instantly.
 
-- **Node.js**: `v18.0.0` or higher (v20+ recommended)
-- **Package Manager**: `npm` (v9+)
+---
 
-### Installation
+## Environment Variables
 
-Clone the repository and install dependencies:
+Copy `.env.example` to `.env`:
 
 ```bash
-git clone <repository-url>
-cd guest-harmony-portal
-npm install
+cp .env.example .env
 ```
 
-### Local Development
+| Variable          | Description                          | Default                        |
+| :---------------- | :----------------------------------- | :----------------------------- |
+| `VITE_API_URL`    | Base URL of HotelOS backend API      | `http://localhost:5001/api/v1` |
+| `VITE_SOCKET_URL` | Base URL of HotelOS Socket.IO server | `http://localhost:5001`        |
 
-Start the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) (or the URL shown in terminal) in your browser. You can simulate room context by adding a `room` query parameter (e.g. `http://localhost:3000/?room=1204`).
+> [!TIP]
+> When testing with physical Android tablets over Wi-Fi, run `pnpm sync:ip` or `pnpm dev:kiosk` at the monorepo root to automatically detect your host machine's LAN IP and sync it across all `.env` files.
 
 ---
 
-## Building for Production
+## Development
 
-To create an optimized production build:
-
-```bash
-npm run build
-```
-
-To preview the production build locally:
+All commands run from the repository root:
 
 ```bash
-npm run preview
-```
+# Run Guest app standalone
+pnpm dev -F guest
 
----
+# Run with all monorepo dashboards
+pnpm dev
 
-## Code Quality & Formatting
+# Run in kiosk interactive terminal with LAN IP sync
+pnpm dev:kiosk
 
-Run the linter:
-
-```bash
-npm run lint
-```
-
-Format codebase with Prettier:
-
-```bash
-npm run format
+# Build for production
+pnpm build -F guest
 ```
 
 ---
 
-## Project Structure
+## Real-Time Socket Architecture (`src/services/socket.ts`)
 
-```text
-guest-harmony-portal/
-├── public/                 # Static assets (favicons, manifest)
-├── src/
-│   ├── components/
-│   │   ├── guest-dashboard/# Dashboard domain components (modals, headers, lists)
-│   │   └── ui/             # Reusable UI primitives (shadcn/ui)
-│   ├── constants/          # Service flow constants and configurations
-│   ├── context/            # Application state FSM & guest context provider
-│   ├── data/               # Mock data (menus, amenities, room directory, mock API)
-│   ├── hooks/              # Custom React hooks (orders, clock, mobile check)
-│   ├── lib/                # Shared utilities & error handling logic
-│   ├── routes/             # File-based routing (__root.tsx, index.tsx)
-│   ├── types/              # TypeScript type definitions
-│   └── utils/              # Formatter & status helpers
-├── components.json         # shadcn/ui configuration
-├── eslint.config.js        # ESLint flat configuration
-├── tsconfig.json           # TypeScript compiler configuration
-├── vite.config.ts          # Vite build configuration
-└── package.json            # Dependencies and scripts
-```
+The guest dashboard connects to the backend Socket.IO hub:
 
----
-
-## Backend Integration Guide
-
-This project is delivered as a clean, standalone frontend application. All server calls currently route through the mock service layer in `src/data/mock-api.ts`.
-
-To integrate with real backend endpoints:
-
-1. Replace simulated promises in `src/data/mock-api.ts` or `src/hooks/useOrders.ts` with your API client calls (REST, GraphQL, or WebSockets for live status updates).
-2. Configure API base URLs and authentication headers using standard environment variables (e.g. `VITE_API_BASE_URL`).
-
-### Realtime updates (Socket.IO)
-
-Live order / service-request updates use `src/services/socket.ts`
-(`connectGuestSocket`). The socket authenticates with the stored JWT in the
-handshake (`{ auth: { token } }`) and listens to the backend's documented
-events — `order:created`, `order:updated`, `serviceRequest:created`,
-`serviceRequest:updated`. The backend owns room membership (`guest:<userId>`),
-so no `join:*` events are emitted by the client. `GuestDashboardProvider`
-wires this up automatically and refetches lists on reconnect to recover
-missed events.
+- **Authentication**: JWT token passed in `{ auth: { token } }`.
+- **Rooms Joined**: Handled securely by the backend (`guest:<guestId>`, `room:<roomId>`, and `device:<deviceId>`).
+- **Live Events Handled**:
+  - `order:created`, `order:updated` &rarr; Live dining order status updates.
+  - `serviceRequest:created`, `serviceRequest:updated` &rarr; Live housekeeping status updates.
+  - `kiosk:guest-checked-in` &rarr; In-place auto-login on in-room tablets.
+  - `kiosk:guest-checked-out` &rarr; In-place auto-logout to standby screen.
+  - `stay:status-updated` &rarr; Dual-device stay status synchronization.

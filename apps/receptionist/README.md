@@ -43,20 +43,47 @@ exercised in this app:
 | `/accept-invitation`                    | AcceptInvitation | Accept an emailed invitation, set credentials          |
 | `/forgot-username` / `/forgot-password` | Recovery         | Request username reminder / password reset             |
 
-### Dashboard
+### Dashboard & Front Desk Operations
 
-| Area         | Page                                | Notes                                                           |
-| ------------ | ----------------------------------- | --------------------------------------------------------------- |
-| Dashboard    | `dashboard/DashboardPage`           | Summary stats + activity feed                                   |
-| Guests       | `guests/GuestsPage`                 | List / register / check-in / check-out guests                   |
-| Rooms        | `rooms/RoomsPage`                   | Room list + add / update / delete (with `roomCode` mapping)     |
-| Room Types   | `room-types/RoomTypesPage`          | Room types listing & modal                                      |
-| Rate Plans   | `rate-plans/RatePlansPage`          | Rate plans CRUD & Aiosell live rates matrix                     |
-| Food Orders  | `food-orders/FoodOrdersPage`        | Realtime food order queue                                       |
-| Housekeeping | `housekeeping/HousekeepingPage`     | Realtime housekeeping / service request queue                   |
-| Kiosks       | `management/pages/KioskDevicesPage` | Monitor lobby terminals, view online status, toggle maintenance |
-| Reports      | `reports/ReportsPage`               | Daily performance & occupancy reports                           |
-| Settings     | `settings/SettingsPage`             | Hotel contact details, check-in/out times, staff                |
+| Area         | Page                                    | Notes                                                           |
+| ------------ | --------------------------------------- | --------------------------------------------------------------- |
+| Dashboard    | `dashboard/DashboardPage`               | Summary stats, live activity feed & interactive Room Grid       |
+| Front Desk   | `front-desk/pages/FrontDeskCheckInPage` | Arrival queue, keycard assignment & available room selector     |
+| Front Desk   | `front-desk/pages/GuestCheckOutPage`    | Departure queue, folio review, and settlement checkout          |
+| Guests       | `guests/GuestsPage`                     | List / register / check-in / check-out guests                   |
+| Rooms        | `rooms/RoomsPage`                       | Room list + add / update / delete (with `roomCode` mapping)     |
+| Room Types   | `room-types/RoomTypesPage`              | Room types listing & modal                                      |
+| Rate Plans   | `rate-plans/RatePlansPage`              | Rate plans CRUD & Aiosell live rates matrix                     |
+| Food Orders  | `food-orders/FoodOrdersPage`            | Realtime food order queue                                       |
+| Housekeeping | `housekeeping/HousekeepingPage`         | Realtime housekeeping / service request queue                   |
+| Kiosks       | `management/pages/KioskDevicesPage`     | Monitor lobby terminals, view online status, toggle maintenance |
+| Reports      | `reports/ReportsPage`                   | Daily performance & occupancy reports                           |
+| Settings     | `settings/SettingsPage`                 | Hotel contact details, check-in/out times, staff                |
+
+---
+
+## Front Desk Room Grid Check-Out Workflow
+
+When viewing rooms on the Dashboard Room Grid or the Rooms page:
+
+1. Clicking an **Occupied** room opens `RoomModal.jsx`.
+2. Selecting **Check Out** and clicking **Confirm Check Out** invokes `checkOutRoom(room.id)` via `POST /api/v1/rooms/:id/check-out`.
+3. The backend:
+   - Locates all active bookings for that room (`status: "checked-in"`) and transitions them to `status: "checked-out"`.
+   - Switches the room status to `cleaning`, clearing `currentGuest`.
+   - Deactivates and returns assigned KeyCards.
+   - Creates a high-priority turnover Housekeeping task.
+   - Pushes real-time Socket.IO event `kiosk:guest-checked-out` to reset in-room tablets to standby mode.
+4. TanStack Query automatically invalidates `rooms`, `reservations`, `guests`, `dashboard.stats()`, and `front-desk` caches, ensuring instant UI synchronization across the front-desk console.
+
+---
+
+## Front Desk Check-In Room Assignment
+
+During guest check-in at `/front-desk/check-in`:
+
+- The room selector queries `GET /api/v1/rooms?status=available`, displaying only clean vacant rooms ready for occupancy.
+- On check-in submission, the backend automatically transitions any prior stale `checked-in` bookings for that room to `checked-out`, permanently safeguarding against duplicate active room stays.
 
 ---
 

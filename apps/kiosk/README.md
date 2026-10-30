@@ -74,14 +74,19 @@ apps/kiosk/
 ## Quick Start
 
 ```bash
-# 1. Set environment variables
+# 1. From monorepo root, run unified interactive development launcher:
+# (Auto-syncs local LAN IP, launches Expo in a dedicated interactive terminal, and starts Turborepo)
+pnpm dev:kiosk
+
+# 2. Or standalone setup inside apps/kiosk:
 cp .env.example .env
-
-# 2. Generate native Android project
 pnpm prebuild
-
-# 3. Launch debug build on connected Android emulator or device
 pnpm android
 ```
+
+### Local Network Scripts
+
+- **`pnpm dev:kiosk` (`scripts/dev-kiosk.mjs`)**: Launches Expo in an independent native terminal window (PowerShell / cmd / Terminal) with full interactive keystroke support (`a` to launch Android, `r` to reload), while running all backend and frontend services concurrently in the main console.
+- **`pnpm sync:ip` (`scripts/sync-kiosk-ip.mjs`)**: Scans host network interfaces, identifies the active IPv4 Wi-Fi/Ethernet address, and updates `apps/kiosk/.env` along with all frontend `.env` files automatically.
 
 Follow the detailed step-by-step instructions in **[`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)** to provision Device Owner and complete activation.

@@ -281,9 +281,42 @@ role-specific fetch wrappers:
 - **`kitchen`** connects directly via `src/config/api.js` using
   `VITE_API_BASE_URL` (defaults to `http://localhost:5001/api`).
 - **`guest`** connects via `src/config/api.ts` using `VITE_API_URL` (defaults to
-  `http://localhost:5001/api/v1`).
+  `http://localhost:5001/api/v1`). Features in-room tablet standby mode (`KioskRoomStandby.tsx`), automatic kiosk session exchange, idempotent reload status checks, and dual-device real-time sync.
+- **`self-checkin`** connects via `src/features/check-in/api/checkInApi.ts` using
+  `VITE_API_URL` (defaults to `http://localhost:5001/api/v1`). Reuses `@hotelos/api` and `@hotelos/ui` for a 10-step touch wizard with remote magic link and lobby OTP entry points.
+- **`table-order`** connects via `src/services/api.ts` using `VITE_API_URL` (defaults to
+  `http://localhost:5001/api/v1`). Implements dynamic dining sessions with GPS geofencing & kiosk bypass tokens, multi-order progress tracking, and consolidated master billing.
+- **`kiosk`** native shell connects via `src/services/kioskApi.ts` using
+  `EXPO_PUBLIC_API_URL` (defaults to `http://10.0.2.2:5001` or LAN IP). Communicates over HTTP and Socket.IO for telemetry, heartbeat, and remote commands.
 
 See individual package READMEs in `packages/*` for detailed APIs and usage patterns.
+
+---
+
+## Kiosk & Hardware Architecture
+
+HotelOS includes an enterprise-grade hardware kiosk and in-room tablet subsystem:
+
+### 1. Dynamic Kiosk Routing (3 Dashboard Presets)
+
+Kiosk devices are enrolled once via Super Admin (`apps/super-admin`, `/kiosks`) with a 6-digit pairing code. Each tablet is assigned a target dashboard:
+
+- `GUEST_DASHBOARD`: Pointed at `apps/guest` (`http://<LAN_IP>:5177?kioskCode=...`).
+- `SELF_CHECKIN`: Pointed at `apps/self-checkin` (`http://<LAN_IP>:5178`).
+- `DIGITAL_MENU`: Pointed at `apps/table-order` (`http://<LAN_IP>:5179?tableId=...`).
+
+### 2. In-Room Tablet Lifecycle (Vacant Standby vs. Checked-In Guest)
+
+In-room tablets mounted in guest rooms operate seamlessly across stay transitions:
+
+- **Standby Mode (`KioskRoomStandby.tsx`)**: When a room is vacant (`cleaning` or `available`), the tablet displays hotel branding, live clock, Wi-Fi details, and concierge instructions.
+- **Auto-Login upon Check-In**: When front desk checks a guest into the room, the backend emits `kiosk:guest-checked-in`. The tablet immediately transitions in-place from standby mode to the authenticated guest dashboard without requiring manual login.
+- **Auto-Logout upon Check-Out**: Checking out a room from the Receptionist Dashboard Room Grid (`POST /api/v1/rooms/:id/check-out`) transitions active reservations to `checked-out`, releases keycards, creates turnover cleaning tasks, and emits `kiosk:guest-checked-out`. In-room tablets instantly reset to standby mode.
+- **Idempotent Status Polling**: Tablets reloading during a stay query `GET /api/v1/sessions/kiosk-room-status` using their device token, avoiding 401s on page refresh.
+
+### 3. BullMQ Worker Central Model Registry
+
+To prevent Mongoose `MissingSchemaError: Schema hasn't been registered for model "User"` errors in background workers, all models are pre-registered centrally in [`apps/backend/src/config/models.js`](apps/backend/src/config/models.js) before Redis queues (`src/workers/index.js`) start processing jobs.
 
 ---
 
@@ -356,6 +389,9 @@ Each app and package documents its own setup and scope:
 - [Receptionist](apps/receptionist/README.md)
 - [Kitchen](apps/kitchen/README.md)
 - [Guest](apps/guest/README.md)
+- [Self Check-In](apps/self-checkin/README.md)
+- [Table Order](apps/table-order/README.md)
+- [Kiosk Native Shell](apps/kiosk/README.md)
 - [@hotelos/api](packages/api/README.md)
 - [@hotelos/query](packages/query/README.md)
 - [@hotelos/socket](packages/socket/README.md)

@@ -178,6 +178,19 @@ const result = await api.post(
 
 ---
 
+## Domain Endpoint Modules
+
+The package provides pre-configured domain API modules:
+
+- **`roomsApi`**: `getRooms`, `getRoomById`, `createRoom`, `updateRoom`, `deleteRoom`, `checkOutRoom`.
+  - `checkOutRoom(roomId, { settlementMode, notes })`: Calls `POST /api/v1/rooms/:id/check-out` to perform complete front-desk check-out from Room Grid.
+- **`checkInApi`**: Public self check-in wizard functions (`lookupBookingForCheckIn`, `verifyCheckInOtp`, `resolveCheckInSession`, `saveCheckInStep`, `submitCheckIn`).
+- **`kioskDevicesApi`**: Terminal fleet management functions (`pairKiosk`, `sendHeartbeat`, `getKioskStatus`, `getKiosks`, `createKiosk`, `updateKiosk`, `regeneratePairCode`, `sendKioskCommand`, `deleteKiosk`).
+- **`tablesApi`**: Restaurant dining table operations (`getTables`, `getTableById`, `createTable`, `updateTable`, `deleteTable`, `resetTableSession`).
+- **`frontDeskApi`**: `getArrivalsQueue`, `getDeparturesQueue`, `checkInBooking`, `checkOutBooking`, `getBookingFolio`.
+
+---
+
 ## Errors
 
 `apiFetch` wraps failures in an `ApiError` which extends `Error` and adds a

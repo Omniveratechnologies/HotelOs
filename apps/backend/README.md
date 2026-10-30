@@ -84,8 +84,14 @@ src/
 ├── config/                 Shared infrastructure
 │   ├── db.js               MongoDB connection
 │   ├── env.js              Loads & validates env vars
+│   ├── models.js           Central Mongoose schema registry (workers & server)
+│   ├── redis.js            Redis client for BullMQ queues & workers
 │   ├── r2.js               Cloudflare R2 (presigned URLs)
 │   └── razorpay.js         Razorpay client (lazy-init)
+│
+├── workers/                BullMQ asynchronous job workers
+│   ├── index.js            Worker process runner & queue reconciliation
+│   └── email/              Email workers (checkInReminder.worker.js)
 │
 ├── utils/
 │   └── logger.js           Centralized Pino logger (singleton)
@@ -735,13 +741,14 @@ and a JWT is returned so the user is logged in immediately.
 
 Scoped to the authenticated user's hotel.
 
-| Method | Endpoint     | Auth | Roles                   | Description   |
-| ------ | ------------ | ---- | ----------------------- | ------------- |
-| GET    | `/rooms`     | Yes  | SUB_ADMIN, RECEPTIONIST | List rooms    |
-| GET    | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Get a room    |
-| POST   | `/rooms`     | Yes  | SUB_ADMIN, RECEPTIONIST | Create a room |
-| PATCH  | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Update a room |
-| DELETE | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete a room |
+| Method | Endpoint               | Auth | Roles                                | Description                                |
+| ------ | ---------------------- | ---- | ------------------------------------ | ------------------------------------------ |
+| GET    | `/rooms`               | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | List rooms (optional `?status=` filter)    |
+| GET    | `/rooms/:id`           | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Get a room                                 |
+| POST   | `/rooms`               | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Create a room                              |
+| PATCH  | `/rooms/:id`           | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Update a room                              |
+| POST   | `/rooms/:id/check-out` | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Check out room & all active bookings on it |
+| DELETE | `/rooms/:id`           | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Delete a room                              |
 
 **Create room** (`POST /rooms`):
 
@@ -761,6 +768,17 @@ Scoped to the authenticated user's hotel.
 **Update room** — accepts any of `status`, `type`, `rate`, `floor`,
 `currentGuest`, `checkIn`, `checkOut`. Room `status` values:
 `available` | `occupied` | `reserved` | `cleaning`.
+_Note: If an occupied room's status is changed to `cleaning` or `available`, the backend automatically checks out any active stay on that room to maintain database consistency._
+
+**Check-out room from Room Grid** (`POST /rooms/:id/check-out`):
+Executes an official front-desk check-out from the Dashboard Room Grid modal:
+
+- Finds all active checked-in bookings for that room (`status: "checked-in"`).
+- Transitions them to `status: "checked-out"` with payment status `paid` and check-out audit trails.
+- Sets the Room status to `cleaning`, clearing `currentGuest`, `checkIn`, and `checkOut`.
+- Automatically generates a turnover Housekeeping task (`type: "HOUSEKEEPING"`, priority: `"high"`).
+- Returns & deactivates all assigned KeyCards.
+- Emits real-time Socket.IO event `kiosk:guest-checked-out` to any in-room tablet for that room so it resets to standby mode.
 
 Room response DTO fields:
 
@@ -1076,6 +1094,47 @@ Sends battery level, app version, and IP. Returns `{ "received": true, "config":
 
 **Remote Commands** (`POST /kiosks/:id/command`):
 Body: `{ "command": "device:reload" | "device:exit-kiosk", "payload": {} }`. Dispatched live over Socket.IO to the specific kiosk terminal.
+
+---
+
+### Sessions & Kiosk Handoff (`/sessions`)
+
+Handles QR guest sessions, table dining geofencing, and in-room kiosk auto-login handoffs.
+
+| Method | Endpoint                      | Auth | Roles          | Description                                             |
+| ------ | ----------------------------- | ---- | -------------- | ------------------------------------------------------- |
+| POST   | `/sessions/qr-guest`          | No   | Public (Guest) | Create dining session via table QR scan with GPS verify |
+| POST   | `/sessions/kiosk-exchange`    | No   | Public / Kiosk | Exchange single-use handoff code for guest/standby JWT  |
+| GET    | `/sessions/kiosk-room-status` | Yes  | KIOSK          | Idempotent room status check on tablet reload           |
+| GET    | `/sessions/validate`          | Yes  | Session Token  | Validate dining session generation & geofencing         |
+| POST   | `/sessions/revoke`            | Yes  | Session Token  | Revoke active dining session                            |
+
+**Kiosk Exchange** (`POST /sessions/kiosk-exchange`):
+
+- Body: `{ "handoffCode": "<sha256_code>" }`
+- Automatically checks if the kiosk's assigned room has an active stay (sorting `{ createdAt: -1 }` to select the newest valid check-in).
+- If occupied: issues a guest JWT (`role: "GUEST"`) with auto-login payload `{ activeStay: true, guestToken, user, reservationNo }`.
+- If vacant: issues standby payload `{ activeStay: false, standbyToken, hotel, room }` to display in-room standby screen.
+
+**Idempotent Kiosk Status** (`GET /sessions/kiosk-room-status`):
+
+- Authenticated via the kiosk's hardware device token.
+- Returns current stay state without consuming single-use handoff codes, enabling smooth Android WebView reloads during an active guest stay.
+
+---
+
+### Public Self Check-In (`/public/check-in`)
+
+Public guest-facing check-in wizard endpoints for remote mobile devices and lobby kiosk terminals.
+
+| Method | Endpoint                              | Auth | Description                                        |
+| ------ | ------------------------------------- | ---- | -------------------------------------------------- |
+| POST   | `/public/check-in/lookup`             | No   | Search reservation by reservation number or email  |
+| POST   | `/public/check-in/verify-otp`         | No   | Verify 6-digit OTP and generate session token      |
+| GET    | `/public/check-in/:token`             | No   | Resolve check-in session state & booking details   |
+| PUT    | `/public/check-in/:token/steps/:step` | No   | Save progress on a wizard step (1–10)              |
+| POST   | `/public/check-in/:token/uploads`     | No   | Generate presigned R2 upload URLs for ID / photo   |
+| POST   | `/public/check-in/:token/submit`      | No   | Finalize check-in submission for front-desk review |
 
 ---
 
