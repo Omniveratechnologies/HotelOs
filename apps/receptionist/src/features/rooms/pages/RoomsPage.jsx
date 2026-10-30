@@ -65,6 +65,7 @@ export default function RoomsPage() {
   const {
     rooms = [],
     updateRoomStatus,
+    checkOutRoom,
     updateRoom,
     addRoom,
     roomsLoading,
@@ -433,6 +434,7 @@ export default function RoomsPage() {
             room={selected}
             onClose={() => setSelected(null)}
             updateRoomStatus={updateRoomStatus}
+            checkOutRoom={checkOutRoom}
             updateRoom={updateRoom}
           />
         )}

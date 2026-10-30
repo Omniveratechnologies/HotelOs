@@ -232,12 +232,17 @@ export default function FrontDeskCheckInPage() {
   });
 
   const arrivals = arrivalsData || [];
-  const cleanRooms = (roomsData?.rooms || roomsData || []).map((r) => ({
-    id: r._id,
-    roomNumber: String(r.roomNumber),
-    floor: r.floor || 1,
-    view: r.type || "City View",
-  }));
+  // Map clean vacant rooms for assignment.
+  // Note: Backend roomResponseDTO transforms MongoDB `_id` to `id`. Using `r.id || r._id` ensures
+  // valid room IDs are passed to CleanRoomSelector so radio buttons and card clicks operate correctly.
+  const cleanRooms = (roomsData?.rooms || roomsData || [])
+    .filter((r) => !r.status || r.status === "available")
+    .map((r) => ({
+      id: r.id || r._id,
+      roomNumber: String(r.roomNumber),
+      floor: r.floor || 1,
+      view: r.type || "City View",
+    }));
   const stats = statsData || {
     pendingArrivals: 0,
     checkedInToday: 0,

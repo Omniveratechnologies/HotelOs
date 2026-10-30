@@ -31,6 +31,7 @@ export interface KioskExchangeResponse {
   targetDashboard: string;
   activeStay: boolean;
   guestToken: string | null;
+  standbyToken?: string | null;
   user: {
     id: string;
     name: string;
@@ -64,5 +65,36 @@ export async function exchangeKioskHandoff(
   return apiRequest<KioskExchangeResponse>("/sessions/kiosk-exchange", {
     method: "POST",
     body: JSON.stringify({ handoffCode }),
+  });
+}
+
+export interface KioskRoomStatusResponse {
+  activeStay: boolean;
+  guestToken: string | null;
+  user: {
+    id: string;
+    name: string;
+    username: string;
+    role: string;
+    hotelId: string;
+    roomId: string | null;
+    mustChangePassword: boolean;
+  } | null;
+  reservationNo?: string | null;
+  roomId?: string | null;
+}
+
+/**
+ * Idempotently checks if the room assigned to this kiosk has an active checked-in guest.
+ * Authenticated via the kiosk's standbyToken. Safe to invoke repeatedly on page reload.
+ */
+export async function fetchKioskRoomStatus(
+  standbyToken: string,
+): Promise<KioskRoomStatusResponse> {
+  return apiRequest<KioskRoomStatusResponse>("/sessions/kiosk-room-status", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${standbyToken}`,
+    },
   });
 }

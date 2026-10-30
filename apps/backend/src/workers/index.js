@@ -1,5 +1,6 @@
 import "#/config/env.js";
 import connectDB from "#/config/db.js";
+import { registerAllModels } from "#/config/models.js";
 import redisConnection from "#/config/redis.js";
 import { reconcileCheckInReminders } from "#/modules/check-ins/queues/checkInEmail.queue.js";
 import { initCheckInReminderWorker } from "./email/checkInReminder.worker.js";
@@ -7,14 +8,17 @@ import logger from "#/utils/logger.js";
 
 /**
  * Master Worker Process Runner.
- * Boots database connections, performs startup reconciliation,
- * and manages the lifecycle of all registered queue workers.
+ * Boots database connections, pre-registers domain models,
+ * performs startup reconciliation, and manages the lifecycle of all registered queue workers.
  */
 async function startWorkerService() {
   logger.info("Initializing HotelOS Background Worker Service...");
 
-  // 1. Connect to MongoDB
+  // 1. Connect to MongoDB and register Mongoose schemas across all domains
   await connectDB();
+  // Essential: Registers User, Hotel, Room, Booking, etc. schemas so background jobs
+  // can perform Mongoose .populate() calls without triggering "Schema hasn't been registered" errors.
+  registerAllModels();
 
   // 2. Perform Startup Reconciliation (ensures zero loss across restarts/crashes)
   await reconcileCheckInReminders();

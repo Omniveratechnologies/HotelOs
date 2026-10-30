@@ -10,6 +10,7 @@ import {
   login as loginApi,
   logout as logoutApi,
   exchangeKioskHandoff,
+  fetchKioskRoomStatus,
   type LoginResponse,
 } from "@/services/authApi";
 import { connectGuestSocket, disconnectGuestSocket } from "@/services/socket";
@@ -98,10 +99,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const performKioskExchange = useCallback(async (codeToExchange: string) => {
+    // Prevent sending an already-consumed single-use handoff code
+    if (sessionStorage.getItem("consumed_handoff_code") === codeToExchange) {
+      console.log(
+        "[AuthContext] Skipping already-consumed handoff code:",
+        codeToExchange,
+      );
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
+      // Mark code as consumed in session storage immediately before network transit
+      sessionStorage.setItem("consumed_handoff_code", codeToExchange);
+      sessionStorage.removeItem("kiosk_handoff_code");
+
       const res = await exchangeKioskHandoff(codeToExchange);
+
       const kInfo: KioskInfo = {
         kioskId: res.kioskId,
         deviceId: res.deviceId,
@@ -112,6 +128,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       setKioskInfo(kInfo);
       sessionStorage.setItem("kiosk_info", JSON.stringify(kInfo));
+
+      if (res.standbyToken) {
+        // Persist kiosk standby token so Socket.IO can authenticate and listen to room events
+        sessionStorage.setItem("kiosk_standby_token", res.standbyToken);
+      }
 
       if (res.activeStay && res.guestToken && res.user) {
         const u = {
@@ -140,6 +161,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "[AuthContext] Kiosk handoff exchange fallback:",
         err?.message,
       );
+      sessionStorage.removeItem("kiosk_handoff_code");
+
       // If code exchange failed or expired, check if we already have a valid session stored
       const storedToken = localStorage.getItem("auth_token");
       const storedUser = localStorage.getItem("auth_user");
@@ -160,31 +183,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshKioskSession = useCallback(async () => {
-    const code =
-      sessionStorage.getItem("kiosk_handoff_code") ||
-      (typeof window !== "undefined"
-        ? (window as any).kiosk?.handoffCode
-        : null);
-
-    if (code) {
-      await performKioskExchange(code);
-    } else {
-      // Re-query current profile to see if status updated
-      const storedToken = localStorage.getItem("auth_token");
-      if (storedToken) {
+    // In kiosk mode: Idempotently query room stay status via standbyToken
+    // Never re-exchange single-use handoff codes which causes 401 Unauthorized errors.
+    if (isKiosk) {
+      const standbyToken = sessionStorage.getItem("kiosk_standby_token");
+      if (standbyToken) {
         try {
-          const profile = await fetch("/api/v1/guests/me", {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          }).then((r) => r.json());
-          if (profile?.data?.bookingStatus) {
-            setBookingStatus(profile.data.bookingStatus);
+          const status = await fetchKioskRoomStatus(standbyToken);
+          if (status.activeStay && status.guestToken && status.user) {
+            const u = {
+              ...status.user,
+              hotelName: kioskInfo?.hotelName,
+              bookingStatus: "checked-in",
+              reservationNo: status.reservationNo || undefined,
+            };
+            localStorage.setItem("auth_token", status.guestToken);
+            localStorage.setItem("auth_user", JSON.stringify(u));
+            setToken(status.guestToken);
+            setUser(u);
+            setBookingStatus("checked-in");
+            setKioskIdle(false);
+            return;
+          } else {
+            setKioskIdle(true);
           }
-        } catch {
-          // ignore
+        } catch (err: any) {
+          console.warn(
+            "[AuthContext] Kiosk room status check fallback:",
+            err?.message,
+          );
         }
       }
+      return;
     }
-  }, [performKioskExchange]);
+
+    // Personal mobile device: re-query current profile
+    const storedToken = localStorage.getItem("auth_token");
+    if (storedToken) {
+      try {
+        const profile = await fetch("/api/v1/guests/me", {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        }).then((r) => r.json());
+        if (profile?.data?.bookingStatus) {
+          setBookingStatus(profile.data.bookingStatus);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [isKiosk, kioskInfo]);
 
   // Handle Kiosk Initial Mount & Query Param Handoff
   // oxlint-disable-next-line react/set-state-in-effect -- intentionally exchange initial handoff code on mount
@@ -200,9 +247,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (code || isBridgeKiosk) {
       sessionStorage.setItem("is_kiosk_terminal", "true");
-      if (code) {
-        sessionStorage.setItem("kiosk_handoff_code", code);
-      }
 
       // Clean query param from URL without triggering reload
       if (handoffCodeFromUrl) {
@@ -210,26 +254,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.history.replaceState({}, document.title, cleanUrl);
       }
 
-      if (code) {
+      // Check if this handoff code was already exchanged/consumed
+      const alreadyConsumed =
+        Boolean(code) &&
+        sessionStorage.getItem("consumed_handoff_code") === code;
+
+      if (code && !alreadyConsumed) {
         // oxlint-disable-next-line react/set-state-in-effect
         performKioskExchange(code);
       } else {
         setLoading(false);
+        // If code was already exchanged previously and we have a standby token,
+        // verify if guest checked in while offline or reloaded
+        const standbyToken = sessionStorage.getItem("kiosk_standby_token");
+        const hasUser = Boolean(localStorage.getItem("auth_user"));
+        if (standbyToken && !hasUser) {
+          refreshKioskSession();
+        }
       }
     }
-  }, [performKioskExchange]);
+  }, [performKioskExchange, refreshKioskSession]);
 
   // Socket listener for real-time check-in, check-out, and status updates
   useEffect(() => {
     const socket = connectGuestSocket({
-      onKioskGuestCheckedIn: () => {
+      // Auto-login in-room kiosk tablet immediately when front desk completes check-in
+      onKioskGuestCheckedIn: (payload: any) => {
         if (isKiosk) {
-          refreshKioskSession();
+          if (payload?.guestToken && payload?.user) {
+            const u = {
+              ...payload.user,
+              bookingStatus: "checked-in",
+              reservationNo: payload.booking?.reservationNo,
+              roomId: payload.roomId,
+            };
+            localStorage.setItem("auth_token", payload.guestToken);
+            localStorage.setItem("auth_user", JSON.stringify(u));
+            setToken(payload.guestToken);
+            setUser(u);
+            setBookingStatus("checked-in");
+            setKioskIdle(false);
+          } else {
+            refreshKioskSession();
+          }
         }
       },
       onKioskGuestCheckedOut: () => {
         if (isKiosk) {
-          // In-room tablet auto-logout on check-out
+          // In-room tablet auto-logout on check-out: immediately purge guest tokens and return to standby screen
           localStorage.removeItem("auth_token");
           localStorage.removeItem("auth_user");
           setToken(null);

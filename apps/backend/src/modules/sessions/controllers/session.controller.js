@@ -5,6 +5,9 @@ import {
   SESSION_ERROR_CODES,
   SESSION_POLICIES,
 } from "@hotelos/utils";
+// Explicitly register User schema so that cross-collection .populate("guestId")
+// queries succeed without requiring prior route execution.
+import "#/modules/users/models/User.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Table from "#/modules/tables/models/Table.js";
 import Room from "#/modules/rooms/models/Room.js";
@@ -280,19 +283,28 @@ export const exchangeKioskHandoff = async (req, res) => {
         // ignore
       }
       try {
+        // Look up the most recent active checked-in booking for this room.
+        // Explicitly sorting by createdAt: -1 ensures that in case of any duplicate
+        // records, the newest valid check-in is prioritized instead of natural order scan.
         activeBooking = await Booking.findOne({
           hotelId: handoff.hotelId,
           roomId: targetRoomId,
           status: "checked-in",
-        }).populate("guestId", "name email phone username isActive role");
-      } catch {
-        // ignore
+        })
+          .sort({ createdAt: -1 })
+          .populate("guestId", "name email phone username isActive role");
+      } catch (bookingLookupErr) {
+        logger.warn(
+          bookingLookupErr,
+          "Failed to resolve active booking during kiosk handoff exchange",
+        );
       }
     }
 
     let guestToken = null;
     let guestUser = null;
     let activeStay = false;
+    let standbyToken = null;
 
     if (
       activeBooking &&
@@ -318,6 +330,21 @@ export const exchangeKioskHandoff = async (req, res) => {
           hotelId: handoff.hotelId,
           roomId: targetRoomId,
           kioskId: kiosk._id,
+        },
+        process.env.JWT_SECRET || "default_jwt_secret",
+        { expiresIn: "8h" },
+      );
+    } else {
+      // Standby Mode: Room is vacant or guest has not checked in yet.
+      // Issue a signed KIOSK device token so the tablet can maintain an authenticated
+      // Socket.IO connection to device:* and room:* channels while displaying the standby screen.
+      standbyToken = jwt.sign(
+        {
+          role: "KIOSK",
+          kioskId: kiosk._id,
+          deviceId: kiosk.deviceId,
+          hotelId: handoff.hotelId,
+          roomId: targetRoomId,
         },
         process.env.JWT_SECRET || "default_jwt_secret",
         { expiresIn: "8h" },
@@ -374,6 +401,7 @@ export const exchangeKioskHandoff = async (req, res) => {
         targetDashboard: handoff.targetDashboard,
         activeStay,
         guestToken,
+        standbyToken,
         user: guestUser,
         reservationNo: activeBooking?.reservationNo || null,
         expiresAt: session.expiresAt,
@@ -427,6 +455,95 @@ export const revokeCurrentSession = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to revoke session",
+    });
+  }
+};
+
+/**
+ * GET /api/v1/sessions/kiosk-room-status
+ * Idempotently checks if the room assigned to the authenticated kiosk device has an active checked-in stay.
+ * Authenticated via kiosk Bearer standbyToken (role: "KIOSK") or session cookie.
+ *
+ * Used by in-room kiosk tablets during page reloads, network reconnection, or manual
+ * "Check Stay Status" button taps to safely acquire guest JWT credentials without
+ * re-submitting single-use handoff codes.
+ */
+export const getKioskRoomStatus = async (req, res) => {
+  try {
+    const kiosk = req.kiosk;
+    const kioskId = kiosk?._id || req.session?.kioskId;
+    const roomId = kiosk?.roomId || req.session?.roomId;
+    const hotelId = kiosk?.hotelId || req.session?.hotelId;
+
+    if (!kioskId || !roomId || !hotelId) {
+      return res.status(400).json({
+        success: false,
+        message: "Kiosk terminal or assigned room not identified",
+      });
+    }
+
+    // Query active stay for this room, sorting descending by createdAt to prioritize latest check-in
+    const activeBooking = await Booking.findOne({
+      hotelId,
+      roomId,
+      status: "checked-in",
+    })
+      .sort({ createdAt: -1 })
+      .populate("guestId", "name email phone username isActive role");
+
+    if (
+      activeBooking &&
+      activeBooking.guestId &&
+      activeBooking.guestId.isActive !== false
+    ) {
+      const guestToken = jwt.sign(
+        {
+          userId: activeBooking.guestId._id,
+          role: "GUEST",
+          hotelId,
+          roomId,
+          kioskId,
+        },
+        process.env.JWT_SECRET || "default_jwt_secret",
+        { expiresIn: "8h" },
+      );
+
+      const user = {
+        id: activeBooking.guestId._id,
+        name: activeBooking.guestId.name,
+        username: activeBooking.guestId.username,
+        role: "GUEST",
+        hotelId,
+        roomId,
+        mustChangePassword: false,
+      };
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          activeStay: true,
+          guestToken,
+          user,
+          reservationNo: activeBooking.reservationNo,
+          roomId,
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        activeStay: false,
+        guestToken: null,
+        user: null,
+        roomId,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Get Kiosk Room Status Error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to check kiosk room status",
     });
   }
 };

@@ -40,6 +40,7 @@ export default function Dashboard() {
     serviceRequests,
     foodOrders,
     updateRoomStatus,
+    checkOutRoom,
     updateRoom,
     acknowledgeRequest,
     completeRequest,
@@ -103,6 +104,7 @@ export default function Dashboard() {
             room={selectedRoom}
             onClose={() => setSelectedRoom(null)}
             updateRoomStatus={updateRoomStatus}
+            checkOutRoom={checkOutRoom}
             updateRoom={updateRoom}
             guests={guests}
           />

@@ -13,6 +13,7 @@ import Order from "#/modules/orders/models/Order.js";
 import {
   createQrGuestSession,
   exchangeKioskHandoff,
+  getKioskRoomStatus,
 } from "./controllers/session.controller.js";
 import { resetTable } from "#/modules/tables/controllers/table.controller.js";
 import { createKioskHandoffCode } from "#/modules/kiosks/controllers/kioskDevice.controller.js";
@@ -453,7 +454,9 @@ describe("HotelOS Session Authentication & Security", () => {
         }),
       });
       Booking.findOne = () => ({
-        populate: async () => null, // No active checked-in booking
+        sort: () => ({
+          populate: async () => null, // No active checked-in booking
+        }),
       });
       Hotel.findById = () => ({
         select: () => ({ name: "The Grand Hotel" }),
@@ -482,6 +485,10 @@ describe("HotelOS Session Authentication & Security", () => {
       assert.equal(res.statusCode, 200);
       assert.equal(res.body.data.activeStay, false);
       assert.equal(res.body.data.guestToken, null);
+      assert.ok(
+        res.body.data.standbyToken,
+        "Standby token must be generated for vacant room tablet",
+      );
       assert.equal(res.body.data.roomNumber, "101");
       assert.equal(res.body.data.hotelName, "The Grand Hotel");
     });
@@ -511,17 +518,19 @@ describe("HotelOS Session Authentication & Security", () => {
         }),
       });
       Booking.findOne = () => ({
-        populate: async () => ({
-          _id: new mongoose.Types.ObjectId(),
-          reservationNo: "RES-9988",
-          status: "checked-in",
-          guestId: {
-            _id: guestUserId,
-            name: "Jane Doe",
-            username: "janedoe",
-            isActive: true,
-            role: "GUEST",
-          },
+        sort: () => ({
+          populate: async () => ({
+            _id: new mongoose.Types.ObjectId(),
+            reservationNo: "RES-9988",
+            status: "checked-in",
+            guestId: {
+              _id: guestUserId,
+              name: "Jane Doe",
+              username: "janedoe",
+              isActive: true,
+              role: "GUEST",
+            },
+          }),
         }),
       });
       Hotel.findById = () => ({
@@ -554,6 +563,72 @@ describe("HotelOS Session Authentication & Security", () => {
       assert.equal(res.body.data.user.name, "Jane Doe");
       assert.equal(res.body.data.reservationNo, "RES-9988");
       assert.equal(res.body.data.roomNumber, "101");
+    });
+
+    it("idempotently returns room vacant status via getKioskRoomStatus", async () => {
+      const guestKioskId = new mongoose.Types.ObjectId();
+      const guestRoomId = new mongoose.Types.ObjectId();
+
+      Booking.findOne = () => ({
+        sort: () => ({
+          populate: async () => null,
+        }),
+      });
+
+      const req = {
+        kiosk: {
+          _id: guestKioskId,
+          hotelId: fakeHotelId,
+          roomId: guestRoomId,
+        },
+      };
+      const res = createMockResponse();
+
+      await getKioskRoomStatus(req, res);
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.data.activeStay, false);
+      assert.equal(res.body.data.guestToken, null);
+    });
+
+    it("idempotently returns active stay and guestToken via getKioskRoomStatus", async () => {
+      const guestKioskId = new mongoose.Types.ObjectId();
+      const guestRoomId = new mongoose.Types.ObjectId();
+      const guestUserId = new mongoose.Types.ObjectId();
+
+      Booking.findOne = () => ({
+        sort: () => ({
+          populate: async () => ({
+            _id: new mongoose.Types.ObjectId(),
+            reservationNo: "RES-7766",
+            status: "checked-in",
+            guestId: {
+              _id: guestUserId,
+              name: "Alice Smith",
+              username: "alicesmith",
+              isActive: true,
+              role: "GUEST",
+            },
+          }),
+        }),
+      });
+
+      const req = {
+        kiosk: {
+          _id: guestKioskId,
+          hotelId: fakeHotelId,
+          roomId: guestRoomId,
+        },
+      };
+      const res = createMockResponse();
+
+      await getKioskRoomStatus(req, res);
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.data.activeStay, true);
+      assert.ok(res.body.data.guestToken);
+      assert.equal(res.body.data.user.name, "Alice Smith");
+      assert.equal(res.body.data.reservationNo, "RES-7766");
     });
   });
 

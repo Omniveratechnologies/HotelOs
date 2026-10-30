@@ -73,3 +73,16 @@ export const deleteRoom = async (roomId) => {
   const result = await api.delete(`/api/v1/rooms/${roomId}`, { auth: true });
   return result.data || result;
 };
+
+/**
+ * Checks out a room and any active reservations assigned to it.
+ * @param {string} roomId
+ * @param {object} [data] - { settlementMode, notes }
+ * @returns {Promise<object>}
+ */
+export const checkOutRoom = async (roomId, data = {}) => {
+  const result = await api.post(`/api/v1/rooms/${roomId}/check-out`, data, {
+    auth: true,
+  });
+  return result.data;
+};

@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import Booking from "../models/Booking.js";
 import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
@@ -345,6 +346,28 @@ export const checkInBooking = async (req, res) => {
         .json({ success: false, message: "Room not found" });
     }
 
+    // Clean up any stale active checked-in bookings on this room to prevent duplicate checked-in stays
+    const staleBookings = await Booking.find({
+      hotelId,
+      roomId: targetRoomId,
+      status: "checked-in",
+      _id: { $ne: booking._id },
+    });
+
+    for (const stale of staleBookings) {
+      stale.status = "checked-out";
+      stale.paymentStatus = "paid";
+      stale.auditTrail.push({
+        at: new Date(),
+        by: req.user._id,
+        action: "checked-out",
+        from: "checked-in",
+        to: "checked-out",
+        note: `Auto checked-out: room reassigned/checked in to new reservation ${booking.reservationNo}`,
+      });
+      await stale.save();
+    }
+
     const guestUser = await User.findById(booking.guestId).select("name phone");
     const guestName = guestUser?.name || "Valued Guest";
 
@@ -414,30 +437,73 @@ export const checkInBooking = async (req, res) => {
       });
 
       const io = getIo();
-      for (const k of kiosks) {
-        io.to(`device:${k.deviceId}`).emit("kiosk:guest-checked-in", {
-          roomId: targetRoomId,
-          roomNumber: room.roomNumber,
-          guestId: booking.guestId,
-          guestName,
-        });
-        io.to(`device:${k.deviceId}`).emit("device:reload", {});
-      }
-      io.to(`room:${targetRoomId}`).emit("kiosk:guest-checked-in", {
+
+      // Sign an authenticated guest JWT directly so in-room terminals transition immediately
+      // without needing to make redundant HTTP round-trips or re-exchange single-use handoff codes.
+      const guestToken = booking.guestId
+        ? jwt.sign(
+            {
+              userId: booking.guestId,
+              role: "GUEST",
+              hotelId,
+              roomId: targetRoomId,
+            },
+            process.env.JWT_SECRET || "default_jwt_secret",
+            { expiresIn: "8h" },
+          )
+        : null;
+
+      const checkInPayload = {
         roomId: targetRoomId,
         roomNumber: room.roomNumber,
         guestId: booking.guestId,
         guestName,
-      });
+        guestToken,
+        user: booking.guestId
+          ? {
+              id: booking.guestId,
+              name: guestName,
+              role: "GUEST",
+              hotelId,
+              roomId: targetRoomId,
+            }
+          : null,
+        booking: {
+          id: booking._id,
+          reservationNo: booking.reservationNo,
+          status: "checked-in",
+          roomId: targetRoomId,
+          roomNumber: room.roomNumber,
+        },
+      };
+
+      // Note: We intentionally DO NOT emit "device:reload" here.
+      // Emitting "device:reload" causes Android WebViews to hard-reload from scratch,
+      // wiping memory state and re-sending expired handoff query parameters.
+      // Instead, in-place real-time socket events allow seamless instant dashboard activation.
+      for (const k of kiosks) {
+        io.to(`device:${k.deviceId}`).emit(
+          "kiosk:guest-checked-in",
+          checkInPayload,
+        );
+      }
+      io.to(`room:${targetRoomId}`).emit(
+        "kiosk:guest-checked-in",
+        checkInPayload,
+      );
       if (booking.guestId) {
         io.to(`guest:${booking.guestId}`).emit("stay:status-updated", {
           status: "checked-in",
           roomId: targetRoomId,
           roomNumber: room.roomNumber,
+          reservationNo: booking.reservationNo,
         });
       }
-    } catch {
-      // Sockets might be unavailable in standalone/test environments
+    } catch (kioskErr) {
+      logger.warn(
+        kioskErr,
+        "Failed to push real-time auto-login event to in-room kiosks",
+      );
     }
 
     return res.status(200).json({
@@ -556,11 +622,11 @@ export const checkOutBooking = async (req, res) => {
           targetDashboard: "GUEST_DASHBOARD",
         });
 
+        // Emit kiosk:guest-checked-out in-place without triggering destructive device:reload
         for (const k of kiosks) {
           io.to(`device:${k.deviceId}`).emit("kiosk:guest-checked-out", {
             roomId,
           });
-          io.to(`device:${k.deviceId}`).emit("device:reload", {});
         }
         io.to(`room:${roomId}`).emit("kiosk:guest-checked-out", { roomId });
       }
@@ -570,8 +636,11 @@ export const checkOutBooking = async (req, res) => {
           roomId,
         });
       }
-    } catch {
-      // Sockets might be unavailable in standalone/test environments
+    } catch (kioskErr) {
+      logger.warn(
+        kioskErr,
+        "Failed to push real-time auto-logout event to in-room kiosks",
+      );
     }
 
     return res.status(200).json({

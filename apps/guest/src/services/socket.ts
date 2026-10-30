@@ -19,15 +19,21 @@ function getSocketUrl() {
 }
 
 /**
- * Connect an authenticated guest socket. The backend derives the guest's
- * identity from the handshake JWT and automatically joins the socket to
- * `guest:<userId>` and device/room channels.
+ * Connect an authenticated guest or kiosk socket.
+ * - When logged in as a guest: uses the signed guest JWT from localStorage.
+ * - When in kiosk standby mode (room vacant): falls back to `kiosk_standby_token` from sessionStorage
+ *   so the in-room tablet joins room:* and device:* channels to receive check-in socket events in real time.
  */
 export function connectGuestSocket(
   handlers: GuestSocketHandlers,
   customToken?: string,
 ): Socket {
-  const token = customToken || getStoredToken();
+  const token =
+    customToken ||
+    getStoredToken() ||
+    (typeof window !== "undefined"
+      ? sessionStorage.getItem("kiosk_standby_token")
+      : null);
   const socket = io(getSocketUrl(), {
     auth: { token },
     transports: ["websocket", "polling"],

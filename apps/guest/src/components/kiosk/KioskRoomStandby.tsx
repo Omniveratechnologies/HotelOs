@@ -1,7 +1,5 @@
-import { useEffect } from "react";
 import { ShieldCheck, Wifi, PhoneCall, Sparkles, Clock } from "lucide-react";
 import { useRoomClock } from "@/hooks/useRoomClock";
-import { connectGuestSocket, disconnectGuestSocket } from "@/services/socket";
 
 interface KioskRoomStandbyProps {
   roomNumber?: string | null;
@@ -17,19 +15,6 @@ export function KioskRoomStandby({
   onRefreshSession,
 }: KioskRoomStandbyProps) {
   const now = useRoomClock();
-
-  // Socket listener for real-time check-in trigger from front desk or self check-in
-  useEffect(() => {
-    const socket = connectGuestSocket({
-      onKioskGuestCheckedIn: () => {
-        onRefreshSession();
-      },
-    });
-
-    return () => {
-      disconnectGuestSocket(socket);
-    };
-  }, [onRefreshSession]);
 
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col justify-between p-6 sm:p-10 lg:p-14">
