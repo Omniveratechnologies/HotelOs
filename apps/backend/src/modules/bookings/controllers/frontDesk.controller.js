@@ -4,6 +4,8 @@ import User from "#/modules/users/models/User.js";
 import KeyCard from "#/modules/key-cards/models/KeyCard.js";
 import ServiceRequest from "#/modules/service-requests/models/ServiceRequest.js";
 import Order from "#/modules/orders/models/Order.js";
+import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
+import { getIo } from "#/config/socket.js";
 import { bookingDTO } from "../dto/booking.dto.js";
 import {
   aiosellSyncInventory,
@@ -402,6 +404,42 @@ export const checkInBooking = async (req, res) => {
     );
     await aiosellSyncInventory(hotelId, syncStart, syncEnd);
 
+    // Notify in-room kiosk terminals for this room to auto-login as this guest
+    try {
+      const kiosks = await KioskDevice.find({
+        hotelId,
+        roomId: targetRoomId,
+        targetDashboard: "GUEST_DASHBOARD",
+        isActive: true,
+      });
+
+      const io = getIo();
+      for (const k of kiosks) {
+        io.to(`device:${k.deviceId}`).emit("kiosk:guest-checked-in", {
+          roomId: targetRoomId,
+          roomNumber: room.roomNumber,
+          guestId: booking.guestId,
+          guestName,
+        });
+        io.to(`device:${k.deviceId}`).emit("device:reload", {});
+      }
+      io.to(`room:${targetRoomId}`).emit("kiosk:guest-checked-in", {
+        roomId: targetRoomId,
+        roomNumber: room.roomNumber,
+        guestId: booking.guestId,
+        guestName,
+      });
+      if (booking.guestId) {
+        io.to(`guest:${booking.guestId}`).emit("stay:status-updated", {
+          status: "checked-in",
+          roomId: targetRoomId,
+          roomNumber: room.roomNumber,
+        });
+      }
+    } catch {
+      // Sockets might be unavailable in standalone/test environments
+    }
+
     return res.status(200).json({
       success: true,
       message: `Guest ${guestName} successfully checked into Room ${room.roomNumber}!`,
@@ -507,6 +545,34 @@ export const checkOutBooking = async (req, res) => {
       booking.checkOut,
     );
     await aiosellSyncInventory(hotelId, syncStart, syncEnd);
+
+    // Notify in-room kiosk terminals for this room to auto-logout and return to standby mode
+    try {
+      const io = getIo();
+      if (roomId) {
+        const kiosks = await KioskDevice.find({
+          hotelId,
+          roomId,
+          targetDashboard: "GUEST_DASHBOARD",
+        });
+
+        for (const k of kiosks) {
+          io.to(`device:${k.deviceId}`).emit("kiosk:guest-checked-out", {
+            roomId,
+          });
+          io.to(`device:${k.deviceId}`).emit("device:reload", {});
+        }
+        io.to(`room:${roomId}`).emit("kiosk:guest-checked-out", { roomId });
+      }
+      if (booking.guestId) {
+        io.to(`guest:${booking.guestId}`).emit("stay:status-updated", {
+          status: "checked-out",
+          roomId,
+        });
+      }
+    } catch {
+      // Sockets might be unavailable in standalone/test environments
+    }
 
     return res.status(200).json({
       success: true,

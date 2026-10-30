@@ -41,6 +41,16 @@ async function publishRequest(
 
 export const createServiceRequest = async (req, res) => {
   try {
+    if (req.user.role === "GUEST") {
+      if (!req.currentBooking || req.currentBooking.status !== "checked-in") {
+        return res.status(403).json({
+          success: false,
+          message:
+            "In-room service requests are only available after completing check-in for an active stay",
+        });
+      }
+    }
+
     const { type, description, items, details } = req.body;
     if (!type)
       return res

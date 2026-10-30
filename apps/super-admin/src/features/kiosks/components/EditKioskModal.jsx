@@ -7,6 +7,7 @@ import {
   useSendKioskCommand,
   useKioskDashboards,
   useHotelTables,
+  useHotelRooms,
 } from "../hooks/useKiosks.js";
 import { useHotels } from "../../hotels/hooks/useHotels.js";
 
@@ -28,6 +29,9 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
   const [tableId, setTableId] = useState(
     kiosk?.tableId?._id || kiosk?.tableId || "",
   );
+  const [roomId, setRoomId] = useState(
+    kiosk?.roomId?._id || kiosk?.roomId || "",
+  );
   const [supportedFeatures, setSupportedFeatures] = useState(
     kiosk?.supportedFeatures || ["CHECK_IN", "KEY_DISPENSE", "DOCUMENT_SCAN"],
   );
@@ -35,6 +39,7 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
   const [errors, setErrors] = useState({});
 
   const { tables, isLoading: tablesLoading } = useHotelTables(hotelId);
+  const { rooms, isLoading: roomsLoading } = useHotelRooms(hotelId);
 
   const [prevKioskId, setPrevKioskId] = useState(kiosk?._id);
   if (kiosk?._id && kiosk._id !== prevKioskId) {
@@ -47,6 +52,7 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
     setTableId(
       kiosk?.tableId?._id || kiosk?.tableId?.id || kiosk?.tableId || "",
     );
+    setRoomId(kiosk?.roomId?._id || kiosk?.roomId?.id || kiosk?.roomId || "");
     setSupportedFeatures(
       Array.isArray(kiosk?.supportedFeatures) &&
         kiosk.supportedFeatures.length > 0
@@ -84,6 +90,7 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
           status,
           targetDashboard,
           tableId: targetDashboard === "DIGITAL_MENU" ? tableId || null : null,
+          roomId: targetDashboard === "GUEST_DASHBOARD" ? roomId || null : null,
           supportedFeatures,
         },
       });
@@ -148,6 +155,7 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
             onChange={(e) => {
               setHotelId(e.target.value);
               setTableId(""); // reset table selection when hotel changes
+              setRoomId(""); // reset room selection when hotel changes
             }}
             className="focus:border-brand-500 focus:ring-brand-500 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:ring-1 focus:outline-none"
           >
@@ -208,6 +216,9 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
                 if (e.target.value !== "DIGITAL_MENU") {
                   setTableId("");
                 }
+                if (e.target.value !== "GUEST_DASHBOARD") {
+                  setRoomId("");
+                }
               }}
               className="focus:border-brand-500 focus:ring-brand-500 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:ring-1 focus:outline-none"
             >
@@ -235,6 +246,48 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
             </select>
           </div>
         </div>
+
+        {/* Room Selection when Guest Dashboard is selected */}
+        {targetDashboard === "GUEST_DASHBOARD" && (
+          <div className="space-y-2 rounded-xl border border-sky-200 bg-sky-50/60 p-3.5">
+            <label className="block text-xs font-bold tracking-wide text-sky-900 uppercase">
+              Assigned Hotel Room (Guest Dashboard)
+            </label>
+            <select
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              disabled={!hotelId || roomsLoading}
+              className="w-full rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-sky-500 focus:outline-none"
+            >
+              <option value="">
+                {!hotelId
+                  ? "Select a hotel first..."
+                  : roomsLoading
+                    ? "Loading rooms..."
+                    : "No specific room (General Lobby/Unassigned Kiosk)"}
+              </option>
+              {roomId &&
+                !rooms.some(
+                  (r) => String(r.id || r._id) === String(roomId),
+                ) && (
+                  <option value={roomId}>
+                    {kiosk?.roomId?.roomNumber
+                      ? `Room ${kiosk.roomId.roomNumber} (${kiosk.roomId.type || "Room"}) (Assigned)`
+                      : "Assigned Room"}
+                  </option>
+                )}
+              {rooms.map((r) => (
+                <option key={r.id || r._id} value={r.id || r._id}>
+                  Room {r.roomNumber} ({r.type || "Room"}, Floor {r.floor || 1})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-sky-800">
+              When assigned, this in-room terminal automatically logs in as the
+              guest when they check into this room, and logs out upon check-out.
+            </p>
+          </div>
+        )}
 
         {/* Dining Table Selection when Digital Menu is selected */}
         {targetDashboard === "DIGITAL_MENU" && (

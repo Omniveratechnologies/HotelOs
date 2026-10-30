@@ -8,6 +8,7 @@ import {
   Layers,
   Clock,
   Sparkles,
+  DoorOpen,
 } from "lucide-react";
 import { Modal, Button } from "@hotelos/ui/components";
 import {
@@ -103,6 +104,38 @@ export default function KioskDetailsModal({
           </div>
 
           <p className="text-xs text-gray-600">{dashboardInfo.description}</p>
+
+          {/* If Guest Dashboard has an assigned room */}
+          {kiosk.targetDashboard === "GUEST_DASHBOARD" && (
+            <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
+              <div className="flex items-center gap-2 font-bold">
+                <DoorOpen className="h-4 w-4 text-sky-600" />
+                <span>Assigned Hotel Room:</span>
+              </div>
+              {kiosk.roomId ? (
+                <div className="mt-1.5 flex items-center gap-4 text-sky-800">
+                  <span>
+                    Room: <strong>#{kiosk.roomId.roomNumber}</strong>
+                  </span>
+                  {kiosk.roomId.type && (
+                    <span>
+                      Type: <strong>{kiosk.roomId.type}</strong>
+                    </span>
+                  )}
+                  {kiosk.roomId.floor !== undefined && (
+                    <span>
+                      Floor: <strong>{kiosk.roomId.floor}</strong>
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-1 text-xs text-sky-700">
+                  No specific room assigned. Terminal functions as general
+                  concierge.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* If Digital Menu has an assigned table */}
           {kiosk.targetDashboard === "DIGITAL_MENU" && (

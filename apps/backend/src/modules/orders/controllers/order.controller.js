@@ -137,6 +137,16 @@ async function createLinkedBill(order, { tableId = null, roomId = null } = {}) {
 
 export const createOrder = async (req, res) => {
   try {
+    if (req.user.role === "GUEST") {
+      if (!req.currentBooking || req.currentBooking.status !== "checked-in") {
+        return res.status(403).json({
+          success: false,
+          message:
+            "In-room food ordering is only available after completing check-in for an active stay",
+        });
+      }
+    }
+
     const { items, paymentMethod } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {

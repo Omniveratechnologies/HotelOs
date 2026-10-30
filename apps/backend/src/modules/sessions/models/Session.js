@@ -26,6 +26,18 @@ const sessionSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    roomId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Room",
+      default: null,
+      index: true,
+    },
+    guestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
     kioskId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "KioskDevice",

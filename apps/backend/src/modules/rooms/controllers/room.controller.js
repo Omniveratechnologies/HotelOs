@@ -23,8 +23,16 @@ const ROOM_STATUSES = new Set([
 
 export const getRooms = async (req, res) => {
   try {
+    const hotelId = req.query.hotelId || req.user.hotelId;
+    if (!hotelId) {
+      return res.status(400).json({
+        success: false,
+        message: "hotelId is required",
+      });
+    }
+
     const rooms = await Room.find({
-      hotelId: req.user.hotelId,
+      hotelId,
     }).sort({ roomNumber: 1 });
 
     return res.status(200).json({

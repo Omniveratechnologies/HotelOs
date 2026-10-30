@@ -1,6 +1,6 @@
 import User from "#/modules/users/models/User.js";
 import Booking from "#/modules/bookings/models/Booking.js";
-import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
 import { generateToken } from "#/shared/utils/jwt.js";
 import { generateInviteToken } from "#/shared/utils/invitation.js";
 import {
@@ -48,16 +48,25 @@ export const login = async (req, res) => {
 
     const token = generateToken(user);
 
-    // Guests are tied to a stay via Booking; resolve their current room from it
+    // Guests are tied to a stay via Booking; resolve their current room and stay state
     let roomId = null;
+    let bookingStatus = "none";
+    let reservationNo = null;
+    let hotelName = null;
 
     if (user.role === "GUEST") {
       const currentBooking = await Booking.findOne({
         guestId: user._id,
-        status: { $in: ACTIVE_STAY_STATUSES },
       }).sort({ createdAt: -1 });
 
       roomId = currentBooking?.roomId ?? null;
+      bookingStatus = currentBooking?.status ?? "none";
+      reservationNo = currentBooking?.reservationNo ?? null;
+
+      if (user.hotelId) {
+        const hotel = await Hotel.findById(user.hotelId).select("name");
+        hotelName = hotel?.name ?? null;
+      }
     }
 
     return res.status(200).json({
@@ -71,7 +80,10 @@ export const login = async (req, res) => {
           username: user.username,
           role: user.role,
           hotelId: user.hotelId,
+          hotelName,
           roomId,
+          bookingStatus,
+          reservationNo,
           mustChangePassword: user.mustChangePassword,
         },
       },

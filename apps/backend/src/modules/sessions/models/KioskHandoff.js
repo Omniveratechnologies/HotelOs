@@ -28,6 +28,11 @@ const kioskHandoffSchema = new mongoose.Schema(
       ref: "Table",
       default: null,
     },
+    roomId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Room",
+      default: null,
+    },
     consumed: {
       type: Boolean,
       default: false,

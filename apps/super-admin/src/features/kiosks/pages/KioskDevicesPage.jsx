@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   AlertCircle,
   UtensilsCrossed,
+  DoorOpen,
 } from "lucide-react";
 import { Header, Button, KpiTile, KpiTileRow } from "@hotelos/ui/components";
 import { formatTime, KIOSK_DASHBOARDS_METADATA } from "@hotelos/utils";
@@ -339,6 +340,25 @@ export default function KioskDevicesPage() {
                             ?.name || kiosk.targetDashboard}
                         </span>
                       </div>
+
+                      {kiosk.targetDashboard === "GUEST_DASHBOARD" && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500">Assigned Room:</span>
+                          {kiosk.roomId ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-2 py-0.5 font-bold text-sky-900">
+                              <DoorOpen className="h-3 w-3 text-sky-600" />
+                              Room #{kiosk.roomId.roomNumber}
+                              {kiosk.roomId.type
+                                ? ` (${kiosk.roomId.type})`
+                                : ""}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">
+                              Unassigned Room
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {kiosk.targetDashboard === "DIGITAL_MENU" && (
                         <div className="flex items-center justify-between">

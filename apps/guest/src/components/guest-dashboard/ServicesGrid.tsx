@@ -1,8 +1,10 @@
 import { ServiceCard } from "./ServiceCard";
 import { SERVICE_ICON } from "./service-icons";
 import { useGuestDashboard } from "@/context/useGuestDashboard";
+import { useAuth } from "@/context/useAuth";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Grid2X2, Zap } from "lucide-react";
+import { ChevronRight, Grid2X2, Zap, Lock } from "lucide-react";
 import { ActionRequestModal } from "./ActionRequestModal";
 import { useState } from "react";
 import type { ServiceRequestType } from "@/types/guest-dashboard";
@@ -22,6 +24,9 @@ export function ServicesGrid({
   onOpenAmenities: () => void;
 }) {
   const { dnd, sendServiceRequest } = useGuestDashboard();
+  const { bookingStatus } = useAuth();
+  const isCheckedIn = bookingStatus === "checked-in";
+
   const [formKind, setFormKind] = useState<
     | "FEEDBACK"
     | "WAKEUP_CALL"
@@ -128,9 +133,40 @@ export function ServicesGrid({
     },
   ];
 
+  const handleActionSelect = (action: ServiceAction) => {
+    if (!isCheckedIn) {
+      toast.info(
+        bookingStatus === "checked-out"
+          ? "Your stay has concluded. In-room ordering is no longer available."
+          : "In-room ordering and services activate after completing check-in.",
+      );
+      return;
+    }
+    if (
+      [
+        "FEEDBACK",
+        "WAKEUP_CALL",
+        "ROOM_CONTROL",
+        "MEDICINE",
+        "MAINTENANCE",
+      ].includes(action.kind)
+    ) {
+      setFormKind(
+        action.kind as
+          | "FEEDBACK"
+          | "WAKEUP_CALL"
+          | "ROOM_CONTROL"
+          | "MEDICINE"
+          | "MAINTENANCE",
+      );
+    } else {
+      action.run();
+    }
+  };
+
   return (
     <section aria-labelledby="services">
-      <div className="border-border bg-card/75 flex items-center justify-between rounded-t-2xl border border-b-0 px-4 py-3 sm:px-5">
+      <div className="border-border bg-card/75 flex flex-wrap items-center justify-between gap-3 rounded-t-2xl border border-b-0 px-4 py-3 sm:px-5">
         <div className="flex items-center gap-3">
           <Zap
             className="text-brass size-6"
@@ -146,18 +182,31 @@ export function ServicesGrid({
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          className="text-foreground border-border hidden items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold sm:flex"
-        >
-          <Grid2X2 className="size-3.5" aria-hidden="true" /> View All Services{" "}
-          <ChevronRight className="size-3.5" aria-hidden="true" />
-        </button>
+
+        {!isCheckedIn ? (
+          <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <Lock className="size-3.5 shrink-0" />
+            <span>
+              {bookingStatus === "checked-out"
+                ? "Stay Completed · Actions Inactive"
+                : "Upcoming Stay · Check-in Required"}
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="text-foreground border-border hidden items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold sm:flex"
+          >
+            <Grid2X2 className="size-3.5" aria-hidden="true" /> View All
+            Services <ChevronRight className="size-3.5" aria-hidden="true" />
+          </button>
+        )}
       </div>
       <div
         className={cn(
           "border-border bg-card/75 relative grid grid-cols-2 gap-2 rounded-b-2xl border p-3 transition-all duration-300 sm:p-4 md:grid-cols-3 xl:grid-cols-5",
           dnd && "opacity-70 saturate-[0.7]",
+          !isCheckedIn && "opacity-70",
         )}
       >
         {dnd ? (
@@ -170,29 +219,17 @@ export function ServicesGrid({
           <ServiceCard
             key={action.kind}
             label={action.label}
-            description={action.description}
+            description={
+              !isCheckedIn
+                ? bookingStatus === "checked-out"
+                  ? "Stay completed"
+                  : "Check-in required"
+                : action.description
+            }
             icon={SERVICE_ICON[action.kind as keyof typeof SERVICE_ICON]}
             pending={false}
             accent={action.kind}
-            onSelect={
-              [
-                "FEEDBACK",
-                "WAKEUP_CALL",
-                "ROOM_CONTROL",
-                "MEDICINE",
-                "MAINTENANCE",
-              ].includes(action.kind)
-                ? () =>
-                    setFormKind(
-                      action.kind as
-                        | "FEEDBACK"
-                        | "WAKEUP_CALL"
-                        | "ROOM_CONTROL"
-                        | "MEDICINE"
-                        | "MAINTENANCE",
-                    )
-                : action.run
-            }
+            onSelect={() => handleActionSelect(action)}
           />
         ))}
       </div>

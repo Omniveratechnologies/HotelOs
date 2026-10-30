@@ -1,11 +1,13 @@
 import { api } from "../apiFetch.js";
 
 /**
- * Fetches all rooms belonging to current hotel.
+ * Fetches all rooms belonging to current hotel or filtered by hotelId.
+ * @param {object} [params]
+ * @param {string} [params.hotelId]
  * @returns {Promise<Array<object>>}
  */
-export const getRooms = async () => {
-  const result = await api.get("/api/v1/rooms", { auth: true });
+export const getRooms = async (params = {}) => {
+  const result = await api.get("/api/v1/rooms", { params, auth: true });
   return result.data || [];
 };
 

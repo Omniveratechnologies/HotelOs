@@ -6,6 +6,8 @@ import Session from "./models/Session.js";
 import KioskHandoff from "./models/KioskHandoff.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Table from "#/modules/tables/models/Table.js";
+import Room from "#/modules/rooms/models/Room.js";
+import Booking from "#/modules/bookings/models/Booking.js";
 import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
 import Order from "#/modules/orders/models/Order.js";
 import {
@@ -119,6 +121,9 @@ describe("HotelOS Session Authentication & Security", () => {
 
     KioskDevice.findById = async (id) =>
       id?.toString() === fakeKioskId.toString() ? mockKiosk : null;
+
+    Room.findById = undefined;
+    Booking.findOne = undefined;
   });
 
   describe("QR Guest Session Creation", () => {
@@ -422,6 +427,133 @@ describe("HotelOS Session Authentication & Security", () => {
       assert.equal(mwRes.statusCode, 401);
       assert.equal(mwRes.body.code, "KIOSK_UNAUTHORIZED");
       assert.equal(mockSession.status, "REVOKED");
+    });
+
+    it("handles GUEST_DASHBOARD kiosk handoff with vacant room (standby mode)", async () => {
+      const guestKioskId = new mongoose.Types.ObjectId();
+      const guestRoomId = new mongoose.Types.ObjectId();
+      const guestKiosk = {
+        _id: guestKioskId,
+        deviceId: "ROOM-101-KIOSK",
+        name: "Room 101 Tablet",
+        hotelId: fakeHotelId,
+        targetDashboard: "GUEST_DASHBOARD",
+        roomId: guestRoomId,
+        isActive: true,
+        isPaired: true,
+        status: "ONLINE",
+      };
+
+      KioskDevice.findById = async () => guestKiosk;
+      Room.findById = () => ({
+        select: () => ({
+          _id: guestRoomId,
+          roomNumber: "101",
+          type: "Deluxe Suite",
+        }),
+      });
+      Booking.findOne = () => ({
+        populate: async () => null, // No active checked-in booking
+      });
+      Hotel.findById = () => ({
+        select: () => ({ name: "The Grand Hotel" }),
+      });
+
+      const rawCode = "handoff_code_vacant_123";
+      KioskHandoff.findOneAndUpdate = async () => ({
+        codeHash: crypto.createHash("sha256").update(rawCode).digest("hex"),
+        kioskId: guestKioskId,
+        hotelId: fakeHotelId,
+        targetDashboard: "GUEST_DASHBOARD",
+        roomId: guestRoomId,
+        consumed: false,
+      });
+
+      Session.create = async (doc) => ({
+        ...doc,
+        _id: new mongoose.Types.ObjectId(),
+      });
+
+      const req = { body: { handoffCode: rawCode } };
+      const res = createMockResponse();
+
+      await exchangeKioskHandoff(req, res);
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.data.activeStay, false);
+      assert.equal(res.body.data.guestToken, null);
+      assert.equal(res.body.data.roomNumber, "101");
+      assert.equal(res.body.data.hotelName, "The Grand Hotel");
+    });
+
+    it("handles GUEST_DASHBOARD kiosk handoff with checked-in guest (auto-login)", async () => {
+      const guestKioskId = new mongoose.Types.ObjectId();
+      const guestRoomId = new mongoose.Types.ObjectId();
+      const guestUserId = new mongoose.Types.ObjectId();
+      const guestKiosk = {
+        _id: guestKioskId,
+        deviceId: "ROOM-101-KIOSK",
+        name: "Room 101 Tablet",
+        hotelId: fakeHotelId,
+        targetDashboard: "GUEST_DASHBOARD",
+        roomId: guestRoomId,
+        isActive: true,
+        isPaired: true,
+        status: "ONLINE",
+      };
+
+      KioskDevice.findById = async () => guestKiosk;
+      Room.findById = () => ({
+        select: () => ({
+          _id: guestRoomId,
+          roomNumber: "101",
+          type: "Deluxe Suite",
+        }),
+      });
+      Booking.findOne = () => ({
+        populate: async () => ({
+          _id: new mongoose.Types.ObjectId(),
+          reservationNo: "RES-9988",
+          status: "checked-in",
+          guestId: {
+            _id: guestUserId,
+            name: "Jane Doe",
+            username: "janedoe",
+            isActive: true,
+            role: "GUEST",
+          },
+        }),
+      });
+      Hotel.findById = () => ({
+        select: () => ({ name: "The Grand Hotel" }),
+      });
+
+      const rawCode = "handoff_code_checkedin_456";
+      KioskHandoff.findOneAndUpdate = async () => ({
+        codeHash: crypto.createHash("sha256").update(rawCode).digest("hex"),
+        kioskId: guestKioskId,
+        hotelId: fakeHotelId,
+        targetDashboard: "GUEST_DASHBOARD",
+        roomId: guestRoomId,
+        consumed: false,
+      });
+
+      Session.create = async (doc) => ({
+        ...doc,
+        _id: new mongoose.Types.ObjectId(),
+      });
+
+      const req = { body: { handoffCode: rawCode } };
+      const res = createMockResponse();
+
+      await exchangeKioskHandoff(req, res);
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.data.activeStay, true);
+      assert.ok(res.body.data.guestToken);
+      assert.equal(res.body.data.user.name, "Jane Doe");
+      assert.equal(res.body.data.reservationNo, "RES-9988");
+      assert.equal(res.body.data.roomNumber, "101");
     });
   });
 

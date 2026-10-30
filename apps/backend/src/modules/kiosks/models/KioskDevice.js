@@ -44,6 +44,12 @@ const kioskDeviceSchema = new mongoose.Schema(
       ref: "Table",
       default: null,
     },
+    // Optional hotel room assignment (specifically when targetDashboard is GUEST_DASHBOARD)
+    roomId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Room",
+      default: null,
+    },
     // One-time pairing code; cleared once device completes pairing
     pairCode: {
       type: String,

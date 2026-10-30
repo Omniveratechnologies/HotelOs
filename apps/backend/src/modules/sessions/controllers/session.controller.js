@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import jwt from "jsonwebtoken";
 import {
   calculateDistanceMeters,
   SESSION_ERROR_CODES,
@@ -6,6 +7,8 @@ import {
 } from "@hotelos/utils";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Table from "#/modules/tables/models/Table.js";
+import Room from "#/modules/rooms/models/Room.js";
+import Booking from "#/modules/bookings/models/Booking.js";
 import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
 import Session from "../models/Session.js";
 import KioskHandoff from "../models/KioskHandoff.js";
@@ -255,6 +258,72 @@ export const exchangeKioskHandoff = async (req, res) => {
       });
     }
 
+    const targetRoomId = handoff.roomId || kiosk.roomId || null;
+    let activeBooking = null;
+    let roomDoc = null;
+    let hotelDoc = null;
+
+    try {
+      hotelDoc = await Hotel.findById(handoff.hotelId).select(
+        "name wifiNetworkName wifiPassword",
+      );
+    } catch {
+      // ignore
+    }
+
+    if (targetRoomId) {
+      try {
+        roomDoc = await Room.findById(targetRoomId).select(
+          "roomNumber type floor status",
+        );
+      } catch {
+        // ignore
+      }
+      try {
+        activeBooking = await Booking.findOne({
+          hotelId: handoff.hotelId,
+          roomId: targetRoomId,
+          status: "checked-in",
+        }).populate("guestId", "name email phone username isActive role");
+      } catch {
+        // ignore
+      }
+    }
+
+    let guestToken = null;
+    let guestUser = null;
+    let activeStay = false;
+
+    if (
+      activeBooking &&
+      activeBooking.guestId &&
+      activeBooking.guestId.isActive !== false
+    ) {
+      activeStay = true;
+      guestUser = {
+        id: activeBooking.guestId._id,
+        name: activeBooking.guestId.name,
+        username: activeBooking.guestId.username,
+        role: "GUEST",
+        hotelId: handoff.hotelId,
+        roomId: targetRoomId,
+        mustChangePassword: false,
+      };
+
+      // Generate guest JWT so guest app apiClient can make authenticated calls
+      guestToken = jwt.sign(
+        {
+          userId: activeBooking.guestId._id,
+          role: "GUEST",
+          hotelId: handoff.hotelId,
+          roomId: targetRoomId,
+          kioskId: kiosk._id,
+        },
+        process.env.JWT_SECRET || "default_jwt_secret",
+        { expiresIn: "8h" },
+      );
+    }
+
     const rawToken = crypto.randomBytes(32).toString("hex");
     const csrfToken = crypto.randomBytes(24).toString("hex");
     const tokenHash = crypto
@@ -269,6 +338,8 @@ export const exchangeKioskHandoff = async (req, res) => {
       hotelId: handoff.hotelId,
       kioskId: kiosk._id,
       tableId: handoff.tableId || kiosk.tableId || null,
+      roomId: targetRoomId,
+      guestId: guestUser ? activeBooking.guestId._id : null,
       status: "ACTIVE",
       expiresAt,
       csrfToken,
@@ -277,6 +348,7 @@ export const exchangeKioskHandoff = async (req, res) => {
         targetDashboard: handoff.targetDashboard,
         deviceId: kiosk.deviceId,
         name: kiosk.name,
+        activeStay,
       },
     });
 
@@ -284,16 +356,26 @@ export const exchangeKioskHandoff = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Kiosk dashboard session established successfully",
+      message: activeStay
+        ? "Kiosk guest dashboard session established successfully"
+        : "Kiosk in-room standby mode (no active checked-in guest)",
       data: {
         token: rawToken,
         csrfToken,
         sessionType: "KIOSK",
         hotelId: session.hotelId,
+        hotelName: hotelDoc?.name || "The Hotel",
         kioskId: kiosk._id,
         deviceId: kiosk.deviceId,
         tableId: session.tableId || null,
+        roomId: targetRoomId,
+        roomNumber: roomDoc?.roomNumber || null,
+        roomType: roomDoc?.type || null,
         targetDashboard: handoff.targetDashboard,
+        activeStay,
+        guestToken,
+        user: guestUser,
+        reservationNo: activeBooking?.reservationNo || null,
         expiresAt: session.expiresAt,
       },
     });

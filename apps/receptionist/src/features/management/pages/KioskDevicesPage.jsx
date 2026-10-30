@@ -16,6 +16,7 @@ import {
   Battery,
   Eye,
   UtensilsCrossed,
+  DoorOpen,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@hotelos/query";
 import { getKioskDevices, updateKioskDevice } from "@hotelos/api";
@@ -226,6 +227,23 @@ export default function KioskDevicesPage() {
                             "Guest Dashboard"}
                         </span>
                       </div>
+
+                      {k.targetDashboard === "GUEST_DASHBOARD" && (
+                        <div className="flex justify-between text-gray-500">
+                          <span>Assigned Room:</span>
+                          {k.roomId ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-1.5 py-0.5 font-semibold text-sky-900">
+                              <DoorOpen className="h-3 w-3 text-sky-600" />
+                              Room #{k.roomId.roomNumber}
+                              {k.roomId.type ? ` (${k.roomId.type})` : ""}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">
+                              Unassigned Room
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {k.targetDashboard === "DIGITAL_MENU" && (
                         <div className="flex justify-between text-gray-500">

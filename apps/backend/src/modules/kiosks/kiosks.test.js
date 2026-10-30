@@ -3,9 +3,11 @@ import { describe, it, beforeEach } from "node:test";
 import mongoose from "mongoose";
 import KioskDevice from "./models/KioskDevice.js";
 import Table from "#/modules/tables/models/Table.js";
+import Room from "#/modules/rooms/models/Room.js";
 import { resolveKioskAssignedUrl } from "./config/kioskDashboards.js";
 import { updateKioskDevice } from "./controllers/kioskDevice.controller.js";
 import { getTables } from "#/modules/tables/controllers/table.controller.js";
+import { getRooms } from "#/modules/rooms/controllers/room.controller.js";
 import env from "#/config/env.js";
 
 function createMockResponse() {
@@ -29,6 +31,7 @@ describe("Kiosk Dashboard Assignment & Role Authorization", () => {
   const hotelIdA = new mongoose.Types.ObjectId();
   const hotelIdB = new mongoose.Types.ObjectId();
   const tableId1 = new mongoose.Types.ObjectId();
+  const roomId1 = new mongoose.Types.ObjectId();
   const kioskId1 = new mongoose.Types.ObjectId();
 
   beforeEach(() => {
@@ -37,6 +40,7 @@ describe("Kiosk Dashboard Assignment & Role Authorization", () => {
     KioskDevice.find = undefined;
     KioskDevice.aggregate = undefined;
     Table.find = undefined;
+    Room.find = undefined;
   });
 
   describe("URL Resolution (resolveKioskAssignedUrl)", () => {
@@ -84,16 +88,19 @@ describe("Kiosk Dashboard Assignment & Role Authorization", () => {
         save: async () => {},
       };
 
-      KioskDevice.findById = () => ({
-        populate: () => ({
-          populate: () => ({
-            lean: async () => ({
-              ...storedKiosk,
-              status: "MAINTENANCE",
-            }),
-          }),
-        }),
-      });
+      const makeQuery = (data) => {
+        const q = {
+          populate: () => q,
+          lean: async () => data,
+        };
+        return q;
+      };
+
+      KioskDevice.findById = () =>
+        makeQuery({
+          ...storedKiosk,
+          status: "MAINTENANCE",
+        });
 
       // Override findById for initial fetch
       const origFindById = KioskDevice.findById;
@@ -157,19 +164,17 @@ describe("Kiosk Dashboard Assignment & Role Authorization", () => {
         if (calls === 1) {
           return Promise.resolve(storedKiosk);
         }
-        return {
-          populate: () => ({
-            populate: () => ({
-              lean: async () => ({
-                ...storedKiosk,
-                hotelId: hotelIdB,
-                targetDashboard: "DIGITAL_MENU",
-                tableId: { _id: tableId1, tableNumber: "12" },
-                supportedFeatures: ["CHECK_IN", "DIGITAL_MENU"],
-              }),
-            }),
+        const q = {
+          populate: () => q,
+          lean: async () => ({
+            ...storedKiosk,
+            hotelId: hotelIdB,
+            targetDashboard: "DIGITAL_MENU",
+            tableId: { _id: tableId1, tableNumber: "12" },
+            supportedFeatures: ["CHECK_IN", "DIGITAL_MENU"],
           }),
         };
+        return q;
       };
 
       const req = {
@@ -224,6 +229,83 @@ describe("Kiosk Dashboard Assignment & Role Authorization", () => {
       assert.equal(capturedFilter.hotelId, hotelIdA.toString());
       assert.equal(res.body.data.length, 1);
       assert.equal(res.body.data[0].tableNumber, "5");
+    });
+  });
+
+  describe("Room Assignment & Query Filtering (getRooms)", () => {
+    it("allows Super Admin to assign a room to a kiosk when GUEST_DASHBOARD", async () => {
+      const storedKiosk = {
+        _id: kioskId1,
+        hotelId: hotelIdA,
+        status: "ONLINE",
+        targetDashboard: "GUEST_DASHBOARD",
+        roomId: null,
+        tableId: null,
+        save: async () => {},
+      };
+
+      let calls = 0;
+      KioskDevice.findById = () => {
+        calls++;
+        if (calls === 1) {
+          return Promise.resolve(storedKiosk);
+        }
+        const q = {
+          populate: () => q,
+          lean: async () => ({
+            ...storedKiosk,
+            targetDashboard: "GUEST_DASHBOARD",
+            roomId: { _id: roomId1, roomNumber: "101", type: "Deluxe Suite" },
+          }),
+        };
+        return q;
+      };
+
+      const req = {
+        params: { id: kioskId1.toString() },
+        user: { role: "SUPER_ADMIN" },
+        body: {
+          targetDashboard: "GUEST_DASHBOARD",
+          roomId: roomId1.toString(),
+        },
+      };
+      const res = createMockResponse();
+
+      await updateKioskDevice(req, res);
+      assert.equal(res.statusCode, 200);
+      assert.equal(storedKiosk.roomId, roomId1.toString());
+      assert.equal(res.body.data.roomId.roomNumber, "101");
+    });
+
+    it("allows Super Admin to query rooms filtered by hotelId query parameter", async () => {
+      let capturedFilter = null;
+      Room.find = (filter) => {
+        capturedFilter = filter;
+        return {
+          sort: () => [
+            {
+              _id: roomId1,
+              roomNumber: "101",
+              type: "Deluxe Suite",
+              floor: 1,
+              status: "available",
+              hotelId: hotelIdA,
+            },
+          ],
+        };
+      };
+
+      const req = {
+        user: { role: "SUPER_ADMIN" },
+        query: { hotelId: hotelIdA.toString() },
+      };
+      const res = createMockResponse();
+
+      await getRooms(req, res);
+      assert.equal(res.statusCode, 200);
+      assert.equal(capturedFilter.hotelId, hotelIdA.toString());
+      assert.equal(res.body.data.length, 1);
+      assert.equal(res.body.data[0].roomNumber, "101");
     });
   });
 });

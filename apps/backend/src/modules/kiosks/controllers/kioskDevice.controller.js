@@ -92,6 +92,7 @@ export const getKioskDevices = async (req, res) => {
       KioskDevice.find(filter)
         .populate("hotelId", "name hotelCode city")
         .populate("tableId", "tableNumber section seats status")
+        .populate("roomId", "roomNumber type floor status")
         .sort({ createdAt: -1 })
         .lean(),
       KioskDevice.aggregate([
@@ -141,6 +142,7 @@ export const createKioskDevice = async (req, res) => {
       location,
       targetDashboard,
       tableId,
+      roomId,
       supportedFeatures,
       firmwareVersion,
     } = req.body;
@@ -173,6 +175,7 @@ export const createKioskDevice = async (req, res) => {
       location: location?.trim() || "Main Lobby",
       targetDashboard: dashboardType,
       tableId: dashboardType === "DIGITAL_MENU" ? tableId || null : null,
+      roomId: dashboardType === "GUEST_DASHBOARD" ? roomId || null : null,
       pairCode,
       status: "ONLINE",
       firmwareVersion: firmwareVersion?.trim() || "v1.4.0",
@@ -189,6 +192,7 @@ export const createKioskDevice = async (req, res) => {
     const populated = await KioskDevice.findById(device._id)
       .populate("hotelId", "name hotelCode city")
       .populate("tableId", "tableNumber section seats status")
+      .populate("roomId", "roomNumber type floor status")
       .lean();
 
     if (populated) {
@@ -234,11 +238,12 @@ export const updateKioskDevice = async (req, res) => {
         });
       }
 
-      // Prohibit non-super-admins from reassigning hotel, dashboard, table, or hardware settings
+      // Prohibit non-super-admins from reassigning hotel, dashboard, table, room, or hardware settings
       if (
         req.body.hotelId !== undefined ||
         req.body.targetDashboard !== undefined ||
         req.body.tableId !== undefined ||
+        req.body.roomId !== undefined ||
         req.body.supportedFeatures !== undefined ||
         req.body.name !== undefined ||
         req.body.location !== undefined ||
@@ -259,6 +264,7 @@ export const updateKioskDevice = async (req, res) => {
       "status",
       "targetDashboard",
       "tableId",
+      "roomId",
       "firmwareVersion",
       "supportedFeatures",
       "isActive",
@@ -271,7 +277,8 @@ export const updateKioskDevice = async (req, res) => {
         if (
           key === "hotelId" ||
           key === "targetDashboard" ||
-          key === "tableId"
+          key === "tableId" ||
+          key === "roomId"
         ) {
           if (String(device[key]) !== String(req.body[key])) {
             urlOrHotelChanged = true;
@@ -290,6 +297,15 @@ export const updateKioskDevice = async (req, res) => {
       device.tableId = null;
     }
 
+    // Clear roomId if switching away from GUEST_DASHBOARD
+    if (
+      req.body.targetDashboard &&
+      req.body.targetDashboard !== "GUEST_DASHBOARD" &&
+      req.body.roomId === undefined
+    ) {
+      device.roomId = null;
+    }
+
     await device.save();
 
     const assignedUrl = resolveKioskAssignedUrl(device);
@@ -297,6 +313,7 @@ export const updateKioskDevice = async (req, res) => {
     const populated = await KioskDevice.findById(device._id)
       .populate("hotelId", "name hotelCode city")
       .populate("tableId", "tableNumber section seats status")
+      .populate("roomId", "roomNumber type floor status")
       .lean();
 
     if (populated) {
@@ -522,6 +539,8 @@ export const pairKiosk = async (req, res) => {
           hotelId: device.hotelId?._id || device.hotelId,
           hotelName: device.hotelId?.name || "Assigned Hotel",
           targetDashboard: device.targetDashboard,
+          roomId: device.roomId || null,
+          tableId: device.tableId || null,
           assignedUrl,
         },
       },
@@ -588,6 +607,7 @@ export const getKioskStatus = async (req, res) => {
     const device = await KioskDevice.findById(req.kiosk._id)
       .populate("hotelId", "name hotelCode city")
       .populate("tableId", "tableNumber section seats status")
+      .populate("roomId", "roomNumber type floor status")
       .lean();
 
     if (device) {
@@ -633,6 +653,7 @@ export const createKioskHandoffCode = async (req, res) => {
       hotelId: kiosk.hotelId,
       targetDashboard: kiosk.targetDashboard || "GUEST_DASHBOARD",
       tableId: kiosk.tableId || null,
+      roomId: kiosk.roomId || null,
       consumed: false,
       expiresAt,
     });
