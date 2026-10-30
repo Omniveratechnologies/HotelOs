@@ -314,7 +314,16 @@ In-room tablets mounted in guest rooms operate seamlessly across stay transition
 - **Auto-Logout upon Check-Out**: Checking out a room from the Receptionist Dashboard Room Grid (`POST /api/v1/rooms/:id/check-out`) transitions active reservations to `checked-out`, releases keycards, creates turnover cleaning tasks, and emits `kiosk:guest-checked-out`. In-room tablets instantly reset to standby mode.
 - **Idempotent Status Polling**: Tablets reloading during a stay query `GET /api/v1/sessions/kiosk-room-status` using their device token, avoiding 401s on page refresh.
 
-### 3. BullMQ Worker Central Model Registry
+### 3. Escape-Proof Lockdown & Persistent Launcher (Device Owner)
+
+Kiosk terminals provisioned via `adb shell dpm set-device-owner` enforce true enterprise hardware containment:
+
+- **Top Shutter Disabled**: Completely blocks notifications and quick settings pull-down via `setStatusBarDisabled(true)`.
+- **Zero Minimization**: `LOCK_TASK_FEATURE_NONE` disables Home, Recents, and Keyguard, preventing guests from escaping to the desktop or switching tasks.
+- **Persistent Launcher**: Automatically registers as the default Android `HOME` launcher so restarts and home key events always return to the kiosk.
+- **Direct Dashboard Launch on Restart**: Paired terminals boot directly into the active dashboard (`/kiosk`) on reboot without flashing technician screens, which only appear if Super Admin dispatches `device:exit-kiosk`.
+
+### 4. BullMQ Worker Central Model Registry
 
 To prevent Mongoose `MissingSchemaError: Schema hasn't been registered for model "User"` errors in background workers, all models are pre-registered centrally in [`apps/backend/src/config/models.js`](apps/backend/src/config/models.js) before Redis queues (`src/workers/index.js`) start processing jobs.
 

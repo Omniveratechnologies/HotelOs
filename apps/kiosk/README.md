@@ -42,6 +42,11 @@ All native Android capabilities are managed through **Expo Modules** and **Expo 
    - Hardware back button navigates backwards through web history inside the WebView, stopping safely at the assigned dashboard landing page.
    - Native security boundary (`onShouldStartLoadWithRequest`) enforces same-site domain isolation, blocking all third-party external URLs or malicious redirects.
 
+6. **True Escape-Proof Lockdown & Persistent Launcher**:
+   - Enterprise Android Device Owner provisioning completely blocks the top shutter (notification shade & quick settings via `setStatusBarDisabled`) and disables Home/Recents multitasking (`LOCK_TASK_FEATURE_NONE`).
+   - Automatically registers as the persistent default Android `HOME` launcher, preventing app minimization or desktop escape.
+   - On restart or reboot, paired terminals boot directly into the active dashboard (`/kiosk`), hiding technical Terminal Info unless Super Admin explicitly dispatches `device:exit-kiosk`.
+
 ---
 
 ## Project Structure

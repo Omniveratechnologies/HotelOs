@@ -84,6 +84,14 @@ Active admin set to component ...
 > [!TIP]
 > If ADB returns _"Not allowed to set the device owner because there are already some accounts on the device"_, wipe the emulator data in Android Studio Device Manager (**Device Manager → Right Click AVD → Wipe Data**) or factory-reset the physical tablet, and re-run the command before signing in to any accounts.
 
+#### Permanent Home Launcher Verification
+
+Once provisioned, `KioskDeviceAdminReceiver` automatically registers `com.kioskpoc.app.MainActivity` as the persistent default HOME app. If your device already had a stock launcher active, you can immediately enforce the home activity via ADB:
+
+```bash
+adb shell cmd package set-home-activity com.kioskpoc.app/.MainActivity
+```
+
 ---
 
 ### Step 4: Pair with HotelOS Backend
@@ -99,11 +107,49 @@ Active admin set to component ...
    - Enter your HotelOS server URL (e.g. `http://10.0.2.2:5001`).
    - Enter the 6-digit pairing code.
    - Tap **Pair & Activate Terminal**.
-5. The device authenticates with the backend, receives a long-lived JWT token (`role: "KIOSK"`), saves credentials in secure storage, and automatically locks into the assigned dashboard.
+5. The device authenticates with the backend, receives a long-lived JWT token (`role: "KIOSK"`), saves credentials in secure storage, and automatically transitions directly into the assigned dashboard (`/kiosk`).
 
 ---
 
-## 3. Testing Features & Behaviors
+## 3. Escape-Proof Kiosk Lockdown & Verification
+
+### Why could the top shutter open or the app minimize before?
+
+1. **Device Owner vs Lock Task Mode**: Running `dpm set-device-owner` grants permission to lock the device, but Android does not lock system bars until `activity.startLockTask()` and `dpm.setStatusBarDisabled(adminComponent, true)` are executed.
+2. **App States**:
+   - On the technician pairing/setup screens (`/pairing` or unlocked `/`), the app is not in lock task mode so technicians can pair and configure Wi-Fi if needed.
+   - Once configured, any app launch or reboot routes **directly into `/kiosk`**, immediately calling `startKioskMode()`.
+   - In Lock Task Mode (`mLockTaskModeState=LOCKED`), `LOCK_TASK_FEATURE_NONE` disables Home, Recents, and Notifications, while `setStatusBarDisabled(true)` blocks the top notification shade completely.
+
+### Verification Checklist:
+
+#### 1. Verify Lock Task Status
+
+```bash
+adb shell dumpsys activity activities | grep -E "mLockTaskModeState|ResumedActivity"
+```
+
+- `mLockTaskModeState=LOCKED` (2): **Active**. The app cannot be minimized, and recents/home buttons are disabled.
+- `mLockTaskModeState=NONE` (0): Inactive (app is on technician setup screen or has not entered `/kiosk`).
+
+#### 2. Verify Top Shutter (Status Bar) Disabled
+
+- Swipe down firmly from the top edge of the touchscreen.
+- **Expected**: Neither notifications nor Quick Settings pull down. The top shutter is completely disabled.
+
+#### 3. Verify Minimizing Disabled
+
+- Swipe up from the bottom edge or tap the Home/Overview buttons.
+- **Expected**: The app does not minimize, the task switcher does not open, and no gesture escapes the kiosk.
+
+#### 4. Verify Persistent Launcher
+
+- Reboot the device via `adb reboot` or power-cycle.
+- **Expected**: Android boots directly into the HotelOS Kiosk app without presenting a launcher chooser or the Android home screen.
+
+---
+
+## 4. Testing Features & Behaviors
 
 Once paired, you can verify the following features:
 
@@ -136,18 +182,20 @@ Once paired, you can verify the following features:
 
 - In Super Admin (`/kiosks`), find the tablet's card:
   - **Reload**: Dispatches `device:reload` over WebSocket to refresh the WebView.
-  - **Exit Kiosk**: Dispatches `device:exit-kiosk` to unlock Android Lock Task mode and return the device to the technician setup screen.
+  - **Exit Kiosk**: Dispatches `device:exit-kiosk` to unlock Android Lock Task mode, restore system bars, and return the device to the technician setup screen.
 
 ---
 
-## 4. Useful ADB Commands
+## 5. Useful ADB Commands
 
-| Task                           | Command                                                                                                         |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| **List connected devices**     | `adb devices`                                                                                                   |
-| **Check Device Owner status**  | `adb shell dumpsys device_policy \| grep -i owner`                                                              |
-| **Check Lock Task status**     | `adb shell dumpsys activity activities \| grep -i locktask`                                                     |
-| **Test boot auto-start**       | `adb reboot` (tablet automatically relaunches kiosk upon booting)                                               |
-| **Launch app manually**        | `adb shell am start -n com.kioskpoc.app/.MainActivity`                                                          |
-| **Stream kiosk logs**          | `adb logcat \| grep -i "kiosk\|ReactNative"` (or `findstr` on Windows)                                          |
-| **Inspect WebView via Chrome** | Navigate to `chrome://inspect/#devices` in Google Chrome to inspect the live DOM, console, and network requests |
+| Task                                | Command                                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **List connected devices**          | `adb devices`                                                                                                   |
+| **Check Device Owner status**       | `adb shell dumpsys device_policy \| grep -i "Device Owner"`                                                     |
+| **Check Lock Task status**          | `adb shell dumpsys activity activities \| grep -E "mLockTaskModeState\|ResumedActivity"`                        |
+| **Force set Kiosk as default Home** | `adb shell cmd package set-home-activity com.kioskpoc.app/.MainActivity`                                        |
+| **Resolve active Home launcher**    | `adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME`  |
+| **Test boot auto-start**            | `adb reboot` (tablet automatically relaunches kiosk upon booting)                                               |
+| **Launch app manually**             | `adb shell am start -n com.kioskpoc.app/.MainActivity`                                                          |
+| **Stream kiosk logs**               | `adb logcat \| grep -i "kiosk\|ReactNative"` (or `findstr` on Windows)                                          |
+| **Inspect WebView via Chrome**      | Navigate to `chrome://inspect/#devices` in Google Chrome to inspect the live DOM, console, and network requests |

@@ -10,7 +10,10 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.media.MediaDrm
 import android.os.Build
+import android.os.UserManager
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.view.WindowManager
 import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.modules.Module
@@ -41,8 +44,10 @@ import java.security.MessageDigest
  *   - setLockTaskFeatures(LOCK_TASK_FEATURE_NONE) so Home, Recents, the
  *     notification shade, global actions and the keyguard are all disabled,
  *     and the "Back + Recents" escape hatch is removed
- *   - setStatusBarDisabled() to fully take over the status bar
- *   - addPersistentPreferredActivity() to make this app the HOME app
+ *   - setStatusBarDisabled(true) to fully block the status bar (top shutter)
+ *   - setKeyguardDisabled(true) to prevent lockscreen on sleep/wake
+ *   - adds enterprise user restrictions (DISALLOW_SAFE_BOOT, DISALLOW_SYSTEM_ERROR_DIALOGS, DISALLOW_CREATE_WINDOWS)
+ *   - addPersistentPreferredActivity() to make this app the permanent system HOME launcher
  */
 class KioskManagerModuleException(message: String) : CodedException(message)
 
@@ -104,11 +109,17 @@ class KioskManagerModule : Module() {
         try {
           activity.stopLockTask()
           restoreSystemBars(activity)
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && isDeviceOwnerApp()) {
+            devicePolicyManager?.setStatusBarDisabled(adminComponent, false)
+          }
           promise.resolve(true)
         } catch (t: Throwable) {
           // stopLockTask() throws if the task isn't currently locked — treat
           // that as "already stopped" rather than a hard failure.
           restoreSystemBars(activity)
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && isDeviceOwnerApp()) {
+            devicePolicyManager?.setStatusBarDisabled(adminComponent, false)
+          }
           promise.resolve(false)
         }
       }
@@ -199,15 +210,27 @@ class KioskManagerModule : Module() {
     dpm.setLockTaskPackages(adminComponent, arrayOf(pkg))
 
     // API 28+: turn off every lock task feature so Home / Recents /
-    // notifications / global actions / keyguard are all unavailable and
-    // the Back+Recents escape is not offered.
+    // notifications / global actions / keyguard are all disabled,
+    // and the "Back+Recents" escape is not offered.
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       dpm.setLockTaskFeatures(adminComponent, DevicePolicyManager.LOCK_TASK_FEATURE_NONE)
     }
 
-    // API 23+: take over the status bar entirely.
+    // API 23+: take over the status bar entirely (disables notification shade / top shutter).
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       dpm.setStatusBarDisabled(adminComponent, true)
+    }
+
+    // Disable keyguard (lockscreen) so device wakes directly to the app
+    dpm.setKeyguardDisabled(adminComponent, true)
+
+    // Essential enterprise user restrictions
+    try {
+      dpm.addUserRestriction(adminComponent, UserManager.DISALLOW_SAFE_BOOT)
+      dpm.addUserRestriction(adminComponent, UserManager.DISALLOW_SYSTEM_ERROR_DIALOGS)
+      dpm.addUserRestriction(adminComponent, UserManager.DISALLOW_CREATE_WINDOWS)
+    } catch (_: Throwable) {
+      // Best effort for OEM variations
     }
 
     // Make this app the persistent HOME app so Home always returns here.
@@ -216,41 +239,69 @@ class KioskManagerModule : Module() {
 
   /**
    * Registers our launch activity as the device's persistent preferred HOME
-   * activity. Device-owner only; no-op / swallowed otherwise.
+   * activity. Device-owner only; clears existing preferred launchers first.
    */
   private fun makePersistentHome(dpm: DevicePolicyManager) {
-    val launchIntent = reactContext.packageManager.getLaunchIntentForPackage(reactContext.packageName)
-      ?: return
-    val component = launchIntent.component ?: return
-    val filter = IntentFilter(Intent.ACTION_MAIN).apply {
-      addCategory(Intent.CATEGORY_HOME)
-      addCategory(Intent.CATEGORY_DEFAULT)
+    try {
+      dpm.clearPackagePersistentPreferredActivities(adminComponent, reactContext.packageName)
+
+      val component = ComponentName(reactContext.packageName, "com.kioskpoc.app.MainActivity")
+      val filter = IntentFilter(Intent.ACTION_MAIN).apply {
+        addCategory(Intent.CATEGORY_HOME)
+        addCategory(Intent.CATEGORY_DEFAULT)
+      }
+      dpm.addPersistentPreferredActivity(adminComponent, filter, component)
+    } catch (_: Throwable) {
+      val launchIntent = reactContext.packageManager.getLaunchIntentForPackage(reactContext.packageName)
+        ?: return
+      val component = launchIntent.component ?: return
+      val filter = IntentFilter(Intent.ACTION_MAIN).apply {
+        addCategory(Intent.CATEGORY_HOME)
+        addCategory(Intent.CATEGORY_DEFAULT)
+      }
+      dpm.addPersistentPreferredActivity(adminComponent, filter, component)
     }
-    dpm.addPersistentPreferredActivity(adminComponent, filter, component)
   }
 
   /**
-   * Hides the status and navigation bars using immersive-sticky flags. In
-   * full lock task mode the system already blocks these; this also keeps the
-   * WebView edge-to-edge and re-asserts the bars stay hidden.
+   * Hides the status and navigation bars using WindowInsetsController on
+   * Android 11+ (API 30+) with fallback to legacy immersive-sticky flags.
    */
   private fun applyImmersiveMode(activity: Activity) {
     activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    @Suppress("DEPRECATION")
-    activity.window.decorView.systemUiVisibility = (
-      View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-        or View.SYSTEM_UI_FLAG_FULLSCREEN
-        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-      )
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      activity.window.setDecorFitsSystemWindows(false)
+      activity.window.insetsController?.let { controller ->
+        controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+        controller.systemBarsBehavior =
+          WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+      }
+    } else {
+      @Suppress("DEPRECATION")
+      activity.window.decorView.systemUiVisibility = (
+        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+          or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+          or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+          or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+          or View.SYSTEM_UI_FLAG_FULLSCREEN
+          or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        )
+    }
   }
 
   private fun restoreSystemBars(activity: Activity) {
     activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    @Suppress("DEPRECATION")
-    activity.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      activity.window.setDecorFitsSystemWindows(true)
+      activity.window.insetsController?.show(
+        WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
+      )
+    } else {
+      @Suppress("DEPRECATION")
+      activity.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+    }
   }
 
   /**
