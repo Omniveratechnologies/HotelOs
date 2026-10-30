@@ -18,6 +18,7 @@ import { heartbeatService } from "@/services/heartbeatService";
 import { socketService } from "@/services/socketService";
 import { kioskApi } from "@/services/kioskApi";
 import { kioskStorage } from "@/lib/storage";
+import { kioskUnlockState } from "@/lib/kioskUnlockState";
 import { isSameSiteUrl, isSameOrInitialUrl } from "@/lib/urlSecurity";
 import { KioskAuthData } from "@/types";
 
@@ -57,8 +58,11 @@ export function KioskScreen() {
         setHandoffCode(code);
         const separator = url.includes("?") ? "&" : "?";
         setWebViewUri(`${url}${separator}kioskHandoffCode=${code}`);
-      } catch (err: any) {
-        console.warn("[KioskScreen] Handoff code fallback:", err?.message);
+      } catch (err: unknown) {
+        console.warn(
+          "[KioskScreen] Handoff code fallback:",
+          (err as Error)?.message,
+        );
         if (isMounted) {
           setHandoffCode(null);
           setWebViewUri(url);
@@ -202,8 +206,9 @@ export function KioskScreen() {
   }, []);
 
   const handleExit = useCallback(async () => {
+    kioskUnlockState.setUnlocked(true);
     await kiosk.exit();
-    router.replace("/");
+    router.replace({ pathname: "/", params: { unlocked: "true" } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
