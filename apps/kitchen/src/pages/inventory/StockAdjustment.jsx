@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import API_BASE_URL from "../../config/api.js";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import { MdInventory } from "react-icons/md";
 
 import StockAdjustmentForm from "../../components/stockAdjustment/StockAdjustmentForm.jsx";
@@ -89,6 +89,7 @@ const StockAdjustment = () => {
           setIsMenuOpen={setIsMenuOpen}
           breadcrumb="Inventory → Stock Adjustment"
           showPageHeading
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <div className="flex items-center gap-3">
               <button

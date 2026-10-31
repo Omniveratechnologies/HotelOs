@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { MdInventory } from "react-icons/md";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import SupplierForm from "../../components/suppliers/SupplierForm.jsx";
 import API_BASE_URL from "../../config/api.js";
 
@@ -134,6 +134,7 @@ const AddSuppliers = () => {
               ? "Inventory → Suppliers → Edit Supplier"
               : "Inventory → Suppliers → Add Supplier"
           }
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <div className="flex items-center gap-3">
               <button

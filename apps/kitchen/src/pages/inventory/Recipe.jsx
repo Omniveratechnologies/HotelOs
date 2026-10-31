@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { MdFastfood } from "react-icons/md";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import Tabs from "../../components/ui/Tabs.jsx";
 import StatusBadge from "../../components/ui/StatusBadge.jsx";
 import API_BASE_URL from "../../config/api.js";
@@ -163,6 +163,7 @@ const Recipe = () => {
           setIsMenuOpen={setIsMenuOpen}
           breadcrumb="Inventory → Recipes / Ingredients → New Recipe"
           showPageHeading
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <RecipeHeader
               onDuplicate={handleDuplicate}
