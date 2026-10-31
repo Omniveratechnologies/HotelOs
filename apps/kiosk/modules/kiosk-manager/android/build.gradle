@@ -1,0 +1,21 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'com.kioskpoc.kioskmanager'
+version = '1.0.0'
+
+android {
+  namespace "com.kioskpoc.kioskmanager"
+  // compileSdk/minSdk/targetSdk are applied automatically by expo-module-gradle-plugin
+  // from the root project extras (rootProject.ext.minSdkVersion, etc.).
+  defaultConfig {
+    // Required by expo-module-gradle-plugin's publishing metadata.
+    versionCode 1
+    versionName "1.0.0"
+  }
+}
+
+dependencies {
+  // Nothing beyond expo-modules-core, which the gradle plugin already wires in.
+}

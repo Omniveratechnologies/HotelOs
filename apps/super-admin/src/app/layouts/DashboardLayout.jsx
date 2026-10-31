@@ -32,6 +32,17 @@ const NAV_ITEMS = [
     icon: icon(<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />),
   },
   {
+    label: "Kiosks & Hardware",
+    path: "/kiosks",
+    icon: icon(
+      <path
+        d="M4 6a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm4 13h8m-4-4v4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />,
+    ),
+  },
+  {
     id: "channels",
     label: "Channels",
     icon: icon(<path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />),

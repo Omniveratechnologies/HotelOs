@@ -3,11 +3,14 @@ import { Building, Plus } from "lucide-react";
 import { SectionCard, Button, Input } from "@hotelos/ui/components";
 import { formatCurrency } from "@hotelos/utils";
 
+const EMPTY_ARRAY = Object.freeze([]);
+const EMPTY_OBJECT = Object.freeze({});
+
 export default function CorporateAccountSection({
   corporate,
-  companies = [],
+  companies = EMPTY_ARRAY,
   companiesLoading = false,
-  errors = {},
+  errors = EMPTY_OBJECT,
   onChange,
   onOpenNewCompanyModal,
 }) {

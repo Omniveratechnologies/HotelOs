@@ -1,0 +1,43 @@
+{
+  "name": "kiosk",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start --dev-client",
+    "start": "expo start --dev-client",
+    "build": "tsc --noEmit",
+    "android": "expo run:android",
+    "prebuild": "expo prebuild --platform android --clean",
+    "android:release": "expo run:android --variant release",
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "57.0.28",
+    "expo-application": "~57.0.3",
+    "expo-battery": "~57.0.3",
+    "expo-constants": "57.0.21",
+    "expo-linking": "57.0.12",
+    "expo-modules-core": "57.0.22",
+    "expo-router": "57.0.26",
+    "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.4",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "react-native-webview": "13.16.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "@types/react": "~19.2.2",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
+    "expo-dev-client": "~57.0.20",
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.3"
+  },
+  "private": true
+}

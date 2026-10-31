@@ -13,3 +13,18 @@ export const generateToken = (user) => {
     },
   );
 };
+
+export const generateKioskToken = (kiosk) => {
+  return jwt.sign(
+    {
+      kioskId: kiosk._id,
+      deviceId: kiosk.deviceId,
+      hotelId: kiosk.hotelId,
+      role: "KIOSK",
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "365d",
+    },
+  );
+};

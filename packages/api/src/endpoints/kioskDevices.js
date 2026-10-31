@@ -1,8 +1,18 @@
 import { api } from "../apiFetch.js";
 
 /**
- * Fetch kiosk devices for hotel.
- * @param {Object} params - { status, q }
+ * Fetch available kiosk dashboard presets configured on the backend.
+ */
+export const getKioskDashboards = async () => {
+  const result = await api.get("/api/v1/kiosks/dashboards", {
+    auth: true,
+  });
+  return result.data;
+};
+
+/**
+ * Fetch kiosk devices (Super Admin: all or by hotelId; Sub-Admin: scoped to hotel).
+ * @param {Object} params - { status, q, hotelId }
  */
 export const getKioskDevices = async (params = {}) => {
   const result = await api.get("/api/v1/kiosks", {
@@ -13,8 +23,8 @@ export const getKioskDevices = async (params = {}) => {
 };
 
 /**
- * Register a new kiosk terminal.
- * @param {Object} data - { deviceId, name, location, supportedFeatures, firmwareVersion }
+ * Register a new kiosk terminal (Super Admin only).
+ * @param {Object} data - { hotelId, deviceId, name, location, targetDashboard, customUrl, supportedFeatures, firmwareVersion }
  */
 export const createKioskDevice = async (data) => {
   const result = await api.post("/api/v1/kiosks", data, {
@@ -24,7 +34,7 @@ export const createKioskDevice = async (data) => {
 };
 
 /**
- * Update kiosk terminal settings.
+ * Update kiosk terminal settings, reassign hotel, or switch target dashboard.
  * @param {string} id
  * @param {Object} data
  */
@@ -36,7 +46,7 @@ export const updateKioskDevice = async (id, data) => {
 };
 
 /**
- * Regenerate terminal pairing code.
+ * Regenerate terminal pairing code (Super Admin only).
  * @param {string} id
  */
 export const regenerateKioskPairCode = async (id) => {
@@ -51,7 +61,19 @@ export const regenerateKioskPairCode = async (id) => {
 };
 
 /**
- * Delete a kiosk terminal.
+ * Dispatch remote command to a kiosk terminal (Super Admin only).
+ * @param {string} id
+ * @param {Object} data - { command, payload }
+ */
+export const sendKioskCommand = async (id, data) => {
+  const result = await api.post(`/api/v1/kiosks/${id}/command`, data, {
+    auth: true,
+  });
+  return result.data;
+};
+
+/**
+ * Delete a kiosk terminal (Super Admin only).
  * @param {string} id
  */
 export const deleteKioskDevice = async (id) => {

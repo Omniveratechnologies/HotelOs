@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { Plus, Trash2, Users, Download, Upload } from "lucide-react";
 import { SectionCard, Button, Input } from "@hotelos/ui/components";
 
+const EMPTY_ARRAY = Object.freeze([]);
+
 export default function CorporateGuestListTable({
-  guests = [],
+  guests = EMPTY_ARRAY,
   onAddGuest,
   onRemoveGuest,
 }) {

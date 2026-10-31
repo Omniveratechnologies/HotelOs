@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Device Admin policy declaration referenced by
+  KioskDeviceAdminReceiver's <meta-data android:resource="@xml/device_admin">
+  entry (added by plugins/withDeviceAdmin.ts). Declares the minimum policy
+  set needed for kiosk-style lock task provisioning; extend with
+  <limit-password/>, <wipe-data/> etc. for a real fleet-management rollout.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <force-lock />
+        <limit-password />
+    </uses-policies>
+</device-admin>

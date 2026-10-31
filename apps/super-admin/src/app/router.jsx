@@ -53,6 +53,12 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: "/kiosks",
+                lazy: lazyPage(
+                  () => import("../features/kiosks/pages/KioskDevicesPage.jsx"),
+                ),
+              },
+              {
                 path: "/transactions",
                 lazy: lazyPage(
                   () =>

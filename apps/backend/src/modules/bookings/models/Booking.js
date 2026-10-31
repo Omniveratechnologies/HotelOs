@@ -37,6 +37,21 @@ const pricingSnapshotSchema = new mongoose.Schema(
     taxPercent: { type: Number, default: 12 },
     taxAmount: { type: Number, default: 0 },
     grandTotal: { type: Number, default: 0 },
+    itemizedLines: {
+      type: [
+        new mongoose.Schema(
+          {
+            roomTypeCode: { type: String, trim: true, lowercase: true },
+            rooms: { type: Number, default: 1 },
+            nights: { type: Number, default: 1 },
+            nightlyRate: { type: Number, default: 0 },
+            subtotal: { type: Number, default: 0 },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
+    },
     currency: { type: String, default: "INR", trim: true },
   },
   { _id: false },
@@ -73,6 +88,153 @@ const auditEntrySchema = new mongoose.Schema(
     from: { type: String, default: null },
     to: { type: String, default: null },
     note: { type: String, default: null, trim: true },
+  },
+  { _id: false },
+);
+
+const roomAllocationSchema = new mongoose.Schema(
+  {
+    allocationId: { type: String, trim: true, default: null },
+    roomTypeCode: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    roomId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Room",
+      default: null,
+    },
+    roomNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    ratePlanId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "RatePlan",
+      default: null,
+    },
+    nightlyRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    adults: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+    children: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    occupantName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    occupantPhone: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    occupantEmail: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    occupantIdType: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    occupantIdNumber: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: [
+        "unassigned",
+        "assigned",
+        "checked-in",
+        "checked-out",
+        "cancelled",
+      ],
+      default: "unassigned",
+    },
+    notes: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+  },
+  { _id: true },
+);
+
+const roomRequirementSchema = new mongoose.Schema(
+  {
+    roomTypeCode: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    rooms: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    adultsPerRoom: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+    childrenPerRoom: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    notes: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+  },
+  { _id: false },
+);
+
+const groupInfoSchema = new mongoose.Schema(
+  {
+    groupName: { type: String, trim: true, default: null },
+    groupType: { type: String, trim: true, default: null },
+    companyName: { type: String, trim: true, default: null },
+    organizerName: { type: String, trim: true, default: null },
+    organizerPhone: { type: String, trim: true, default: null },
+    organizerEmail: { type: String, trim: true, default: null },
+    billingMode: {
+      type: String,
+      enum: ["Master Folio", "Individual Folio", "Split"],
+      default: "Master Folio",
+    },
+  },
+  { _id: false },
+);
+
+const guestRosterSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    phone: { type: String, trim: true, default: null },
+    email: { type: String, trim: true, default: null },
+    designation: { type: String, trim: true, default: null },
+    assignedRoom: { type: String, trim: true, default: null },
+    roomTypeCode: { type: String, trim: true, default: null },
+    notes: { type: String, trim: true, default: null },
+    isPrimary: { type: Boolean, default: false },
   },
   { _id: false },
 );
@@ -151,6 +313,26 @@ const bookingSchema = new mongoose.Schema(
     adults: { type: Number, default: 1, min: 0 },
     children: { type: Number, default: 0, min: 0 },
     infants: { type: Number, default: 0, min: 0 },
+
+    roomAllocations: {
+      type: [roomAllocationSchema],
+      default: [],
+    },
+
+    roomRequirements: {
+      type: [roomRequirementSchema],
+      default: [],
+    },
+
+    groupInfo: {
+      type: groupInfoSchema,
+      default: null,
+    },
+
+    guestRoster: {
+      type: [guestRosterSchema],
+      default: [],
+    },
 
     guestType: {
       type: String,
