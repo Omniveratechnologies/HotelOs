@@ -99,7 +99,8 @@ export function ArrivalsQueue({
       {/* Arrival List */}
       <div className="min-h-0 flex-1 divide-y divide-gray-100 overflow-y-auto">
         {filtered.map((item) => {
-          const isSelected = selectedId === item.id;
+          const isSelected =
+            selectedId != null && String(selectedId) === String(item.id);
           const isProvisional = item.status === "reserved";
           const isUnpaid = item.paymentStatus === "unpaid";
 
@@ -242,7 +243,8 @@ export function DepartureQueue({
       {/* Departure List */}
       <div className="min-h-0 flex-1 divide-y divide-gray-100 overflow-y-auto">
         {filtered.map((item) => {
-          const isSelected = selectedId === item.id;
+          const isSelected =
+            selectedId != null && String(selectedId) === String(item.id);
           return (
             <div
               key={item.id}

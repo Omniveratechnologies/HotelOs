@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import {
   Header,
   KpiTile,
@@ -18,7 +18,9 @@ import {
 
 export default function ExpressCheckInPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const urlBookingId = searchParams.get("bookingId");
   const [selectedArrival, setSelectedArrival] = useState(null);
   const [keyCardNumber, setKeyCardNumber] = useState("");
   const [bannerMsg, setBannerMsg] = useState("");
@@ -26,8 +28,16 @@ export default function ExpressCheckInPage() {
 
   // Fetch live express-eligible arrivals
   const { data: arrivalsData, isLoading: arrivalsLoading } = useQuery({
-    queryKey: ["front-desk", "arrivals", { expressOnly: "true" }],
-    queryFn: () => getArrivalsQueue({ expressOnly: "true" }),
+    queryKey: [
+      "front-desk",
+      "arrivals",
+      { expressOnly: "true", bookingId: urlBookingId || undefined },
+    ],
+    queryFn: () =>
+      getArrivalsQueue({
+        expressOnly: "true",
+        ...(urlBookingId ? { bookingId: urlBookingId } : {}),
+      }),
   });
 
   const { data: statsData } = useQuery({
@@ -38,7 +48,16 @@ export default function ExpressCheckInPage() {
   const arrivals = arrivalsData || [];
   const stats = statsData || { pendingArrivals: 0, checkedInToday: 0 };
   const currentArrival =
-    selectedArrival || (arrivals.length > 0 ? arrivals[0] : null);
+    selectedArrival ||
+    (urlBookingId
+      ? arrivals.find(
+          (a) =>
+            String(a.id) === String(urlBookingId) ||
+            String(a._id) === String(urlBookingId) ||
+            String(a.bookingNo) === String(urlBookingId),
+        )
+      : null) ||
+    (arrivals.length > 0 ? arrivals[0] : null);
 
   const checkInMutation = useMutation({
     mutationFn: ({ bookingId, data }) => checkInBooking(bookingId, data),

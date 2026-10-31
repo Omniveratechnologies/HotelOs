@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import Booking from "../models/Booking.js";
 import Room from "#/modules/rooms/models/Room.js";
@@ -19,7 +20,7 @@ import logger from "#/utils/logger.js";
 // =====================================================
 export const getArrivals = async (req, res) => {
   try {
-    const { date, expressOnly, q } = req.query;
+    const { date, expressOnly, q, bookingId } = req.query;
     const hotelId = req.user.hotelId;
 
     const targetDate = date ? new Date(date) : new Date();
@@ -28,11 +29,26 @@ export const getArrivals = async (req, res) => {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const filter = {
+    const baseStatusFilter = {
       hotelId,
       status: { $in: ["confirmed", "reserved", "pending"] },
-      checkIn: { $lte: endOfDay },
     };
+
+    let filter;
+    if (bookingId && mongoose.Types.ObjectId.isValid(bookingId)) {
+      filter = {
+        ...baseStatusFilter,
+        $or: [
+          { checkIn: { $lte: endOfDay } },
+          { _id: new mongoose.Types.ObjectId(bookingId) },
+        ],
+      };
+    } else {
+      filter = {
+        ...baseStatusFilter,
+        checkIn: { $lte: endOfDay },
+      };
+    }
 
     if (expressOnly === "true") {
       filter.checkInVerified = true;
@@ -59,7 +75,8 @@ export const getArrivals = async (req, res) => {
           rx.test(b.reservationNo || "") ||
           rx.test(b.guestId?.name || "") ||
           rx.test(b.guestId?.phone || "") ||
-          rx.test(b.roomId?.roomNumber || "")
+          rx.test(b.roomId?.roomNumber || "") ||
+          (bookingId && String(b._id) === String(bookingId))
         );
       })
       .map((b) => ({

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import React, { useState, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import {
   Header,
   KpiTile,
@@ -35,6 +35,7 @@ function cleanField(val) {
 function CheckInForm({
   arrival,
   cleanRooms,
+  initialRoomId = "",
   onCheckIn,
   isSubmitting,
   onEditGuest,
@@ -46,7 +47,9 @@ function CheckInForm({
   );
   const maxDocuments = Math.max(5, 2 * guestCount);
 
-  const [selectedRoomId, setSelectedRoomId] = useState(arrival.roomId || "");
+  const [selectedRoomId, setSelectedRoomId] = useState(
+    arrival.roomId || initialRoomId || "",
+  );
   const [keyCardNumber, setKeyCardNumber] = useState("");
   const [deposit, setDeposit] = useState(cleanField(arrival.deposit));
   const [documents, setDocuments] = useState(() => {
@@ -220,18 +223,31 @@ function CheckInForm({
   );
 }
 
+const EMPTY_ARRIVALS = [];
+
 export default function FrontDeskCheckInPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+
+  const urlBookingId = searchParams.get("bookingId");
+  const urlRoomId = searchParams.get("roomId");
+  const urlGuest = searchParams.get("guest");
+
   const [selectedArrivalId, setSelectedArrivalId] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [bannerMsg, setBannerMsg] = useState("");
   const [bannerVariant, setBannerVariant] = useState("success");
 
-  // Fetch live arrivals queue
+  // Fetch live arrivals queue (passing bookingId if provided to guarantee it's in the queue)
   const { data: arrivalsData, isLoading: arrivalsLoading } = useQuery({
-    queryKey: ["front-desk", "arrivals"],
-    queryFn: () => getArrivalsQueue(),
+    queryKey: [
+      "front-desk",
+      "arrivals",
+      { bookingId: urlBookingId || undefined },
+    ],
+    queryFn: () =>
+      getArrivalsQueue(urlBookingId ? { bookingId: urlBookingId } : {}),
   });
 
   // Fetch available clean rooms
@@ -246,7 +262,7 @@ export default function FrontDeskCheckInPage() {
     queryFn: () => getFrontDeskStats(),
   });
 
-  const arrivals = arrivalsData || [];
+  const arrivals = arrivalsData || EMPTY_ARRIVALS;
   // Map clean vacant rooms for assignment.
   // Note: Backend roomResponseDTO transforms MongoDB `_id` to `id`. Using `r.id || r._id` ensures
   // valid room IDs are passed to CleanRoomSelector so radio buttons and card clicks operate correctly.
@@ -267,11 +283,57 @@ export default function FrontDeskCheckInPage() {
     overstayCount: 0,
   };
 
-  // Resolve current arrival
-  const currentArrival =
-    (selectedArrivalId
-      ? arrivals.find((a) => a.id === selectedArrivalId)
-      : null) || (arrivals.length > 0 ? arrivals[0] : null);
+  // Resolve current arrival based on selectedArrivalId, urlBookingId, urlRoomId, urlGuest, or fallback to first
+  const currentArrival = useMemo(() => {
+    if (!arrivals || arrivals.length === 0) return null;
+
+    const targetId = selectedArrivalId || urlBookingId;
+
+    if (targetId) {
+      const match = arrivals.find(
+        (a) =>
+          String(a.id) === String(targetId) ||
+          String(a._id) === String(targetId) ||
+          String(a.bookingNo) === String(targetId),
+      );
+      if (match) return match;
+    }
+
+    if (urlRoomId) {
+      const match = arrivals.find(
+        (a) =>
+          String(a.roomId) === String(urlRoomId) ||
+          String(a.roomId?._id) === String(urlRoomId),
+      );
+      if (match) return match;
+    }
+
+    if (urlGuest) {
+      const targetGuest = urlGuest.trim().toLowerCase();
+      const match = arrivals.find(
+        (a) => a.name?.trim().toLowerCase() === targetGuest,
+      );
+      if (match) return match;
+    }
+
+    return arrivals[0] || null;
+  }, [arrivals, selectedArrivalId, urlBookingId, urlRoomId, urlGuest]);
+
+  const handleSelectArrival = (arr) => {
+    if (!arr) return;
+    setSelectedArrivalId(arr.id);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("bookingId", arr.id);
+        if (arr.roomId) next.set("roomId", arr.roomId);
+        else next.delete("roomId");
+        if (arr.name) next.set("guest", arr.name);
+        return next;
+      },
+      { replace: true },
+    );
+  };
 
   const handleSaveGuest = async (updatedData) => {
     if (!currentArrival) return;
@@ -387,8 +449,8 @@ export default function FrontDeskCheckInPage() {
             <ArrivalsQueue
               arrivals={arrivals}
               selectedId={currentArrival?.id}
-              onSelectArrival={(arr) => setSelectedArrivalId(arr.id)}
-              onSelect={(arr) => setSelectedArrivalId(arr.id)}
+              onSelectArrival={handleSelectArrival}
+              onSelect={handleSelectArrival}
               isLoading={arrivalsLoading}
             />
           </div>
@@ -411,6 +473,7 @@ export default function FrontDeskCheckInPage() {
                 key={currentArrival.id}
                 arrival={currentArrival}
                 cleanRooms={cleanRooms}
+                initialRoomId={urlRoomId || ""}
                 onCheckIn={handleCheckIn}
                 isSubmitting={checkInMutation.isPending}
                 onEditGuest={() => setIsEditModalOpen(true)}

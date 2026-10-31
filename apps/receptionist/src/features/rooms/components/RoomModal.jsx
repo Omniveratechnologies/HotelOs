@@ -359,8 +359,9 @@ export default function RoomModal({
                     icon={LogIn}
                     onClick={() => {
                       onClose?.();
+                      const bId = room.reservationId || room.bookingId || "";
                       navigate(
-                        `/front-desk/check-in?roomId=${room.id}&guest=${encodeURIComponent(room.guest || "")}`,
+                        `/front-desk/check-in?roomId=${room.id}&guest=${encodeURIComponent(room.guest || "")}${bId ? `&bookingId=${bId}` : ""}`,
                       );
                     }}
                     disabled={saving || unverified}
