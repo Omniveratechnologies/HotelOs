@@ -15,6 +15,11 @@ export interface BookingSummary {
   nights?: number;
   adults?: number;
   children?: number;
+  guests?: {
+    adults?: number;
+    children?: number;
+    infants?: number;
+  };
   status?: string;
   roomId?: {
     _id?: string;
@@ -26,6 +31,13 @@ export interface BookingSummary {
     name?: string;
     mealPlan?: string;
   };
+}
+
+export interface IdDocumentItem {
+  idType: string;
+  idNumber: string;
+  front: FileRef | null;
+  back?: FileRef | null;
 }
 
 export interface GuestSummary {
@@ -40,10 +52,8 @@ export interface StepData {
   email?: string;
   phone?: string;
   nationality?: string;
-  idType?: string;
-  idNumber?: string;
-  idFront?: FileRef | null;
-  idBack?: FileRef | null;
+  dateOfBirth?: string;
+  documents?: IdDocumentItem[];
   selfie?: FileRef | null;
   signature?: FileRef | null;
   termsAcceptedAt?: string | null;

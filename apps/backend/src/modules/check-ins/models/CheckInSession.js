@@ -36,6 +36,16 @@ const fileRefSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const idDocumentSchema = new mongoose.Schema(
+  {
+    idType: { type: String, trim: true, required: true },
+    idNumber: { type: String, trim: true, required: true },
+    front: { type: fileRefSchema, required: true },
+    back: { type: fileRefSchema, default: null },
+  },
+  { _id: false },
+);
+
 const stepDataSchema = new mongoose.Schema(
   {
     guestName: { type: String, trim: true, default: "" },
@@ -43,10 +53,7 @@ const stepDataSchema = new mongoose.Schema(
     phone: { type: String, trim: true, default: "" },
     nationality: { type: String, trim: true, default: "" },
     dateOfBirth: { type: String, trim: true, default: "" },
-    idType: { type: String, trim: true, default: "" },
-    idNumber: { type: String, trim: true, default: "" },
-    idFront: { type: fileRefSchema, default: null },
-    idBack: { type: fileRefSchema, default: null },
+    documents: { type: [idDocumentSchema], default: [] },
     selfie: { type: fileRefSchema, default: null },
     signature: { type: fileRefSchema, default: null },
     termsAcceptedAt: { type: Date, default: null },

@@ -6,6 +6,9 @@ import {
   Upload,
   Crown,
   Pencil,
+  Plus,
+  Trash2,
+  FileText,
 } from "lucide-react";
 import { Button, Input } from "@hotelos/ui/components";
 import { formatCurrency } from "@hotelos/utils";
@@ -285,50 +288,87 @@ export function DepartureQueue({
   );
 }
 
+const EMPTY_DOCS = [];
+
 /**
- * Identity Verification Console (Screens 10, 11)
+ * Identity Verification Console (Screens 10, 11) - Multi-document support
  */
 export function IdVerificationConsole({
-  idType = "Aadhaar",
-  onIdTypeChange,
-  idNumber = "",
-  onIdNumberChange,
-  frontImage = null,
-  onFrontImageChange,
-  backImage = null,
-  onBackImageChange,
+  documents = EMPTY_DOCS,
+  onDocumentsChange,
   isVerified = false,
   onToggleVerified,
+  maxDocuments = 5,
+  guestCount = 1,
 }) {
-  const frontInputRef = useRef(null);
-  const backInputRef = useRef(null);
+  const docs =
+    documents && documents.length > 0
+      ? documents
+      : [
+          {
+            idType: "Aadhaar",
+            idNumber: "",
+            frontImage: null,
+            backImage: null,
+          },
+        ];
 
-  const handleFrontUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () =>
-      onFrontImageChange && onFrontImageChange(reader.result);
-    reader.readAsDataURL(file);
+  const canAddMore = docs.length < maxDocuments;
+
+  const handleDocChange = (index, field, value) => {
+    if (!onDocumentsChange) return;
+    const updated = docs.map((d, i) =>
+      i === index ? { ...d, [field]: value } : d,
+    );
+    onDocumentsChange(updated);
   };
 
-  const handleBackUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onBackImageChange && onBackImageChange(reader.result);
-    reader.readAsDataURL(file);
+  const handleAddDocument = () => {
+    if (!canAddMore || !onDocumentsChange) return;
+    onDocumentsChange([
+      ...docs,
+      { idType: "Aadhaar", idNumber: "", frontImage: null, backImage: null },
+    ]);
+  };
+
+  const handleRemoveDocument = (index) => {
+    if (docs.length <= 1 || !onDocumentsChange) return;
+    onDocumentsChange(docs.filter((_, i) => i !== index));
+  };
+
+  const triggerUpload = (docIndex, side) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*,application/pdf";
+    input.onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        handleDocChange(docIndex, side, reader.result);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
   };
 
   return (
     <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
         <div>
-          <h4 className="text-sm font-bold text-gray-900">
-            Identity Verification
-          </h4>
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-bold text-gray-900">
+              Identity Verification
+            </h4>
+            <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-800">
+              {docs.length} of max {maxDocuments} doc
+              {maxDocuments > 1 ? "s" : ""}
+            </span>
+          </div>
           <p className="text-xs text-gray-500">
-            Government ID capture and matching
+            Government KYC documents for {guestCount} guest
+            {guestCount > 1 ? "s" : ""}. Front side is required, all back sides
+            are optional.
           </p>
         </div>
         <button
@@ -352,111 +392,187 @@ export function IdVerificationConsole({
         </button>
       </div>
 
-      <div className="grid grid-cols-12 gap-3">
-        <div className="col-span-12 sm:col-span-6">
-          <label
-            htmlFor="id-type-select"
-            className="mb-1 block text-xs font-semibold text-gray-700"
-          >
-            ID Document Type
-          </label>
-          <select
-            id="id-type-select"
-            value={idType}
-            onChange={(e) => onIdTypeChange && onIdTypeChange(e.target.value)}
-            className="focus:border-brand-500 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-xs text-gray-800 focus:outline-none"
-          >
-            <option value="Aadhaar">Aadhaar Card</option>
-            <option value="Passport">Passport</option>
-            <option value="Driving Licence">Driving Licence</option>
-            <option value="PAN Card">PAN Card</option>
-          </select>
-        </div>
-
-        <div className="col-span-12 sm:col-span-6">
-          <Input
-            label="ID Proof Number"
-            placeholder="Enter ID number"
-            value={idNumber}
-            onChange={(e) =>
-              onIdNumberChange && onIdNumberChange(e.target.value)
+      {/* Document Cards List */}
+      <div className="space-y-4">
+        {docs.map((doc, index) => (
+          <div
+            key={
+              doc.idNumber
+                ? `${doc.idType}_${doc.idNumber}_${index}`
+                : `doc_${index}`
             }
-          />
-        </div>
-      </div>
-
-      <input
-        type="file"
-        ref={frontInputRef}
-        accept="image/*"
-        onChange={handleFrontUpload}
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={backInputRef}
-        accept="image/*"
-        onChange={handleBackUpload}
-        className="hidden"
-      />
-
-      {/* ID Thumbnail Preview Cards */}
-      <div className="grid grid-cols-2 gap-3 pt-2">
-        <div
-          onClick={() => frontInputRef.current?.click()}
-          className="hover:border-brand-500 cursor-pointer rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-center transition"
-        >
-          {frontImage ? (
-            <div className="mb-2 flex h-20 w-full items-center justify-center overflow-hidden rounded-lg border border-emerald-300 bg-white">
-              <img
-                src={frontImage}
-                alt="ID Front"
-                className="h-full w-full object-contain"
-              />
-            </div>
-          ) : (
-            <div className="mb-2 flex h-20 w-full flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-100 text-gray-400">
-              <Upload className="mb-1 h-5 w-5" />
-              <span className="text-[10px]">Click to upload</span>
-            </div>
-          )}
-          <span className="block text-[11px] font-semibold text-gray-700">
-            ID Front Side
-          </span>
-          <span
-            className={`text-[10px] font-medium ${frontImage ? "text-emerald-600" : "text-gray-400"}`}
+            className="rounded-xl border border-gray-200 bg-gray-50/40 p-4 transition"
           >
-            {frontImage ? "✓ Uploaded" : "Not uploaded"}
-          </span>
-        </div>
+            <div className="mb-3 flex items-center justify-between border-b border-gray-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <FileText className="text-brand-600 h-4 w-4" />
+                <span className="text-xs font-bold text-gray-900">
+                  Document #{index + 1}
+                </span>
+                {index === 0 && (
+                  <span className="bg-brand-50 text-brand-700 rounded-md px-2 py-0.5 text-[10px] font-semibold">
+                    Primary Guest
+                  </span>
+                )}
+              </div>
+              {index > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveDocument(index)}
+                  className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-rose-500 hover:text-rose-700"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Remove
+                </button>
+              )}
+            </div>
 
-        <div
-          onClick={() => backInputRef.current?.click()}
-          className="hover:border-brand-500 cursor-pointer rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-center transition"
-        >
-          {backImage ? (
-            <div className="mb-2 flex h-20 w-full items-center justify-center overflow-hidden rounded-lg border border-emerald-300 bg-white">
-              <img
-                src={backImage}
-                alt="ID Back"
-                className="h-full w-full object-contain"
-              />
+            <div className="grid grid-cols-12 gap-3">
+              <div className="col-span-12 sm:col-span-6">
+                <label
+                  htmlFor={`id-type-${index}`}
+                  className="mb-1 block text-xs font-semibold text-gray-700"
+                >
+                  ID Document Type
+                </label>
+                <select
+                  id={`id-type-${index}`}
+                  value={doc.idType || "Aadhaar"}
+                  onChange={(e) =>
+                    handleDocChange(index, "idType", e.target.value)
+                  }
+                  className="focus:border-brand-500 h-9 w-full rounded-lg border border-gray-200 bg-white px-2.5 text-xs text-gray-800 focus:outline-none"
+                >
+                  <option value="Aadhaar">Aadhaar Card</option>
+                  <option value="Passport">Passport</option>
+                  <option value="Driving Licence">Driving Licence</option>
+                  <option value="PAN Card">PAN Card</option>
+                  <option value="Voter ID">Voter ID</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="col-span-12 sm:col-span-6">
+                <Input
+                  label="ID Proof Number *"
+                  placeholder="Enter ID number"
+                  value={doc.idNumber || ""}
+                  onChange={(e) =>
+                    handleDocChange(index, "idNumber", e.target.value)
+                  }
+                />
+              </div>
             </div>
-          ) : (
-            <div className="mb-2 flex h-20 w-full flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-100 text-gray-400">
-              <Upload className="mb-1 h-5 w-5" />
-              <span className="text-[10px]">Click to upload</span>
+
+            {/* Upload Zone Previews: Front (Required) & Back (Optional) */}
+            <div className="grid grid-cols-2 gap-3 pt-3">
+              {/* Front Side */}
+              <div className="rounded-xl border border-gray-200 bg-white p-3 text-center transition">
+                <div
+                  onClick={() => triggerUpload(index, "frontImage")}
+                  className="hover:border-brand-500 cursor-pointer"
+                >
+                  {doc.frontImage ? (
+                    <div className="relative mb-2 flex h-24 w-full items-center justify-center overflow-hidden rounded-lg border border-emerald-300 bg-gray-50">
+                      <img
+                        src={doc.frontImage}
+                        alt={`ID Front #${index + 1}`}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="mb-2 flex h-24 w-full flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-400">
+                      <Upload className="mb-1 h-5 w-5" />
+                      <span className="text-[10px]">Click to upload front</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <span className="block text-left text-[11px] font-semibold text-gray-800">
+                      Front Side *
+                    </span>
+                    <span
+                      className={`block text-left text-[10px] font-medium ${doc.frontImage ? "text-emerald-600" : "text-gray-400"}`}
+                    >
+                      {doc.frontImage ? "✓ Uploaded" : "Required"}
+                    </span>
+                  </div>
+                  {doc.frontImage && (
+                    <button
+                      type="button"
+                      onClick={() => handleDocChange(index, "frontImage", null)}
+                      className="cursor-pointer text-[10px] text-rose-500 hover:text-rose-700"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Back Side */}
+              <div className="rounded-xl border border-gray-200 bg-white p-3 text-center transition">
+                <div
+                  onClick={() => triggerUpload(index, "backImage")}
+                  className="hover:border-brand-500 cursor-pointer"
+                >
+                  {doc.backImage ? (
+                    <div className="relative mb-2 flex h-24 w-full items-center justify-center overflow-hidden rounded-lg border border-emerald-300 bg-gray-50">
+                      <img
+                        src={doc.backImage}
+                        alt={`ID Back #${index + 1}`}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="mb-2 flex h-24 w-full flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-400">
+                      <Upload className="mb-1 h-5 w-5" />
+                      <span className="text-[10px]">
+                        Click to upload back (Optional)
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <span className="block text-left text-[11px] font-semibold text-gray-800">
+                      Back Side (Optional)
+                    </span>
+                    <span
+                      className={`block text-left text-[10px] font-medium ${doc.backImage ? "text-emerald-600" : "text-gray-400"}`}
+                    >
+                      {doc.backImage ? "✓ Uploaded" : "Optional"}
+                    </span>
+                  </div>
+                  {doc.backImage && (
+                    <button
+                      type="button"
+                      onClick={() => handleDocChange(index, "backImage", null)}
+                      className="cursor-pointer text-[10px] text-rose-500 hover:text-rose-700"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
-          <span className="block text-[11px] font-semibold text-gray-700">
-            ID Back Side
-          </span>
-          <span
-            className={`text-[10px] font-medium ${backImage ? "text-emerald-600" : "text-gray-400"}`}
+          </div>
+        ))}
+
+        {/* Add Another Document Button */}
+        {canAddMore ? (
+          <button
+            type="button"
+            onClick={handleAddDocument}
+            className="hover:border-brand-500 hover:bg-brand-50 hover:text-brand-700 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-300 bg-gray-50 py-3 text-xs font-semibold text-gray-700 transition"
           >
-            {backImage ? "✓ Uploaded" : "Not uploaded"}
-          </span>
-        </div>
+            <Plus className="h-4 w-4" /> Add Another Document ({docs.length} of
+            max {maxDocuments})
+          </button>
+        ) : (
+          <p className="text-center text-xs text-gray-400">
+            Maximum {maxDocuments} documents reached for this reservation.
+          </p>
+        )}
       </div>
     </div>
   );

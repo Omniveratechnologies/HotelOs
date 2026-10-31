@@ -180,10 +180,13 @@ export default function ExpressCheckInPage() {
 
                   <div className="grid grid-cols-3 gap-3 rounded-xl bg-gray-50 p-3 text-xs">
                     <div>
-                      <span className="block text-gray-500">ID Document:</span>
+                      <span className="block text-gray-500">
+                        ID Verification:
+                      </span>
                       <strong className="text-gray-800">
-                        {currentArrival.idType || "ID Document"} (
-                        {currentArrival.idNumber || "Not recorded"})
+                        {currentArrival.documents?.length > 1
+                          ? `${currentArrival.documents.length} Verified Documents`
+                          : `${currentArrival.idType || "ID Document"} (${currentArrival.idNumber || "Recorded"})`}
                       </strong>
                     </div>
                     <div>

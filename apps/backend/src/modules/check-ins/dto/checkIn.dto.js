@@ -50,11 +50,26 @@ export const checkInSessionDTO = async (session) => {
       : null,
     stepData: session.stepData
       ? {
-          ...session.stepData,
-          idFront: await withUrl(session.stepData.idFront),
-          idBack: await withUrl(session.stepData.idBack),
+          guestName: session.stepData.guestName || "",
+          email: session.stepData.email || "",
+          phone: session.stepData.phone || "",
+          nationality: session.stepData.nationality || "",
+          dateOfBirth: session.stepData.dateOfBirth || "",
+          documents: session.stepData.documents?.length
+            ? await Promise.all(
+                session.stepData.documents.map(async (doc) => ({
+                  idType: doc.idType,
+                  idNumber: doc.idNumber,
+                  front: await withUrl(doc.front),
+                  back: await withUrl(doc.back),
+                })),
+              )
+            : [],
           selfie: await withUrl(session.stepData.selfie),
           signature: await withUrl(session.stepData.signature),
+          preferences: session.stepData.preferences || [],
+          remarks: session.stepData.remarks || "",
+          termsAcceptedAt: session.stepData.termsAcceptedAt || null,
         }
       : null,
     auditTrail: session.auditTrail || [],
@@ -102,11 +117,21 @@ export const publicCheckInSessionDTO = async (session) => {
     },
     stepData: session.stepData
       ? {
-          idType: session.stepData.idType || "",
-          idNumber: session.stepData.idNumber || "",
+          guestName: session.stepData.guestName || "",
+          email: session.stepData.email || "",
+          phone: session.stepData.phone || "",
+          nationality: session.stepData.nationality || "",
           dateOfBirth: session.stepData.dateOfBirth || "",
-          idFront: await withUrl(session.stepData.idFront),
-          idBack: await withUrl(session.stepData.idBack),
+          documents: session.stepData.documents?.length
+            ? await Promise.all(
+                session.stepData.documents.map(async (doc) => ({
+                  idType: doc.idType,
+                  idNumber: doc.idNumber,
+                  front: await withUrl(doc.front),
+                  back: await withUrl(doc.back),
+                })),
+              )
+            : [],
           selfie: await withUrl(session.stepData.selfie),
           signature: await withUrl(session.stepData.signature),
           preferences: session.stepData.preferences || [],

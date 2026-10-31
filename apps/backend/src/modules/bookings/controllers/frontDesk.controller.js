@@ -41,7 +41,7 @@ export const getArrivals = async (req, res) => {
     const arrivals = await Booking.find(filter)
       .populate(
         "guestId",
-        "name email phone nationality idType idNumber address",
+        "name email phone nationality idType idNumber address documents",
       )
       .populate(
         "roomId",
@@ -73,6 +73,9 @@ export const getArrivals = async (req, res) => {
         address: b.guestId?.address || null,
         idType: b.guestId?.idType || null,
         idNumber: b.guestId?.idNumber || null,
+        documents: b.guestId?.documents || [],
+        adults: b.adults || 1,
+        children: b.children || 0,
         time: b.checkIn
           ? new Date(b.checkIn).toLocaleTimeString([], {
               hour: "2-digit",
@@ -311,6 +314,9 @@ export const checkInBooking = async (req, res) => {
       depositAmount = 0,
       paymentMode = "CASH",
       notes,
+      documents,
+      idType,
+      idNumber,
     } = req.body;
     const hotelId = req.user.hotelId;
 
@@ -370,6 +376,23 @@ export const checkInBooking = async (req, res) => {
 
     const guestUser = await User.findById(booking.guestId).select("name phone");
     const guestName = guestUser?.name || "Valued Guest";
+
+    if (booking.guestId && (Array.isArray(documents) || idType || idNumber)) {
+      const guestUpdates = {};
+      if (idType) guestUpdates.idType = idType;
+      if (idNumber) guestUpdates.idNumber = idNumber;
+      if (Array.isArray(documents) && documents.length > 0) {
+        if (!guestUpdates.idType && documents[0]?.idType) {
+          guestUpdates.idType = documents[0].idType;
+        }
+        if (!guestUpdates.idNumber && documents[0]?.idNumber) {
+          guestUpdates.idNumber = documents[0].idNumber;
+        }
+      }
+      if (Object.keys(guestUpdates).length > 0) {
+        await User.findByIdAndUpdate(booking.guestId, { $set: guestUpdates });
+      }
+    }
 
     await Room.findByIdAndUpdate(targetRoomId, {
       status: "occupied",

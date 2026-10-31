@@ -72,7 +72,7 @@ async function sessionByToken(req, res) {
 // Mutable step payloads the guest may submit.
 const STEP_FIELDS = {
   guest: ["guestName", "email", "phone", "nationality", "dateOfBirth"],
-  id: ["idType", "idNumber", "idFront", "idBack"],
+  id: ["documents"],
   photo: ["selfie"],
   signature: ["signature", "termsAcceptedAt"],
   preferences: ["preferences", "remarks"],
@@ -157,7 +157,63 @@ export const saveCheckInStep = async (req, res) => {
     for (const field of allowed) {
       if (incoming[field] === undefined) continue;
 
-      if (["idFront", "idBack", "selfie", "signature"].includes(field)) {
+      if (field === "documents") {
+        const rawDocs = Array.isArray(incoming.documents)
+          ? incoming.documents
+          : [];
+        const reservation = session.reservationId;
+        const guestCount = Math.max(
+          1,
+          (reservation?.adults || 0) + (reservation?.children || 0) || 1,
+        );
+        const maxAllowed = Math.max(5, 2 * guestCount);
+
+        if (rawDocs.length > maxAllowed) {
+          return res.status(400).json({
+            success: false,
+            message: `A maximum of ${maxAllowed} documents can be uploaded for ${guestCount} guest(s)`,
+          });
+        }
+
+        const sanitizedDocs = [];
+        for (const doc of rawDocs) {
+          if (!doc) continue;
+          const frontRef = sanitizeFileRef(
+            doc.front,
+            session.hotelId,
+            session._id,
+          );
+          if (doc.front && !frontRef) {
+            return res.status(400).json({
+              success: false,
+              message: "Invalid front side document reference",
+            });
+          }
+          const backRef = doc.back
+            ? sanitizeFileRef(doc.back, session.hotelId, session._id)
+            : null;
+          if (doc.back && !backRef) {
+            return res.status(400).json({
+              success: false,
+              message: "Invalid back side document reference",
+            });
+          }
+
+          sanitizedDocs.push({
+            idType: String(doc.idType || "Aadhaar").slice(0, 50),
+            idNumber: String(doc.idNumber || "")
+              .trim()
+              .slice(0, 50),
+            front: frontRef,
+            back: backRef,
+          });
+        }
+
+        session.stepData.documents = sanitizedDocs;
+        continue;
+      }
+
+      if (["selfie", "signature"].includes(field)) {
         const ref = sanitizeFileRef(
           incoming[field],
           session.hotelId,
@@ -226,11 +282,18 @@ export const getCheckInUploadUrls = async (req, res) => {
     const session = await sessionByToken(req, res);
     if (!session) return;
 
+    const reservation = session.reservationId;
+    const guestCount = Math.max(
+      1,
+      (reservation?.adults || 0) + (reservation?.children || 0) || 1,
+    );
+    const maxFiles = Math.max(10, 4 * guestCount);
+
     const files = Array.isArray(req.body.files) ? req.body.files : [];
-    if (!files.length || files.length > 4) {
+    if (!files.length || files.length > maxFiles) {
       return res.status(400).json({
         success: false,
-        message: "Provide 1–4 files",
+        message: `Provide 1–${maxFiles} files`,
       });
     }
 
@@ -291,7 +354,11 @@ export const submitCheckIn = async (req, res) => {
     const d = session.stepData || {};
     const missing = [];
     if (!d.guestName || !d.phone) missing.push("guest");
-    if (!d.idType || !d.idNumber || !d.idFront) missing.push("id");
+    const docs = Array.isArray(d.documents) ? d.documents : [];
+    const hasValidDoc =
+      docs.length > 0 &&
+      docs.every((doc) => doc.idType && doc.idNumber && doc.front);
+    if (!hasValidDoc) missing.push("id");
     if (!d.selfie) missing.push("photo");
     if (!d.signature || !d.termsAcceptedAt) missing.push("signature");
 

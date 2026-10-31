@@ -8,6 +8,7 @@ import {
   Trash2,
   User,
   X,
+  FileText,
 } from "lucide-react";
 import {
   Button,
@@ -18,6 +19,7 @@ import {
   TabsWithCounts,
   FilterBar,
   EmptyState,
+  Modal,
 } from "@hotelos/ui/components";
 import { formatDate, formatTime } from "@hotelos/utils";
 import { useCheckInSessions } from "../hooks/useCheckInSessions.js";
@@ -102,6 +104,7 @@ export default function DigitalCheckInDashboardPage() {
     search: "",
   });
   const [activeTab, setActiveTab] = useState("all");
+  const [selectedSessionForModal, setSelectedSessionForModal] = useState(null);
 
   const { stats, sessions, loading, error, refetch } =
     useCheckInSessions(filters);
@@ -486,12 +489,9 @@ export default function DigitalCheckInDashboardPage() {
                             <Button
                               variant="outline"
                               size="xs"
-                              onClick={() => {
-                                // In a real implementation, this would open a drawer with session details
-                                alert(
-                                  `Viewing session for ${session.guest?.name}`,
-                                );
-                              }}
+                              onClick={() =>
+                                setSelectedSessionForModal(session)
+                              }
                             >
                               <User className="mr-1 h-4 w-4" /> View
                             </Button>
@@ -574,6 +574,192 @@ export default function DigitalCheckInDashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Session Details & KYC Documents Modal */}
+      {selectedSessionForModal && (
+        <Modal
+          isOpen={Boolean(selectedSessionForModal)}
+          onClose={() => setSelectedSessionForModal(null)}
+          title={`Check-in Details — ${selectedSessionForModal.guestName || "Guest"}`}
+          size="lg"
+        >
+          <div className="space-y-5">
+            {/* Guest & Reservation Header Bar */}
+            <div className="grid grid-cols-2 gap-3 rounded-xl bg-gray-50 p-4 text-xs sm:grid-cols-4">
+              <div>
+                <span className="block text-gray-500">Booking Reference</span>
+                <strong className="font-mono text-gray-900">
+                  {selectedSessionForModal.reservationNo || "—"}
+                </strong>
+              </div>
+              <div>
+                <span className="block text-gray-500">Room Assignment</span>
+                <strong className="text-gray-900">
+                  {selectedSessionForModal.room?.roomNumber
+                    ? `Room ${selectedSessionForModal.room.roomNumber}`
+                    : "Unassigned"}
+                </strong>
+              </div>
+              <div>
+                <span className="block text-gray-500">Phone Number</span>
+                <strong className="text-gray-900">
+                  {selectedSessionForModal.guestPhone || "—"}
+                </strong>
+              </div>
+              <div>
+                <span className="block text-gray-500">Session Status</span>
+                <span className="mt-0.5 inline-block">
+                  <StatusChip
+                    variant={
+                      STATUS_CHIP_VARIANTS[selectedSessionForModal.status] ||
+                      "neutral"
+                    }
+                  >
+                    {STATUS_LABELS[selectedSessionForModal.status]}
+                  </StatusChip>
+                </span>
+              </div>
+            </div>
+
+            {/* Uploaded Identity Documents */}
+            <div className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <FileText className="text-brand-600 h-4 w-4" />
+                  <h4 className="text-xs font-bold tracking-wider text-gray-800 uppercase">
+                    Uploaded KYC Documents (
+                    {selectedSessionForModal.stepData?.documents?.length || 0})
+                  </h4>
+                </div>
+                <span className="text-[11px] font-medium text-gray-500">
+                  Front side required · Back side optional
+                </span>
+              </div>
+
+              {selectedSessionForModal.stepData?.documents &&
+              selectedSessionForModal.stepData.documents.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {selectedSessionForModal.stepData.documents.map(
+                    (doc, idx) => (
+                      <div
+                        key={
+                          doc.idNumber
+                            ? `${doc.idType}_${doc.idNumber}_${idx}`
+                            : `doc_${idx}`
+                        }
+                        className="space-y-2 rounded-xl border border-gray-100 bg-gray-50/70 p-3"
+                      >
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
+                          <span className="text-xs font-bold text-gray-900">
+                            {doc.idType}
+                          </span>
+                          <span className="font-mono text-[11px] text-gray-600">
+                            {doc.idNumber || "—"}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                          <div>
+                            <span className="mb-1 block text-[10px] text-gray-500">
+                              Front Side
+                            </span>
+                            {doc.front?.url ? (
+                              <a
+                                href={doc.front.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group block h-20 w-full overflow-hidden rounded-lg border border-gray-200 bg-white"
+                              >
+                                <img
+                                  src={doc.front.url}
+                                  alt={`${doc.idType} Front`}
+                                  className="h-full w-full object-cover transition group-hover:scale-105"
+                                />
+                              </a>
+                            ) : (
+                              <div className="flex h-20 w-full items-center justify-center rounded-lg border border-dashed border-gray-200 bg-white text-[10px] text-gray-400">
+                                No Front Image
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <span className="mb-1 block text-[10px] text-gray-500">
+                              Back Side
+                            </span>
+                            {doc.back?.url ? (
+                              <a
+                                href={doc.back.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group block h-20 w-full overflow-hidden rounded-lg border border-gray-200 bg-white"
+                              >
+                                <img
+                                  src={doc.back.url}
+                                  alt={`${doc.idType} Back`}
+                                  className="h-full w-full object-cover transition group-hover:scale-105"
+                                />
+                              </a>
+                            ) : (
+                              <div className="flex h-20 w-full items-center justify-center rounded-lg border border-dashed border-gray-200 bg-white text-[10px] text-gray-400">
+                                Not Provided (Optional)
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <p className="py-4 text-center text-xs text-gray-400">
+                  No identity documents uploaded in this check-in session.
+                </p>
+              )}
+            </div>
+
+            {/* Selfie & Signature */}
+            {(selectedSessionForModal.stepData?.selfie?.url ||
+              selectedSessionForModal.stepData?.signature?.url) && (
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {selectedSessionForModal.stepData?.selfie?.url && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-3 text-center">
+                    <span className="mb-1 block text-xs font-bold text-gray-700">
+                      Guest Live Photo
+                    </span>
+                    <img
+                      src={selectedSessionForModal.stepData.selfie.url}
+                      alt="Guest Selfie"
+                      className="mx-auto h-20 w-20 rounded-full border border-gray-200 object-cover"
+                    />
+                  </div>
+                )}
+                {selectedSessionForModal.stepData?.signature?.url && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-3 text-center">
+                    <span className="mb-1 block text-xs font-bold text-gray-700">
+                      Digital Signature
+                    </span>
+                    <img
+                      src={selectedSessionForModal.stepData.signature.url}
+                      alt="Guest Signature"
+                      className="mx-auto h-20 w-full rounded-lg border border-gray-100 bg-gray-50 object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end border-t border-gray-100 pt-3">
+              <Button
+                variant="secondary"
+                onClick={() => setSelectedSessionForModal(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

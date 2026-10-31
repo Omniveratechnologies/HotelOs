@@ -287,6 +287,132 @@ export default function GuestRegistrationCardPage() {
                   </div>
                 </div>
 
+                {/* Uploaded Identity Documents Gallery */}
+                <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/70 p-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold tracking-wider text-gray-700 uppercase">
+                      Identity &amp; KYC Documents (
+                      {currentReg.stepData?.documents?.length || 0})
+                    </h4>
+                    <span className="text-[11px] font-semibold text-gray-500">
+                      Front side verified · Back side optional
+                    </span>
+                  </div>
+
+                  {currentReg.stepData?.documents &&
+                  currentReg.stepData.documents.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {currentReg.stepData.documents.map((doc, idx) => (
+                        <div
+                          key={
+                            doc.idNumber
+                              ? `${doc.idType}_${doc.idNumber}_${idx}`
+                              : `doc_${idx}`
+                          }
+                          className="space-y-2 rounded-xl border border-gray-200 bg-white p-3 shadow-2xs"
+                        >
+                          <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                            <span className="text-xs font-bold text-gray-900">
+                              {doc.idType || "ID Document"}
+                            </span>
+                            <span className="font-mono text-[11px] text-gray-600">
+                              {doc.idNumber || "—"}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-center">
+                            {/* Front Image */}
+                            <div className="space-y-1">
+                              <span className="block text-[10px] font-semibold text-gray-500">
+                                Front Side
+                              </span>
+                              {doc.front?.url ? (
+                                <a
+                                  href={doc.front.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="group relative flex h-24 w-full items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50"
+                                >
+                                  <img
+                                    src={doc.front.url}
+                                    alt={`${doc.idType} Front`}
+                                    className="h-full w-full object-cover transition group-hover:scale-105"
+                                  />
+                                </a>
+                              ) : (
+                                <div className="flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-[10px] text-gray-400">
+                                  No Front Image
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Back Image */}
+                            <div className="space-y-1">
+                              <span className="block text-[10px] font-semibold text-gray-500">
+                                Back Side
+                              </span>
+                              {doc.back?.url ? (
+                                <a
+                                  href={doc.back.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="group relative flex h-24 w-full items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50"
+                                >
+                                  <img
+                                    src={doc.back.url}
+                                    alt={`${doc.idType} Back`}
+                                    className="h-full w-full object-cover transition group-hover:scale-105"
+                                  />
+                                </a>
+                              ) : (
+                                <div className="flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-[10px] text-gray-400">
+                                  Not Uploaded (Optional)
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-2 text-center text-xs text-gray-400">
+                      No identity documents submitted with this registration
+                      card.
+                    </p>
+                  )}
+                </div>
+
+                {/* Selfie & Signature Previews */}
+                {(currentReg.stepData?.selfie?.url ||
+                  currentReg.stepData?.signature?.url) && (
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {currentReg.stepData?.selfie?.url && (
+                      <div className="rounded-xl border border-gray-200 bg-white p-3 text-center">
+                        <span className="mb-1 block text-xs font-bold text-gray-700">
+                          Guest Live Photo
+                        </span>
+                        <img
+                          src={currentReg.stepData.selfie.url}
+                          alt="Guest Selfie"
+                          className="mx-auto h-20 w-20 rounded-full border border-gray-200 object-cover"
+                        />
+                      </div>
+                    )}
+                    {currentReg.stepData?.signature?.url && (
+                      <div className="rounded-xl border border-gray-200 bg-white p-3 text-center">
+                        <span className="mb-1 block text-xs font-bold text-gray-700">
+                          Digital Signature
+                        </span>
+                        <img
+                          src={currentReg.stepData.signature.url}
+                          alt="Guest Signature"
+                          className="mx-auto h-20 w-full rounded-lg border border-gray-100 bg-gray-50 object-contain"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
                   <Button

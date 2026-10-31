@@ -12,14 +12,18 @@ import {
 import WelcomeStep from "../components/steps/WelcomeStep";
 import BookingStep from "../components/steps/BookingStep";
 import GuestStep from "../components/steps/GuestStep";
-import CaptureIdStep, { type IdValue } from "../components/steps/CaptureIdStep";
+import CaptureIdStep from "../components/steps/CaptureIdStep";
 import PhotoStep from "../components/steps/PhotoStep";
 import RegistrationCardStep from "../components/steps/RegistrationCardStep";
 import SignatureStep from "../components/steps/SignatureStep";
 import PreferencesStep from "../components/steps/PreferencesStep";
 import ReviewStep from "../components/steps/ReviewStep";
 import SuccessStep from "../components/steps/SuccessStep";
-import type { CheckInSessionData, FileRef } from "../types/checkIn.types";
+import type {
+  CheckInSessionData,
+  FileRef,
+  IdDocumentItem,
+} from "../types/checkIn.types";
 
 const STEP_COUNT = 10;
 
@@ -53,12 +57,14 @@ export default function SelfCheckInPage() {
     nationality: "",
   });
 
-  const [id, setId] = useState<IdValue>({
-    idType: "Aadhaar",
-    idNumber: "",
-    idFront: null,
-    idBack: null,
-  });
+  const [documents, setDocuments] = useState<IdDocumentItem[]>([
+    {
+      idType: "Aadhaar",
+      idNumber: "",
+      front: null,
+      back: null,
+    },
+  ]);
 
   const [selfie, setSelfie] = useState<
     (FileRef & { previewUrl?: string; file?: File }) | null
@@ -103,16 +109,25 @@ export default function SelfCheckInPage() {
           nationality: sd.nationality || data.guest?.nationality || "",
         });
 
-        setId({
-          idType: sd.idType || "Aadhaar",
-          idNumber: sd.idNumber || "",
-          idFront: sd.idFront
-            ? { ...sd.idFront, previewUrl: sd.idFront.url }
-            : null,
-          idBack: sd.idBack
-            ? { ...sd.idBack, previewUrl: sd.idBack.url }
-            : null,
-        });
+        if (Array.isArray(sd.documents) && sd.documents.length > 0) {
+          setDocuments(
+            sd.documents.map((d) => ({
+              idType: d.idType || "Aadhaar",
+              idNumber: d.idNumber || "",
+              front: d.front ? { ...d.front, previewUrl: d.front.url } : null,
+              back: d.back ? { ...d.back, previewUrl: d.back.url } : null,
+            })),
+          );
+        } else {
+          setDocuments([
+            {
+              idType: "Aadhaar",
+              idNumber: "",
+              front: null,
+              back: null,
+            },
+          ]);
+        }
 
         setSelfie(
           sd.selfie ? { ...sd.selfie, previewUrl: sd.selfie.url } : null,
@@ -159,7 +174,10 @@ export default function SelfCheckInPage() {
       case 2:
         return Boolean(guestName.trim() && guestPhone.trim());
       case 3:
-        return Boolean(id.idNumber.trim()) && Boolean(id.idFront);
+        return (
+          documents.length > 0 &&
+          documents.every((d) => Boolean(d.idNumber.trim()) && Boolean(d.front))
+        );
       case 4:
         return Boolean(selfie);
       case 5:
@@ -172,16 +190,7 @@ export default function SelfCheckInPage() {
       default:
         return false;
     }
-  }, [
-    step,
-    guestName,
-    guestPhone,
-    id.idNumber,
-    id.idFront,
-    selfie,
-    signature,
-    terms,
-  ]);
+  }, [step, guestName, guestPhone, documents, selfie, signature, terms]);
 
   const saveStep = useCallback(async () => {
     if (!token) return false;
@@ -199,24 +208,26 @@ export default function SelfCheckInPage() {
           break;
         case 3:
           Object.assign(payload, {
-            idType: id.idType,
-            idNumber: id.idNumber.trim(),
-            idFront: id.idFront
-              ? {
-                  key: id.idFront.key,
-                  filename: id.idFront.filename,
-                  mimeType: id.idFront.mimeType,
-                  size: id.idFront.size,
-                }
-              : null,
-            idBack: id.idBack
-              ? {
-                  key: id.idBack.key,
-                  filename: id.idBack.filename,
-                  mimeType: id.idBack.mimeType,
-                  size: id.idBack.size,
-                }
-              : null,
+            documents: documents.map((d) => ({
+              idType: d.idType,
+              idNumber: d.idNumber.trim(),
+              front: d.front
+                ? {
+                    key: d.front.key,
+                    filename: d.front.filename,
+                    mimeType: d.front.mimeType,
+                    size: d.front.size,
+                  }
+                : null,
+              back: d.back
+                ? {
+                    key: d.back.key,
+                    filename: d.back.filename,
+                    mimeType: d.back.mimeType,
+                    size: d.back.size,
+                  }
+                : null,
+            })),
           });
           break;
         case 4:
@@ -259,7 +270,7 @@ export default function SelfCheckInPage() {
       setStepError(msg);
       return false;
     }
-  }, [token, step, guest, id, selfie, signature, terms, prefs, remarks]);
+  }, [token, step, guest, documents, selfie, signature, terms, prefs, remarks]);
 
   const onContinue = async () => {
     setActionError("");
@@ -268,7 +279,9 @@ export default function SelfCheckInPage() {
     if (!canContinue) {
       if (step === 2) setStepError("Please fill guest name and phone.");
       else if (step === 3)
-        setStepError("Please complete ID details and photo.");
+        setStepError(
+          "Please complete ID number and front side for all documents.",
+        );
       else if (step === 4) setStepError("Please capture or upload a photo.");
       else if (step === 6) setStepError("Please sign and accept the terms.");
       return;
@@ -298,21 +311,64 @@ export default function SelfCheckInPage() {
     setStep((s) => Math.max(0, s - 1));
   };
 
-  const onIdFile = async (kind: "idFront" | "idBack", file: File) => {
-    if (!token) return;
-    setUploading(true);
-    setStepError("");
-    try {
-      const ref = await uploadCheckInFile(token, file);
-      const entry = { ...ref, previewUrl: URL.createObjectURL(file) };
-      setId((s) => ({ ...s, [kind]: entry }));
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Upload failed";
-      setStepError(msg);
-    } finally {
-      setUploading(false);
-    }
-  };
+  const guestCount = Math.max(
+    1,
+    (booking?.guests?.adults || booking?.adults || 1) +
+      (booking?.guests?.children || booking?.children || 0),
+  );
+  const maxDocuments = Math.max(5, 2 * guestCount);
+
+  const onAddDocument = useCallback(() => {
+    setDocuments((prev) => {
+      if (prev.length >= maxDocuments) return prev;
+      return [
+        ...prev,
+        {
+          idType: "Aadhaar",
+          idNumber: "",
+          front: null,
+          back: null,
+        },
+      ];
+    });
+  }, [maxDocuments]);
+
+  const onRemoveDocument = useCallback((index: number) => {
+    setDocuments((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const onDocumentChange = useCallback(
+    (index: number, field: keyof IdDocumentItem, val: unknown) => {
+      setDocuments((prev) =>
+        prev.map((doc, i) => (i === index ? { ...doc, [field]: val } : doc)),
+      );
+    },
+    [],
+  );
+
+  const onDocumentFile = useCallback(
+    async (index: number, side: "front" | "back", file: File) => {
+      if (!token) return;
+      setUploading(true);
+      setStepError("");
+      try {
+        const ref = await uploadCheckInFile(token, file);
+        const entry = { ...ref, previewUrl: URL.createObjectURL(file) };
+        setDocuments((prev) =>
+          prev.map((doc, i) => (i === index ? { ...doc, [side]: entry } : doc)),
+        );
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Upload failed";
+        setStepError(msg);
+      } finally {
+        setUploading(false);
+      }
+    },
+    [token],
+  );
 
   const onPhotoCapture = async (file: File) => {
     if (!token) return;
@@ -461,10 +517,14 @@ export default function SelfCheckInPage() {
               )}
               {step === 3 && (
                 <CaptureIdStep
-                  value={id}
-                  onChange={(f, v) => setId((s) => ({ ...s, [f]: v }))}
-                  onFile={onIdFile}
+                  documents={documents}
+                  onAddDocument={onAddDocument}
+                  onRemoveDocument={onRemoveDocument}
+                  onDocumentChange={onDocumentChange}
+                  onDocumentFile={onDocumentFile}
                   uploading={uploading}
+                  maxDocuments={maxDocuments}
+                  guestCount={guestCount}
                 />
               )}
               {step === 4 && (
@@ -478,7 +538,7 @@ export default function SelfCheckInPage() {
                 <RegistrationCardStep
                   booking={booking}
                   guest={guestData}
-                  stepData={session?.stepData}
+                  stepData={{ ...session?.stepData, documents }}
                 />
               )}
               {step === 6 && (
@@ -522,8 +582,10 @@ export default function SelfCheckInPage() {
                       },
                       {
                         key: "id",
-                        label: "ID Verification",
-                        done: Boolean(id.idNumber && id.idFront),
+                        label: `Identity Documents (${documents.length} verified)`,
+                        done:
+                          documents.length > 0 &&
+                          documents.every((d) => d.idNumber.trim() && d.front),
                         step: 3,
                       },
                       {

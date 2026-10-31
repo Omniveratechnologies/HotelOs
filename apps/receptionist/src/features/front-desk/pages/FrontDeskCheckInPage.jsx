@@ -40,15 +40,33 @@ function CheckInForm({
   onEditGuest,
   onCancel,
 }) {
+  const guestCount = Math.max(
+    1,
+    arrival.guests || (arrival.adults || 1) + (arrival.children || 0) || 1,
+  );
+  const maxDocuments = Math.max(5, 2 * guestCount);
+
   const [selectedRoomId, setSelectedRoomId] = useState(arrival.roomId || "");
   const [keyCardNumber, setKeyCardNumber] = useState("");
   const [deposit, setDeposit] = useState(cleanField(arrival.deposit));
-  const [idType, setIdType] = useState(cleanField(arrival.idType) || "Aadhaar");
-  const [idNumber, setIdNumber] = useState(cleanField(arrival.idNumber));
-  const [idFrontImage, setIdFrontImage] = useState(
-    arrival.idFrontImage || null,
-  );
-  const [idBackImage, setIdBackImage] = useState(arrival.idBackImage || null);
+  const [documents, setDocuments] = useState(() => {
+    if (arrival.documents && arrival.documents.length > 0) {
+      return arrival.documents.map((d) => ({
+        idType: d.docType || d.idType || "Aadhaar",
+        idNumber: d.idNumber || arrival.idNumber || "",
+        frontImage: d.frontImage || d.url || null,
+        backImage: d.backImage || null,
+      }));
+    }
+    return [
+      {
+        idType: cleanField(arrival.idType) || "Aadhaar",
+        idNumber: cleanField(arrival.idNumber),
+        frontImage: null,
+        backImage: null,
+      },
+    ];
+  });
   const [isIdVerified, setIsIdVerified] = useState(Boolean(arrival.idVerified));
   const [signatureImage, setSignatureImage] = useState(
     arrival.signatureImage || null,
@@ -74,8 +92,9 @@ function CheckInForm({
       notes: isProvisional
         ? "Provisional hold reconfirmed and checked in at Front Desk."
         : "Front desk manual check-in verification completed.",
-      idType,
-      idNumber,
+      idType: documents[0]?.idType || "Aadhaar",
+      idNumber: documents[0]?.idNumber || "",
+      documents,
       isIdVerified,
       signatureImage,
     });
@@ -103,16 +122,12 @@ function CheckInForm({
 
       {/* 2. Identity Verification Console */}
       <IdVerificationConsole
-        idType={idType}
-        onIdTypeChange={setIdType}
-        idNumber={idNumber}
-        onIdNumberChange={setIdNumber}
-        frontImage={idFrontImage}
-        onFrontImageChange={setIdFrontImage}
-        backImage={idBackImage}
-        onBackImageChange={setIdBackImage}
+        documents={documents}
+        onDocumentsChange={setDocuments}
         isVerified={isIdVerified}
         onToggleVerified={setIsIdVerified}
+        maxDocuments={maxDocuments}
+        guestCount={guestCount}
       />
 
       {/* 3. Room Assignment Selector */}
