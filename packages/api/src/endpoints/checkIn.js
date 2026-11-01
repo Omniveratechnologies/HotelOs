@@ -1,6 +1,22 @@
 import { api } from "../apiFetch.js";
 
 /**
+ * Creates and sends a digital self-check-in link via email to the guest.
+ * @param {{ reservationId: string, email?: string, message?: string }} payload
+ * @returns {Promise<Object>}
+ */
+export const sendCheckInLink = async ({ reservationId, email, message }) => {
+  const result = await api.post(
+    "/api/v1/check-in/links",
+    { reservationId, email, message },
+    {
+      auth: true,
+    },
+  );
+  return result.data;
+};
+
+/**
  * Fetches check-in sessions with filters.
  * @param {Object} filters - { dateRange?, source?, roomType?, status?, search?, page?, limit? }
  * @returns {Promise<{sessions: Array, stats: Object, pagination: Object}>}

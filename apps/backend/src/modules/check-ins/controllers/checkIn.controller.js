@@ -1,5 +1,6 @@
 import Booking from "#/modules/bookings/models/Booking.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
+import User from "#/modules/users/models/User.js";
 import CheckInSession, { CHECKIN_STATUSES } from "../models/CheckInSession.js";
 import { checkInSessionDTO } from "../dto/checkIn.dto.js";
 import { createSessionToken, hashToken } from "../services/token.service.js";
@@ -35,7 +36,7 @@ async function loadReservation(req, id) {
 
 export const createCheckInLink = async (req, res) => {
   try {
-    const { reservationId, message } = req.body;
+    const { reservationId, message, email: customEmail } = req.body;
 
     const reservation = await loadReservation(req, reservationId);
     if (!reservation) {
@@ -52,13 +53,36 @@ export const createCheckInLink = async (req, res) => {
     }
 
     const guestEmail =
-      reservation.guestId?.email || reservation.populated("guestId")?.email;
+      customEmail?.trim() ||
+      reservation.guestId?.email ||
+      reservation.email ||
+      null;
+
     if (!guestEmail) {
       return res.status(400).json({
         success: false,
         message:
-          "Notification could not be shared — the reservation has no email on file",
+          "Notification could not be shared — the reservation has no email on file. Please enter an email address.",
       });
+    }
+
+    // Persist email to guest record if guest had no email
+    if (
+      customEmail?.trim() &&
+      reservation.guestId &&
+      !reservation.guestId.email
+    ) {
+      try {
+        await User.findByIdAndUpdate(
+          reservation.guestId._id || reservation.guestId,
+          { $set: { email: customEmail.trim() } },
+        );
+      } catch (err) {
+        logger.warn(
+          err,
+          "Failed to persist guest email during check-in link creation",
+        );
+      }
     }
 
     // Reuse an open session for the same reservation, else create one.
