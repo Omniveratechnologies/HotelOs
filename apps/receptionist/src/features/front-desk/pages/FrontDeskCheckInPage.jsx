@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
   Header,
@@ -10,7 +10,7 @@ import {
 import { Users, CheckCircle2, Clock, Key, ArrowRight } from "lucide-react";
 import {
   ArrivalsQueue,
-  GuestDetailsCard,
+  ReservationOverviewCard,
   IdVerificationConsole,
   CleanRoomSelector,
   ChargesDepositCard,
@@ -47,9 +47,159 @@ function CheckInForm({
   );
   const maxDocuments = Math.max(5, 2 * guestCount);
 
-  const [selectedRoomId, setSelectedRoomId] = useState(
-    arrival.roomId || initialRoomId || "",
+  const targetRoomsCount = Math.max(
+    1,
+    arrival.roomsCount ||
+      arrival.rooms ||
+      arrival.roomRequirements?.reduce((sum, r) => sum + (r.rooms || 0), 0) ||
+      arrival.roomAllocations?.length ||
+      1,
   );
+
+  // Group and partition available clean rooms strictly by booked room types
+  const typeBlocks = useMemo(() => {
+    if (!arrival) return [];
+    let raw = [];
+    if (
+      Array.isArray(arrival.roomRequirements) &&
+      arrival.roomRequirements.length > 0
+    ) {
+      raw = arrival.roomRequirements.map((r, idx) => ({
+        id: `req-${idx}-${String(r.roomTypeCode || "").toLowerCase()}`,
+        roomTypeCode: String(r.roomTypeCode || "")
+          .toLowerCase()
+          .trim(),
+        roomTypeName: String(r.roomTypeCode || "").toUpperCase(),
+        requiredCount: Number(r.rooms) || 1,
+      }));
+    } else if (
+      Array.isArray(arrival.roomAllocations) &&
+      arrival.roomAllocations.length > 0
+    ) {
+      const typeMap = new Map();
+      arrival.roomAllocations.forEach((alloc) => {
+        const code = String(
+          alloc.roomTypeCode || arrival.roomTypeCode || "standard",
+        )
+          .toLowerCase()
+          .trim();
+        typeMap.set(code, (typeMap.get(code) || 0) + 1);
+      });
+      raw = Array.from(typeMap.entries()).map(([code, count], idx) => ({
+        id: `alloc-${idx}-${code}`,
+        roomTypeCode: code,
+        roomTypeName: code.toUpperCase(),
+        requiredCount: count,
+      }));
+    } else {
+      const code = String(arrival.roomTypeCode || "standard")
+        .toLowerCase()
+        .trim();
+      raw = [
+        {
+          id: `block-0-${code}`,
+          roomTypeCode: code,
+          roomTypeName: code.toUpperCase(),
+          requiredCount: targetRoomsCount,
+        },
+      ];
+    }
+
+    // Filter available clean rooms strictly matching each block's room type
+    return raw.map((b) => {
+      const availableRooms = cleanRooms.filter((rm) => {
+        const rmCode = String(rm.roomCode || "")
+          .toLowerCase()
+          .trim();
+        const rmType = String(rm.type || "")
+          .toLowerCase()
+          .trim();
+        return rmCode === b.roomTypeCode || rmType === b.roomTypeCode;
+      });
+      return Object.assign({}, b, { availableRooms });
+    });
+  }, [arrival, cleanRooms, targetRoomsCount]);
+
+  const computeInitialRoomIds = useCallback(() => {
+    const selected = [];
+    const preAssignedIds = [
+      ...(initialRoomId ? [String(initialRoomId)] : []),
+      ...(arrival.roomId ? [String(arrival.roomId)] : []),
+      ...(arrival.assignedRoomIds || []),
+      ...(Array.isArray(arrival.roomAllocations)
+        ? arrival.roomAllocations
+            .map((a) =>
+              a.roomId?._id
+                ? String(a.roomId._id)
+                : a.roomId
+                  ? String(a.roomId)
+                  : null,
+            )
+            .filter(Boolean)
+        : []),
+    ];
+    const preAssignedIdSet = new Set(preAssignedIds);
+
+    for (const block of typeBlocks) {
+      const blockSelected = [];
+      // 1. Pick pre-assigned rooms for this block
+      for (const rm of block.availableRooms) {
+        if (blockSelected.length >= block.requiredCount) break;
+        if (preAssignedIdSet.has(rm.id) && !selected.includes(rm.id)) {
+          blockSelected.push(rm.id);
+          selected.push(rm.id);
+        }
+      }
+      // 2. Pick first available clean rooms of this type to fulfill quota
+      for (const rm of block.availableRooms) {
+        if (blockSelected.length >= block.requiredCount) break;
+        if (!selected.includes(rm.id)) {
+          blockSelected.push(rm.id);
+          selected.push(rm.id);
+        }
+      }
+    }
+
+    return selected;
+  }, [arrival, initialRoomId, typeBlocks]);
+
+  const [userSelectedRoomIds, setUserSelectedRoomIds] = useState(null);
+
+  const defaultRoomIds = useMemo(
+    () => computeInitialRoomIds(),
+    [computeInitialRoomIds],
+  );
+
+  const selectedRoomIds = userSelectedRoomIds ?? defaultRoomIds;
+
+  const handleToggleRoom = (roomId, blockId) => {
+    const block =
+      typeBlocks.find((b) => b.id === blockId) ||
+      typeBlocks.find((b) => b.availableRooms.some((r) => r.id === roomId)) ||
+      typeBlocks[0];
+
+    if (!block) return;
+
+    const blockRoomIdSet = new Set(block.availableRooms.map((r) => r.id));
+    const currentInBlock = selectedRoomIds.filter((id) =>
+      blockRoomIdSet.has(id),
+    );
+    const isAlreadySelected = selectedRoomIds.includes(roomId);
+
+    let next;
+    if (isAlreadySelected) {
+      next = selectedRoomIds.filter((id) => id !== roomId);
+    } else if (currentInBlock.length < block.requiredCount) {
+      next = [...selectedRoomIds, roomId];
+    } else {
+      const lastSelectedInBlock = currentInBlock[currentInBlock.length - 1];
+      next = selectedRoomIds.map((id) =>
+        id === lastSelectedInBlock ? roomId : id,
+      );
+    }
+    setUserSelectedRoomIds(next);
+  };
+
   const [keyCardNumber, setKeyCardNumber] = useState("");
   const [deposit, setDeposit] = useState(cleanField(arrival.deposit));
   const [documents, setDocuments] = useState(() => {
@@ -81,14 +231,31 @@ function CheckInForm({
   const isDepositDue = arrival.paymentStatus === "unpaid";
 
   const handleSubmit = () => {
-    const assignedRoom = selectedRoomId || arrival.roomId;
-    if (!assignedRoom) {
-      onCheckIn(null, "Please select a clean room before completing check-in.");
+    // Validate each type block quota
+    for (const block of typeBlocks) {
+      const selectedInBlock = block.availableRooms.filter((r) =>
+        selectedRoomIds.includes(r.id),
+      );
+      if (selectedInBlock.length < block.requiredCount) {
+        onCheckIn(
+          null,
+          `Please select ${block.requiredCount} ${block.roomTypeName} room(s) (${selectedInBlock.length}/${block.requiredCount} selected).`,
+        );
+        return;
+      }
+    }
+
+    if (selectedRoomIds.length < targetRoomsCount) {
+      onCheckIn(
+        null,
+        `Please select all ${targetRoomsCount} rooms for this reservation (${selectedRoomIds.length}/${targetRoomsCount} selected).`,
+      );
       return;
     }
 
     onCheckIn({
-      roomId: assignedRoom,
+      roomId: selectedRoomIds[0],
+      roomIds: selectedRoomIds,
       keyCardNumber: keyCardNumber || undefined,
       depositAmount: Number(deposit) || 0,
       paymentMode,
@@ -103,11 +270,14 @@ function CheckInForm({
     });
   };
 
+  const assignedRoomNumbers = cleanRooms
+    .filter((r) => selectedRoomIds.includes(r.id))
+    .map((r) => `Room ${r.roomNumber}`);
+
   const assignedRoomDisplay =
-    cleanRooms.find((r) => r.id === (selectedRoomId || arrival.roomId))
-      ?.roomNumber ||
-    arrival.room ||
-    "Unassigned";
+    assignedRoomNumbers.length > 0
+      ? assignedRoomNumbers.join(", ")
+      : arrival.room || "Unassigned";
 
   return (
     <>
@@ -120,8 +290,8 @@ function CheckInForm({
         </InlineBanner>
       )}
 
-      {/* 1. Guest Profile Details with Edit Option */}
-      <GuestDetailsCard guest={arrival} onEditClick={onEditGuest} />
+      {/* 1. Full Reservation Overview Card */}
+      <ReservationOverviewCard arrival={arrival} onEditClick={onEditGuest} />
 
       {/* 2. Identity Verification Console */}
       <IdVerificationConsole
@@ -133,23 +303,32 @@ function CheckInForm({
         guestCount={guestCount}
       />
 
-      {/* 3. Room Assignment Selector */}
+      {/* 3. Type-Filtered Room Assignment Selector */}
       <CleanRoomSelector
-        rooms={cleanRooms}
-        selectedRoomId={selectedRoomId || arrival.roomId}
-        onSelectRoom={(id) => setSelectedRoomId(id)}
+        typeBlocks={typeBlocks}
+        selectedRoomIds={selectedRoomIds}
+        onToggleRoom={handleToggleRoom}
+        targetRoomsCount={targetRoomsCount}
       />
 
       {/* 4. Key Card Number Assignment Input */}
       <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
         <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-gray-700 uppercase">
           <Key className="text-brand-600 h-4 w-4" />
-          <span>Issue RFID Key Card (Optional)</span>
+          <span>
+            {targetRoomsCount > 1
+              ? `Issue RFID Key Cards (${targetRoomsCount} Rooms)`
+              : "Issue RFID Key Card (Optional)"}
+          </span>
         </div>
         <div className="flex gap-3">
           <input
             type="text"
-            placeholder="e.g. RC-2026-1001"
+            placeholder={
+              targetRoomsCount > 1
+                ? "e.g. RC-1001, RC-1002 (comma-separated)"
+                : "e.g. RC-2026-1001"
+            }
             value={keyCardNumber}
             onChange={(e) => setKeyCardNumber(e.target.value)}
             className="focus:border-brand-500 w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-sm focus:outline-none"
@@ -157,8 +336,15 @@ function CheckInForm({
           <button
             type="button"
             onClick={() => {
-              const randomNum = Math.floor(1000 + Math.random() * 9000);
-              setKeyCardNumber(`RC-2026-${randomNum}`);
+              if (targetRoomsCount > 1 && selectedRoomIds.length > 0) {
+                const cards = selectedRoomIds.map(
+                  () => `RC-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+                );
+                setKeyCardNumber(cards.join(", "));
+              } else {
+                const randomNum = Math.floor(1000 + Math.random() * 9000);
+                setKeyCardNumber(`RC-2026-${randomNum}`);
+              }
             }}
             className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold whitespace-nowrap text-gray-700 hover:bg-gray-200"
           >
@@ -186,8 +372,19 @@ function CheckInForm({
       {/* Action Bar */}
       <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs sm:flex-row">
         <div className="text-xs text-gray-500">
-          Room assigned:{" "}
+          Room(s) assigned:{" "}
           <strong className="text-gray-900">{assignedRoomDisplay}</strong>
+          {targetRoomsCount > 1 && (
+            <span
+              className={`ml-2 inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
+                selectedRoomIds.length === targetRoomsCount
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-amber-50 text-amber-800"
+              }`}
+            >
+              {selectedRoomIds.length}/{targetRoomsCount} Selected
+            </span>
+          )}
           {isProvisional && (
             <span className="ml-2 inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">
               Hold will be confirmed upon check-in
@@ -250,10 +447,10 @@ export default function FrontDeskCheckInPage() {
       getArrivalsQueue(urlBookingId ? { bookingId: urlBookingId } : {}),
   });
 
-  // Fetch available clean rooms
+  // Fetch all clean/available rooms
   const { data: roomsData } = useQuery({
-    queryKey: ["rooms", "clean-available"],
-    queryFn: () => getRooms({ status: "available" }),
+    queryKey: ["rooms", "all"],
+    queryFn: () => getRooms(),
   });
 
   // Fetch live front desk operational stats
@@ -263,25 +460,6 @@ export default function FrontDeskCheckInPage() {
   });
 
   const arrivals = arrivalsData || EMPTY_ARRIVALS;
-  // Map clean vacant rooms for assignment.
-  // Note: Backend roomResponseDTO transforms MongoDB `_id` to `id`. Using `r.id || r._id` ensures
-  // valid room IDs are passed to CleanRoomSelector so radio buttons and card clicks operate correctly.
-  const cleanRooms = (roomsData?.rooms || roomsData || [])
-    .filter((r) => !r.status || r.status === "available")
-    .map((r) => ({
-      id: r.id || r._id,
-      roomNumber: String(r.roomNumber),
-      floor: r.floor || 1,
-      view: r.type || "City View",
-    }));
-  const stats = statsData || {
-    pendingArrivals: 0,
-    checkedInToday: 0,
-    departuresDue: 0,
-    checkedOutToday: 0,
-    activeKeysCount: 0,
-    overstayCount: 0,
-  };
 
   // Resolve current arrival based on selectedArrivalId, urlBookingId, urlRoomId, urlGuest, or fallback to first
   const currentArrival = useMemo(() => {
@@ -318,6 +496,63 @@ export default function FrontDeskCheckInPage() {
 
     return arrivals[0] || null;
   }, [arrivals, selectedArrivalId, urlBookingId, urlRoomId, urlGuest]);
+
+  const assignedRoomIds = useMemo(() => {
+    if (!currentArrival) return [];
+    const ids = [];
+    if (currentArrival.roomId) ids.push(String(currentArrival.roomId));
+    if (Array.isArray(currentArrival.assignedRoomIds)) {
+      currentArrival.assignedRoomIds.forEach((id) => ids.push(String(id)));
+    }
+    if (Array.isArray(currentArrival.roomAllocations)) {
+      currentArrival.roomAllocations.forEach((a) => {
+        const rId = a.roomId?._id || a.roomId;
+        if (rId) ids.push(String(rId));
+      });
+    }
+    return Array.from(new Set(ids));
+  }, [currentArrival]);
+
+  // Map clean vacant rooms + rooms already assigned to this booking
+  const cleanRooms = useMemo(() => {
+    const rawList = Array.isArray(roomsData?.rooms)
+      ? roomsData.rooms
+      : Array.isArray(roomsData)
+        ? roomsData
+        : [];
+
+    return rawList
+      .filter((r) => {
+        const id = String(r.id || r._id);
+        const isAssignedToThisArrival = assignedRoomIds.includes(id);
+        const isAvailable = !r.status || r.status === "available";
+        return isAvailable || isAssignedToThisArrival;
+      })
+      .map((r) => {
+        const id = String(r.id || r._id);
+        const isAssignedToThisArrival = assignedRoomIds.includes(id);
+        return {
+          id,
+          roomNumber: String(r.roomNumber),
+          floor: r.floor || 1,
+          view: r.type || "Standard",
+          type: r.type || "Standard",
+          roomCode: String(r.roomCode || r.type || "").toLowerCase(),
+          rate: r.rate || 0,
+          status: r.status || "available",
+          isPreAssigned: isAssignedToThisArrival,
+        };
+      });
+  }, [roomsData, assignedRoomIds]);
+
+  const stats = statsData || {
+    pendingArrivals: 0,
+    checkedInToday: 0,
+    departuresDue: 0,
+    checkedOutToday: 0,
+    activeKeysCount: 0,
+    overstayCount: 0,
+  };
 
   const handleSelectArrival = (arr) => {
     if (!arr) return;

@@ -31,10 +31,22 @@ export function RoomRequirementsMatrix({
   targetRooms,
   title = "Room Type Matrix",
   compact = false,
+  error,
 }) {
+  const totalRooms = roomRequirements.reduce(
+    (acc, r) => acc + Number(r.rooms || 0),
+    0,
+  );
+  const remainingRooms = Math.max(
+    1,
+    targetRooms != null && targetRooms > totalRooms
+      ? targetRooms - totalRooms
+      : 1,
+  );
+
   const [newReq, setNewReq] = useState({
     roomTypeCode: "",
-    rooms: 1,
+    rooms: remainingRooms,
     adultsPerRoom: 2,
     childrenPerRoom: 0,
     notes: "",
@@ -58,11 +70,18 @@ export function RoomRequirementsMatrix({
       notes: newReq.notes?.trim() || "",
     };
 
-    onChange?.([...roomRequirements, addedBlock]);
+    const nextReqs = [...roomRequirements, addedBlock];
+    onChange?.(nextReqs);
+
+    const nextTotal = nextReqs.reduce(
+      (acc, r) => acc + Number(r.rooms || 0),
+      0,
+    );
+    const nextRemaining = Math.max(1, (targetRooms || 1) - nextTotal);
 
     setNewReq({
       roomTypeCode: effectiveTypeCode,
-      rooms: 1,
+      rooms: nextRemaining,
       adultsPerRoom: 2,
       childrenPerRoom: 0,
       notes: "",
@@ -75,10 +94,6 @@ export function RoomRequirementsMatrix({
     onChange?.(next);
   };
 
-  const totalRooms = roomRequirements.reduce(
-    (acc, r) => acc + Number(r.rooms || 0),
-    0,
-  );
   const totalGuests = roomRequirements.reduce(
     (acc, r) => acc + Number(r.rooms || 0) * Number(r.adultsPerRoom || 1),
     0,
@@ -127,6 +142,13 @@ export function RoomRequirementsMatrix({
           </div>
         )}
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+          <span>{error}</span>
+        </div>
+      )}
 
       {/* Matrix Table */}
       <div className="overflow-x-auto rounded-xl border border-gray-200">

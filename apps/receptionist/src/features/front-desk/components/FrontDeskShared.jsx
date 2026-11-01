@@ -9,6 +9,10 @@ import {
   Plus,
   Trash2,
   FileText,
+  Calendar,
+  Users,
+  CreditCard,
+  BedDouble,
 } from "lucide-react";
 import { Button, Input } from "@hotelos/ui/components";
 import { formatCurrency } from "@hotelos/utils";
@@ -584,57 +588,174 @@ export function IdVerificationConsole({
  * Clean Room Assignment list (Screen 10)
  */
 export function CleanRoomSelector({
-  rooms = [],
+  typeBlocks = EMPTY_BLOCKS,
+  selectedRoomIds = EMPTY_ROOM_IDS,
+  onToggleRoom,
+  targetRoomsCount = 1,
+  rooms = EMPTY_ROOMS,
   selectedRoomId,
   onSelectRoom,
 }) {
+  const activeIds = (
+    Array.isArray(selectedRoomIds) && selectedRoomIds.length > 0
+      ? selectedRoomIds
+      : selectedRoomId
+        ? [selectedRoomId]
+        : []
+  ).map(String);
+
+  // If typeBlocks not explicitly provided, synthesize from flat rooms list
+  const effectiveBlocks =
+    typeBlocks && typeBlocks.length > 0
+      ? typeBlocks
+      : [
+          {
+            id: "default-block",
+            roomTypeCode: "all",
+            roomTypeName: "Clean Room",
+            requiredCount: targetRoomsCount || 1,
+            availableRooms: rooms,
+          },
+        ];
+
+  const totalRequired =
+    typeBlocks && typeBlocks.length > 0
+      ? typeBlocks.reduce((acc, b) => acc + (b.requiredCount || 1), 0)
+      : targetRoomsCount || 1;
+
+  const totalSelected = activeIds.length;
+  const isAllFulfilled = totalSelected === totalRequired;
+  const isMatrix = effectiveBlocks.length > 1;
+
   return (
     <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
-      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+      <div className="flex flex-col gap-2 border-b border-gray-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h4 className="text-sm font-bold text-gray-900">Assign Clean Room</h4>
-          <p className="text-xs text-gray-500">
-            Only Clean & Inspected vacant rooms
-          </p>
-        </div>
-        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-          {rooms.length} Clean Available
-        </span>
-      </div>
-
-      <div className="max-h-[220px] space-y-2 overflow-y-auto pr-1">
-        {rooms.map((rm) => {
-          const isSelected = selectedRoomId === rm.id;
-          return (
-            <div
-              key={rm.id}
-              onClick={() => onSelectRoom(rm.id)}
-              className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
-                isSelected
-                  ? "border-blue-500 bg-blue-50/70 ring-1 ring-blue-500"
-                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-bold text-gray-900">
+              {isMatrix
+                ? "Assign Matrix Rooms"
+                : totalRequired > 1
+                  ? "Assign Clean Rooms"
+                  : "Assign Clean Room"}
+            </h4>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                isAllFulfilled
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-amber-100 text-amber-800"
               }`}
             >
-              <div className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="clean-room"
-                  checked={isSelected}
-                  onChange={() => onSelectRoom(rm.id)}
-                  className="text-brand-900 h-4 w-4"
-                />
-                <div>
-                  <span className="block text-sm font-bold text-gray-900">
-                    Room {rm.roomNumber}
+              {totalSelected} of {totalRequired} Selected
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs text-gray-500">
+            {isMatrix
+              ? `Select required clean rooms strictly matching the ${effectiveBlocks.length} booked room types in the reservation matrix`
+              : totalRequired > 1
+                ? `Select ${totalRequired} clean rooms strictly matching the booked room type`
+                : "Only clean & inspected vacant rooms matching the booked room type"}
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {effectiveBlocks.map((block) => {
+          const blockAvailable = block.availableRooms || [];
+          const blockSelectedCount = blockAvailable.filter((rm) =>
+            activeIds.includes(String(rm.id)),
+          ).length;
+          const isBlockFulfilled = blockSelectedCount === block.requiredCount;
+
+          return (
+            <div
+              key={block.id || block.roomTypeCode}
+              className="rounded-xl border border-gray-200 bg-gray-50/50 p-4"
+            >
+              <div className="mb-3 flex items-center justify-between border-b border-gray-200/60 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold tracking-wider text-gray-900 uppercase">
+                    {block.roomTypeName || block.roomTypeCode}
                   </span>
-                  <span className="text-[11px] text-gray-500">
-                    Floor {rm.floor} · {rm.view || "City View"}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      isBlockFulfilled
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {blockSelectedCount} of {block.requiredCount} Selected
                   </span>
                 </div>
+                <span className="text-xs text-gray-500">
+                  {blockAvailable.length} clean available
+                </span>
               </div>
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
-                Clean & Ready
-              </span>
+
+              <div className="max-h-[220px] space-y-2 overflow-y-auto pr-1">
+                {blockAvailable.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-200 bg-white py-5 text-center text-xs text-gray-400">
+                    No clean {block.roomTypeName || block.roomTypeCode} rooms
+                    currently available.
+                  </div>
+                ) : (
+                  blockAvailable.map((rm) => {
+                    const rmId = String(rm.id);
+                    const isSelected = activeIds.includes(rmId);
+                    return (
+                      <div
+                        key={rm.id}
+                        onClick={() => {
+                          if (onToggleRoom) {
+                            onToggleRoom(rmId, block.id);
+                          } else if (onSelectRoom) {
+                            onSelectRoom(rmId);
+                          }
+                        }}
+                        className={`flex cursor-pointer items-center justify-between rounded-xl border bg-white p-3 transition ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50/70 ring-1 ring-blue-500"
+                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              if (onToggleRoom) {
+                                onToggleRoom(rmId, block.id);
+                              } else if (onSelectRoom) {
+                                onSelectRoom(rmId);
+                              }
+                            }}
+                            className="text-brand-900 h-4 w-4 rounded accent-blue-600"
+                          />
+                          <div>
+                            <span className="block text-sm font-bold text-gray-900">
+                              Room {rm.roomNumber}
+                            </span>
+                            <span className="text-[11px] text-gray-500">
+                              Floor {rm.floor} ·{" "}
+                              {rm.view || rm.type || "Standard"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {rm.isPreAssigned && (
+                            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800">
+                              Pre-assigned
+                            </span>
+                          )}
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                            Clean & Ready
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           );
         })}
@@ -835,105 +956,242 @@ export function SignatureCaptureBox({
   );
 }
 
-/**
- * Guest Profile & Reservation Summary Card (Screen 10)
- */
-export function GuestDetailsCard({ guest, onEditClick }) {
-  if (!guest) return null;
+const EMPTY_BLOCKS = Object.freeze([]);
+const EMPTY_ROOM_IDS = Object.freeze([]);
+const EMPTY_ROOMS = Object.freeze([]);
 
-  const displayVal = (val, fallback = "Not specified") =>
-    !val || val === "—" || val === "null" ? fallback : val;
+function displayOverviewVal(val, fallback = "Not specified") {
+  return !val || val === "—" || val === "null" || val === "undefined"
+    ? fallback
+    : val;
+}
+
+/**
+ * Comprehensive Reservation & Guest Overview Card (Check-in top section)
+ */
+export function ReservationOverviewCard({ arrival, guest, onEditClick }) {
+  const data = arrival || guest;
+  if (!data) return null;
+
+  const paymentStatus = (data.paymentStatus || "unpaid").toLowerCase();
+  const paymentBadgeClass =
+    paymentStatus === "paid"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      : paymentStatus === "partially-paid"
+        ? "bg-amber-50 text-amber-700 border-amber-200"
+        : "bg-rose-50 text-rose-700 border-rose-200";
+
+  const nights = Number(data.nights) || 1;
+  const adults = Number(data.adults) || 1;
+  const children = Number(data.children) || 0;
+  const totalGuests = Number(data.guests) || adults + children;
+  const roomsCount = Number(data.roomsCount || data.rooms || 1);
+
+  const roomRequirements = Array.isArray(data.roomRequirements)
+    ? data.roomRequirements
+    : [];
 
   return (
     <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-xs">
-      <div className="flex flex-col justify-between gap-3 border-b border-gray-100 pb-3 sm:flex-row sm:items-center">
+      {/* 1. Header: Avatar, Name, Badges, Reservation # & Edit Action */}
+      <div className="flex flex-col justify-between gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
-          <div className="bg-brand-100 text-brand-800 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold">
-            {(guest.name && guest.name !== "—"
-              ? guest.name.slice(0, 2)
+          <div className="bg-brand-900 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-base font-bold text-white shadow-xs">
+            {(data.name && data.name !== "—"
+              ? data.name.slice(0, 2)
               : "GU"
             ).toUpperCase()}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-bold text-gray-900">
-                {displayVal(guest.name, "Unassigned Guest")}
+                {displayOverviewVal(data.name, "Valued Guest")}
               </h3>
-              {guest.isVip && (
+              {data.isVip && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
                   <Crown className="h-3 w-3" /> VIP
                 </span>
               )}
-              {guest.isRepeat && (
+              {data.isRepeat && (
                 <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-800">
                   Repeat Guest
                 </span>
               )}
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700">
-                {guest.source || "DIRECT"}
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700 uppercase">
+                {data.source || "DIRECT"}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                  data.status === "confirmed"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : data.status === "reserved"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {data.status || "CONFIRMED"}
               </span>
             </div>
-            <p className="mt-0.5 text-xs text-gray-500">
-              Booking{" "}
-              {guest.bookingNo && guest.bookingNo !== "—"
-                ? `#${guest.bookingNo}`
-                : "pending"}{" "}
-              · {guest.roomType || "Room unassigned"}
+            <p className="mt-1 text-xs text-gray-500">
+              Reservation{" "}
+              <strong className="text-brand-900 font-semibold">
+                {data.bookingNo ? `#${data.bookingNo}` : "Pending"}
+              </strong>{" "}
+              · {roomsCount} Room{roomsCount > 1 ? "s" : ""} Booked
             </p>
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          icon={Pencil}
-          onClick={onEditClick}
-          className="gap-1.5 self-start text-xs sm:self-auto"
-        >
-          Edit Details
-        </Button>
+        {onEditClick && (
+          <Button
+            variant="outline"
+            size="sm"
+            icon={Pencil}
+            onClick={onEditClick}
+            className="gap-1.5 self-start text-xs sm:self-auto"
+          >
+            Edit Reservation
+          </Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-xs sm:grid-cols-4">
-        <div>
-          <span className="block text-[11px] text-gray-400">Phone</span>
-          <span className="mt-0.5 block truncate font-medium text-gray-900">
-            {displayVal(guest.phone, "Not specified")}
+      {/* 2. Key Stay & Booking Metrics Grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* Stay Duration */}
+        <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+            <Calendar className="h-3.5 w-3.5 text-gray-400" />
+            Stay Duration
+          </div>
+          <span className="mt-1 block text-xs font-bold text-gray-900">
+            {data.checkIn && data.checkOut
+              ? `${data.checkIn} → ${data.checkOut}`
+              : "Pending dates"}
+          </span>
+          <span className="text-[11px] font-medium text-gray-500">
+            {nights} Night{nights === 1 ? "" : "s"}{" "}
+            {data.time ? `· Check-in ${data.time}` : ""}
           </span>
         </div>
-        <div>
-          <span className="block text-[11px] text-gray-400">Email</span>
-          <span className="mt-0.5 block truncate font-medium text-gray-900">
-            {displayVal(guest.email, "Not specified")}
+
+        {/* Occupancy */}
+        <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+            <Users className="h-3.5 w-3.5 text-gray-400" />
+            Total Occupancy
+          </div>
+          <span className="mt-1 block text-xs font-bold text-gray-900">
+            {totalGuests} Guest{totalGuests === 1 ? "" : "s"}
+          </span>
+          <span className="text-[11px] font-medium text-gray-500">
+            {adults} Adult{adults === 1 ? "" : "s"}
+            {children > 0
+              ? `, ${children} Child${children === 1 ? "" : "ren"}`
+              : ""}
           </span>
         </div>
-        <div>
-          <span className="block text-[11px] text-gray-400">Nationality</span>
-          <span className="mt-0.5 block font-medium text-gray-900">
-            {displayVal(guest.nationality, "Not specified")}
+
+        {/* Room Matrix Breakdown */}
+        <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+            <BedDouble className="h-3.5 w-3.5 text-gray-400" />
+            Room Matrix
+          </div>
+          {roomRequirements.length > 0 ? (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {roomRequirements.map((r, i) => (
+                <span
+                  key={`${r.roomTypeCode || "req"}-${i}`}
+                  className="inline-block rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-800 uppercase"
+                >
+                  {r.rooms}x {r.roomTypeCode}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="mt-1 block text-xs font-bold text-gray-900 uppercase">
+              {data.roomType || data.roomTypeCode || "Standard Room"}
+            </span>
+          )}
+          <span className="mt-0.5 block text-[11px] font-medium text-gray-500">
+            Total {roomsCount} Room{roomsCount > 1 ? "s" : ""}
           </span>
         </div>
-        <div>
-          <span className="block text-[11px] text-gray-400">Stay Dates</span>
-          <span className="mt-0.5 block font-medium text-gray-900">
-            {guest.checkIn && guest.checkOut
-              ? `${guest.checkIn} → ${guest.checkOut} (${guest.nights || 1}n)`
-              : "Dates not set"}
+
+        {/* Billing & Tariff */}
+        <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <CreditCard className="h-3.5 w-3.5 text-gray-400" />
+              Tariff & Billing
+            </span>
+            <span
+              className={`py-0.2 rounded-full border px-1.5 text-[9px] font-bold tracking-wider uppercase ${paymentBadgeClass}`}
+            >
+              {paymentStatus}
+            </span>
+          </div>
+          <span className="text-brand-900 mt-1 block text-xs font-bold">
+            {formatCurrency(data.totalAmount || 0)}
+          </span>
+          <span className="truncate text-[11px] font-medium text-gray-500">
+            {data.ratePlan || "Standard"}{" "}
+            {data.mealPlan ? `(${data.mealPlan})` : ""}
           </span>
         </div>
       </div>
 
-      {guest.address && guest.address !== "—" && (
-        <div className="flex items-center gap-1.5 border-t border-gray-50 pt-2 text-xs text-gray-600">
+      {/* 3. Guest Profile & Contact Details */}
+      <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-xs sm:grid-cols-4">
+        <div>
+          <span className="text-[11px] text-gray-400">Phone</span>
+          <span className="mt-0.5 block truncate font-medium text-gray-900">
+            {displayOverviewVal(data.phone, "Not specified")}
+          </span>
+        </div>
+        <div>
+          <span className="text-[11px] text-gray-400">Email</span>
+          <span className="mt-0.5 block truncate font-medium text-gray-900">
+            {displayOverviewVal(data.email, "Not specified")}
+          </span>
+        </div>
+        <div>
+          <span className="text-[11px] text-gray-400">Nationality</span>
+          <span className="mt-0.5 block font-medium text-gray-900">
+            {displayOverviewVal(data.nationality, "Not specified")}
+          </span>
+        </div>
+        <div>
+          <span className="text-[11px] text-gray-400">ID Info</span>
+          <span className="mt-0.5 block truncate font-medium text-gray-900">
+            {data.idType || "Aadhaar"}:{" "}
+            {displayOverviewVal(data.idNumber, "Pending")}
+          </span>
+        </div>
+      </div>
+
+      {/* Address if present */}
+      {data.address && data.address !== "—" && (
+        <div className="flex items-center gap-1.5 text-xs text-gray-600">
           <span className="shrink-0 text-gray-400">Address:</span>
-          <span className="truncate">{guest.address}</span>
+          <span className="truncate">{data.address}</span>
         </div>
       )}
-      {guest.specialRequests && guest.specialRequests !== "—" && (
-        <div className="rounded-lg border border-amber-100 bg-amber-50/70 p-2.5 text-xs text-amber-900">
-          <strong>Special Request:</strong> {guest.specialRequests}
+
+      {/* Special Requests Banner */}
+      {data.specialRequests && data.specialRequests !== "—" && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div>
+            <strong className="font-semibold">
+              Special Request / Guest Preferences:
+            </strong>
+            <p className="mt-0.5 text-amber-800">{data.specialRequests}</p>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
+export const GuestDetailsCard = ReservationOverviewCard;

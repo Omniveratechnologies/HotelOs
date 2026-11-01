@@ -165,12 +165,8 @@ export default function NewReservationPage() {
                   onChange={onRequirementsChange}
                   roomTypes={typeItems}
                   targetRooms={form.rooms}
+                  error={errors.roomRequirements}
                 />
-                {errors.roomRequirements && (
-                  <p className="text-xs font-medium text-rose-500">
-                    {errors.roomRequirements}
-                  </p>
-                )}
                 <div className="border-t border-gray-100 pt-4">
                   <RatePlanPicker
                     plans={ratePlanOptions}

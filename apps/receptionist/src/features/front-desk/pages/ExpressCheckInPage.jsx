@@ -79,10 +79,18 @@ export default function ExpressCheckInPage() {
 
   const handleComplete = () => {
     if (!currentArrival?.id) return;
+    const targetRoomIds =
+      currentArrival.assignedRoomIds?.length > 0
+        ? currentArrival.assignedRoomIds
+        : currentArrival.roomId
+          ? [currentArrival.roomId]
+          : [];
+
     checkInMutation.mutate({
       bookingId: currentArrival.id,
       data: {
-        roomId: currentArrival.roomId,
+        roomId: targetRoomIds[0] || currentArrival.roomId,
+        roomIds: targetRoomIds,
         keyCardNumber: keyCardNumber || undefined,
         depositAmount: 0,
         notes: "Express Fast-Track check-in verified and completed.",

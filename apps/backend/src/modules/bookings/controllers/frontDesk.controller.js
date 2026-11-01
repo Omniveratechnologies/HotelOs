@@ -63,6 +63,10 @@ export const getArrivals = async (req, res) => {
         "roomId",
         "roomNumber type rate floor roomCode status housekeepingStatus",
       )
+      .populate(
+        "roomAllocations.roomId",
+        "roomNumber type rate floor roomCode status housekeepingStatus",
+      )
       .populate("ratePlanId", "name mealPlan")
       .sort({ checkIn: 1 })
       .lean();
@@ -79,79 +83,115 @@ export const getArrivals = async (req, res) => {
           (bookingId && String(b._id) === String(bookingId))
         );
       })
-      .map((b) => ({
-        id: b._id,
-        bookingNo: b.reservationNo || null,
-        guestId: b.guestId?._id || null,
-        name: b.guestId?.name || "Guest",
-        phone: b.guestId?.phone || null,
-        email: b.guestId?.email || null,
-        nationality: b.guestId?.nationality || null,
-        address: b.guestId?.address || null,
-        idType: b.guestId?.idType || null,
-        idNumber: b.guestId?.idNumber || null,
-        documents: b.guestId?.documents || [],
-        adults: b.adults || 1,
-        children: b.children || 0,
-        time: b.checkIn
-          ? new Date(b.checkIn).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : null,
-        room: b.roomId?.roomNumber
-          ? `Room ${b.roomId.roomNumber}`
-          : b.roomAllocations && b.roomAllocations.length > 1
-            ? `${
-                b.roomAllocations
-                  .filter((a) => a.roomNumber)
-                  .map((a) => a.roomNumber)
-                  .join(", ") || `${b.roomAllocations.length} Rooms`
-              }`
+      .map((b) => {
+        const allocatedRoomNums = (b.roomAllocations || [])
+          .map((a) => a.roomNumber || a.roomId?.roomNumber)
+          .filter(Boolean);
+
+        const assignedRoomIds = [
+          ...(b.roomId?._id
+            ? [String(b.roomId._id)]
+            : b.roomId
+              ? [String(b.roomId)]
+              : []),
+          ...(Array.isArray(b.roomAllocations)
+            ? b.roomAllocations
+                .map((a) =>
+                  a.roomId?._id
+                    ? String(a.roomId._id)
+                    : a.roomId
+                      ? String(a.roomId)
+                      : null,
+                )
+                .filter(Boolean)
+            : []),
+        ].filter((val, idx, arr) => arr.indexOf(val) === idx);
+
+        const roomsCount =
+          b.rooms ||
+          (Array.isArray(b.roomRequirements) && b.roomRequirements.length > 0
+            ? b.roomRequirements.reduce((sum, r) => sum + (r.rooms || 0), 0)
+            : b.roomAllocations?.length || 1);
+
+        const roomDisplay =
+          allocatedRoomNums.length > 0
+            ? `Room ${allocatedRoomNums.join(", ")}`
+            : b.roomId?.roomNumber
+              ? `Room ${b.roomId.roomNumber}`
+              : roomsCount > 1
+                ? `${roomsCount} Rooms (Unassigned)`
+                : null;
+
+        return {
+          id: b._id,
+          bookingNo: b.reservationNo || null,
+          guestId: b.guestId?._id || null,
+          name: b.guestId?.name || "Guest",
+          phone: b.guestId?.phone || null,
+          email: b.guestId?.email || null,
+          nationality: b.guestId?.nationality || null,
+          address: b.guestId?.address || null,
+          idType: b.guestId?.idType || null,
+          idNumber: b.guestId?.idNumber || null,
+          documents: b.guestId?.documents || [],
+          adults: b.adults || 1,
+          children: b.children || 0,
+          time: b.checkIn
+            ? new Date(b.checkIn).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
             : null,
-        roomId: b.roomId?._id || null,
-        roomsCount: b.rooms || b.roomAllocations?.length || 1,
-        roomType:
-          b.roomRequirements && b.roomRequirements.length > 0
-            ? b.roomRequirements
-                .map((r) => `${r.rooms} ${r.roomTypeCode.toUpperCase()}`)
-                .join(", ")
-            : b.roomTypeCode
-              ? b.roomTypeCode.toUpperCase()
-              : b.roomId?.type || null,
-        roomAllocations: b.roomAllocations || [],
-        roomRequirements: b.roomRequirements || [],
-        groupInfo: b.groupInfo || null,
-        source: b.source || "DIRECT",
-        isRepeat: b.source === "REPEAT_GUEST",
-        isVip: b.source === "REPEAT_GUEST" || b.guestType === "vip",
-        isExpress: Boolean(b.checkInVerified),
-        checkIn: b.checkIn
-          ? new Date(b.checkIn).toISOString().slice(0, 10)
-          : null,
-        checkOut: b.checkOut
-          ? new Date(b.checkOut).toISOString().slice(0, 10)
-          : null,
-        nights:
-          Math.max(
-            1,
-            Math.round((new Date(b.checkOut) - new Date(b.checkIn)) / 86400000),
-          ) || 1,
-        guests: (b.adults || 1) + (b.children || 0),
-        ratePlan: b.ratePlanId?.name || null,
-        specialRequests: b.specialRequests || null,
-        status: b.status,
-        paymentStatus: b.paymentStatus || "unpaid",
-        totalAmount: b.pricing?.grandTotal || b.totalAmountBeforeTax || 0,
-        isGuaranteed:
-          b.status === "confirmed" &&
-          (b.paymentStatus === "paid" ||
-            b.otaInfo?.paymentStatus === "prepaid-by-ota"),
-        requiresDeposit:
-          b.status === "reserved" ||
-          b.status === "pending" ||
-          b.paymentStatus !== "paid",
-      }));
+          room: roomDisplay,
+          roomId: b.roomId?._id || null,
+          assignedRoomIds,
+          roomsCount,
+          roomTypeCode: b.roomTypeCode || null,
+          mealPlan: b.mealPlan || b.ratePlanId?.mealPlan || null,
+          roomType:
+            b.roomRequirements && b.roomRequirements.length > 0
+              ? b.roomRequirements
+                  .map((r) => `${r.rooms} ${r.roomTypeCode.toUpperCase()}`)
+                  .join(", ")
+              : b.roomTypeCode
+                ? b.roomTypeCode.toUpperCase()
+                : b.roomId?.type || null,
+          roomAllocations: b.roomAllocations || [],
+          roomRequirements: b.roomRequirements || [],
+          groupInfo: b.groupInfo || null,
+          source: b.source || "DIRECT",
+          isRepeat: b.source === "REPEAT_GUEST",
+          isVip: b.source === "REPEAT_GUEST" || b.guestType === "vip",
+          isExpress: Boolean(b.checkInVerified),
+          checkIn: b.checkIn
+            ? new Date(b.checkIn).toISOString().slice(0, 10)
+            : null,
+          checkOut: b.checkOut
+            ? new Date(b.checkOut).toISOString().slice(0, 10)
+            : null,
+          nights:
+            Math.max(
+              1,
+              Math.round(
+                (new Date(b.checkOut) - new Date(b.checkIn)) / 86400000,
+              ),
+            ) || 1,
+          guests: (b.adults || 1) + (b.children || 0),
+          ratePlan: b.ratePlanId?.name || null,
+          specialRequests: b.specialRequests || null,
+          status: b.status,
+          paymentStatus: b.paymentStatus || "unpaid",
+          totalAmount: b.pricing?.grandTotal || b.totalAmountBeforeTax || 0,
+          isGuaranteed:
+            b.status === "confirmed" &&
+            (b.paymentStatus === "paid" ||
+              b.otaInfo?.paymentStatus === "prepaid-by-ota"),
+          requiresDeposit:
+            b.status === "reserved" ||
+            b.status === "pending" ||
+            b.paymentStatus !== "paid",
+        };
+      });
 
     return res.status(200).json({
       success: true,
@@ -327,7 +367,9 @@ export const checkInBooking = async (req, res) => {
     const { id } = req.params;
     const {
       roomId,
+      roomIds,
       keyCardNumber,
+      keyCardNumbers,
       depositAmount = 0,
       paymentMode = "CASH",
       notes,
@@ -353,26 +395,57 @@ export const checkInBooking = async (req, res) => {
       });
     }
 
-    const targetRoomId = roomId || booking.roomId;
-    if (!targetRoomId) {
+    const incomingRoomIds =
+      Array.isArray(roomIds) && roomIds.length > 0
+        ? roomIds.map(String).filter(Boolean)
+        : roomId
+          ? [String(roomId)]
+          : [];
+
+    const fallbackRoomIds = [
+      ...(booking.roomId ? [String(booking.roomId)] : []),
+      ...(Array.isArray(booking.roomAllocations)
+        ? booking.roomAllocations
+            .map((a) =>
+              a.roomId?._id
+                ? String(a.roomId._id)
+                : a.roomId
+                  ? String(a.roomId)
+                  : null,
+            )
+            .filter(Boolean)
+        : []),
+    ];
+
+    const targetRoomIds = Array.from(
+      new Set(incomingRoomIds.length > 0 ? incomingRoomIds : fallbackRoomIds),
+    );
+
+    if (targetRoomIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Please assign a room before completing check-in",
+        message: "Please assign at least one room before completing check-in",
       });
     }
 
-    // Verify and claim the room
-    const room = await Room.findOne({ _id: targetRoomId, hotelId });
-    if (!room) {
+    // Verify and claim all assigned rooms
+    const rooms = await Room.find({ _id: { $in: targetRoomIds }, hotelId });
+    if (rooms.length !== targetRoomIds.length) {
       return res
         .status(404)
-        .json({ success: false, message: "Room not found" });
+        .json({
+          success: false,
+          message: "One or more assigned rooms not found",
+        });
     }
 
-    // Clean up any stale active checked-in bookings on this room to prevent duplicate checked-in stays
+    // Clean up any stale active checked-in bookings on any of these rooms
     const staleBookings = await Booking.find({
       hotelId,
-      roomId: targetRoomId,
+      $or: [
+        { roomId: { $in: targetRoomIds } },
+        { "roomAllocations.roomId": { $in: targetRoomIds } },
+      ],
       status: "checked-in",
       _id: { $ne: booking._id },
     });
@@ -411,53 +484,127 @@ export const checkInBooking = async (req, res) => {
       }
     }
 
-    await Room.findByIdAndUpdate(targetRoomId, {
-      status: "occupied",
-      currentGuest: guestName,
-      checkIn: booking.checkIn || new Date(),
-      checkOut: booking.checkOut || null,
-    });
+    await Room.updateMany(
+      { _id: { $in: targetRoomIds }, hotelId },
+      {
+        $set: {
+          status: "occupied",
+          currentGuest: guestName,
+          checkIn: booking.checkIn || new Date(),
+          checkOut: booking.checkOut || null,
+        },
+      },
+    );
 
+    const primaryRoom = rooms[0];
     const previousStatus = booking.status;
     booking.status = "checked-in";
-    booking.roomId = targetRoomId;
+    booking.roomId = primaryRoom._id;
+    booking.rooms = Math.max(booking.rooms || 1, targetRoomIds.length);
     booking.checkInVerified = true;
+
+    // Synchronize room allocations
+    if (
+      !Array.isArray(booking.roomAllocations) ||
+      booking.roomAllocations.length === 0
+    ) {
+      booking.roomAllocations = targetRoomIds.map((rId, idx) => {
+        const rm = rooms.find((r) => String(r._id) === String(rId));
+        return {
+          allocationId: `alloc-${Date.now()}-${idx}`,
+          roomTypeCode: (
+            rm?.roomCode ||
+            rm?.type ||
+            booking.roomTypeCode ||
+            ""
+          ).toLowerCase(),
+          roomId: rId,
+          roomNumber: rm?.roomNumber || null,
+          adults: 1,
+          children: 0,
+          status: "assigned",
+        };
+      });
+    } else {
+      targetRoomIds.forEach((rId, idx) => {
+        const rm = rooms.find((r) => String(r._id) === String(rId));
+        if (booking.roomAllocations[idx]) {
+          booking.roomAllocations[idx].roomId = rId;
+          booking.roomAllocations[idx].roomNumber =
+            rm?.roomNumber || booking.roomAllocations[idx].roomNumber;
+          booking.roomAllocations[idx].status = "assigned";
+        } else {
+          booking.roomAllocations.push({
+            allocationId: `alloc-${Date.now()}-${idx}`,
+            roomTypeCode: (
+              rm?.roomCode ||
+              rm?.type ||
+              booking.roomTypeCode ||
+              ""
+            ).toLowerCase(),
+            roomId: rId,
+            roomNumber: rm?.roomNumber || null,
+            adults: 1,
+            children: 0,
+            status: "assigned",
+          });
+        }
+      });
+    }
+
     if (depositAmount > 0) {
       booking.pricing = booking.pricing || {};
       booking.paymentStatus = "partially-paid";
     }
 
+    const roomDisplayList = rooms.map((r) => r.roomNumber).join(", ");
     booking.auditTrail.push({
       at: new Date(),
       by: req.user._id,
       action: "checked-in",
       from: previousStatus,
       to: "checked-in",
-      note: `Front desk check-in into Room ${room.roomNumber}. Deposit: ₹${depositAmount} (${paymentMode}). ${notes || ""}`,
+      note: `Front desk check-in into Room(s): ${roomDisplayList}. Deposit: ₹${depositAmount} (${paymentMode}). ${notes || ""}`,
     });
 
     await booking.save();
 
-    // Assign Key Card if provided
-    if (keyCardNumber?.trim()) {
-      const cleanCardNo = keyCardNumber.trim().toUpperCase();
-      let card = await KeyCard.findOne({ hotelId, cardNumber: cleanCardNo });
-      if (!card) {
-        card = new KeyCard({ hotelId, cardNumber: cleanCardNo });
+    // Assign Key Card(s) if provided
+    const rawCardInput = keyCardNumbers || keyCardNumber;
+    if (rawCardInput) {
+      const cardList = (
+        Array.isArray(rawCardInput)
+          ? rawCardInput
+          : String(rawCardInput).split(",")
+      )
+        .map((c) => String(c).trim().toUpperCase())
+        .filter(Boolean);
+
+      for (let idx = 0; idx < cardList.length; idx++) {
+        const cleanCardNo = cardList[idx];
+        const assignedRoomForCard = targetRoomIds[idx] || primaryRoom._id;
+        const rmObj = rooms.find(
+          (r) => String(r._id) === String(assignedRoomForCard),
+        );
+
+        let card = await KeyCard.findOne({ hotelId, cardNumber: cleanCardNo });
+        if (!card) {
+          card = new KeyCard({ hotelId, cardNumber: cleanCardNo });
+        }
+        card.status = "ACTIVE";
+        card.currentBookingId = booking._id;
+        card.assignedRoomId = assignedRoomForCard;
+        card.assignedGuestId = booking.guestId;
+        card.issuedAt = new Date();
+        card.expiresAt = booking.checkOut;
+        card.auditLog.push({
+          action: "ASSIGNED",
+          performedBy: req.user._id,
+          bookingId: booking._id,
+          note: `Issued at Front Desk Check-in for Room ${rmObj?.roomNumber || assignedRoomForCard}`,
+        });
+        await card.save();
       }
-      card.status = "ACTIVE";
-      card.currentBookingId = booking._id;
-      card.assignedRoomId = targetRoomId;
-      card.assignedGuestId = booking.guestId;
-      card.issuedAt = new Date();
-      card.expiresAt = booking.checkOut;
-      card.auditLog.push({
-        action: "ASSIGNED",
-        performedBy: req.user._id,
-        bookingId: booking._id,
-        note: `Issued at Front Desk Check-in for Room ${room.roomNumber}`,
-      });
-      await card.save();
     }
 
     // Trigger Aiosell Inventory sync
@@ -467,75 +614,77 @@ export const checkInBooking = async (req, res) => {
     );
     await aiosellSyncInventory(hotelId, syncStart, syncEnd);
 
-    // Notify in-room kiosk terminals for this room to auto-login as this guest
+    // Notify in-room kiosk terminals for these rooms to auto-login as this guest
     try {
       const kiosks = await KioskDevice.find({
         hotelId,
-        roomId: targetRoomId,
+        roomId: { $in: targetRoomIds },
         targetDashboard: "GUEST_DASHBOARD",
         isActive: true,
       });
 
       const io = getIo();
 
-      // Sign an authenticated guest JWT directly so in-room terminals transition immediately
-      // without needing to make redundant HTTP round-trips or re-exchange single-use handoff codes.
-      const guestToken = booking.guestId
-        ? jwt.sign(
-            {
-              userId: booking.guestId,
-              role: "GUEST",
-              hotelId,
-              roomId: targetRoomId,
-            },
-            process.env.JWT_SECRET || "default_jwt_secret",
-            { expiresIn: "8h" },
-          )
-        : null;
+      for (const targetId of targetRoomIds) {
+        const rmObj =
+          rooms.find((r) => String(r._id) === String(targetId)) || primaryRoom;
+        const guestToken = booking.guestId
+          ? jwt.sign(
+              {
+                userId: booking.guestId,
+                role: "GUEST",
+                hotelId,
+                roomId: targetId,
+              },
+              process.env.JWT_SECRET || "default_jwt_secret",
+              { expiresIn: "8h" },
+            )
+          : null;
 
-      const checkInPayload = {
-        roomId: targetRoomId,
-        roomNumber: room.roomNumber,
-        guestId: booking.guestId,
-        guestName,
-        guestToken,
-        user: booking.guestId
-          ? {
-              id: booking.guestId,
-              name: guestName,
-              role: "GUEST",
-              hotelId,
-              roomId: targetRoomId,
-            }
-          : null,
-        booking: {
-          id: booking._id,
-          reservationNo: booking.reservationNo,
-          status: "checked-in",
-          roomId: targetRoomId,
-          roomNumber: room.roomNumber,
-        },
-      };
+        const checkInPayload = {
+          roomId: targetId,
+          roomNumber: rmObj.roomNumber,
+          guestId: booking.guestId,
+          guestName,
+          guestToken,
+          user: booking.guestId
+            ? {
+                id: booking.guestId,
+                name: guestName,
+                role: "GUEST",
+                hotelId,
+                roomId: targetId,
+              }
+            : null,
+          booking: {
+            id: booking._id,
+            reservationNo: booking.reservationNo,
+            status: "checked-in",
+            roomId: targetId,
+            roomNumber: rmObj.roomNumber,
+          },
+        };
 
-      // Note: We intentionally DO NOT emit "device:reload" here.
-      // Emitting "device:reload" causes Android WebViews to hard-reload from scratch,
-      // wiping memory state and re-sending expired handoff query parameters.
-      // Instead, in-place real-time socket events allow seamless instant dashboard activation.
-      for (const k of kiosks) {
-        io.to(`device:${k.deviceId}`).emit(
+        const targetKiosks = kiosks.filter(
+          (k) => String(k.roomId) === String(targetId),
+        );
+        for (const k of targetKiosks) {
+          io.to(`device:${k.deviceId}`).emit(
+            "kiosk:guest-checked-in",
+            checkInPayload,
+          );
+        }
+        io.to(`room:${targetId}`).emit(
           "kiosk:guest-checked-in",
           checkInPayload,
         );
       }
-      io.to(`room:${targetRoomId}`).emit(
-        "kiosk:guest-checked-in",
-        checkInPayload,
-      );
+
       if (booking.guestId) {
         io.to(`guest:${booking.guestId}`).emit("stay:status-updated", {
           status: "checked-in",
-          roomId: targetRoomId,
-          roomNumber: room.roomNumber,
+          roomId: primaryRoom._id,
+          roomNumber: primaryRoom.roomNumber,
           reservationNo: booking.reservationNo,
         });
       }
