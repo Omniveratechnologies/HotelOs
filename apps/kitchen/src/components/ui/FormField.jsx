@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 const EMPTY_ARRAY = [];
 
 const FormField = ({
@@ -6,30 +8,72 @@ const FormField = ({
   type = "text",
   value,
   onChange,
+  onValueChange,
   maxLength,
   placeholder = "",
   options = EMPTY_ARRAY,
   required = false,
   icon: Icon,
+  register,
+  error,
+  disabled = false,
+  min,
+  max,
+  autoComplete,
 }) => {
+  const generatedId = useId();
+  const id = `${name}-${generatedId}`;
+  const errorId = `${id}-error`;
+
   const commonClass =
-    "w-full rounded-lg border border-gray-700 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none placeholder:text-gray-600";
+    "w-full rounded-lg border border-gray-700 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none placeholder:text-gray-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50";
+
+  const registration = register ? register(name) : {};
+
+  const registeredProps = register
+    ? {
+        ...registration,
+        onChange: (event) => {
+          registration.onChange(event);
+          onValueChange?.(event.target.value);
+        },
+      }
+    : {};
+
+  const controlledProps =
+    value !== undefined
+      ? {
+          value,
+          onChange: (event) => {
+            onChange?.(event);
+            onValueChange?.(event.target.value);
+          },
+        }
+      : {};
+
+  const sharedProps = {
+    id,
+    name,
+    required,
+    disabled,
+    "aria-invalid": Boolean(error),
+    "aria-describedby": error ? errorId : undefined,
+    ...(register ? registeredProps : {}),
+    ...controlledProps,
+  };
 
   return (
-    <div>
-      <label className="mb-1.5 block text-xs font-medium text-gray-300">
+    <div className="min-w-0">
+      <label
+        htmlFor={id}
+        className="mb-1.5 block text-xs font-medium text-gray-300"
+      >
         {label}
         {required && <span className="ml-1 text-red-500">*</span>}
       </label>
 
-      {type === "select" && (
-        <select
-          name={name}
-          value={value}
-          onChange={onChange}
-          required={required}
-          className={commonClass}
-        >
+      {type === "select" ? (
+        <select {...sharedProps} className={commonClass}>
           <option value="">Select {label}</option>
 
           {options.map((option) => (
@@ -38,100 +82,41 @@ const FormField = ({
             </option>
           ))}
         </select>
-      )}
-
-      {type === "multiselect" && (
-        <select
-          name={name}
-          value=""
-          onChange={(e) => {
-            const selectedValue = e.target.value;
-
-            if (!selectedValue) return;
-
-            if (!value.includes(selectedValue)) {
-              onChange({
-                target: {
-                  name,
-                  value: [...value, selectedValue],
-                },
-              });
-            }
-          }}
-          className={commonClass}
-        >
-          <option value="">Select categories</option>
-
-          {options
-            .filter((option) => !value.includes(option.value))
-            .map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-        </select>
-      )}
-
-      {type === "textarea" && (
+      ) : type === "textarea" ? (
         <textarea
-          name={name}
-          value={value}
-          onChange={onChange}
+          {...sharedProps}
           placeholder={placeholder}
-          required={required}
-          rows={5}
-          className={`${commonClass} resize-none`}
+          rows={3}
+          maxLength={maxLength}
+          className={`${commonClass} resize-y`}
         />
-      )}
-
-      {!["select", "multiselect", "textarea"].includes(type) && (
+      ) : (
         <div className="relative">
           {Icon && (
             <Icon
-              size={14}
+              size={15}
+              aria-hidden="true"
               className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-500"
             />
           )}
 
           <input
+            {...sharedProps}
             type={type}
-            name={name}
-            value={value}
-            maxLength={maxLength}
-            onChange={onChange}
             placeholder={placeholder}
-            required={required}
+            maxLength={maxLength}
+            min={min}
+            max={max}
+            autoComplete={autoComplete}
             className={`${commonClass} ${Icon ? "pl-9" : ""}`}
           />
         </div>
       )}
 
-      {type === "multiselect" && value.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {value.map((item) => (
-            <span
-              key={item}
-              className="flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-[10px] text-emerald-400"
-            >
-              {item}
-
-              <button
-                type="button"
-                onClick={() =>
-                  onChange({
-                    target: {
-                      name,
-                      value: value.filter((category) => category !== item),
-                    },
-                  })
-                }
-                className="text-emerald-500 hover:text-red-400"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
+      {error && (
+        <p id={errorId} role="alert" className="mt-1 text-xs text-red-400">
+          {error.message}
+        </p>
       )}
     </div>
   );

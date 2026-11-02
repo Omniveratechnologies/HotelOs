@@ -9,22 +9,27 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hotelos/api": "workspace:*",
     "@hello-pangea/dnd": "^18.0.1",
+    "@hookform/resolvers": "^5.9.1",
+    "@hotelos/api": "workspace:*",
+    "@mediapipe/tasks-vision": "^1.1.1",
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.19.0",
     "dayjs": "^1.11.21",
     "framer-motion": "^12.43.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
-    "lucide-react": "^1.28.0",
+    "lucide-react": "^1.58.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-hook-form": "^7.90.0",
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.7.0",
     "react-router-dom": "^7.18.2",
+    "socket.io-client": "^4.8.3",
     "tailwindcss": "^4.3.3",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

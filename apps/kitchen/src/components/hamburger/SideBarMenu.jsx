@@ -105,10 +105,6 @@ const menuItems = [
         name: "Attendance",
         submenu: [
           {
-            name: "Today's Attendance",
-            path: "/manage-staff/attendance/todays-attendance",
-          },
-          {
             name: "Attendance History",
             path: "/manage-staff/attendance/attendance-history",
           },

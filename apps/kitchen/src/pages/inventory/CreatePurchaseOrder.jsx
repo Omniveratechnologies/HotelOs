@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import { MdInventory } from "react-icons/md";
 import API_BASE_URL from "../../config/api.js";
 import CreatePurchaseOrderHeader from "../../components/purchaseOrders/CreatePurchaseOrderHeader.jsx";
@@ -171,6 +171,7 @@ const CreatePurchaseOrder = () => {
           isMenuOpen={isMenuOpen}
           setIsMenuOpen={setIsMenuOpen}
           breadcrumb="Inventory → Purchase Order → PO"
+          placeholder="Search ingredients, suppliers, categories..."
           showPageHeading
           pageAction={
             <div className="flex items-center gap-2">

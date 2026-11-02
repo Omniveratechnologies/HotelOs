@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import API_BASE_URL from "../../config/api.js";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import ReceiveStock from "../../components/inventory/ReceiveStock.jsx";
 
 import { FiPackage, FiDownload } from "react-icons/fi";
@@ -52,6 +52,7 @@ const AddReceiveStock = ({ onClose: _onClose }) => {
           subtitle="Record new stock received from the suppliers and update your inventory."
           isMenuOpen={isMenuOpen}
           breadcrumb="Inventory → Add/Receive Stock"
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <button
               type="button"

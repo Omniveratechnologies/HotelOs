@@ -34,6 +34,13 @@ import corporateCompanyRoutes from "#/modules/corporate-companies/index.js";
 import keyCardRoutes from "./modules/key-cards/routes/keyCard.routes.js";
 import kioskDeviceRoutes from "./modules/kiosks/routes/kioskDevice.routes.js";
 import sessionRoutes from "./modules/sessions/routes/session.routes.js";
+import staffManagementRoutes from "#/modules/staff-management/index.js";
+import attendanceRoutes from "#/modules/attendance/index.js";
+import leaveManagementRoutes from "#/modules/leaveManagement/index.js";
+import shiftScheduleRoutes from "#/modules/shift-schedule/index.js";
+import holidayRoutes from "#/modules/holiday/index.js";
+import staffReportsRoutes from "#/modules/staff-reports/index.js";
+import manageStaffDashboardRoutes from "./modules/managestaff-dashboard/index.js";
 
 const app = express();
 
@@ -88,6 +95,13 @@ app.use("/api/v1/menu", menuRoutes);
 app.use("/api/v1/upselling", upsellingRoutes);
 app.use("/api/v1/billing", billingRoutes);
 app.use("/api/v1/integrations/pms", pmsIntegrationRoutes);
+app.use("/api/v1/staffManagement", staffManagementRoutes);
+app.use("/api/v1/attendance", attendanceRoutes);
+app.use("/api/v1/leaveManagement", leaveManagementRoutes);
+app.use("/api/v1/shiftSchedule", shiftScheduleRoutes);
+app.use("/api/v1/holidays", holidayRoutes);
+app.use("/api/v1/staffReports", staffReportsRoutes);
+app.use("/api/v1/manageStaffDashboard", manageStaffDashboardRoutes);
 
 app.use((err, req, res, _next) => {
   logger.error(err, "Unhandled application error");

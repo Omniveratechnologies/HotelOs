@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiDownload, FiPlus } from "react-icons/fi";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import { generateInventoryReport } from "../../utils/inventoryReport.js";
 import API_BASE_URL from "../../config/api.js";
 import StockOverviewCards from "../../components/stockOverview/StockOverviewCards.jsx";
@@ -74,6 +74,7 @@ const StockOverview = () => {
               </button>
             </div>
           }
+          placeholder="Search ingredients, suppliers, categories..."
           showPageHeading
         />
 
