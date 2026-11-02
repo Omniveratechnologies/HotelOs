@@ -47,9 +47,23 @@ export async function saveCheckInStep(
 
 export async function submitCheckIn(
   token: string,
+  payload?: Record<string, unknown>,
 ): Promise<CheckInSessionData> {
-  const data = await submitPublicCheckIn(token);
+  const data = await submitPublicCheckIn(token, payload);
   return data as CheckInSessionData;
+}
+
+function normalizeMime(file: File): string {
+  let type = file.type;
+  if (type === "image/jpg") type = "image/jpeg";
+  if (!type && file.name) {
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext === "jpg" || ext === "jpeg") type = "image/jpeg";
+    else if (ext === "png") type = "image/png";
+    else if (ext === "webp") type = "image/webp";
+    else if (ext === "pdf") type = "application/pdf";
+  }
+  return type || "image/jpeg";
 }
 
 export async function uploadCheckInFile(
@@ -57,11 +71,12 @@ export async function uploadCheckInFile(
   file: File,
 ): Promise<FileRef> {
   const base = `/api/v1/public/check-in/${token}`;
+  const mimeType = normalizeMime(file);
   const result = await api.post(`${base}/uploads`, {
     files: [
       {
-        filename: file.name || "upload",
-        mimeType: file.type,
+        filename: file.name || "upload.jpg",
+        mimeType,
         size: file.size,
       },
     ],
@@ -69,6 +84,7 @@ export async function uploadCheckInFile(
 
   const [upload] = (result.data || []) as Array<{
     uploadUrl: string;
+    downloadUrl?: string;
     key: string;
     filename: string;
     mimeType: string;
@@ -79,12 +95,19 @@ export async function uploadCheckInFile(
     throw new Error("Failed to acquire upload credentials");
   }
 
-  await uploadToR2(upload.uploadUrl, file);
+  const fileToUpload =
+    file.type === mimeType
+      ? file
+      : new File([file], file.name || "upload.jpg", { type: mimeType });
+
+  await uploadToR2(upload.uploadUrl, fileToUpload);
 
   return {
     key: upload.key,
     filename: upload.filename,
     mimeType: upload.mimeType,
     size: upload.size,
+    url: upload.downloadUrl,
+    previewUrl: upload.downloadUrl,
   };
 }

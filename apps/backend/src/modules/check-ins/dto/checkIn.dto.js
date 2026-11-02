@@ -1,8 +1,32 @@
 import { generateDownloadUrl } from "#/config/r2.js";
 
 const withUrl = async (file) => {
-  if (!file?.key) return file || null;
-  return { ...file, url: await generateDownloadUrl(file.key) };
+  if (!file) return null;
+  const raw =
+    typeof file.toObject === "function"
+      ? file.toObject()
+      : typeof file.toJSON === "function"
+        ? file.toJSON()
+        : file;
+  if (!raw?.key) return null;
+  try {
+    const url = await generateDownloadUrl(raw.key);
+    return {
+      key: raw.key,
+      filename: raw.filename || "",
+      mimeType: raw.mimeType || "",
+      size: raw.size || 0,
+      url,
+    };
+  } catch {
+    return {
+      key: raw.key,
+      filename: raw.filename || "",
+      mimeType: raw.mimeType || "",
+      size: raw.size || 0,
+      url: null,
+    };
+  }
 };
 
 /**
@@ -90,6 +114,16 @@ export const publicCheckInSessionDTO = async (session) => {
     status: session.status,
     currentStep: session.currentStep,
     correctionMessage: session.review?.message || null,
+    rejectionMessage:
+      session.review?.decision === "rejected"
+        ? session.review?.message || null
+        : null,
+    review: session.review
+      ? {
+          message: session.review.message || null,
+          decision: session.review.decision || null,
+        }
+      : null,
     correctionSteps:
       session.review?.decision === "correction-requested"
         ? session.review.steps || []
@@ -97,6 +131,7 @@ export const publicCheckInSessionDTO = async (session) => {
     booking: booking
       ? {
           reservationNo: booking.reservationNo || null,
+          status: booking.status || null,
           roomType: booking.roomTypeCode || booking.roomId?.type || null,
           roomNumber: booking.roomId?.roomNumber || null,
           checkIn: booking.checkIn,

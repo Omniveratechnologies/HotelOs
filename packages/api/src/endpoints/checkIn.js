@@ -176,9 +176,13 @@ export const savePublicCheckInStep = async (token, step, payload) => {
 /**
  * Submits the completed self check-in wizard.
  * @param {string} token
+ * @param {Object} [payload={}]
  * @returns {Promise<Object>}
  */
-export const submitPublicCheckIn = async (token) => {
-  const result = await api.post(`/api/v1/public/check-in/${token}/submit`, {});
+export const submitPublicCheckIn = async (token, payload = {}) => {
+  const result = await api.post(
+    `/api/v1/public/check-in/${token}/submit`,
+    payload,
+  );
   return result.data;
 };

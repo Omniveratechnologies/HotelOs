@@ -39,7 +39,7 @@ export function ReviewStep({
 
       {/* Summary card */}
       <div className="bg-background-100 mt-5 flex items-center gap-3 rounded-xl p-4">
-        {checks.selfieDone === "yes" && checks.selfieUrl ? (
+        {checks.selfieUrl ? (
           <img
             src={checks.selfieUrl}
             alt="Guest"

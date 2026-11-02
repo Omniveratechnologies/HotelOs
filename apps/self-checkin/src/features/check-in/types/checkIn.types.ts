@@ -1,15 +1,19 @@
 export interface FileRef {
-  key: string;
-  filename: string;
-  mimeType: string;
-  size: number;
+  key?: string;
+  filename?: string;
+  mimeType?: string;
+  size?: number;
   url?: string;
   previewUrl?: string;
+  file?: File;
+  isUploading?: boolean;
+  error?: string;
 }
 
 export interface BookingSummary {
   _id?: string;
   reservationNo?: string;
+  bookingNumber?: string;
   checkIn?: string;
   checkOut?: string;
   nights?: number;
@@ -21,6 +25,8 @@ export interface BookingSummary {
     infants?: number;
   };
   status?: string;
+  roomType?: string;
+  roomNumber?: string | null;
   roomId?: {
     _id?: string;
     roomNumber?: string;
@@ -34,6 +40,7 @@ export interface BookingSummary {
 }
 
 export interface IdDocumentItem {
+  id?: string;
   idType: string;
   idNumber: string;
   front: FileRef | null;
@@ -71,6 +78,9 @@ export interface CheckInSessionData {
   guest?: GuestSummary;
   stepData?: StepData;
   correctionMessage?: string;
+  rejectionMessage?: string;
+  review?: { message?: string; decision?: string };
+  submittedAt?: string;
 }
 
 export interface LookupResponse {

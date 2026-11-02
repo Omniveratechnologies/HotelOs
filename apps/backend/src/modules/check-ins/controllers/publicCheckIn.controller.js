@@ -7,7 +7,7 @@ import User from "#/modules/users/models/User.js";
 import { publicCheckInSessionDTO } from "../dto/checkIn.dto.js";
 import { hashToken, createSessionToken } from "../services/token.service.js";
 import { sendCheckInOtpEmail } from "#/shared/services/email.service.js";
-import { generateUploadUrl } from "#/config/r2.js";
+import { generateUploadUrl, generateDownloadUrl } from "#/config/r2.js";
 import {
   ALLOWED_MIME_TYPES,
   validateDocument,
@@ -55,13 +55,6 @@ async function sessionByToken(req, res) {
     res.status(409).json({
       success: false,
       message: "This check-in has already been approved",
-    });
-    return null;
-  }
-  if (session.status === "rejected" && req.method !== "GET") {
-    res.status(409).json({
-      success: false,
-      message: "This check-in was rejected. Please contact reception.",
     });
     return null;
   }
@@ -252,7 +245,9 @@ export const saveCheckInStep = async (req, res) => {
 
     if (
       session.status === "link-sent" ||
-      session.status === "correction-requested"
+      session.status === "correction-requested" ||
+      session.status === "submitted" ||
+      session.status === "rejected"
     ) {
       session.status = "in-progress";
     }
@@ -317,11 +312,16 @@ export const getCheckInUploadUrls = async (req, res) => {
           session._id,
           file.filename || "file",
         );
-        return {
-          key,
-          uploadUrl: await generateUploadUrl(key, {
+        const [uploadUrl, downloadUrl] = await Promise.all([
+          generateUploadUrl(key, {
             contentType: file.mimeType,
           }),
+          generateDownloadUrl(key),
+        ]);
+        return {
+          key,
+          uploadUrl,
+          downloadUrl,
           filename: file.filename,
           mimeType: file.mimeType,
           size: file.size,
@@ -351,6 +351,106 @@ export const submitCheckIn = async (req, res) => {
     const session = await sessionByToken(req, res);
     if (!session) return;
 
+    if (!session.stepData) {
+      session.stepData = {};
+    }
+
+    // Ingest any payload passed in body to ensure session.stepData is completely updated
+    const incoming = req.body || {};
+    if (incoming.guestName) {
+      session.stepData.guestName = String(incoming.guestName)
+        .trim()
+        .slice(0, 500);
+    }
+    if (incoming.email) {
+      session.stepData.email = String(incoming.email).trim().slice(0, 500);
+    }
+    if (incoming.phone) {
+      session.stepData.phone = String(incoming.phone).trim().slice(0, 500);
+    }
+    if (incoming.nationality) {
+      session.stepData.nationality = String(incoming.nationality)
+        .trim()
+        .slice(0, 500);
+    }
+    if (incoming.dateOfBirth) {
+      session.stepData.dateOfBirth = String(incoming.dateOfBirth)
+        .trim()
+        .slice(0, 500);
+    }
+
+    if (Array.isArray(incoming.documents) && incoming.documents.length > 0) {
+      const sanitizedDocs = [];
+      for (const doc of incoming.documents) {
+        if (!doc) continue;
+        const frontRef = sanitizeFileRef(
+          doc.front,
+          session.hotelId,
+          session._id,
+        );
+        const backRef = doc.back
+          ? sanitizeFileRef(doc.back, session.hotelId, session._id)
+          : null;
+        if (doc.front && !frontRef) continue;
+        sanitizedDocs.push({
+          idType: String(doc.idType || "Aadhaar").slice(0, 50),
+          idNumber: String(doc.idNumber || "")
+            .trim()
+            .slice(0, 50),
+          front: frontRef,
+          back: backRef,
+        });
+      }
+      if (sanitizedDocs.length > 0) {
+        session.stepData.documents = sanitizedDocs;
+      }
+    }
+
+    if (incoming.selfie) {
+      const ref = sanitizeFileRef(
+        incoming.selfie,
+        session.hotelId,
+        session._id,
+      );
+      if (ref) session.stepData.selfie = ref;
+    }
+
+    if (incoming.signature) {
+      const ref = sanitizeFileRef(
+        incoming.signature,
+        session.hotelId,
+        session._id,
+      );
+      if (ref) session.stepData.signature = ref;
+    }
+
+    if (incoming.termsAcceptedAt) {
+      session.stepData.termsAcceptedAt = new Date(incoming.termsAcceptedAt);
+    }
+
+    if (Array.isArray(incoming.preferences)) {
+      session.stepData.preferences = incoming.preferences
+        .map((p) => String(p).slice(0, 60))
+        .slice(0, 10);
+    }
+
+    if (incoming.remarks !== undefined) {
+      session.stepData.remarks = String(incoming.remarks).trim().slice(0, 500);
+    }
+
+    // Fall back to reservation guest details if missing in stepData
+    const booking = session.reservationId?._id ? session.reservationId : null;
+    const guest = booking?.guestId?._id ? booking.guestId : null;
+    if (!session.stepData.guestName && guest?.name) {
+      session.stepData.guestName = guest.name;
+    }
+    if (!session.stepData.phone && guest?.phone) {
+      session.stepData.phone = guest.phone;
+    }
+    if (!session.stepData.email && guest?.email) {
+      session.stepData.email = guest.email;
+    }
+
     const d = session.stepData || {};
     const missing = [];
     if (!d.guestName || !d.phone) missing.push("guest");
@@ -366,14 +466,6 @@ export const submitCheckIn = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: `Complete these steps first: ${missing.join(", ")}`,
-      });
-    }
-
-    if (session.status === "submitted") {
-      return res.status(200).json({
-        success: true,
-        message: "Check-in already submitted",
-        data: await publicCheckInSessionDTO(session),
       });
     }
 

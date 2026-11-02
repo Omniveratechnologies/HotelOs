@@ -28,6 +28,7 @@ interface CaptureIdStepProps {
   errors?: Record<string, string>;
   maxDocuments?: number;
   guestCount?: number;
+  isKiosk?: boolean;
 }
 
 export function CaptureIdStep({
@@ -41,6 +42,7 @@ export function CaptureIdStep({
   errors = EMPTY_ERRORS,
   maxDocuments = 5,
   guestCount = 1,
+  isKiosk = false,
 }: CaptureIdStepProps) {
   const canAddMore = documents.length < maxDocuments;
 
@@ -64,11 +66,7 @@ export function CaptureIdStep({
 
           return (
             <div
-              key={
-                doc.idNumber
-                  ? `${doc.idType}_${doc.idNumber}_${index}`
-                  : `doc_${index}`
-              }
+              key={doc.id || `doc_${index}`}
               className="border-surface-200 rounded-2xl border bg-white p-4 shadow-xs sm:p-5"
             >
               {/* Document Header */}
@@ -167,6 +165,16 @@ export function CaptureIdStep({
                     }
                     onClear={() => onDocumentChange(index, "front", null)}
                     disabled={uploading}
+                    isUploading={Boolean(doc.front?.isUploading)}
+                    uploadError={doc.front?.error}
+                    onRetry={
+                      doc.front?.file
+                        ? () => onDocumentFile(index, "front", doc.front!.file!)
+                        : undefined
+                    }
+                    isKiosk={isKiosk}
+                    shapeGuide="document"
+                    cameraTitle={`Capture Document #${index + 1} (Front)`}
                     successMessage="Front side captured"
                     error={frontError}
                   />
@@ -189,6 +197,16 @@ export function CaptureIdStep({
                     }
                     onClear={() => onDocumentChange(index, "back", null)}
                     disabled={uploading}
+                    isUploading={Boolean(doc.back?.isUploading)}
+                    uploadError={doc.back?.error}
+                    onRetry={
+                      doc.back?.file
+                        ? () => onDocumentFile(index, "back", doc.back!.file!)
+                        : undefined
+                    }
+                    isKiosk={isKiosk}
+                    shapeGuide="document"
+                    cameraTitle={`Capture Document #${index + 1} (Back)`}
                     successMessage="Back side captured"
                   />
                 </div>

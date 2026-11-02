@@ -21,4 +21,5 @@ export { QuantityStepper } from "./QuantityStepper.jsx";
 export { FilterBar } from "./FilterBar.jsx";
 export { ConfirmDialog } from "./ConfirmDialog.jsx";
 export { FileCaptureField } from "./FileCaptureField.jsx";
+export { CameraCaptureModal } from "./CameraCaptureModal.jsx";
 export { SignaturePad } from "./SignaturePad.jsx";

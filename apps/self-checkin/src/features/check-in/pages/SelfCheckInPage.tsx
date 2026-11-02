@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { ArrowLeft, ArrowRight, AlertCircle, Globe } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  AlertCircle,
+  Globe,
+  Calendar,
+  Pencil,
+  Loader2,
+} from "lucide-react";
 import { InlineBanner } from "@hotelos/ui/components";
+import { isKioskEnvironment } from "@hotelos/utils";
+
+import { loadCheckInDraft, saveCheckInDraft } from "../utils/draftStorage";
 
 import {
   resolveCheckIn,
@@ -25,7 +36,8 @@ import type {
   IdDocumentItem,
 } from "../types/checkIn.types";
 
-const STEP_COUNT = 10;
+const TOTAL_STEPS = 8;
+const MAX_STEP_INDEX = 9;
 
 // saveStep payload key per step index (wizard steps 0..9)
 const STEP_KEYS: Record<number, string> = {
@@ -38,6 +50,7 @@ const STEP_KEYS: Record<number, string> = {
 
 export default function SelfCheckInPage() {
   const { token } = useParams<{ token: string }>();
+  const isKiosk = useMemo(() => isKioskEnvironment(), []);
   const [session, setSession] = useState<CheckInSessionData | null>(null);
   const [state, setState] = useState<{
     kind: "loading" | "error" | "ready";
@@ -48,6 +61,7 @@ export default function SelfCheckInPage() {
       : { kind: "error", message: "Check-in token is missing" },
   );
   const [step, setStep] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Form fields seeded from session's stored stepData
   const [guest, setGuest] = useState({
@@ -59,6 +73,7 @@ export default function SelfCheckInPage() {
 
   const [documents, setDocuments] = useState<IdDocumentItem[]>([
     {
+      id: "doc_init_0",
       idType: "Aadhaar",
       idNumber: "",
       front: null,
@@ -73,6 +88,7 @@ export default function SelfCheckInPage() {
     dataUrl: string;
     ref: FileRef;
   } | null>(null);
+  const [pendingSignature, setPendingSignature] = useState<string | null>(null);
   const [terms, setTerms] = useState(false);
   const [prefs, setPrefs] = useState<string[]>([]);
   const [remarks, setRemarks] = useState("");
@@ -89,6 +105,17 @@ export default function SelfCheckInPage() {
   const guestPhone = guest.phone || sessionGuest?.phone || "";
   const guestNationality = guest.nationality || sessionGuest?.nationality || "";
 
+  const isAlreadyCheckedIn = booking?.status === "checked-in";
+  const isCheckOutPassed = useMemo(() => {
+    if (booking?.status === "checked-out") return true;
+    if (!booking?.checkOut) return false;
+    try {
+      return new Date() > new Date(booking.checkOut);
+    } catch {
+      return false;
+    }
+  }, [booking?.status, booking?.checkOut]);
+
   // Resolve check-in on mount
   useEffect(() => {
     if (!token) return;
@@ -100,18 +127,78 @@ export default function SelfCheckInPage() {
         setSession(data);
         setState({ kind: "ready" });
 
-        // Seed form from stored stepData
+        // Merge backend stepData with any local token draft
+        const cachedDraft = loadCheckInDraft(token);
         const sd = data.stepData || {};
+
         setGuest({
-          name: sd.guestName || data.guest?.name || "",
-          email: sd.email || data.guest?.email || "",
-          phone: sd.phone || data.guest?.phone || "",
-          nationality: sd.nationality || data.guest?.nationality || "",
+          name:
+            cachedDraft?.guest?.name || sd.guestName || data.guest?.name || "",
+          email:
+            cachedDraft?.guest?.email || sd.email || data.guest?.email || "",
+          phone:
+            cachedDraft?.guest?.phone || sd.phone || data.guest?.phone || "",
+          nationality:
+            cachedDraft?.guest?.nationality ||
+            sd.nationality ||
+            data.guest?.nationality ||
+            "",
         });
 
-        if (Array.isArray(sd.documents) && sd.documents.length > 0) {
+        // Merge backend documents with cached draft documents
+        const backendDocs = Array.isArray(sd.documents) ? sd.documents : [];
+        if (cachedDraft?.documents && cachedDraft.documents.length > 0) {
           setDocuments(
-            sd.documents.map((d) => ({
+            cachedDraft.documents.map((d, i) => {
+              const bDoc = backendDocs[i];
+              const frontUrl =
+                bDoc?.front?.url ||
+                (d.front?.url && d.front.url.startsWith("http")
+                  ? d.front.url
+                  : null) ||
+                (d.front?.previewUrl && d.front.previewUrl.startsWith("http")
+                  ? d.front.previewUrl
+                  : null);
+
+              const backUrl =
+                bDoc?.back?.url ||
+                (d.back?.url && d.back.url.startsWith("http")
+                  ? d.back.url
+                  : null) ||
+                (d.back?.previewUrl && d.back.previewUrl.startsWith("http")
+                  ? d.back.previewUrl
+                  : null);
+
+              return {
+                ...d,
+                id: d.id || `doc_${i}_${Date.now()}`,
+                front: d.front
+                  ? {
+                      ...d.front,
+                      ...bDoc?.front,
+                      url: frontUrl || undefined,
+                      previewUrl: frontUrl || undefined,
+                    }
+                  : bDoc?.front
+                    ? { ...bDoc.front, previewUrl: bDoc.front.url }
+                    : null,
+                back: d.back
+                  ? {
+                      ...d.back,
+                      ...bDoc?.back,
+                      url: backUrl || undefined,
+                      previewUrl: backUrl || undefined,
+                    }
+                  : bDoc?.back
+                    ? { ...bDoc.back, previewUrl: bDoc.back.url }
+                    : null,
+              };
+            }),
+          );
+        } else if (backendDocs.length > 0) {
+          setDocuments(
+            backendDocs.map((d, i) => ({
+              id: d.id || `doc_${i}_${Date.now()}`,
               idType: d.idType || "Aadhaar",
               idNumber: d.idNumber || "",
               front: d.front ? { ...d.front, previewUrl: d.front.url } : null,
@@ -121,6 +208,7 @@ export default function SelfCheckInPage() {
         } else {
           setDocuments([
             {
+              id: "doc_init_0",
               idType: "Aadhaar",
               idNumber: "",
               front: null,
@@ -129,24 +217,85 @@ export default function SelfCheckInPage() {
           ]);
         }
 
-        setSelfie(
-          sd.selfie ? { ...sd.selfie, previewUrl: sd.selfie.url } : null,
-        );
+        // Hydrate selfie
+        const selfieUrl =
+          sd.selfie?.url ||
+          (cachedDraft?.selfie?.url && cachedDraft.selfie.url.startsWith("http")
+            ? cachedDraft.selfie.url
+            : null) ||
+          (cachedDraft?.selfie?.previewUrl &&
+          cachedDraft.selfie.previewUrl.startsWith("http")
+            ? cachedDraft.selfie.previewUrl
+            : null);
 
-        setSignature(
-          sd.signature
-            ? { dataUrl: sd.signature.url || "", ref: sd.signature }
-            : null,
-        );
-        setTerms(Boolean(sd.termsAcceptedAt));
-        setPrefs(sd.preferences || []);
-        setRemarks(sd.remarks || "");
-
-        // If already submitted or approved, jump straight to success screen
-        if (data.status === "submitted" || data.status === "approved") {
-          setStep(9);
+        if (selfieUrl || cachedDraft?.selfie?.key || sd.selfie?.key) {
+          setSelfie({
+            ...cachedDraft?.selfie,
+            ...sd.selfie,
+            url: selfieUrl || undefined,
+            previewUrl: selfieUrl || undefined,
+          });
         } else {
-          setStep(Math.min(data.currentStep ? data.currentStep - 1 : 0, 8));
+          setSelfie(null);
+        }
+
+        const sigUrl =
+          sd.signature?.url ||
+          (cachedDraft?.signature?.ref?.url &&
+          cachedDraft.signature.ref.url.startsWith("http")
+            ? cachedDraft.signature.ref.url
+            : null) ||
+          (cachedDraft?.signature?.dataUrl &&
+          cachedDraft.signature.dataUrl.startsWith("http")
+            ? cachedDraft.signature.dataUrl
+            : null);
+
+        if (cachedDraft?.signature || sd.signature) {
+          const baseDataUrl =
+            cachedDraft?.signature?.dataUrl || sd.signature?.url || "";
+          setSignature({
+            dataUrl: baseDataUrl,
+            ref: {
+              ...cachedDraft?.signature?.ref,
+              ...sd.signature,
+              url: sigUrl || undefined,
+            },
+          });
+        } else {
+          setSignature(null);
+        }
+
+        setTerms(cachedDraft?.terms ?? Boolean(sd.termsAcceptedAt));
+        setPrefs(cachedDraft?.prefs || sd.preferences || []);
+        setRemarks(cachedDraft?.remarks ?? (sd.remarks || ""));
+
+        // If already submitted, approved, rejected, or checked in, show the full submission summary
+        const isTerminalStatus =
+          data.status === "submitted" ||
+          data.status === "approved" ||
+          data.status === "rejected" ||
+          data.status === "checked-in" ||
+          data.booking?.status === "checked-in";
+
+        if (
+          cachedDraft?.isEditing &&
+          cachedDraft.savedStep > 0 &&
+          cachedDraft.savedStep < 9
+        ) {
+          setIsEditing(true);
+          setStep(cachedDraft.savedStep);
+        } else if (isTerminalStatus) {
+          setStep(9);
+        } else if (
+          cachedDraft?.savedStep !== undefined &&
+          cachedDraft.savedStep > 0 &&
+          cachedDraft.savedStep < 9
+        ) {
+          // Resume at in-progress step if guest refreshed while filling
+          setStep(cachedDraft.savedStep);
+        } else {
+          // Fresh open: start at 1st page (WelcomeStep)
+          setStep(0);
         }
       })
       .catch((err: unknown) => {
@@ -165,6 +314,34 @@ export default function SelfCheckInPage() {
     };
   }, [token]);
 
+  // Keep entered/submitted data persisted per token across page refreshes
+  useEffect(() => {
+    if (!token || !session) return;
+    saveCheckInDraft(token, {
+      guest,
+      documents,
+      selfie,
+      signature,
+      terms,
+      prefs,
+      remarks,
+      savedStep: step,
+      isEditing,
+    });
+  }, [
+    token,
+    session,
+    guest,
+    documents,
+    selfie,
+    signature,
+    terms,
+    prefs,
+    remarks,
+    step,
+    isEditing,
+  ]);
+
   // Steps that require input before continuing
   const canContinue = useMemo(() => {
     switch (step) {
@@ -176,21 +353,44 @@ export default function SelfCheckInPage() {
       case 3:
         return (
           documents.length > 0 &&
-          documents.every((d) => Boolean(d.idNumber.trim()) && Boolean(d.front))
+          documents.every(
+            (d) =>
+              Boolean(d.idNumber.trim()) &&
+              Boolean(d.front?.key) &&
+              !d.front?.isUploading &&
+              !d.front?.error &&
+              (!d.back || (!d.back.isUploading && !d.back.error)),
+          )
         );
       case 4:
-        return Boolean(selfie);
+        return Boolean(selfie?.key && !selfie?.isUploading && !selfie?.error);
       case 5:
         return true;
-      case 6:
-        return Boolean(signature && terms);
+      case 6: {
+        const hasSig = Boolean(
+          signature?.ref?.key ||
+          signature?.ref?.url ||
+          signature?.dataUrl ||
+          pendingSignature,
+        );
+        return Boolean(hasSig && terms);
+      }
       case 7:
       case 8:
         return true;
       default:
         return false;
     }
-  }, [step, guestName, guestPhone, documents, selfie, signature, terms]);
+  }, [
+    step,
+    guestName,
+    guestPhone,
+    documents,
+    selfie,
+    signature,
+    pendingSignature,
+    terms,
+  ]);
 
   const saveStep = useCallback(async () => {
     if (!token) return false;
@@ -244,8 +444,17 @@ export default function SelfCheckInPage() {
           break;
         case 6:
           Object.assign(payload, {
-            signature: signature?.ref || null,
-            termsAcceptedAt: terms ? new Date().toISOString() : null,
+            signature: signature?.ref?.key
+              ? {
+                  key: signature.ref.key,
+                  filename: signature.ref.filename,
+                  mimeType: signature.ref.mimeType,
+                  size: signature.ref.size,
+                }
+              : null,
+            termsAcceptedAt: terms
+              ? session?.stepData?.termsAcceptedAt || new Date().toISOString()
+              : null,
           });
           break;
         case 7:
@@ -259,7 +468,7 @@ export default function SelfCheckInPage() {
       }
 
       const noOps = [0, 1, 5, 8].includes(step);
-      const stepKey = STEP_KEYS[step + 1];
+      const stepKey = STEP_KEYS[step];
       if (!noOps && stepKey) {
         const data = await saveCheckInStep(token, stepKey, payload);
         setSession(data);
@@ -270,7 +479,18 @@ export default function SelfCheckInPage() {
       setStepError(msg);
       return false;
     }
-  }, [token, step, guest, documents, selfie, signature, terms, prefs, remarks]);
+  }, [
+    token,
+    step,
+    guest,
+    documents,
+    selfie,
+    signature,
+    terms,
+    prefs,
+    remarks,
+    session,
+  ]);
 
   const onContinue = async () => {
     setActionError("");
@@ -287,22 +507,117 @@ export default function SelfCheckInPage() {
       return;
     }
 
+    if (step === 6) {
+      if (!token) return;
+
+      // If user drew a new signature on canvas, upload and save it now
+      if (pendingSignature) {
+        setUploading(true);
+        setStepError("");
+        try {
+          const blob = await (await fetch(pendingSignature)).blob();
+          const file = new File([blob], "signature.png", { type: "image/png" });
+          const ref = await uploadCheckInFile(token, file);
+          const uploadedUrl = ref.url || pendingSignature;
+          const uploadedSignature = {
+            dataUrl: pendingSignature,
+            ref: {
+              ...ref,
+              url: uploadedUrl,
+              previewUrl: uploadedUrl,
+            },
+          };
+          setSignature(uploadedSignature);
+          setPendingSignature(null);
+
+          const data = await saveCheckInStep(token, "signature", {
+            signature: {
+              key: ref.key,
+              filename: ref.filename,
+              mimeType: ref.mimeType,
+              size: ref.size,
+            },
+            termsAcceptedAt: terms ? new Date().toISOString() : null,
+          });
+          setSession(data);
+          setStep((s) => Math.min(s + 1, MAX_STEP_INDEX));
+        } catch (err: unknown) {
+          const msg =
+            err instanceof Error ? err.message : "Failed to upload signature";
+          setStepError(msg);
+        } finally {
+          setUploading(false);
+        }
+        return;
+      }
+
+      // If user already had a saved signature and didn't redraw
+      const ok = await saveStep();
+      if (ok) setStep((s) => Math.min(s + 1, MAX_STEP_INDEX));
+      return;
+    }
+
     if (step === 8) {
       if (!token) return;
       try {
-        const data = await submitCheckIn(token);
+        setUploading(true);
+        const payload = {
+          guestName: guest.name.trim() || guestName.trim(),
+          email: guest.email.trim() || guestEmail.trim(),
+          phone: guest.phone.trim() || guestPhone.trim(),
+          nationality: guest.nationality.trim() || guestNationality.trim(),
+          documents: documents.map((d) => ({
+            idType: d.idType,
+            idNumber: d.idNumber.trim(),
+            front: d.front
+              ? {
+                  key: d.front.key,
+                  filename: d.front.filename,
+                  mimeType: d.front.mimeType,
+                  size: d.front.size,
+                }
+              : null,
+            back: d.back
+              ? {
+                  key: d.back.key,
+                  filename: d.back.filename,
+                  mimeType: d.back.mimeType,
+                  size: d.back.size,
+                }
+              : null,
+          })),
+          selfie: selfie
+            ? {
+                key: selfie.key,
+                filename: selfie.filename,
+                mimeType: selfie.mimeType,
+                size: selfie.size,
+              }
+            : null,
+          signature: signature?.ref || null,
+          termsAcceptedAt: terms
+            ? session?.stepData?.termsAcceptedAt || new Date().toISOString()
+            : null,
+          preferences: prefs,
+          remarks: remarks.trim(),
+        };
+
+        const data = await submitCheckIn(token, payload);
         setSession(data);
+        setIsEditing(false);
         setStep(9);
       } catch (err: unknown) {
         const msg =
           err instanceof Error ? err.message : "Failed to submit check-in";
         setActionError(msg);
+      } finally {
+        setUploading(false);
       }
       return;
     }
 
     const ok = await saveStep();
-    if (ok) setStep((s) => Math.min(s + 1, STEP_COUNT - 1));
+    if (ok) setStep((s) => Math.min(s + 1, MAX_STEP_INDEX));
   };
 
   const onBack = () => {
@@ -324,6 +639,7 @@ export default function SelfCheckInPage() {
       return [
         ...prev,
         {
+          id: `doc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           idType: "Aadhaar",
           idNumber: "",
           front: null,
@@ -352,17 +668,107 @@ export default function SelfCheckInPage() {
   const onDocumentFile = useCallback(
     async (index: number, side: "front" | "back", file: File) => {
       if (!token) return;
-      setUploading(true);
       setStepError("");
+      const previewUrl = URL.createObjectURL(file);
+
+      // Optimistically store local preview and uploading state immediately
+      setDocuments((prev) =>
+        prev.map((doc, i) =>
+          i === index
+            ? {
+                ...doc,
+                [side]: {
+                  key: doc[side]?.key || "",
+                  filename: file.name || `${side}_${index + 1}.jpg`,
+                  mimeType: file.type || "image/jpeg",
+                  size: file.size,
+                  previewUrl,
+                  file,
+                  isUploading: true,
+                  error: undefined,
+                },
+              }
+            : doc,
+        ),
+      );
+
       try {
+        setUploading(true);
         const ref = await uploadCheckInFile(token, file);
-        const entry = { ...ref, previewUrl: URL.createObjectURL(file) };
-        setDocuments((prev) =>
-          prev.map((doc, i) => (i === index ? { ...doc, [side]: entry } : doc)),
-        );
+        try {
+          URL.revokeObjectURL(previewUrl);
+        } catch {
+          // ignore
+        }
+
+        const uploadedUrl = ref.url || ref.previewUrl || previewUrl;
+        const uploadedRef = {
+          ...ref,
+          url: uploadedUrl,
+          previewUrl: uploadedUrl,
+          file: undefined,
+          isUploading: false,
+          error: undefined,
+        };
+
+        setDocuments((prev) => {
+          const next = prev.map((doc, i) =>
+            i === index
+              ? {
+                  ...doc,
+                  [side]: uploadedRef,
+                }
+              : doc,
+          );
+
+          // Auto-sync step data to backend
+          saveCheckInStep(token, "id", {
+            documents: next.map((d) => ({
+              idType: d.idType,
+              idNumber: d.idNumber.trim(),
+              front: d.front
+                ? {
+                    key: d.front.key,
+                    filename: d.front.filename,
+                    mimeType: d.front.mimeType,
+                    size: d.front.size,
+                  }
+                : null,
+              back: d.back
+                ? {
+                    key: d.back.key,
+                    filename: d.back.filename,
+                    mimeType: d.back.mimeType,
+                    size: d.back.size,
+                  }
+                : null,
+            })),
+          }).catch(() => {
+            // background auto-sync
+          });
+
+          return next;
+        });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Upload failed";
         setStepError(msg);
+        setDocuments((prev) =>
+          prev.map((doc, i) =>
+            i === index
+              ? {
+                  ...doc,
+                  [side]: {
+                    ...doc[side],
+                    previewUrl,
+                    file,
+                    filename: file.name,
+                    isUploading: false,
+                    error: msg,
+                  },
+                }
+              : doc,
+          ),
+        );
       } finally {
         setUploading(false);
       }
@@ -372,39 +778,91 @@ export default function SelfCheckInPage() {
 
   const onPhotoCapture = async (file: File) => {
     if (!token) return;
-    setUploading(true);
     setStepError("");
+    const previewUrl = URL.createObjectURL(file);
+
+    // Optimistically store local selfie preview immediately
+    setSelfie({
+      key: "",
+      filename: file.name || "selfie.jpg",
+      mimeType: file.type || "image/jpeg",
+      size: file.size,
+      previewUrl,
+      file,
+      isUploading: true,
+      error: undefined,
+    });
+
     try {
+      setUploading(true);
       const ref = await uploadCheckInFile(token, file);
-      setSelfie({ file, previewUrl: URL.createObjectURL(file), ...ref });
+      try {
+        URL.revokeObjectURL(previewUrl);
+      } catch {
+        // ignore
+      }
+
+      const uploadedUrl = ref.url || ref.previewUrl || previewUrl;
+      const uploadedSelfie = {
+        ...ref,
+        url: uploadedUrl,
+        previewUrl: uploadedUrl,
+        file: undefined,
+        isUploading: false,
+        error: undefined,
+      };
+
+      setSelfie(uploadedSelfie);
+
+      // Auto-sync photo step to backend
+      saveCheckInStep(token, "photo", {
+        selfie: {
+          key: ref.key,
+          filename: ref.filename,
+          mimeType: ref.mimeType,
+          size: ref.size,
+        },
+      }).catch(() => {
+        // background auto-sync
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Upload failed";
       setStepError(msg);
+      setSelfie((prev) =>
+        prev
+          ? {
+              ...prev,
+              previewUrl,
+              file,
+              isUploading: false,
+              error: msg,
+            }
+          : null,
+      );
     } finally {
       setUploading(false);
     }
   };
 
-  const onSignature = async (dataUrl: string | null) => {
-    if (!token) return;
-    if (!dataUrl) {
-      setSignature(null);
-      return;
-    }
-    setUploading(true);
+  const onClearSavedSignature = useCallback(() => {
+    setSignature(null);
+    setPendingSignature(null);
+    setSession((prev) => {
+      if (!prev?.stepData) return prev;
+      return {
+        ...prev,
+        stepData: {
+          ...prev.stepData,
+          signature: null,
+        },
+      };
+    });
+  }, []);
+
+  const onDrawingChange = useCallback((dataUrl: string | null) => {
+    setPendingSignature(dataUrl);
     setStepError("");
-    try {
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], "signature.png", { type: "image/png" });
-      const ref = await uploadCheckInFile(token, file);
-      setSignature({ dataUrl, ref });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Upload failed";
-      setStepError(msg);
-    } finally {
-      setUploading(false);
-    }
-  };
+  }, []);
 
   const guestData = {
     name: guestName,
@@ -444,9 +902,77 @@ export default function SelfCheckInPage() {
   }
 
   const isTerminal = step === 0 || step === 9;
-  const progressPct = Math.round((step / (STEP_COUNT - 1)) * 100);
+  const progressPct = Math.min(100, Math.round((step / TOTAL_STEPS) * 100));
   const correctionMsg = session?.correctionMessage;
   const hotelName = "HotelOS";
+
+  if (
+    (booking?.status === "checked-out" ||
+      (!isAlreadyCheckedIn && isCheckOutPassed)) &&
+    !isEditing
+  ) {
+    return (
+      <div className="bg-brand-950 relative min-h-screen text-slate-900">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,#1e3a5f_0%,#0f1f3d_50%,#091423_100%)]"
+        />
+        <header className="fixed inset-x-0 top-0 z-20 flex h-14 items-center justify-between border-b border-white/10 px-4 text-white backdrop-blur-md sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <span className="bg-primary-400 text-brand-950 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold">
+              ✦
+            </span>
+            <span className="text-sm font-semibold">{hotelName}</span>
+          </div>
+        </header>
+
+        <main className="relative z-10 flex min-h-screen items-center justify-center px-4 py-20">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 text-center shadow-2xl sm:p-8">
+            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
+              <Calendar size={28} className="text-amber-600" />
+            </span>
+            <h2 className="text-brand-900 text-xl font-bold">
+              Check-In No Longer Available
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              The scheduled check-out date for this reservation (
+              <span className="font-semibold text-gray-800">
+                {booking?.checkOut
+                  ? new Date(booking.checkOut).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "passed"}
+              </span>
+              ) has passed. Self check-in is no longer active for this
+              reservation.
+            </p>
+            {(booking?.bookingNumber || booking?.reservationNo) && (
+              <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-3.5 text-left text-xs">
+                <div className="flex justify-between border-b border-gray-200/60 py-1">
+                  <span className="text-gray-500">Booking Reference</span>
+                  <span className="font-mono font-semibold text-gray-900">
+                    {booking.bookingNumber || booking.reservationNo}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-gray-500">Guest Name</span>
+                  <span className="font-medium text-gray-900">
+                    {guestName || "Guest"}
+                  </span>
+                </div>
+              </div>
+            )}
+            <p className="mt-5 text-xs text-gray-500">
+              If you are currently staying with us or need assistance, please
+              contact or visit our front desk reception.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-brand-950 relative min-h-screen text-slate-900">
@@ -477,11 +1003,30 @@ export default function SelfCheckInPage() {
       <main className="relative z-10 flex min-h-screen items-start justify-center px-4 pt-20 pb-8 sm:pt-20">
         <div className="w-full max-w-lg">
           <div className="overflow-hidden rounded-2xl bg-white shadow-[0_10px_30px_rgba(0,0,0,.25)] sm:rounded-3xl">
+            {isEditing && (
+              <div className="flex items-center justify-between border-b border-amber-200 bg-amber-50 px-5 py-2.5 text-xs text-amber-900 sm:px-6">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <Pencil size={13} className="text-amber-700" />
+                  <span>Editing Check-In Submission</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setStep(9);
+                  }}
+                  className="cursor-pointer font-bold text-amber-800 underline hover:text-amber-950"
+                >
+                  Cancel &amp; View Summary
+                </button>
+              </div>
+            )}
+
             {!isTerminal && (
               <div className="px-5 pt-4 sm:px-6">
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>
-                    Step {step} of {STEP_COUNT}
+                    Step {step} of {TOTAL_STEPS}
                   </span>
                   <span>{progressPct}%</span>
                 </div>
@@ -523,6 +1068,8 @@ export default function SelfCheckInPage() {
                   onDocumentChange={onDocumentChange}
                   onDocumentFile={onDocumentFile}
                   uploading={uploading}
+                  error={stepError}
+                  isKiosk={isKiosk}
                   maxDocuments={maxDocuments}
                   guestCount={guestCount}
                 />
@@ -532,6 +1079,13 @@ export default function SelfCheckInPage() {
                   selfie={selfie}
                   onCapture={onPhotoCapture}
                   uploading={uploading}
+                  error={stepError}
+                  isKiosk={isKiosk}
+                  onRetry={
+                    selfie?.file
+                      ? () => onPhotoCapture(selfie.file!)
+                      : undefined
+                  }
                 />
               )}
               {step === 5 && booking && (
@@ -543,10 +1097,15 @@ export default function SelfCheckInPage() {
               )}
               {step === 6 && (
                 <SignatureStep
-                  hasSignature={Boolean(signature)}
+                  signatureUrl={
+                    signature?.ref?.url || signature?.dataUrl || null
+                  }
+                  onClearSavedSignature={onClearSavedSignature}
+                  hasDrawing={Boolean(pendingSignature)}
+                  onDrawingChange={onDrawingChange}
                   termsAccepted={terms}
                   onTermsChange={setTerms}
-                  onSignatureChange={onSignature}
+                  uploading={uploading}
                   error={stepError}
                 />
               )}
@@ -617,13 +1176,105 @@ export default function SelfCheckInPage() {
                   onJump={setStep}
                 />
               )}
-              {step === 9 && booking && (
-                <SuccessStep
-                  booking={booking}
-                  guest={guestData}
-                  approved={session?.status === "approved"}
-                />
-              )}
+              {step === 9 &&
+                booking &&
+                (() => {
+                  const backendDocs = session?.stepData?.documents || [];
+                  const mergedDocs = (
+                    backendDocs.length > 0 ? backendDocs : documents
+                  ).map((doc, idx) => {
+                    const bDoc = backendDocs[idx];
+                    const lDoc = documents[idx];
+                    return {
+                      idType:
+                        doc.idType || bDoc?.idType || lDoc?.idType || "Aadhaar",
+                      idNumber:
+                        doc.idNumber || bDoc?.idNumber || lDoc?.idNumber || "",
+                      front: bDoc?.front?.url
+                        ? bDoc.front
+                        : lDoc?.front?.url
+                          ? lDoc.front
+                          : lDoc?.front?.previewUrl
+                            ? { ...lDoc.front, url: lDoc.front.previewUrl }
+                            : bDoc?.front || null,
+                      back: bDoc?.back?.url
+                        ? bDoc.back
+                        : lDoc?.back?.url
+                          ? lDoc.back
+                          : lDoc?.back?.previewUrl
+                            ? { ...lDoc.back, url: lDoc.back.previewUrl }
+                            : bDoc?.back || null,
+                    };
+                  });
+
+                  const bSelfie = session?.stepData?.selfie;
+                  const mergedSelfie = bSelfie?.url
+                    ? bSelfie
+                    : selfie?.url
+                      ? selfie
+                      : selfie?.previewUrl
+                        ? { ...selfie, url: selfie.previewUrl }
+                        : bSelfie || null;
+
+                  const bSig = session?.stepData?.signature;
+                  const mergedSig = signature?.dataUrl
+                    ? { ...(signature.ref || bSig), url: signature.dataUrl }
+                    : bSig?.url
+                      ? bSig
+                      : signature?.ref?.url
+                        ? { ...signature.ref, url: signature.ref.url }
+                        : bSig || null;
+
+                  return (
+                    <SuccessStep
+                      booking={booking}
+                      guest={guestData}
+                      status={
+                        session?.status ||
+                        (isAlreadyCheckedIn ? "checked-in" : "submitted")
+                      }
+                      stepData={{
+                        ...session?.stepData,
+                        guestName:
+                          guest.name ||
+                          session?.stepData?.guestName ||
+                          sessionGuest?.name,
+                        email:
+                          guest.email ||
+                          session?.stepData?.email ||
+                          sessionGuest?.email,
+                        phone:
+                          guest.phone ||
+                          session?.stepData?.phone ||
+                          sessionGuest?.phone,
+                        nationality:
+                          guest.nationality ||
+                          session?.stepData?.nationality ||
+                          sessionGuest?.nationality,
+                        documents: mergedDocs,
+                        selfie: mergedSelfie,
+                        signature: mergedSig,
+                        preferences:
+                          prefs.length > 0
+                            ? prefs
+                            : session?.stepData?.preferences,
+                        remarks: remarks || session?.stepData?.remarks,
+                        termsAcceptedAt: terms
+                          ? session?.stepData?.termsAcceptedAt ||
+                            new Date().toISOString()
+                          : session?.stepData?.termsAcceptedAt,
+                      }}
+                      correctionMessage={session?.correctionMessage}
+                      rejectionMessage={
+                        session?.rejectionMessage || session?.review?.message
+                      }
+                      onEditResponse={() => {
+                        setIsEditing(true);
+                        setStep(2);
+                      }}
+                    />
+                  );
+                })()}
             </div>
 
             {step > 0 && step < 9 && (
@@ -642,9 +1293,19 @@ export default function SelfCheckInPage() {
                   disabled={!canContinue || uploading}
                   className="flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {step === 8 ? (
+                  {uploading ? (
                     <>
-                      Submit Check-in <ArrowRight size={16} />
+                      <Loader2 size={16} className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : step === 8 ? (
+                    <>
+                      {isEditing ||
+                      session?.status === "rejected" ||
+                      session?.status === "submitted"
+                        ? "Re-Submit Check-in"
+                        : "Submit Check-in"}{" "}
+                      <ArrowRight size={16} />
                     </>
                   ) : (
                     <>
