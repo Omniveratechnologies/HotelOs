@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import { MdInventory } from "react-icons/md";
 import StatusBadge from "../../components/ui/StatusBadge.jsx";
 import { useParams } from "react-router-dom";

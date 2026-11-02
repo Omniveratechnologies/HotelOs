@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import API_BASE_URL from "../../config/api.js";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import StockOut from "../../components/inventory/StockOut.jsx";
 
 import { FaArrowDown } from "react-icons/fa6";
@@ -53,6 +53,7 @@ const StockOutUsage = () => {
           subtitle="Record ingredients and supplies used from inventory."
           breadcrumb="Inventory → Stock Out"
           showPageHeading
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <button
               type="button"

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { FiFileText } from "react-icons/fi";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/Sidebar.jsx";
 import API_BASE_URL from "../../config/api.js";
 
 import WastageForm from "../../components/wastage/WastageForm.jsx";

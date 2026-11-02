@@ -15,6 +15,7 @@ const Navbar = ({
   setIsMenuOpen,
   searchTerm,
   setSearchTerm,
+  placeholder
 }) => {
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
@@ -59,7 +60,7 @@ const Navbar = ({
             <SearchBar
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
-              placeholder="Search order, items,..."
+              placeholder={placeholder}
             />
           ) : (
             <div className="flex items-center gap-2">

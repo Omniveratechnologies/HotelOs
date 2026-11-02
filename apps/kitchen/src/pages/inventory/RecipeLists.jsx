@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { MdFastfood } from "react-icons/md";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import Table from "../../components/ui/Table.jsx";
 import StatusBadge from "../../components/ui/StatusBadge.jsx";
 import EditButton from "../../components/ui/button/EditButton.jsx";
@@ -152,6 +152,7 @@ const RecipesLists = () => {
           isMenuOpen={isMenuOpen}
           setIsMenuOpen={setIsMenuOpen}
           showPageHeading
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <button
               type="button"

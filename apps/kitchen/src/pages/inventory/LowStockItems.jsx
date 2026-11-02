@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import API_BASE_URL from "../../config/api.js";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/Sidebar.jsx";
 
 import { IoWarning } from "react-icons/io5";
 import { FiDownload, FiShoppingCart } from "react-icons/fi";
