@@ -26,11 +26,13 @@ import {
   resolveNightlyRate,
   computePricing,
   occupancyForGuests,
+  resolveCompoundPricing,
 } from "../services/pricing.service.js";
 import {
   getTypeAvailability,
   listAvailableRooms,
   assertTypeAvailability,
+  assertMultiTypeAvailability,
 } from "../services/availability.service.js";
 import { nextReservationNo } from "../services/reservationNo.service.js";
 
@@ -304,6 +306,11 @@ export const createReservation = async (req, res) => {
       discount,
       taxPercent,
       paymentStatus,
+      roomRequirements,
+      roomAllocations,
+      groupInfo,
+      guestRoster,
+      metadata,
     } = req.body;
 
     // =================================================
@@ -377,11 +384,49 @@ export const createReservation = async (req, res) => {
       }
     }
 
-    const effectiveRoomTypeCode = roomTypeCode || roomDoc?.roomCode || null;
+    const incomingRequirements =
+      Array.isArray(roomRequirements) && roomRequirements.length > 0
+        ? roomRequirements
+        : Array.isArray(metadata?.roomRequirements) &&
+            metadata.roomRequirements.length > 0
+          ? metadata.roomRequirements
+          : [];
+
+    const isMultiRoomBlock = incomingRequirements.length > 0;
+    const totalBlockRooms = isMultiRoomBlock
+      ? incomingRequirements.reduce((sum, r) => sum + Number(r.rooms || 1), 0)
+      : Math.max(1, Number(rooms) || 1);
+    const totalBlockAdults = isMultiRoomBlock
+      ? incomingRequirements.reduce(
+          (sum, r) => sum + Number(r.rooms || 1) * Number(r.adultsPerRoom || 1),
+          0,
+        )
+      : Math.max(0, Number(adults) || 1);
+
+    const effectiveRoomTypeCode =
+      roomTypeCode ||
+      roomDoc?.roomCode ||
+      (incomingRequirements[0]?.roomTypeCode
+        ? String(incomingRequirements[0].roomTypeCode).toLowerCase().trim()
+        : null);
 
     // Availability guard (drafts don't hold inventory until confirmed)
     if (bookingStatus !== "draft") {
-      if (effectiveRoomTypeCode) {
+      if (isMultiRoomBlock) {
+        const { ok, message } = await assertMultiTypeAvailability(
+          req.user.hotelId,
+          incomingRequirements,
+          checkInDate,
+          checkOutDate,
+        );
+        if (!ok) {
+          return res.status(409).json({
+            success: false,
+            message:
+              message || "Insufficient room availability for requested block",
+          });
+        }
+      } else if (effectiveRoomTypeCode) {
         const { ok, available } = await assertTypeAvailability(
           req.user.hotelId,
           effectiveRoomTypeCode,
@@ -437,24 +482,148 @@ export const createReservation = async (req, res) => {
     createdUser = createdNew ? guestUser : null;
 
     // =================================================
-    // PRICING SNAPSHOT
+    // PRICING SNAPSHOT (compound or single)
     // =================================================
 
-    const { pricing } = await buildPricingSnapshot({
-      hotelId: req.user.hotelId,
-      hotelTaxPercent: hotel.taxPercent,
-      roomTypeCode: effectiveRoomTypeCode,
-      ratePlanId,
-      adults,
-      mealPlan,
-      rateOverride,
-      checkIn: checkInDate,
-      checkOut: checkOutDate,
-      rooms,
-      addOns,
-      discount,
-      taxPercent: taxPercent != null ? Number(taxPercent) : undefined,
-    });
+    const nights = Math.max(
+      1,
+      Math.round((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)),
+    );
+
+    let pricing;
+    if (isMultiRoomBlock) {
+      pricing = await resolveCompoundPricing({
+        hotelId: req.user.hotelId,
+        requirements: incomingRequirements,
+        nights,
+        mealPlan,
+        ratePlanId,
+        addOns,
+        discount,
+        taxPercent: taxPercent != null ? Number(taxPercent) : hotel.taxPercent,
+      });
+    } else {
+      const snapshot = await buildPricingSnapshot({
+        hotelId: req.user.hotelId,
+        hotelTaxPercent: hotel.taxPercent,
+        roomTypeCode: effectiveRoomTypeCode,
+        ratePlanId,
+        adults,
+        mealPlan,
+        rateOverride,
+        checkIn: checkInDate,
+        checkOut: checkOutDate,
+        rooms,
+        addOns,
+        discount,
+        taxPercent: taxPercent != null ? Number(taxPercent) : undefined,
+      });
+      pricing = snapshot.pricing;
+    }
+
+    // =================================================
+    // ROOM ALLOCATIONS GENERATION
+    // =================================================
+
+    const finalAllocations = [];
+    if (Array.isArray(roomAllocations) && roomAllocations.length > 0) {
+      roomAllocations.forEach((a, idx) => {
+        finalAllocations.push({
+          allocationId: a.allocationId || `alloc-${Date.now()}-${idx}`,
+          roomTypeCode: String(
+            a.roomTypeCode || effectiveRoomTypeCode || "",
+          ).toLowerCase(),
+          roomId: a.roomId || null,
+          roomNumber: a.roomNumber || null,
+          ratePlanId: a.ratePlanId || ratePlanId || null,
+          nightlyRate: Number(a.nightlyRate || pricing.nightlyRate || 0),
+          adults: Number(a.adults || 1),
+          children: Number(a.children || 0),
+          occupantName: a.occupantName || null,
+          occupantPhone: a.occupantPhone || null,
+          occupantEmail: a.occupantEmail || null,
+          occupantIdType: a.occupantIdType || null,
+          occupantIdNumber: a.occupantIdNumber || null,
+          status: a.status || (a.roomId ? "assigned" : "unassigned"),
+          notes: a.notes || null,
+        });
+      });
+    } else if (isMultiRoomBlock) {
+      let allocIdx = 0;
+      for (const reqItem of incomingRequirements) {
+        const count = Math.max(1, Number(reqItem.rooms || 1));
+        const code = String(reqItem.roomTypeCode || "")
+          .toLowerCase()
+          .trim();
+        for (let i = 0; i < count; i++) {
+          finalAllocations.push({
+            allocationId: `alloc-${Date.now()}-${allocIdx++}`,
+            roomTypeCode: code,
+            roomId: null,
+            roomNumber: null,
+            ratePlanId: reqItem.ratePlanId || ratePlanId || null,
+            nightlyRate: pricing.nightlyRate || 0,
+            adults: Number(reqItem.adultsPerRoom || 1),
+            children: Number(reqItem.childrenPerRoom || 0),
+            occupantName: null,
+            occupantPhone: null,
+            occupantEmail: null,
+            status: "unassigned",
+            notes: reqItem.notes || null,
+          });
+        }
+      }
+    } else if (effectiveRoomTypeCode) {
+      const roomCount = Math.max(1, Number(rooms) || 1);
+      for (let i = 0; i < roomCount; i++) {
+        finalAllocations.push({
+          allocationId: `alloc-${Date.now()}-${i}`,
+          roomTypeCode: String(effectiveRoomTypeCode).toLowerCase(),
+          roomId: i === 0 && roomDoc ? roomDoc._id : null,
+          roomNumber: i === 0 && roomDoc ? roomDoc.roomNumber : null,
+          ratePlanId: ratePlanId || null,
+          nightlyRate: pricing.nightlyRate || 0,
+          adults: Math.max(1, Math.round(Number(adults || 1) / roomCount)),
+          children: Number(children || 0),
+          occupantName: i === 0 ? guestUser.name : null,
+          occupantPhone: i === 0 ? guestUser.phone : null,
+          status: i === 0 && roomDoc ? "assigned" : "unassigned",
+          notes: specialRequests || null,
+        });
+      }
+    }
+
+    const resolvedGroupInfo =
+      groupInfo ||
+      (metadata?.groupName
+        ? {
+            groupName: metadata.groupName,
+            groupType: metadata.groupType || null,
+            companyName: metadata.companyName || null,
+            organizerName: name,
+            organizerPhone: phone,
+            organizerEmail: email,
+            billingMode: metadata.billingMode || "Master Folio",
+          }
+        : null);
+
+    const rawGuests =
+      Array.isArray(guestRoster) && guestRoster.length > 0
+        ? guestRoster
+        : Array.isArray(metadata?.guests) && metadata.guests.length > 0
+          ? metadata.guests
+          : [];
+
+    const resolvedGuestRoster = rawGuests.map((g) => ({
+      name: g.name,
+      phone: g.phone || null,
+      email: g.email || null,
+      designation: g.designation || null,
+      assignedRoom: g.assignedRoom || null,
+      roomTypeCode: g.roomTypeCode || null,
+      notes: g.notes || null,
+      isPrimary: Boolean(g.isPrimary),
+    }));
 
     const reservationNo = await nextReservationNo(req.user.hotelId);
 
@@ -471,11 +640,15 @@ export const createReservation = async (req, res) => {
       checkIn: checkInDate,
       checkOut: checkOutDate,
       status: bookingStatus,
-      rooms: Math.max(1, Number(rooms) || 1),
-      adults: Math.max(0, Number(adults) || 1),
+      rooms: totalBlockRooms,
+      adults: totalBlockAdults,
       children: Math.max(0, Number(children) || 0),
       infants: Math.max(0, Number(infants) || 0),
-      guestType: guestType || "individual",
+      roomAllocations: finalAllocations,
+      roomRequirements: incomingRequirements,
+      groupInfo: resolvedGroupInfo,
+      guestRoster: resolvedGuestRoster,
+      guestType: guestType || (isMultiRoomBlock ? "group" : "individual"),
       purpose: purpose?.trim() || null,
       specialRequests: specialRequests?.trim() || null,
       pricing,
@@ -612,6 +785,7 @@ export const getQuote = async (req, res) => {
       addOns,
       discount,
       taxPercent,
+      roomRequirements,
     } = req.body;
 
     const checkInDate = parseDate(checkIn);
@@ -624,6 +798,46 @@ export const getQuote = async (req, res) => {
     const hotel = await Hotel.findById(req.user.hotelId)
       .select("taxPercent")
       .lean();
+
+    const incomingRequirements =
+      Array.isArray(roomRequirements) && roomRequirements.length > 0
+        ? roomRequirements
+        : [];
+
+    const nights = Math.max(
+      1,
+      Math.round((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)),
+    );
+
+    if (incomingRequirements.length > 0) {
+      const pricing = await resolveCompoundPricing({
+        hotelId: req.user.hotelId,
+        requirements: incomingRequirements,
+        nights,
+        mealPlan,
+        ratePlanId,
+        addOns,
+        discount,
+        taxPercent: taxPercent != null ? Number(taxPercent) : hotel?.taxPercent,
+      });
+
+      const availability = await assertMultiTypeAvailability(
+        req.user.hotelId,
+        incomingRequirements,
+        checkInDate,
+        checkOutDate,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Quote computed",
+        data: {
+          pricing,
+          availability,
+          roomRequirements: incomingRequirements,
+        },
+      });
+    }
 
     let effectiveRoomTypeCode = roomTypeCode;
     if (!effectiveRoomTypeCode && roomId) {

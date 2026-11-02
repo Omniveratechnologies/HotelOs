@@ -109,21 +109,52 @@ export async function aiosellCalculateAvailability(
     status: { $in: ACTIVE_STAY_STATUSES },
     checkIn: { $lte: new Date(`${endDate}T23:59:59.999Z`) },
     checkOut: { $gt: new Date(`${startDate}T00:00:00.000Z`) },
-  }).populate("roomId", "roomCode");
+  })
+    .populate("roomId", "roomCode")
+    .populate("roomAllocations.roomId", "roomCode");
 
   // Pre-normalize booking dates to ISO YYYY-MM-DD strings for fast, exact night comparisons.
-  // Support both physical assigned rooms (b.roomId.roomCode) and room-type holds (b.roomTypeCode).
+  // Support physical assigned rooms, roomAllocations, roomRequirements, and legacy single-type holds.
   const normalizedBookings = [];
   for (const b of activeBookings) {
     if (!b.checkIn || !b.checkOut) continue;
-    const code = b.roomId?.roomCode || b.roomTypeCode;
-    if (!code) continue;
-    normalizedBookings.push({
-      roomCode: code,
-      rooms: Math.max(1, b.rooms || 1),
-      checkInDate: new Date(b.checkIn).toISOString().slice(0, 10),
-      checkOutDate: new Date(b.checkOut).toISOString().slice(0, 10),
-    });
+    const checkInDate = new Date(b.checkIn).toISOString().slice(0, 10);
+    const checkOutDate = new Date(b.checkOut).toISOString().slice(0, 10);
+
+    if (Array.isArray(b.roomAllocations) && b.roomAllocations.length > 0) {
+      for (const alloc of b.roomAllocations) {
+        const code = alloc.roomId?.roomCode || alloc.roomTypeCode;
+        if (!code) continue;
+        normalizedBookings.push({
+          roomCode: code,
+          rooms: 1,
+          checkInDate,
+          checkOutDate,
+        });
+      }
+    } else if (
+      Array.isArray(b.roomRequirements) &&
+      b.roomRequirements.length > 0
+    ) {
+      for (const req of b.roomRequirements) {
+        if (!req.roomTypeCode) continue;
+        normalizedBookings.push({
+          roomCode: req.roomTypeCode,
+          rooms: Math.max(1, req.rooms || 1),
+          checkInDate,
+          checkOutDate,
+        });
+      }
+    } else {
+      const code = b.roomId?.roomCode || b.roomTypeCode;
+      if (!code) continue;
+      normalizedBookings.push({
+        roomCode: code,
+        rooms: Math.max(1, b.rooms || 1),
+        checkInDate,
+        checkOutDate,
+      });
+    }
   }
 
   const availability = {};

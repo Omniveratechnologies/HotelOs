@@ -3,49 +3,32 @@ import {
   Header,
   KpiTile,
   KpiTileRow,
-  Button,
   InlineBanner,
-  Input,
 } from "@hotelos/ui/components";
 import {
   Monitor,
-  Plus,
   Search,
   Wifi,
   WifiOff,
   Wrench,
-  RotateCcw,
-  Trash2,
-  X,
+  CheckCircle2,
   MapPin,
+  Battery,
+  ShieldCheck,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@hotelos/query";
-import {
-  getKioskDevices,
-  createKioskDevice,
-  updateKioskDevice,
-  regenerateKioskPairCode,
-  deleteKioskDevice,
-} from "@hotelos/api";
+import { getKioskDevices, updateKioskDevice } from "@hotelos/api";
 
 export default function KioskDevicesPage() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
   const [bannerMsg, setBannerMsg] = useState("");
   const [bannerVariant, setBannerVariant] = useState("success");
-
-  // Form state
-  const [formData, setFormData] = useState({
-    deviceId: "",
-    name: "",
-    location: "Main Lobby - East Entrance",
-    firmwareVersion: "v1.4.0",
-  });
 
   const { data: responseData, isLoading } = useQuery({
     queryKey: ["kiosks", "list", { q: searchQuery }],
     queryFn: () => getKioskDevices({ q: searchQuery }),
+    refetchInterval: 10000,
   });
 
   const devices = responseData?.devices || [];
@@ -56,29 +39,6 @@ export default function KioskDevicesPage() {
     maintenance: 0,
   };
 
-  const createMutation = useMutation({
-    mutationFn: (body) => createKioskDevice(body),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["kiosks"] });
-      setBannerVariant("success");
-      setBannerMsg(
-        `Terminal "${res.name}" registered with pairing code ${res.pairCode}!`,
-      );
-      setModalOpen(false);
-      setFormData({
-        deviceId: "",
-        name: "",
-        location: "Main Lobby - East Entrance",
-        firmwareVersion: "v1.4.0",
-      });
-      setTimeout(() => setBannerMsg(""), 5000);
-    },
-    onError: (err) => {
-      setBannerVariant("error");
-      setBannerMsg(err?.message || "Failed to register kiosk");
-    },
-  });
-
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => updateKioskDevice(id, { status }),
     onSuccess: () => {
@@ -87,49 +47,31 @@ export default function KioskDevicesPage() {
       setBannerMsg("Terminal status updated.");
       setTimeout(() => setBannerMsg(""), 3500);
     },
-  });
-
-  const pairCodeMutation = useMutation({
-    mutationFn: (id) => regenerateKioskPairCode(id),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["kiosks"] });
-      setBannerVariant("success");
-      setBannerMsg(`New terminal pairing code: ${res.pairCode}`);
-      setTimeout(() => setBannerMsg(""), 5000);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => deleteKioskDevice(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["kiosks"] });
-      setBannerVariant("success");
-      setBannerMsg("Kiosk terminal deleted.");
+    onError: (err) => {
+      setBannerVariant("error");
+      setBannerMsg(err?.message || "Failed to update terminal status");
       setTimeout(() => setBannerMsg(""), 3500);
     },
   });
-
-  const handleCreateSubmit = (e) => {
-    e.preventDefault();
-    createMutation.mutate(formData);
-  };
 
   return (
     <div className="bg-background-50/50 min-h-screen pb-24">
       <Header
         pageTitle="Kiosk Devices & Hardware Terminals"
-        pageDescription="Manage guest self-check-in touchscreen kiosks, terminal health, pairing keys, and diagnostics"
-      >
-        <Button
-          variant="primary"
-          icon={Plus}
-          onClick={() => setModalOpen(true)}
-        >
-          Register Kiosk Terminal
-        </Button>
-      </Header>
+        pageDescription="Monitor guest self-check-in touchscreen terminals, hardware health, and operational diagnostics"
+      />
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        {/* Info notice about Super Admin centralized control */}
+        <div className="flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-xs text-sky-800">
+          <ShieldCheck className="h-5 w-5 shrink-0 text-sky-600" />
+          <div>
+            <span className="font-semibold">Centralized Fleet Management:</span>{" "}
+            Terminal registration, physical device pairing keys, and dashboard
+            assignments are centrally managed from the Super Admin dashboard.
+          </div>
+        </div>
+
         {/* KPI Row */}
         <KpiTileRow>
           <KpiTile
@@ -174,7 +116,7 @@ export default function KioskDevicesPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-gray-900">
-              Registered Kiosks ({devices.length})
+              Lobby Kiosks ({devices.length})
             </h3>
             <div className="relative w-64">
               <Search className="absolute top-2.5 left-3 h-3.5 w-3.5 text-gray-400" />
@@ -196,22 +138,12 @@ export default function KioskDevicesPage() {
             <div className="rounded-2xl border border-gray-200 bg-white p-16 text-center shadow-xs">
               <Monitor className="mx-auto h-12 w-12 text-gray-300" />
               <h3 className="mt-3 text-sm font-bold text-gray-900">
-                No kiosk terminals configured
+                No kiosk terminals configured for this hotel
               </h3>
               <p className="mx-auto mt-1 max-w-sm text-xs text-gray-500">
-                Connect touchscreen kiosks in your lobby for guests to check in
-                and collect key cards automatically.
+                Contact your Super Administrator to provision and pair a
+                touchscreen kiosk terminal in your lobby.
               </p>
-              <div className="mt-5">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={Plus}
-                  onClick={() => setModalOpen(true)}
-                >
-                  Add First Kiosk Terminal
-                </Button>
-              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -236,18 +168,34 @@ export default function KioskDevicesPage() {
                         </div>
                       </div>
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                           k.status === "ONLINE"
-                            ? "bg-emerald-100 text-emerald-800"
+                            ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
                             : k.status === "MAINTENANCE"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-rose-100 text-rose-800"
+                              ? "border border-amber-200 bg-amber-50 text-amber-800"
+                              : k.status === "DISABLED"
+                                ? "border border-slate-200 bg-slate-100 text-slate-700"
+                                : "border border-rose-200 bg-rose-50 text-rose-700"
                         }`}
                       >
-                        {k.status === "ONLINE" && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        )}
-                        {k.status}
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            k.status === "ONLINE"
+                              ? "animate-pulse bg-emerald-500"
+                              : k.status === "MAINTENANCE"
+                                ? "bg-amber-500"
+                                : k.status === "DISABLED"
+                                  ? "bg-slate-400"
+                                  : "bg-rose-500"
+                          }`}
+                        />
+                        {k.status === "ONLINE"
+                          ? "ONLINE (Connected)"
+                          : k.status === "MAINTENANCE"
+                            ? "MAINTENANCE"
+                            : k.status === "DISABLED"
+                              ? "DISABLED"
+                              : "OFFLINE (Disconnected)"}
                       </span>
                     </div>
 
@@ -257,9 +205,15 @@ export default function KioskDevicesPage() {
                         <span>{k.location || "Lobby"}</span>
                       </div>
                       <div className="flex justify-between text-gray-500">
-                        <span>Pairing Code:</span>
-                        <span className="rounded bg-gray-100 px-1.5 py-0.5 font-mono font-bold text-gray-800">
-                          {k.pairCode || "None"}
+                        <span>Pairing Status:</span>
+                        <span className="font-semibold text-gray-800">
+                          {k.isPaired ? "Paired & Active" : "Awaiting Setup"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-gray-500">
+                        <span>Dashboard Mode:</span>
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800">
+                          {k.targetDashboard || "DEMO_URL"}
                         </span>
                       </div>
                       <div className="flex justify-between text-gray-500">
@@ -277,60 +231,53 @@ export default function KioskDevicesPage() {
                             : "Online"}
                         </span>
                       </div>
+                      {typeof k.batteryLevel === "number" && (
+                        <div className="flex justify-between text-gray-500">
+                          <span>Battery:</span>
+                          <span className="flex items-center gap-1">
+                            <Battery className="h-3 w-3 text-gray-500" />
+                            {Math.round(k.batteryLevel * 100)}%
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => pairCodeMutation.mutate(k._id)}
-                      className="text-brand-600 hover:text-brand-800 flex items-center gap-1 font-semibold"
-                      title="Generate new pairing code"
-                    >
-                      <RotateCcw className="h-3 w-3" /> New Pair Code
-                    </button>
-
+                  <div className="mt-4 flex items-center justify-end border-t border-gray-100 pt-3 text-xs">
                     <div className="flex items-center gap-2">
-                      {k.status === "ONLINE" ? (
+                      {k.status === "MAINTENANCE" ? (
                         <button
                           type="button"
-                          onClick={() =>
-                            updateStatusMutation.mutate({
-                              id: k._id,
-                              status: "MAINTENANCE",
-                            })
-                          }
-                          className="rounded bg-amber-50 px-2 py-1 font-medium text-amber-700 hover:bg-amber-100"
-                        >
-                          Maintenance
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
+                          disabled={updateStatusMutation.isPending}
                           onClick={() =>
                             updateStatusMutation.mutate({
                               id: k._id,
                               status: "ONLINE",
                             })
                           }
-                          className="rounded bg-emerald-50 px-2 py-1 font-medium text-emerald-700 hover:bg-emerald-100"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700 shadow-xs hover:bg-emerald-100 disabled:opacity-50"
+                          title="Turn off maintenance mode and restore normal kiosk operations"
                         >
-                          Set Online
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                          Turn Off Maintenance
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={updateStatusMutation.isPending}
+                          onClick={() =>
+                            updateStatusMutation.mutate({
+                              id: k._id,
+                              status: "MAINTENANCE",
+                            })
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 font-semibold text-amber-800 shadow-xs hover:bg-amber-100 disabled:opacity-50"
+                          title="Turn on maintenance mode to lock down the kiosk"
+                        >
+                          <Wrench className="h-3.5 w-3.5 text-amber-600" />
+                          Turn On Maintenance
                         </button>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (confirm(`Remove kiosk ${k.name}?`)) {
-                            deleteMutation.mutate(k._id);
-                          }
-                        }}
-                        className="rounded p-1 text-gray-400 hover:text-rose-600"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -339,94 +286,6 @@ export default function KioskDevicesPage() {
           )}
         </div>
       </div>
-
-      {/* Register Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="relative w-full max-w-md space-y-4 rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="text-base font-bold text-gray-900">
-                Register Kiosk Terminal
-              </h3>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
-              <div>
-                <Input
-                  label="Device ID / Serial Number *"
-                  value={formData.deviceId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, deviceId: e.target.value })
-                  }
-                  placeholder="e.g. KIOSK-LOBBY-01"
-                  required
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="Terminal Display Name *"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="e.g. Main Lobby Touchscreen 1"
-                  required
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="Physical Location"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  placeholder="e.g. Ground Floor East Lobby"
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="Firmware / App Version"
-                  value={formData.firmwareVersion}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      firmwareVersion: e.target.value,
-                    })
-                  }
-                  placeholder="v1.4.0"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 border-t border-gray-100 pt-3">
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  disabled={createMutation.isPending}
-                >
-                  Register & Generate Pair Code
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

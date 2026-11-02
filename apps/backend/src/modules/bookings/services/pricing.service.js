@@ -196,3 +196,172 @@ export function computePricing({
     currency: "INR",
   };
 }
+
+/**
+ * Computes pricing for multi-room / group requests across multiple room types.
+ *
+ * @param {Object} input
+ * @param {Array<{ roomTypeCode: string, rooms: number, nightlyRate: number, rateSource?: string, notes?: string }>} input.itemizedLines
+ * @param {number} input.nights
+ * @param {Array} [input.addOns]
+ * @param {Object} [input.discount]
+ * @param {number} [input.taxPercent=12]
+ * @param {number|null} [input.commissionPercent]
+ * @returns {Object}
+ */
+export function computeCompoundPricing({
+  itemizedLines = [],
+  nights = 1,
+  addOns = [],
+  discount = null,
+  taxPercent = 12,
+  commissionPercent = null,
+}) {
+  const safeNights = Math.max(1, Number(nights) || 1);
+
+  let totalRooms = 0;
+  let totalRoomCharge = 0;
+
+  const resolvedLines = itemizedLines.map((line) => {
+    const lineRooms = Math.max(1, Number(line.rooms) || 1);
+    const lineRate = round(line.nightlyRate || 0);
+    const lineSubtotal = lineRate * safeNights * lineRooms;
+
+    totalRooms += lineRooms;
+    totalRoomCharge += lineSubtotal;
+
+    return {
+      roomTypeCode: line.roomTypeCode
+        ? String(line.roomTypeCode).toLowerCase().trim()
+        : null,
+      rooms: lineRooms,
+      nights: safeNights,
+      nightlyRate: lineRate,
+      subtotal: lineSubtotal,
+      notes: line.notes || null,
+    };
+  });
+
+  const addOnsList = (Array.isArray(addOns) ? addOns : []).map((a) => ({
+    label: String(a.label || "Add-on"),
+    amount: round(a.amount),
+    quantity: Math.max(1, Number(a.quantity) || 1),
+  }));
+
+  const addOnsTotal = addOnsList.reduce(
+    (sum, a) => sum + a.amount * a.quantity,
+    0,
+  );
+
+  let discountAmount = 0;
+  let discountInfo = { type: null, value: 0, amount: 0 };
+  if (discount && Number(discount.value) > 0) {
+    if (discount.type === "percent") {
+      discountAmount = Math.min(
+        totalRoomCharge,
+        round((totalRoomCharge * Number(discount.value)) / 100),
+      );
+      discountInfo = {
+        type: "percent",
+        value: Number(discount.value),
+        amount: discountAmount,
+      };
+    } else {
+      discountAmount = Math.min(totalRoomCharge, round(discount.value));
+      discountInfo = {
+        type: "flat",
+        value: round(discount.value),
+        amount: discountAmount,
+      };
+    }
+  }
+
+  const taxableBase = totalRoomCharge - discountAmount + addOnsTotal;
+  const pct = Number(taxPercent) || 0;
+  const taxAmount = round((taxableBase * pct) / 100);
+  const grandTotal = taxableBase + taxAmount;
+
+  let commissionAmount = null;
+  let netAmount = null;
+  if (commissionPercent != null && Number(commissionPercent) > 0) {
+    commissionAmount = round((taxableBase * Number(commissionPercent)) / 100);
+    netAmount = grandTotal - commissionAmount;
+  }
+
+  const avgNightlyRate =
+    totalRooms > 0 && safeNights > 0
+      ? round(totalRoomCharge / (totalRooms * safeNights))
+      : 0;
+
+  return {
+    nightlyRate: avgNightlyRate,
+    nights: safeNights,
+    rooms: Math.max(1, totalRooms),
+    roomCharge: totalRoomCharge,
+    itemizedLines: resolvedLines,
+    addOns: addOnsList,
+    addOnsTotal,
+    discount: discountInfo,
+    taxableBase,
+    taxPercent: pct,
+    taxAmount,
+    grandTotal,
+    commissionAmount,
+    netAmount,
+    currency: "INR",
+    rateSource: "ratePlan",
+  };
+}
+
+/**
+ * Resolves rates for each item in a multi-room requirements array, then computes pricing snapshot.
+ */
+export async function resolveCompoundPricing({
+  hotelId,
+  requirements = [],
+  nights = 1,
+  mealPlan,
+  ratePlanId,
+  addOns = [],
+  discount = null,
+  taxPercent = 12,
+  commissionPercent = null,
+}) {
+  const itemizedLines = await Promise.all(
+    requirements.map(async (req) => {
+      const code = req.roomTypeCode
+        ? String(req.roomTypeCode).toLowerCase().trim()
+        : null;
+      const reqAdults = Number(req.adultsPerRoom || req.adults || 2);
+      const reqRatePlanId = req.ratePlanId || ratePlanId;
+      const reqMealPlan = req.mealPlan || mealPlan;
+      const reqOverrideRate = req.rateOverride || req.overrideRate;
+
+      const { nightlyRate, rateSource } = await resolveNightlyRate({
+        hotelId,
+        roomTypeCode: code,
+        ratePlanId: reqRatePlanId,
+        occupancy: occupancyForGuests(reqAdults),
+        mealPlan: reqMealPlan,
+        overrideRate: reqOverrideRate,
+      });
+
+      return {
+        roomTypeCode: code,
+        rooms: Math.max(1, Number(req.rooms || 1)),
+        nightlyRate,
+        rateSource,
+        notes: req.notes || null,
+      };
+    }),
+  );
+
+  return computeCompoundPricing({
+    itemizedLines,
+    nights,
+    addOns,
+    discount,
+    taxPercent,
+    commissionPercent,
+  });
+}

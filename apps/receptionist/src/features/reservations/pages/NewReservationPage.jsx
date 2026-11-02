@@ -8,6 +8,8 @@ import { RoomSelection } from "../sections/RoomSelection.jsx";
 import { GuestSection } from "../sections/GuestSection.jsx";
 import { AdditionalOptionsSection } from "../sections/AdditionalOptionsSection.jsx";
 import { BookingSummary } from "../sections/BookingSummary.jsx";
+import { RoomRequirementsMatrix } from "../components/RoomRequirementsMatrix.jsx";
+import { SectionCard } from "@hotelos/ui/components";
 import { formatDate } from "@hotelos/utils";
 
 const STEPS = [
@@ -32,6 +34,7 @@ export default function NewReservationPage() {
     editId,
     form,
     onFieldChange,
+    onRequirementsChange,
     onGuestField,
     onSelectExistingGuest,
     currentStep,
@@ -59,25 +62,34 @@ export default function NewReservationPage() {
     [typeItems, form.roomTypeCode],
   );
 
-  const media = useMemo(
-    () => ({
-      roomTypeName: currentType?.name || form.roomTypeCode || "Not selected",
+  const isMultiRoom =
+    form.rooms > 1 ||
+    (form.roomRequirements && form.roomRequirements.length > 0);
+
+  const media = useMemo(() => {
+    const hasReqs = form.roomRequirements?.length > 0;
+    const typeSummary = hasReqs
+      ? `${form.rooms} Rooms (${form.roomRequirements.map((r) => `${r.rooms}x ${r.roomTypeCode}`).join(", ")})`
+      : currentType?.name || form.roomTypeCode || "Not selected";
+
+    return {
+      roomTypeName: typeSummary,
       guestsLine: `${form.rooms} Room${form.rooms > 1 ? "s" : ""}, ${form.adults} Adult${form.adults > 1 ? "s" : ""}`,
       datesLine:
         form.checkIn && form.checkOut
           ? `${formatDate(form.checkIn)} → ${formatDate(form.checkOut)} (${nights} night${nights === 1 ? "" : "s"})`
           : "Dates pending",
-    }),
-    [
-      currentType,
-      form.roomTypeCode,
-      form.rooms,
-      form.adults,
-      form.checkIn,
-      form.checkOut,
-      nights,
-    ],
-  );
+    };
+  }, [
+    currentType,
+    form.roomTypeCode,
+    form.roomRequirements,
+    form.rooms,
+    form.adults,
+    form.checkIn,
+    form.checkOut,
+    nights,
+  ]);
 
   const summaryPanel = (
     <BookingSummary
@@ -89,7 +101,11 @@ export default function NewReservationPage() {
       onSaveDraft={saveAsDraft}
       onCreate={submitReservation}
       creating={isSubmitting}
-      disabled={nights < 1 || !form.roomTypeCode}
+      disabled={
+        nights < 1 ||
+        (!form.roomTypeCode &&
+          (!form.roomRequirements || form.roomRequirements.length === 0))
+      }
     />
   );
 
@@ -114,6 +130,9 @@ export default function NewReservationPage() {
         <StayDetailsSection
           value={form}
           onChange={onFieldChange}
+          roomRequirements={form.roomRequirements}
+          onRequirementsChange={onRequirementsChange}
+          roomTypes={typeItems}
           errors={errors}
           open={true}
         />
@@ -121,43 +140,95 @@ export default function NewReservationPage() {
 
       {currentStep === 1 && (
         <div className="space-y-6">
-          <RoomTypePicker
-            items={typeItems}
-            value={form.roomTypeCode}
-            onSelect={(code) => {
-              onFieldChange("roomTypeCode", code);
-              onFieldChange("ratePlanId", "");
-              onFieldChange("roomId", "");
-            }}
-            range={{ checkIn: form.checkIn, checkOut: form.checkOut, nights }}
-            loading={typesLoading}
-            open={true}
-          />
-
-          {form.roomTypeCode && (
-            <RatePlanPicker
-              plans={ratePlanOptions}
-              value={form.ratePlanId}
-              onSelect={(pid) => onFieldChange("ratePlanId", pid)}
-              roomTypeName={currentType?.name || form.roomTypeCode}
+          {isMultiRoom ? (
+            <SectionCard
+              number="2"
+              title="Room Allocation & Rate Plan"
+              subtitle="Configure room type blocks, guest distribution, and select rate plan"
               open={true}
-            />
-          )}
-
-          {form.roomTypeCode && (
-            <RoomSelection
-              roomTypeCode={form.roomTypeCode}
-              rooms={availableRooms}
-              selectedRoomId={form.roomId}
-              preferSpecificRoom={form.preferSpecificRoom}
-              onPreferSpecificRoomChange={(prefer) =>
-                onFieldChange("preferSpecificRoom", prefer)
+              action={
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRequirementsChange([]);
+                    onFieldChange("rooms", 1);
+                  }}
+                  className="text-brand-700 hover:text-brand-900 text-xs font-semibold"
+                >
+                  Switch to Single Room
+                </button>
               }
-              onSelectRoom={(rid) => onFieldChange("roomId", rid)}
-              loading={roomsLoading}
-              error={errors.roomId}
-              open={true}
-            />
+            >
+              <div className="space-y-6">
+                <RoomRequirementsMatrix
+                  roomRequirements={form.roomRequirements}
+                  onChange={onRequirementsChange}
+                  roomTypes={typeItems}
+                  targetRooms={form.rooms}
+                />
+                {errors.roomRequirements && (
+                  <p className="text-xs font-medium text-rose-500">
+                    {errors.roomRequirements}
+                  </p>
+                )}
+                <div className="border-t border-gray-100 pt-4">
+                  <RatePlanPicker
+                    plans={ratePlanOptions}
+                    value={form.ratePlanId}
+                    onSelect={(pid) => onFieldChange("ratePlanId", pid)}
+                    roomTypeName={
+                      currentType?.name || form.roomTypeCode || "Multi-Room"
+                    }
+                    open={true}
+                  />
+                </div>
+              </div>
+            </SectionCard>
+          ) : (
+            <>
+              <RoomTypePicker
+                items={typeItems}
+                value={form.roomTypeCode}
+                onSelect={(code) => {
+                  onFieldChange("roomTypeCode", code);
+                  onFieldChange("ratePlanId", "");
+                  onFieldChange("roomId", "");
+                }}
+                range={{
+                  checkIn: form.checkIn,
+                  checkOut: form.checkOut,
+                  nights,
+                }}
+                loading={typesLoading}
+                open={true}
+              />
+
+              {form.roomTypeCode && (
+                <RatePlanPicker
+                  plans={ratePlanOptions}
+                  value={form.ratePlanId}
+                  onSelect={(pid) => onFieldChange("ratePlanId", pid)}
+                  roomTypeName={currentType?.name || form.roomTypeCode}
+                  open={true}
+                />
+              )}
+
+              {form.roomTypeCode && (
+                <RoomSelection
+                  roomTypeCode={form.roomTypeCode}
+                  rooms={availableRooms}
+                  selectedRoomId={form.roomId}
+                  preferSpecificRoom={form.preferSpecificRoom}
+                  onPreferSpecificRoomChange={(prefer) =>
+                    onFieldChange("preferSpecificRoom", prefer)
+                  }
+                  onSelectRoom={(rid) => onFieldChange("roomId", rid)}
+                  loading={roomsLoading}
+                  error={errors.roomId}
+                  open={true}
+                />
+              )}
+            </>
           )}
         </div>
       )}
@@ -202,6 +273,20 @@ export default function NewReservationPage() {
               <p className="text-gray-600">
                 {form.rooms} Room(s), {form.adults} Adult(s)
               </p>
+              {form.roomRequirements?.length > 0 && (
+                <div className="mt-2 space-y-1 border-t border-gray-200/60 pt-2 text-xs text-gray-700">
+                  {form.roomRequirements.map((r, idx) => (
+                    <div key={r.id || idx} className="flex justify-between">
+                      <span className="text-brand-900 font-medium">
+                        {r.roomTypeCode}
+                      </span>
+                      <span>
+                        {r.rooms} room(s) · {r.adultsPerRoom} adults/rm
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <p className="mt-1 text-xs text-gray-500">
                 Source: {form.source}
               </p>

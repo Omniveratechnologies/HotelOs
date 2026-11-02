@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import ReservationWizardLayout from "../components/ReservationWizardLayout.jsx";
 import {
@@ -15,6 +15,8 @@ import { RatePlanPicker } from "../sections/RatePlanPicker.jsx";
 import { RoomSelection } from "../sections/RoomSelection.jsx";
 import { AdditionalOptionsSection } from "../sections/AdditionalOptionsSection.jsx";
 import { BookingSummary } from "../sections/BookingSummary.jsx";
+import { RoomRequirementsMatrix } from "../components/RoomRequirementsMatrix.jsx";
+import { SectionCard } from "@hotelos/ui/components";
 import { searchGuests } from "@hotelos/api";
 import { formatDate } from "@hotelos/utils";
 import { Crown } from "lucide-react";
@@ -52,48 +54,59 @@ export default function RepeatGuestPage() {
       }
       return errs;
     },
-    buildCustomPayload: (form, status) => ({
-      status,
-      source: "REPEAT_GUEST",
-      checkIn: form.checkIn,
-      checkOut: form.checkOut,
-      rooms: form.rooms,
-      adults: form.adults,
-      children: form.children,
-      infants: form.infants,
-      purpose: form.purpose || "Returning Guest Stay",
-      guestType: "individual",
-      specialRequests: form.specialRequests,
-      roomTypeCode: form.roomTypeCode,
-      ratePlanId: form.ratePlanId || undefined,
-      mealPlan: form.mealPlan || undefined,
-      rateOverride:
-        form.rateOverride !== "" ? Number(form.rateOverride) : undefined,
-      roomId: form.preferSpecificRoom ? form.roomId || undefined : undefined,
-      name: form.guest.name.trim(),
-      phone: `${form.guest.phonePrefix || "+91"}${form.guest.phone.trim()}`,
-      email: form.guest.email?.trim() || undefined,
-      nationality: form.guest.nationality || undefined,
-      idType: form.guest.idType || undefined,
-      idNumber: form.guest.idNumber?.trim() || undefined,
-      addOns: form.addOns,
-      discount:
-        form.discount && Number(form.discount) > 0
-          ? { type: "percent", value: Number(form.discount) }
-          : undefined,
-      metadata: {
-        repeatGuestId: selectedGuest?.id,
-        loyaltyTier: selectedGuest?.tier,
-        loyaltyPoints: selectedGuest?.points,
-        preferences: selectedGuest?.preferences,
-      },
-    }),
+    buildCustomPayload: (form, status) => {
+      const hasRequirements =
+        Array.isArray(form.roomRequirements) &&
+        form.roomRequirements.length > 0;
+      const primaryRoomTypeCode = hasRequirements
+        ? form.roomRequirements[0].roomTypeCode
+        : form.roomTypeCode;
+
+      return {
+        status,
+        source: "REPEAT_GUEST",
+        checkIn: form.checkIn,
+        checkOut: form.checkOut,
+        rooms: form.rooms,
+        adults: form.adults,
+        children: form.children,
+        infants: form.infants,
+        purpose: form.purpose || "Returning Guest Stay",
+        guestType: "individual",
+        specialRequests: form.specialRequests,
+        roomTypeCode: primaryRoomTypeCode || form.roomTypeCode,
+        roomRequirements: hasRequirements ? form.roomRequirements : undefined,
+        ratePlanId: form.ratePlanId || undefined,
+        mealPlan: form.mealPlan || undefined,
+        rateOverride:
+          form.rateOverride !== "" ? Number(form.rateOverride) : undefined,
+        roomId: form.preferSpecificRoom ? form.roomId || undefined : undefined,
+        name: form.guest.name.trim(),
+        phone: `${form.guest.phonePrefix || "+91"}${form.guest.phone.trim()}`,
+        email: form.guest.email?.trim() || undefined,
+        nationality: form.guest.nationality || undefined,
+        idType: form.guest.idType || undefined,
+        idNumber: form.guest.idNumber?.trim() || undefined,
+        addOns: form.addOns,
+        discount:
+          form.discount && Number(form.discount) > 0
+            ? { type: "percent", value: Number(form.discount) }
+            : undefined,
+        metadata: {
+          repeatGuestId: selectedGuest?.id,
+          loyaltyTier: selectedGuest?.tier,
+          loyaltyPoints: selectedGuest?.points,
+          preferences: selectedGuest?.preferences,
+        },
+      };
+    },
   });
 
   const {
     editId,
     form,
     onFieldChange,
+    onRequirementsChange,
     onSelectExistingGuest,
     currentStep,
     nextStep,
@@ -114,21 +127,24 @@ export default function RepeatGuestPage() {
     navigate,
   } = wizard;
 
-  const handleGuestSelect = (g) => {
-    setSelectedGuest(g);
-    onSelectExistingGuest({
-      name: g.name,
-      phone: g.phone.replace("+91", "").trim(),
-      phonePrefix: "+91",
-      email: g.email,
-      nationality: g.nationality,
-      idType: g.idType,
-      idNumber: g.idNumber,
-    });
-    if (g.preferredRoomType) {
-      onFieldChange("roomTypeCode", g.preferredRoomType);
-    }
-  };
+  const handleGuestSelect = useCallback(
+    (g) => {
+      setSelectedGuest(g);
+      onSelectExistingGuest({
+        name: g.name,
+        phone: g.phone.replace("+91", "").trim(),
+        phonePrefix: "+91",
+        email: g.email,
+        nationality: g.nationality,
+        idType: g.idType,
+        idNumber: g.idNumber,
+      });
+      if (g.preferredRoomType) {
+        onFieldChange("roomTypeCode", g.preferredRoomType);
+      }
+    },
+    [onSelectExistingGuest, onFieldChange],
+  );
 
   useEffect(() => {
     if (!selectedGuest && (guestIdQuery || phoneQuery)) {
@@ -144,32 +160,41 @@ export default function RepeatGuestPage() {
         })
         .catch(() => {});
     }
-  }, [guestIdQuery, phoneQuery]);
+  }, [guestIdQuery, phoneQuery, selectedGuest, handleGuestSelect]);
 
   const currentType = useMemo(
     () => typeItems.find((t) => t.roomTypeCode === form.roomTypeCode),
     [typeItems, form.roomTypeCode],
   );
 
-  const media = useMemo(
-    () => ({
-      roomTypeName: currentType?.name || form.roomTypeCode || "Not selected",
+  const isMultiRoom =
+    form.rooms > 1 ||
+    (form.roomRequirements && form.roomRequirements.length > 0);
+
+  const media = useMemo(() => {
+    const hasReqs = form.roomRequirements?.length > 0;
+    const typeSummary = hasReqs
+      ? `${form.rooms} Rooms (${form.roomRequirements.map((r) => `${r.rooms}x ${r.roomTypeCode}`).join(", ")})`
+      : currentType?.name || form.roomTypeCode || "Not selected";
+
+    return {
+      roomTypeName: typeSummary,
       guestsLine: `${form.rooms} Room${form.rooms > 1 ? "s" : ""}, ${form.adults} Adult${form.adults > 1 ? "s" : ""}`,
       datesLine:
         form.checkIn && form.checkOut
           ? `${formatDate(form.checkIn)} → ${formatDate(form.checkOut)} (${nights} night${nights === 1 ? "" : "s"})`
           : "Dates pending",
-    }),
-    [
-      currentType,
-      form.roomTypeCode,
-      form.rooms,
-      form.adults,
-      form.checkIn,
-      form.checkOut,
-      nights,
-    ],
-  );
+    };
+  }, [
+    currentType,
+    form.roomTypeCode,
+    form.roomRequirements,
+    form.rooms,
+    form.adults,
+    form.checkIn,
+    form.checkOut,
+    nights,
+  ]);
 
   const summaryPanel = (
     <div className="space-y-4">
@@ -185,7 +210,11 @@ export default function RepeatGuestPage() {
         onSaveDraft={saveAsDraft}
         onCreate={submitReservation}
         creating={isSubmitting}
-        disabled={nights < 1 || !form.roomTypeCode}
+        disabled={
+          nights < 1 ||
+          (!form.roomTypeCode &&
+            (!form.roomRequirements || form.roomRequirements.length === 0))
+        }
       />
     </div>
   );
@@ -227,6 +256,9 @@ export default function RepeatGuestPage() {
         <StayDetailsSection
           value={form}
           onChange={onFieldChange}
+          roomRequirements={form.roomRequirements}
+          onRequirementsChange={onRequirementsChange}
+          roomTypes={typeItems}
           errors={errors}
           lockedSource="REPEAT_GUEST"
           open={true}
@@ -235,43 +267,95 @@ export default function RepeatGuestPage() {
 
       {currentStep === 2 && (
         <div className="space-y-6">
-          <RoomTypePicker
-            items={typeItems}
-            value={form.roomTypeCode}
-            onSelect={(code) => {
-              onFieldChange("roomTypeCode", code);
-              onFieldChange("ratePlanId", "");
-              onFieldChange("roomId", "");
-            }}
-            range={{ checkIn: form.checkIn, checkOut: form.checkOut, nights }}
-            loading={typesLoading}
-            open={true}
-          />
-
-          {form.roomTypeCode && (
-            <RatePlanPicker
-              plans={ratePlanOptions}
-              value={form.ratePlanId}
-              onSelect={(pid) => onFieldChange("ratePlanId", pid)}
-              roomTypeName={currentType?.name || form.roomTypeCode}
+          {isMultiRoom ? (
+            <SectionCard
+              number="3"
+              title="Room Allocation & Rate Plan"
+              subtitle="Configure room type blocks, guest distribution, and select rate plan"
               open={true}
-            />
-          )}
-
-          {form.roomTypeCode && (
-            <RoomSelection
-              roomTypeCode={form.roomTypeCode}
-              rooms={availableRooms}
-              selectedRoomId={form.roomId}
-              preferSpecificRoom={form.preferSpecificRoom}
-              onPreferSpecificRoomChange={(prefer) =>
-                onFieldChange("preferSpecificRoom", prefer)
+              action={
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRequirementsChange([]);
+                    onFieldChange("rooms", 1);
+                  }}
+                  className="text-brand-700 hover:text-brand-900 text-xs font-semibold"
+                >
+                  Switch to Single Room
+                </button>
               }
-              onSelectRoom={(rid) => onFieldChange("roomId", rid)}
-              loading={roomsLoading}
-              error={errors.roomId}
-              open={true}
-            />
+            >
+              <div className="space-y-6">
+                <RoomRequirementsMatrix
+                  roomRequirements={form.roomRequirements}
+                  onChange={onRequirementsChange}
+                  roomTypes={typeItems}
+                  targetRooms={form.rooms}
+                />
+                {errors.roomRequirements && (
+                  <p className="text-xs font-medium text-rose-500">
+                    {errors.roomRequirements}
+                  </p>
+                )}
+                <div className="border-t border-gray-100 pt-4">
+                  <RatePlanPicker
+                    plans={ratePlanOptions}
+                    value={form.ratePlanId}
+                    onSelect={(pid) => onFieldChange("ratePlanId", pid)}
+                    roomTypeName={
+                      currentType?.name || form.roomTypeCode || "Multi-Room"
+                    }
+                    open={true}
+                  />
+                </div>
+              </div>
+            </SectionCard>
+          ) : (
+            <>
+              <RoomTypePicker
+                items={typeItems}
+                value={form.roomTypeCode}
+                onSelect={(code) => {
+                  onFieldChange("roomTypeCode", code);
+                  onFieldChange("ratePlanId", "");
+                  onFieldChange("roomId", "");
+                }}
+                range={{
+                  checkIn: form.checkIn,
+                  checkOut: form.checkOut,
+                  nights,
+                }}
+                loading={typesLoading}
+                open={true}
+              />
+
+              {form.roomTypeCode && (
+                <RatePlanPicker
+                  plans={ratePlanOptions}
+                  value={form.ratePlanId}
+                  onSelect={(pid) => onFieldChange("ratePlanId", pid)}
+                  roomTypeName={currentType?.name || form.roomTypeCode}
+                  open={true}
+                />
+              )}
+
+              {form.roomTypeCode && (
+                <RoomSelection
+                  roomTypeCode={form.roomTypeCode}
+                  rooms={availableRooms}
+                  selectedRoomId={form.roomId}
+                  preferSpecificRoom={form.preferSpecificRoom}
+                  onPreferSpecificRoomChange={(prefer) =>
+                    onFieldChange("preferSpecificRoom", prefer)
+                  }
+                  onSelectRoom={(rid) => onFieldChange("roomId", rid)}
+                  loading={roomsLoading}
+                  error={errors.roomId}
+                  open={true}
+                />
+              )}
+            </>
           )}
         </div>
       )}
@@ -313,6 +397,18 @@ export default function RepeatGuestPage() {
               <p className="text-gray-600">
                 {form.rooms} Room(s), {form.adults} Adult(s)
               </p>
+              {form.roomRequirements?.length > 0 && (
+                <div className="mt-2 space-y-1 border-t border-gray-200/60 pt-2 text-xs text-gray-700">
+                  {form.roomRequirements.map((r, idx) => (
+                    <div key={r.id || idx} className="flex justify-between">
+                      <span className="text-brand-900 font-medium">
+                        {r.roomTypeCode}
+                      </span>
+                      <span>{r.rooms} room(s)</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
