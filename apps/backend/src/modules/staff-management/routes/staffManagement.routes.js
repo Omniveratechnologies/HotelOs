@@ -1,5 +1,4 @@
 import { Router } from "express";
-import multer from "multer";
 import {
   listStaff,
   stats,
@@ -37,20 +36,15 @@ import {
   deleteDesignation,
 } from "../controllers/staffManagement.controller.js";
 import { uploadImportFile } from "../middleware/uploadImport.js";
+import { uploadPhotoFile, uploadPhotoToR2 } from "../middleware/uploadPhoto.js";
 
 const staffManagementRoutes = Router();
-
-// Staff photo upload (kept in memory, then sent to Cloudflare R2 by the controller)
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
-});
 
 staffManagementRoutes.get("/stats", stats);
 staffManagementRoutes.get("/next-code", nextCode);
 staffManagementRoutes.get("/export", exportCsv);
 
-// Designations page ("/designations/stats" before "/designations/:id")
+// Designations page
 staffManagementRoutes.get("/designations", listDesignations);
 staffManagementRoutes.get("/designations/stats", designationStats);
 staffManagementRoutes.post("/designations", createDesignation);
@@ -71,7 +65,7 @@ staffManagementRoutes.get(
   departmentDesignations,
 );
 
-// Import ("template" before ":jobId")
+// Import
 staffManagementRoutes.get("/import/template", downloadImportTemplate);
 staffManagementRoutes.post("/import", uploadImportFile, importStaff);
 staffManagementRoutes.get("/import/:jobId", getImportJob);
@@ -88,12 +82,17 @@ staffManagementRoutes.get("/", listStaff);
 staffManagementRoutes.post("/", createStaff);
 
 // One staff member: photo and face
-staffManagementRoutes.post("/:id/photo", upload.single("photo"), uploadPhoto);
+staffManagementRoutes.post(
+  "/:id/photo",
+  uploadPhotoFile,
+  uploadPhotoToR2,
+  uploadPhoto,
+);
 staffManagementRoutes.delete("/:id/photo", removePhoto);
 staffManagementRoutes.post("/:id/face", registerStaffFace);
 staffManagementRoutes.get("/:id/face", getStaffFaceStatus);
 
-// One staff member: details (LAST, because it matches any single word)
+// One staff member
 staffManagementRoutes.get("/:id", getStaff);
 staffManagementRoutes.put("/:id", updateStaff);
 staffManagementRoutes.delete("/:id", archiveStaff);

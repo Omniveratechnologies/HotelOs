@@ -12,10 +12,7 @@ import {
   isObjectId,
   route,
 } from "../../../utils/http.js";
-import {
-  deleteStaffPhotoByUrl,
-  uploadStaffPhoto,
-} from "../services/photoStorage.service.js";
+import { deleteStaffPhotoByUrl } from "../services/photoStorage.service.js";
 
 import { StaffImport } from "../models/staffImport.js";
 import {
@@ -458,27 +455,28 @@ const findStaff = async (req) => {
   return { staff, hotelId };
 };
 
-// POST /staffManagement/:id/photo   (multipart, field name "photo")
+// POST /staffManagement/:id/photo
 export const uploadPhoto = route(async (req, res) => {
-  if (!req.file)
+  const { staff, photo } = req.photoUpload || {};
+  if (!staff || !photo)
     throw new ApiError(400, "Choose a photo to upload (field name: photo).");
-  const { staff, hotelId } = await findStaff(req);
 
-  const { url } = await uploadStaffPhoto({
-    buffer: req.file.buffer,
-    hotelId,
-    staffId: staff._id,
-  });
   const oldUrl = staff.photoUrl;
 
-  staff.photoUrl = url;
-  await staff.save();
+  try {
+    staff.photoUrl = photo.url;
+    await staff.save();
+  } catch (error) {
+    await deleteStaffPhotoByUrl(photo.url);
+    throw error;
+  }
+
   await deleteStaffPhotoByUrl(oldUrl);
 
   res.json({
     success: true,
     message: "Photo updated.",
-    data: { photoUrl: url },
+    data: { photoUrl: photo.url },
   });
 });
 
@@ -733,7 +731,7 @@ const findImportJob = async (req) => {
   });
 };
 
-// POST /import   (multipart, field "file", .csv)
+// POST /import
 export const importStaff = route(async (req, res) => {
   const hotelId = getHotelId(req);
 
@@ -1057,16 +1055,14 @@ export const createDepartment = route(async (req, res) => {
     throw duplicateError(error);
   }
 
-  res
-    .status(201)
-    .json({
-      success: true,
-      message: "Department created.",
-      data: view(department),
-    });
+  res.status(201).json({
+    success: true,
+    message: "Department created.",
+    data: view(department),
+  });
 });
 
-// GET /departments/:id   (id or code)
+// GET /departments/:id
 export const getDepartment = route(async (req, res) => {
   const { hotelId, department } = await findDepartment(req);
   const counts = await staffCounts(hotelId, [department._id]);
@@ -1115,7 +1111,7 @@ export const updateDepartment = route(async (req, res) => {
   });
 });
 
-// GET /departments/:id/summary  -> everything the right-side drawer shows
+// GET /departments/:id/summary
 export const departmentSummary = route(async (req, res) => {
   const { hotelId, department } = await findDepartment(req);
 
@@ -1247,7 +1243,7 @@ export const listDesignations = route(async (req, res) => {
   res.json({ success: true, data: rows, pagination });
 });
 
-// GET /designations/stats  -> the four cards
+// GET /designations/stats
 export const designationStats = route(async (req, res) => {
   res.json({
     success: true,
@@ -1255,7 +1251,7 @@ export const designationStats = route(async (req, res) => {
   });
 });
 
-// GET /designations/:id   (id or code)
+// GET /designations/:id
 export const getDesignation = route(async (req, res) => {
   res.json({
     success: true,

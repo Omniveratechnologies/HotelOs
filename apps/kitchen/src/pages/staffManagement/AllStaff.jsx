@@ -8,6 +8,7 @@ import Button from "../../components/ui/button/Button.jsx";
 
 import AllStaffStatusCards from "../../components/staffManagement/AllStaffStatusCards.jsx";
 import AllStaffTable from "../../components/staffManagement/AllStaffTable.jsx";
+import StaffViewModal from "../../components/staffManagement/StaffViewModal.jsx";
 import {
   deleteStaff,
   exportStaff,
@@ -56,6 +57,7 @@ const AllStaff = () => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewTarget, setViewTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState(null);
   const fileInputRef = useRef(null);
@@ -323,13 +325,18 @@ const AllStaff = () => {
             sortBy={filters.sort}
             sortDirection={filters.direction}
             onSort={handleSort}
-            onView={(member) => navigate(ROUTES.view(member._id))}
+            onView={(member) => setViewTarget(member._id)}
             onEdit={(member) => navigate(ROUTES.edit(member._id))}
             onDelete={setDeleteTarget}
           />
         </main>
       </div>
-
+      <StaffViewModal
+        open={Boolean(viewTarget)}
+        staffId={viewTarget}
+        onClose={() => setViewTarget(null)}
+        onEdit={(id) => navigate(ROUTES.edit(id))}
+      />
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div

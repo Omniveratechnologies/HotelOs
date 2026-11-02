@@ -43,16 +43,25 @@ const csvCell = (value) => {
 export const csvLine = (values) => `${values.map(csvCell).join(",")}\r\n`;
 
 const r2Config = () => {
-  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET } =
-    process.env;
+  const {
+    R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY,
+    R2_BUCKET_NAME,
+  } = process.env;
   if (
     !R2_ACCOUNT_ID ||
     !R2_ACCESS_KEY_ID ||
     !R2_SECRET_ACCESS_KEY ||
-    !R2_BUCKET
+    !R2_BUCKET_NAME
   )
     return null;
-  return { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET };
+  return {
+    R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY,
+    R2_BUCKET_NAME,
+  };
 };
 
 let client;
@@ -78,7 +87,7 @@ const saveFile = async (key, buffer, contentType) => {
   if (config) {
     await s3(config).send(
       new PutObjectCommand({
-        Bucket: config.R2_BUCKET,
+        Bucket: config.R2_BUCKET_NAME,
         Key: key,
         Body: buffer,
         ContentType: contentType,
@@ -99,7 +108,7 @@ export const readStoredFile = async (storage, key) => {
     if (!config)
       throw new Error("R2 is not configured, cannot read the stored file.");
     const result = await s3(config).send(
-      new GetObjectCommand({ Bucket: config.R2_BUCKET, Key: key }),
+      new GetObjectCommand({ Bucket: config.R2_BUCKET_NAME, Key: key }),
     );
     return Buffer.from(await result.Body.transformToByteArray());
   }
