@@ -2,11 +2,22 @@
   "name": "receptionist",
   "type": "module",
   "version": "1.0.0",
+  "description": "HotelOS Receptionist Dashboard",
+  "author": "Omnivera",
   "private": true,
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --port 5175",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "build:electron:scripts": "esbuild electron/main.ts electron/dev.ts --bundle --platform=node --format=esm --external:electron --outdir=dist-electron && esbuild electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist-electron/preload.cjs",
+    "dev:electron": "pnpm build:electron:scripts && node dist-electron/dev.js",
+    "build:electron": "pnpm build && pnpm build:electron:scripts && electron-builder",
+    "build:electron:win": "pnpm build && pnpm build:electron:scripts && electron-builder --win",
+    "build:electron:mac": "pnpm build && pnpm build:electron:scripts && electron-builder --mac",
+    "build:electron:linux": "pnpm build && pnpm build:electron:scripts && electron-builder --linux",
+    "pack:electron": "pnpm build && pnpm build:electron:scripts && electron-builder --dir"
   },
   "dependencies": {
     "@hotelos/api": "workspace:*",
@@ -28,8 +39,15 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "electron": "45.0.0",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
     "vite": "^8.2.2"
   }
 }

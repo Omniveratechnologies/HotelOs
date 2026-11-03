@@ -40,7 +40,7 @@ This is a **pnpm + Turborepo** monorepo. Workspaces are defined in
 | `apps/backend`      | `backend`         | Express + MongoDB REST API & BullMQ workers                | `5001`   |
 | `apps/super-admin`  | `super-admin`     | Platform operator dashboard (React + Vite)                 | `5173`   |
 | `apps/sub-admin`    | `sub-admin`       | Hotel admin dashboard + marketing site (React + Vite)      | `5174`   |
-| `apps/receptionist` | `receptionist`    | Front-desk dashboard (React + Vite)                        | `5175`   |
+| `apps/receptionist` | `receptionist`    | Front-desk dashboard (React + Vite Web & Electron Desktop) | `5175`   |
 | `apps/kitchen`      | `kitchen`         | Kitchen display system & live order board (React + Vite)   | `5176`   |
 | `apps/guest`        | `guest`           | Hotel room guest dashboard & portal (React + Vite)         | `5177`   |
 | `apps/self-checkin` | `self-checkin`    | Standalone guest self check-in wizard & kiosk webapp       | `5178`   |
@@ -78,7 +78,7 @@ navigation only and are never a security boundary.
 - **Backend** — Node.js, Express 5, MongoDB / Mongoose, JWT, bcryptjs, Multer,
   Nodemailer, Pino (struct/log + HTTP request logging), Cloudflare R2, Razorpay,
   Aiosell Channel Manager (approvals, distribution, sync, webhooks)
-- **Frontend** — React 19, Vite (`@tailwindcss/vite`), Tailwind CSS v4, React Router
+- **Frontend & Desktop** — React 19, Vite (`@tailwindcss/vite`), Tailwind CSS v4, React Router, Electron 45 (`receptionist` desktop app)
 - **Kiosk & Hardware** — React Native, Expo SDK 54+, Expo Modules (Kotlin native module), Android Device Owner + Lock Task Mode, react-native-webview
 - **State management** — TanStack Query v5 (server state), Zustand (UI state)
 - **Realtime** — Socket.IO (unified hub + automatic TanStack Query cache invalidation)
@@ -197,17 +197,20 @@ GET http://localhost:5001/api/v1/health
 
 All scripts run from the repository root:
 
-| Command             | Description                                                           |
-| ------------------- | --------------------------------------------------------------------- |
-| `pnpm dev`          | Start all apps in development mode (Turbo, persistent)                |
-| `pnpm dev:kiosk`    | Sync LAN IP, open Expo in interactive terminal, and run apps in Turbo |
-| `pnpm sync:ip`      | Auto-detect physical LAN IPv4 and sync across all .env files          |
-| `pnpm build`        | Build all apps for production (Turbo, cached)                         |
-| `pnpm preview`      | Preview production builds locally                                     |
-| `pnpm lint`         | Lint the whole repo with oxlint                                       |
-| `pnpm lint:fix`     | Lint and auto-fix with oxlint                                         |
-| `pnpm format`       | Format all source files with Prettier                                 |
-| `pnpm format:check` | Check formatting without writing                                      |
+| Command                                         | Description                                                           |
+| ----------------------------------------------- | --------------------------------------------------------------------- |
+| `pnpm dev`                                      | Start all apps in development mode (Turbo, persistent)                |
+| `pnpm dev:kiosk`                                | Sync LAN IP, open Expo in interactive terminal, and run apps in Turbo |
+| `pnpm sync:ip`                                  | Auto-detect physical LAN IPv4 and sync across all .env files          |
+| `pnpm build`                                    | Build all apps for production (Turbo, cached)                         |
+| `pnpm preview`                                  | Preview production builds locally                                     |
+| `pnpm lint`                                     | Lint the whole repo with oxlint                                       |
+| `pnpm lint:fix`                                 | Lint and auto-fix with oxlint                                         |
+| `pnpm format`                                   | Format all source files with Prettier                                 |
+| `pnpm format:check`                             | Check formatting without writing                                      |
+| `pnpm --filter receptionist dev:electron`       | Run Receptionist in Electron desktop development mode                 |
+| `pnpm --filter receptionist pack:electron`      | Build and package Receptionist desktop app (unpacked)                 |
+| `pnpm --filter receptionist build:electron:win` | Build Windows installer for Receptionist desktop app                  |
 
 ### Install pnpm
 
