@@ -15,6 +15,7 @@
     "!**/node_modules/**/*"
   ],
   "win": {
+    "forceCodeSigning": false,
     "target": [
       {
         "target": "nsis",
