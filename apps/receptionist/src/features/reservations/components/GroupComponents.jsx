@@ -3,6 +3,7 @@ import { Users, BedDouble, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { SectionCard, Input, Button } from "@hotelos/ui/components";
 import { formatCurrency } from "@hotelos/utils";
 import { RoomRequirementsMatrix } from "./RoomRequirementsMatrix.jsx";
+import { useMyHotel } from "../../settings/hooks/useHotelSettings.js";
 
 const EMPTY_OBJECT = Object.freeze({});
 const EMPTY_ARRAY = Object.freeze([]);
@@ -428,17 +429,20 @@ export function GroupAllocationSummary({
     0,
   );
 
+  const { hotel } = useMyHotel();
   const pricing = quote?.pricing;
 
-  // Real server pricing when available, fallback to estimates while calculating
-  const roomCharges = pricing ? pricing.roomCharge : totalRooms * 2499 * nights;
+  const roomCharges = pricing ? pricing.roomCharge : 0;
   const discountPercent = Number(form.discount || 0);
   const discountAmount = pricing
     ? pricing.discount?.amount || 0
     : Math.round(roomCharges * (discountPercent / 100));
+  const taxPercent = pricing?.taxPercent ?? hotel?.taxPercent;
   const taxAmount = pricing
     ? pricing.taxAmount
-    : Math.round((roomCharges - discountAmount) * 0.12);
+    : taxPercent != null
+      ? Math.round((roomCharges - discountAmount) * (taxPercent / 100))
+      : 0;
   const totalAmount = pricing
     ? pricing.grandTotal
     : roomCharges - discountAmount + taxAmount;
@@ -524,7 +528,9 @@ export function GroupAllocationSummary({
             <span>- {formatCurrency(discountAmount)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-amber-800">Taxes (GST 12%)</span>
+            <span className="text-amber-800">
+              Taxes {taxPercent != null ? `(GST ${taxPercent}%)` : "(GST)"}
+            </span>
             <span className="font-medium text-amber-950">
               {formatCurrency(taxAmount)}
             </span>

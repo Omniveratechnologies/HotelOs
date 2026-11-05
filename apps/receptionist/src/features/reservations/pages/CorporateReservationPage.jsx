@@ -76,7 +76,7 @@ export default function CorporateReservationPage() {
     initialCustomForm: (searchParams) => {
       const base = defaultInitialForm("CORPORATE", {
         purpose: "Business Meeting",
-        discount: "5", // 5% default corporate discount
+        discount: "0",
         corporate: { ...EMPTY_COMPANY },
         guests: [],
       });

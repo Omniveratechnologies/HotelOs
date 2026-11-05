@@ -256,6 +256,14 @@ async function buildPricingSnapshot({
     overrideRate: rateOverride,
   });
 
+  const effectiveTaxPercent =
+    taxPercent != null ? Number(taxPercent) : hotelTaxPercent;
+  if (effectiveTaxPercent == null || Number.isNaN(effectiveTaxPercent)) {
+    throw new Error(
+      "Hotel tax rate is not configured in property settings. Please configure property tax settings first.",
+    );
+  }
+
   const pricing = {
     ...computePricing({
       nightlyRate,
@@ -263,7 +271,7 @@ async function buildPricingSnapshot({
       rooms,
       addOns,
       discount,
-      taxPercent: taxPercent ?? hotelTaxPercent ?? 12,
+      taxPercent: effectiveTaxPercent,
       commissionPercent,
     }),
     rateSource,

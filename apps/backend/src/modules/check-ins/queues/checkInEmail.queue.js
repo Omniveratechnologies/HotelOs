@@ -15,16 +15,15 @@ export const checkInEmailQueue = new Queue(CHECK_IN_EMAIL_QUEUE_NAME, {
  * Returns null if the booking check-out has already passed.
  * Returns 0 if scheduled time is reached or past, but stay is active today.
  */
-export function calculateCheckInReminderDelay(
-  checkInDate,
-  checkInTimeStr = "14:00",
-) {
+export function calculateCheckInReminderDelay(checkInDate, checkInTimeStr) {
+  if (!checkInTimeStr) return null;
   const checkIn = new Date(checkInDate);
   if (Number.isNaN(checkIn.getTime())) return null;
 
-  const [hoursStr, minutesStr] = String(checkInTimeStr || "14:00").split(":");
-  const hours = Number.parseInt(hoursStr, 10) || 14;
-  const minutes = Number.parseInt(minutesStr, 10) || 0;
+  const [hoursStr, minutesStr] = String(checkInTimeStr).split(":");
+  const hours = Number.parseInt(hoursStr, 10);
+  const minutes = Number.parseInt(minutesStr, 10);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
 
   // Combine arrival date with hotel's default check-in time
   const scheduledTime = new Date(checkIn);
@@ -69,7 +68,14 @@ export async function scheduleCheckInReminder(booking) {
     const hotel = await Hotel.findById(booking.hotelId)
       .select("checkInTime name")
       .lean();
-    const checkInTime = hotel?.checkInTime || "14:00";
+    const checkInTime = hotel?.checkInTime;
+    if (!checkInTime) {
+      logger.debug(
+        { bookingId: booking._id },
+        "Check-in reminder skipped: hotel checkInTime is not configured in DB",
+      );
+      return;
+    }
 
     const delay = calculateCheckInReminderDelay(booking.checkIn, checkInTime);
     if (delay === null) {

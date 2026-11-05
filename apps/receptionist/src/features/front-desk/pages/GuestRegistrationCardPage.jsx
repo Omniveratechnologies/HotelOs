@@ -5,6 +5,7 @@ import {
   KpiTileRow,
   Button,
   InlineBanner,
+  Modal,
 } from "@hotelos/ui/components";
 import {
   FileText,
@@ -13,8 +14,10 @@ import {
   AlertCircle,
   XCircle,
   Search,
+  Printer,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@hotelos/query";
+import { useMyHotel } from "../../settings/hooks/useHotelSettings.js";
 import {
   getCheckInSessions,
   approveCheckInSession,
@@ -24,11 +27,18 @@ import {
 
 export default function GuestRegistrationCardPage() {
   const queryClient = useQueryClient();
+  const { hotel } = useMyHotel();
   const [selectedReg, setSelectedReg] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
   const [bannerMsg, setBannerMsg] = useState("");
   const [bannerVariant, setBannerVariant] = useState("success");
+
+  // Rejection & Correction modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
+  const [correctionInstructions, setCorrectionInstructions] = useState("");
 
   // Fetch live check-in sessions
   const { data: responseData, isLoading } = useQuery({
@@ -52,12 +62,16 @@ export default function GuestRegistrationCardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["check-in"] });
       setBannerVariant("success");
-      setBannerMsg("Registration card approved successfully!");
-      setTimeout(() => setBannerMsg(""), 4000);
+      setBannerMsg(
+        "Registration card approved successfully! Guest is verified for stay.",
+      );
+      setTimeout(() => setBannerMsg(""), 5000);
     },
     onError: (err) => {
       setBannerVariant("error");
-      setBannerMsg(err?.message || "Failed to approve registration card");
+      setBannerMsg(
+        err?.message || "Failed to approve registration card. Please retry.",
+      );
     },
   });
 
@@ -66,8 +80,14 @@ export default function GuestRegistrationCardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["check-in"] });
       setBannerVariant("error");
-      setBannerMsg("Registration card rejected.");
-      setTimeout(() => setBannerMsg(""), 4000);
+      setBannerMsg("Registration card rejected. The guest has been notified.");
+      setRejectModalOpen(false);
+      setRejectReason("");
+      setTimeout(() => setBannerMsg(""), 5000);
+    },
+    onError: (err) => {
+      setBannerVariant("error");
+      setBannerMsg(err?.message || "Failed to reject registration card.");
     },
   });
 
@@ -77,16 +97,23 @@ export default function GuestRegistrationCardPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["check-in"] });
       setBannerVariant("warning");
-      setBannerMsg("Correction requested from guest.");
-      setTimeout(() => setBannerMsg(""), 4000);
+      setBannerMsg("Correction instructions dispatched to guest.");
+      setCorrectionModalOpen(false);
+      setCorrectionInstructions("");
+      setTimeout(() => setBannerMsg(""), 5000);
+    },
+    onError: (err) => {
+      setBannerVariant("error");
+      setBannerMsg(err?.message || "Failed to request correction.");
     },
   });
 
   const filteredSessions = sessions.filter((s) => {
-    if (activeTab === "pending" && s.status !== "SUBMITTED") return false;
-    if (activeTab === "approved" && s.status !== "APPROVED") return false;
-    if (activeTab === "correction" && s.status !== "CORRECTION_REQUESTED")
+    if (activeTab === "pending" && s.status !== "submitted") return false;
+    if (activeTab === "approved" && s.status !== "approved") return false;
+    if (activeTab === "correction" && s.status !== "correction-requested")
       return false;
+    if (activeTab === "rejected" && s.status !== "rejected") return false;
     return true;
   });
 
@@ -192,31 +219,33 @@ export default function GuestRegistrationCardPage() {
               <div className="max-h-[560px] space-y-2 overflow-y-auto">
                 {filteredSessions.map((s) => (
                   <div
-                    key={s._id}
+                    key={s.id}
                     onClick={() => setSelectedReg(s)}
                     className={`cursor-pointer rounded-xl border p-3 text-xs transition ${
-                      currentReg?._id === s._id
+                      currentReg?.id === s.id
                         ? "border-brand-500 bg-brand-50/50"
                         : "border-gray-200 hover:bg-gray-50"
                     }`}
                   >
                     <div className="flex items-center justify-between font-bold text-gray-900">
-                      <span>{s.reservationId?.guestId?.name || "Guest"}</span>
+                      <span>{s.guestName || "Valued Guest"}</span>
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          s.status === "APPROVED"
+                          s.status === "approved"
                             ? "bg-emerald-100 text-emerald-800"
-                            : s.status === "SUBMITTED"
+                            : s.status === "submitted"
                               ? "bg-amber-100 text-amber-800"
-                              : "bg-gray-100 text-gray-700"
+                              : s.status === "correction-requested"
+                                ? "bg-rose-100 text-rose-800"
+                                : "bg-gray-100 text-gray-700"
                         }`}
                       >
                         {s.status}
                       </span>
                     </div>
                     <div className="mt-1 font-mono text-[11px] text-gray-500">
-                      {s.reservationId?.reservationNo || "—"} · Room{" "}
-                      {s.reservationId?.roomId?.roomNumber || "Unassigned"}
+                      {s.reservationNo || "—"} · Room{" "}
+                      {s.room?.roomNumber || "Unassigned"}
                     </div>
                   </div>
                 ))}
@@ -239,50 +268,97 @@ export default function GuestRegistrationCardPage() {
               </div>
             ) : (
               <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-xs">
-                <div className="flex items-start justify-between border-b border-gray-100 pb-4">
+                {/* Official Hotel Header */}
+                <div className="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-gray-900">
-                      {currentReg.reservationId?.guestId?.name || "Guest"}
-                    </h3>
-                    <p className="mt-0.5 font-mono text-xs text-gray-500">
-                      Booking: {currentReg.reservationId?.reservationNo} ·{" "}
-                      {currentReg.reservationId?.guestId?.phone}
+                    <h2 className="text-base font-bold tracking-tight text-gray-900">
+                      {hotel?.name || "Hotel OS"}
+                    </h2>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {[
+                        hotel?.address,
+                        hotel?.city,
+                        hotel?.state,
+                        hotel?.pincode,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
                     </p>
+                    <div className="mt-1 flex flex-wrap gap-x-3 text-[11px] text-gray-500">
+                      {hotel?.phone && <span>Tel: {hotel.phone}</span>}
+                      {hotel?.email && <span>Email: {hotel.email}</span>}
+                      {hotel?.gstin && (
+                        <span className="text-brand-900 font-mono font-semibold">
+                          GSTIN: {hotel.gstin}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="block text-xs text-gray-500">Status</span>
-                    <span className="text-brand-900 text-sm font-bold">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={Printer}
+                      onClick={() => window.print()}
+                    >
+                      Print GRC
+                    </Button>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                        currentReg.status === "approved"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : currentReg.status === "submitted"
+                            ? "bg-amber-100 text-amber-800"
+                            : currentReg.status === "correction-requested"
+                              ? "bg-rose-100 text-rose-800"
+                              : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
                       {currentReg.status}
                     </span>
                   </div>
                 </div>
 
+                {/* Guest & Reservation Info */}
+                <div className="flex items-start justify-between border-b border-gray-100 pb-3">
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      {currentReg.guestName || "Valued Guest"}
+                    </h3>
+                    <p className="mt-0.5 font-mono text-xs text-gray-500">
+                      Booking: {currentReg.reservationNo || "—"} · Phone:{" "}
+                      {currentReg.guestPhone || "—"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-xs text-gray-500">Room</span>
+                    <strong className="text-brand-900 text-sm">
+                      {currentReg.room?.roomNumber
+                        ? `Room ${currentReg.room.roomNumber}`
+                        : "Unassigned"}
+                    </strong>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3 rounded-xl bg-gray-50 p-4 text-xs sm:grid-cols-3">
                   <div>
-                    <span className="block text-gray-500">Nationality</span>
-                    <strong className="text-gray-800">
-                      {currentReg.reservationId?.guestId?.nationality ||
-                        "Indian"}
+                    <span className="block text-gray-500">Guest Email</span>
+                    <strong className="font-mono text-gray-800">
+                      {currentReg.guestEmail || "—"}
                     </strong>
                   </div>
                   <div>
-                    <span className="block text-gray-500">Check-in</span>
+                    <span className="block text-gray-500">Submitted On</span>
                     <strong className="text-gray-800">
-                      {currentReg.reservationId?.checkIn
-                        ? new Date(currentReg.reservationId.checkIn)
-                            .toISOString()
-                            .slice(0, 10)
+                      {currentReg.submittedAt
+                        ? new Date(currentReg.submittedAt).toLocaleDateString()
                         : "—"}
                     </strong>
                   </div>
                   <div>
-                    <span className="block text-gray-500">Check-out</span>
-                    <strong className="text-gray-800">
-                      {currentReg.reservationId?.checkOut
-                        ? new Date(currentReg.reservationId.checkOut)
-                            .toISOString()
-                            .slice(0, 10)
-                        : "—"}
+                    <span className="block text-gray-500">Session ID</span>
+                    <strong className="font-mono text-[11px] text-gray-800">
+                      {currentReg.id?.slice(-8) || "—"}
                     </strong>
                   </div>
                 </div>
@@ -413,14 +489,25 @@ export default function GuestRegistrationCardPage() {
                   </div>
                 )}
 
+                {/* Terms and Conditions from DB */}
+                {hotel?.termsAndConditions && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3.5 text-xs text-gray-600">
+                    <span className="mb-1 block font-bold text-gray-800">
+                      Terms of Stay &amp; Guest Declarations:
+                    </span>
+                    <p className="text-[11px] leading-relaxed">
+                      {hotel.termsAndConditions}
+                    </p>
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
                   <Button
                     variant="secondary"
                     onClick={() => {
-                      const reason = prompt("Enter rejection reason:");
-                      if (reason)
-                        rejectMutation.mutate({ id: currentReg._id, reason });
+                      setRejectReason("");
+                      setRejectModalOpen(true);
                     }}
                     disabled={rejectMutation.isPending}
                   >
@@ -429,14 +516,8 @@ export default function GuestRegistrationCardPage() {
                   <Button
                     variant="secondary"
                     onClick={() => {
-                      const instructions = prompt(
-                        "Enter correction instructions:",
-                      );
-                      if (instructions)
-                        correctionMutation.mutate({
-                          id: currentReg._id,
-                          instructions,
-                        });
+                      setCorrectionInstructions("");
+                      setCorrectionModalOpen(true);
                     }}
                     disabled={correctionMutation.isPending}
                   >
@@ -445,7 +526,7 @@ export default function GuestRegistrationCardPage() {
                   <Button
                     variant="primary"
                     icon={CheckCircle2}
-                    onClick={() => approveMutation.mutate(currentReg._id)}
+                    onClick={() => approveMutation.mutate(currentReg.id)}
                     disabled={approveMutation.isPending}
                   >
                     {approveMutation.isPending
@@ -458,6 +539,153 @@ export default function GuestRegistrationCardPage() {
           </div>
         </div>
       </div>
+
+      {/* Reject Modal */}
+      {rejectModalOpen && currentReg && (
+        <Modal
+          isOpen={rejectModalOpen}
+          onClose={() => setRejectModalOpen(false)}
+          title={`Reject Registration Card — ${currentReg.guestName || "Guest"}`}
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-gray-500">
+              Please choose or provide the reason for declining this guest
+              registration card:
+            </p>
+            <div className="space-y-2">
+              {[
+                "Submitted ID document is illegible or blurry.",
+                "Government ID has expired.",
+                "Name does not match the reservation details.",
+                "Selfie photo does not match identity card.",
+              ].map((reason) => (
+                <button
+                  type="button"
+                  key={reason}
+                  onClick={() => setRejectReason(reason)}
+                  className={`w-full rounded-lg border p-2 text-left text-xs transition ${
+                    rejectReason === reason
+                      ? "border-rose-500 bg-rose-50 font-semibold text-rose-900"
+                      : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-gray-700">
+                Rejection Note
+              </label>
+              <textarea
+                className="focus:border-brand-900 w-full rounded-lg border border-gray-200 p-2.5 text-xs text-gray-900 focus:outline-none"
+                rows={3}
+                placeholder="Explain reason for rejection..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+              <Button
+                variant="secondary"
+                onClick={() => setRejectModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  if (rejectReason.trim()) {
+                    rejectMutation.mutate({
+                      id: currentReg.id,
+                      reason: rejectReason.trim(),
+                    });
+                  }
+                }}
+                loading={rejectMutation.isPending}
+                className="bg-rose-600 text-white hover:bg-rose-700"
+              >
+                Confirm Rejection
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Correction Request Modal */}
+      {correctionModalOpen && currentReg && (
+        <Modal
+          isOpen={correctionModalOpen}
+          onClose={() => setCorrectionModalOpen(false)}
+          title={`Request Correction — ${currentReg.guestName || "Guest"}`}
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-gray-500">
+              Select or provide instructions for the guest to resubmit their
+              registration card:
+            </p>
+            <div className="space-y-2">
+              {[
+                "Please upload a clear, high-resolution photo of your government ID.",
+                "Please provide a photo of the reverse side of your ID proof.",
+                "Please capture a clear live photo without sunglasses or cap.",
+                "Please provide a complete signature on the card.",
+              ].map((inst) => (
+                <button
+                  type="button"
+                  key={inst}
+                  onClick={() => setCorrectionInstructions(inst)}
+                  className={`w-full rounded-lg border p-2 text-left text-xs transition ${
+                    correctionInstructions === inst
+                      ? "border-amber-500 bg-amber-50 font-semibold text-amber-900"
+                      : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {inst}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-gray-700">
+                Correction Instructions
+              </label>
+              <textarea
+                className="focus:border-brand-900 w-full rounded-lg border border-gray-200 p-2.5 text-xs text-gray-900 focus:outline-none"
+                rows={3}
+                placeholder="Enter specific instructions..."
+                value={correctionInstructions}
+                onChange={(e) => setCorrectionInstructions(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+              <Button
+                variant="secondary"
+                onClick={() => setCorrectionModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  if (correctionInstructions.trim()) {
+                    correctionMutation.mutate({
+                      id: currentReg.id,
+                      instructions: correctionInstructions.trim(),
+                    });
+                  }
+                }}
+                loading={correctionMutation.isPending}
+              >
+                Send Instructions
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

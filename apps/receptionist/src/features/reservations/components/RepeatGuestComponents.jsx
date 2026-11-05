@@ -169,16 +169,21 @@ export function RepeatGuestSearchPane({
                     Preferences
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {(
-                      selectedGuest.preferences || ["Non-Smoking", "High Floor"]
-                    ).map((p) => (
-                      <span
-                        key={p}
-                        className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-2xs"
-                      >
-                        ✓ {p}
+                    {Array.isArray(selectedGuest.preferences) &&
+                    selectedGuest.preferences.length > 0 ? (
+                      selectedGuest.preferences.map((p) => (
+                        <span
+                          key={p}
+                          className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 shadow-2xs"
+                        >
+                          ✓ {p}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">
+                        No special preferences recorded
                       </span>
-                    ))}
+                    )}
                   </div>
                 </div>
 

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import Booking from "../models/Booking.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
 import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
 import KeyCard from "#/modules/key-cards/models/KeyCard.js";
@@ -28,6 +29,10 @@ export const getArrivals = async (req, res) => {
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
+
+    const hotel = await Hotel.findById(hotelId)
+      .select("checkInTime checkOutTime")
+      .lean();
 
     const baseStatusFilter = {
       hotelId,
@@ -169,6 +174,8 @@ export const getArrivals = async (req, res) => {
           checkOut: b.checkOut
             ? new Date(b.checkOut).toISOString().slice(0, 10)
             : null,
+          hotelCheckInTime: hotel?.checkInTime || null,
+          hotelCheckOutTime: hotel?.checkOutTime || null,
           nights:
             Math.max(
               1,
@@ -213,6 +220,8 @@ export const getDepartures = async (req, res) => {
   try {
     const { q } = req.query;
     const hotelId = req.user.hotelId;
+
+    const hotel = await Hotel.findById(hotelId).select("checkOutTime").lean();
 
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
@@ -264,7 +273,7 @@ export const getDepartures = async (req, res) => {
           checkOut: b.checkOut
             ? new Date(b.checkOut).toISOString().slice(0, 10)
             : null,
-          checkoutTime: "11:00 AM",
+          checkoutTime: hotel?.checkOutTime || null,
           nights,
           guests: (b.adults || 1) + (b.children || 0),
           isOverstay,
@@ -431,12 +440,10 @@ export const checkInBooking = async (req, res) => {
     // Verify and claim all assigned rooms
     const rooms = await Room.find({ _id: { $in: targetRoomIds }, hotelId });
     if (rooms.length !== targetRoomIds.length) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "One or more assigned rooms not found",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "One or more assigned rooms not found",
+      });
     }
 
     // Clean up any stale active checked-in bookings on any of these rooms

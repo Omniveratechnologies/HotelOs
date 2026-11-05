@@ -267,9 +267,11 @@ export function DepartureQueue({
                   <div className="text-brand-900 mt-0.5 text-xs font-semibold">
                     Room {item.room} · {item.roomType}
                   </div>
-                  <div className="mt-0.5 text-[11px] text-gray-400">
-                    Check-out: {item.checkoutTime || "11:00 AM"}
-                  </div>
+                  {item.checkoutTime && (
+                    <div className="mt-0.5 text-[11px] text-gray-400">
+                      Check-out: {item.checkoutTime}
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
                   <span

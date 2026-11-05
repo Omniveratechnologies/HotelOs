@@ -1,6 +1,7 @@
 import { Save, ArrowRight, Pencil } from "lucide-react";
 import { SummaryPanel, Button, InlineBanner } from "@hotelos/ui/components";
 import { formatCurrency } from "@hotelos/utils";
+import { useMyHotel } from "../../settings/hooks/useHotelSettings.js";
 
 /**
  * Sticky right-rail booking summary driven by the backend quote (no local
@@ -16,7 +17,7 @@ import { formatCurrency } from "@hotelos/utils";
  * @param {() => void} props.onCreate
  * @param {boolean} [props.creating]
  * @param {boolean} [props.disabled] - Block create until the form is valid.
- * @param {string} props.cancellationNote - Policy line under the total.
+ * @param {string} [props.cancellationNote] - Policy line under the total.
  * @returns {React.ReactElement}
  */
 export function BookingSummary({
@@ -29,8 +30,10 @@ export function BookingSummary({
   onCreate,
   creating = false,
   disabled = false,
-  cancellationNote = "Free cancellation up to 24 hours before check-in.",
+  cancellationNote,
 }) {
+  const { hotel } = useMyHotel();
+  const effectivePolicy = cancellationNote || hotel?.cancellationPolicy;
   const items = [];
   const pricing = quote?.pricing;
 
@@ -117,7 +120,7 @@ export function BookingSummary({
               }
             : null
         }
-        note={pricing ? cancellationNote : null}
+        note={pricing ? effectivePolicy : null}
         loading={quoteLoading}
         footer={
           <>

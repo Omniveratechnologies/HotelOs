@@ -87,9 +87,10 @@ export async function processCheckInReminderJob(job) {
   }
 
   const checkInUrl = `${env.frontendUrls.selfCheckin}/check-in/${token}`;
-  const hotelName = booking.hotelId?.name || "Our Hotel";
+  const hotelName = booking.hotelId?.name || "the hotel";
   const guestName = booking.guestId?.name || "Guest";
-  const checkInTime = booking.hotelId?.checkInTime || "14:00";
+  const checkInTime = booking.hotelId?.checkInTime;
+  const timeNote = checkInTime ? ` Check-in begins at ${checkInTime}.` : "";
 
   // Dispatch email (will throw if SMTP fails, triggering BullMQ exponential retry)
   await sendCheckInEmail({
@@ -98,7 +99,7 @@ export async function processCheckInReminderJob(job) {
     hotelName,
     subject: `Complete your online check-in - ${hotelName}`,
     heading: "Your stay begins today!",
-    body: `Your room at ${hotelName} is getting ready. Check-in starts at ${checkInTime}. Complete your digital check-in now to skip the front desk line and enjoy instant room access.`,
+    body: `Your room at ${hotelName} is getting ready.${timeNote} Complete your digital check-in now to skip the front desk line and enjoy instant room access.`,
     actionUrl: checkInUrl,
     actionLabel: "Start Self Check-In",
   });

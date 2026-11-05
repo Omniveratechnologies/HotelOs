@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
 import {
   CheckCircle,
   Loader2,
@@ -9,6 +8,7 @@ import {
   User,
   X,
   FileText,
+  Send,
 } from "lucide-react";
 import {
   Button,
@@ -20,34 +20,36 @@ import {
   FilterBar,
   EmptyState,
   Modal,
+  InlineBanner,
+  Input,
 } from "@hotelos/ui/components";
 import { formatDate, formatTime } from "@hotelos/utils";
 import { useCheckInSessions } from "../hooks/useCheckInSessions.js";
+import { useAiosellRoomTypes } from "../../settings/hooks/useHotelSettings.js";
 import {
   approveCheckInSession,
   rejectCheckInSession,
   requestCheckInCorrection,
   resendCheckInLink,
   deleteCheckInSession,
+  sendCheckInLink,
 } from "@hotelos/api";
 
 const STATUS_LABELS = {
-  link_sent: "Link Sent",
-  in_progress: "In Progress",
+  "link-sent": "Link Sent",
+  "in-progress": "In Progress",
   submitted: "Submitted",
-  pending_verification: "Pending Verification",
-  correction_requested: "Correction Requested",
+  "correction-requested": "Correction Requested",
   approved: "Approved & Checked-in",
   rejected: "Rejected",
   expired: "Expired",
 };
 
 const STATUS_CHIP_VARIANTS = {
-  link_sent: "info",
-  in_progress: "info",
+  "link-sent": "info",
+  "in-progress": "info",
   submitted: "pending",
-  pending_verification: "pending",
-  correction_requested: "pending",
+  "correction-requested": "pending",
   approved: "approved",
   rejected: "rejected",
   expired: "expired",
@@ -55,11 +57,10 @@ const STATUS_CHIP_VARIANTS = {
 
 const TAB_OPTIONS = [
   { id: "all", label: "All" },
-  { id: "link_sent", label: "Sent" },
-  { id: "in_progress", label: "In Progress" },
+  { id: "link-sent", label: "Sent" },
+  { id: "in-progress", label: "In Progress" },
   { id: "submitted", label: "Submitted" },
-  { id: "pending_verification", label: "Pending Verification" },
-  { id: "correction_requested", label: "Correction Requested" },
+  { id: "correction-requested", label: "Correction Requested" },
   { id: "approved", label: "Approved" },
   { id: "rejected", label: "Rejected" },
   { id: "expired", label: "Expired" },
@@ -77,15 +78,6 @@ const SOURCE_OPTIONS = [
   { value: "walk-in", label: "Walk-in" },
 ];
 
-const ROOM_TYPE_OPTIONS = [
-  { value: "all", label: "All Room Types" },
-  { value: "executive", label: "Executive" },
-  { value: "deluxe", label: "Deluxe" },
-  { value: "premium", label: "Premium" },
-  { value: "suite", label: "Suite" },
-  { value: "family", label: "Family" },
-];
-
 const STATUS_OPTIONS = [
   { value: "all", label: "All Status" },
   ...TAB_OPTIONS.filter((t) => t.id !== "all").map((t) => ({
@@ -95,7 +87,6 @@ const STATUS_OPTIONS = [
 ];
 
 export default function DigitalCheckInDashboardPage() {
-  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     dateRange: "today",
     source: "all",
@@ -106,8 +97,47 @@ export default function DigitalCheckInDashboardPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedSessionForModal, setSelectedSessionForModal] = useState(null);
 
+  // User-friendly banner notification state
+  const [bannerMsg, setBannerMsg] = useState("");
+  const [bannerVariant, setBannerVariant] = useState("success");
+
+  // Interactive Modals State
+  const [rejectModalSession, setRejectModalSession] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
+
+  const [correctionModalSession, setCorrectionModalSession] = useState(null);
+  const [correctionMessage, setCorrectionMessage] = useState("");
+  const [correctionSubmitting, setCorrectionSubmitting] = useState(false);
+
+  const [isSendLinkOpen, setIsSendLinkOpen] = useState(false);
+  const [sendReservationId, setSendReservationId] = useState("");
+  const [sendEmail, setSendEmail] = useState("");
+  const [sendNote, setSendNote] = useState("");
+  const [sendSubmitting, setSendSubmitting] = useState(false);
+
+  const [deleteConfirmSession, setDeleteConfirmSession] = useState(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
   const { stats, sessions, loading, error, refetch } =
     useCheckInSessions(filters);
+
+  const { aiosellRoomTypes } = useAiosellRoomTypes();
+  const roomTypeOptions = [
+    { value: "all", label: "All Room Types" },
+    ...aiosellRoomTypes.map((rt) => ({
+      value: rt.code,
+      label: rt.name,
+    })),
+  ];
+
+  const showNotification = (msg, variant = "success") => {
+    setBannerMsg(msg);
+    setBannerVariant(variant);
+    setTimeout(() => {
+      setBannerMsg("");
+    }, 5000);
+  };
 
   const handleFilterChange = (newFilters) => {
     setFilters((prev) => ({
@@ -128,15 +158,20 @@ export default function DigitalCheckInDashboardPage() {
       return false;
     if (
       filters.roomType !== "all" &&
-      session.booking?.roomTypeId !== filters.roomType
+      session.room?.type?.toLowerCase() !== filters.roomType.toLowerCase()
     )
       return false;
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
       return (
-        session.guest?.name?.toLowerCase().includes(searchTerm) ||
-        session.booking?.reservationNo?.toLowerCase().includes(searchTerm) ||
-        session.booking?.guest?.name?.toLowerCase().includes(searchTerm)
+        (session.guestName &&
+          session.guestName.toLowerCase().includes(searchTerm)) ||
+        (session.reservationNo &&
+          session.reservationNo.toLowerCase().includes(searchTerm)) ||
+        (session.guestEmail &&
+          session.guestEmail.toLowerCase().includes(searchTerm)) ||
+        (session.room?.roomNumber &&
+          String(session.room.roomNumber).includes(searchTerm))
       );
     }
     return true;
@@ -145,70 +180,149 @@ export default function DigitalCheckInDashboardPage() {
   const handleApprove = async (sessionId) => {
     try {
       await approveCheckInSession(sessionId);
+      showNotification(
+        "Digital check-in approved successfully! Guest is now ready for express check-in.",
+        "success",
+      );
       refetch();
     } catch (err) {
-      setError("Failed to approve check-in");
+      showNotification(
+        err?.message || "Unable to approve check-in. Please try again.",
+        "error",
+      );
       console.error(err);
     }
   };
 
-  const handleReject = async (sessionId) => {
-    // In a real implementation, this would open a dialog to get the rejection reason
-    const reason = window.prompt("Please provide a reason for rejection:");
-    if (reason === null) return; // User cancelled
-    if (reason.trim() === "") {
-      setError("Rejection reason is required");
+  const handleRejectSubmit = async (e) => {
+    e?.preventDefault();
+    if (!rejectReason.trim()) {
+      showNotification(
+        "Please provide a valid reason for rejecting this check-in.",
+        "warning",
+      );
       return;
     }
     try {
-      await rejectCheckInSession(sessionId, reason);
+      setRejectSubmitting(true);
+      await rejectCheckInSession(rejectModalSession.id, rejectReason.trim());
+      showNotification(
+        "Check-in submission has been rejected. The guest has been notified.",
+        "success",
+      );
+      setRejectModalSession(null);
+      setRejectReason("");
       refetch();
     } catch (err) {
-      setError("Failed to reject check-in");
-      console.error(err);
+      showNotification(
+        err?.message || "Failed to reject check-in submission.",
+        "error",
+      );
+    } finally {
+      setRejectSubmitting(false);
     }
   };
 
-  const handleRequestCorrection = async (sessionId) => {
-    // In a real implementation, this would open a dialog to get the correction message
-    const message = window.prompt(
-      "Please provide a correction message for the guest:",
-    );
-    if (message === null) return; // User cancelled
-    if (message.trim() === "") {
-      setError("Correction message is required");
+  const handleCorrectionSubmit = async (e) => {
+    e?.preventDefault();
+    if (!correctionMessage.trim()) {
+      showNotification(
+        "Please specify the instructions or corrections needed from the guest.",
+        "warning",
+      );
       return;
     }
     try {
-      await requestCheckInCorrection(sessionId, message);
+      setCorrectionSubmitting(true);
+      await requestCheckInCorrection(
+        correctionModalSession.id,
+        correctionMessage.trim(),
+      );
+      showNotification(
+        "Correction request sent to guest. The submission is now marked for guest update.",
+        "success",
+      );
+      setCorrectionModalSession(null);
+      setCorrectionMessage("");
       refetch();
     } catch (err) {
-      setError("Failed to request correction");
-      console.error(err);
+      showNotification(
+        err?.message || "Failed to submit correction request.",
+        "error",
+      );
+    } finally {
+      setCorrectionSubmitting(false);
     }
   };
 
   const handleResendLink = async (sessionId) => {
     try {
       await resendCheckInLink(sessionId);
+      showNotification(
+        "Check-in link resent successfully to the guest's contact email.",
+        "success",
+      );
       refetch();
     } catch (err) {
-      setError("Failed to resend check-in link");
+      showNotification(
+        err?.message || "Failed to resend check-in link.",
+        "error",
+      );
       console.error(err);
     }
   };
 
-  const handleDelete = async (sessionId) => {
-    if (
-      !window.confirm("Are you sure you want to delete this check-in session?")
-    )
-      return;
+  const handleDeleteSubmit = async () => {
+    if (!deleteConfirmSession) return;
     try {
-      await deleteCheckInSession(sessionId);
+      setDeleteSubmitting(true);
+      await deleteCheckInSession(deleteConfirmSession.id);
+      showNotification("Check-in session removed successfully.", "success");
+      setDeleteConfirmSession(null);
       refetch();
     } catch (err) {
-      setError("Failed to delete check-in session");
-      console.error(err);
+      showNotification(
+        err?.message || "Failed to delete check-in session.",
+        "error",
+      );
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  };
+
+  const handleSendLinkSubmit = async (e) => {
+    e?.preventDefault();
+    if (!sendReservationId.trim()) {
+      showNotification(
+        "Please enter a valid Booking Reference / ID.",
+        "warning",
+      );
+      return;
+    }
+    try {
+      setSendSubmitting(true);
+      await sendCheckInLink({
+        reservationId: sendReservationId.trim(),
+        email: sendEmail.trim() || undefined,
+        message: sendNote.trim() || undefined,
+      });
+      showNotification(
+        "Check-in invitation successfully sent to guest!",
+        "success",
+      );
+      setIsSendLinkOpen(false);
+      setSendReservationId("");
+      setSendEmail("");
+      setSendNote("");
+      refetch();
+    } catch (err) {
+      showNotification(
+        err?.message ||
+          "Could not send check-in link. Please verify the booking reference.",
+        "error",
+      );
+    } finally {
+      setSendSubmitting(false);
     }
   };
 
@@ -222,7 +336,6 @@ export default function DigitalCheckInDashboardPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setError(null);
                 refetch();
               }}
             >
@@ -272,14 +385,18 @@ export default function DigitalCheckInDashboardPage() {
           >
             <Button
               variant="primary"
-              onClick={() => {
-                // In a real implementation, this would open a dialog to send a new check-in link
-                navigate("/reservations/new"); // Placeholder
-              }}
+              icon={Send}
+              onClick={() => setIsSendLinkOpen(true)}
             >
               + Send Check-in Link
             </Button>
           </Header>
+
+          {bannerMsg && (
+            <div className="mb-6">
+              <InlineBanner variant={bannerVariant}>{bannerMsg}</InlineBanner>
+            </div>
+          )}
 
           {/* Stats and Tabs */}
           {!stats ? null : (
@@ -358,7 +475,7 @@ export default function DigitalCheckInDashboardPage() {
               {
                 key: "roomType",
                 label: "All Room Types",
-                options: ROOM_TYPE_OPTIONS,
+                options: roomTypeOptions,
                 value: filters.roomType,
               },
               {
@@ -371,7 +488,7 @@ export default function DigitalCheckInDashboardPage() {
             onSelectChange={handleSelectChange}
             search={filters.search}
             onSearchChange={handleSearchChange}
-            searchPlaceholder="Search by guest name or booking reference..."
+            searchPlaceholder="Search by guest name, booking ref, email, or room..."
             onClear={handleClearFilters}
           />
 
@@ -450,7 +567,7 @@ export default function DigitalCheckInDashboardPage() {
                           )}
                           <div className="text-left">
                             <p className="text-brand-900 text-sm font-medium">
-                              {session.guest?.name || "Unknown Guest"}
+                              {session.guestName || "Valued Guest"}
                             </p>
                             {session.guest?.email && (
                               <p className="text-muted-500 text-sm">
@@ -459,11 +576,13 @@ export default function DigitalCheckInDashboardPage() {
                             )}
                           </div>
                         </td>
-                        <td className="text-muted-500 px-6 py-4 text-sm">
-                          {session.booking?.reservationNo || "-"}
+                        <td className="text-muted-500 px-6 py-4 font-mono text-sm">
+                          {session.reservationNo || "-"}
                         </td>
                         <td className="text-muted-500 px-6 py-4 text-sm">
-                          {session.booking?.roomNumber || "-"}
+                          {session.room?.roomNumber
+                            ? `Room ${session.room.roomNumber}`
+                            : "-"}
                         </td>
                         <td className="text-muted-500 px-6 py-4 text-sm">
                           {session.sentAt
@@ -495,8 +614,8 @@ export default function DigitalCheckInDashboardPage() {
                             >
                               <User className="mr-1 h-4 w-4" /> View
                             </Button>
-                            {session.status === "link_sent" ||
-                            session.status === "expired" ? (
+                            {(session.status === "link-sent" ||
+                              session.status === "expired") && (
                               <Button
                                 variant="outline"
                                 size="xs"
@@ -504,57 +623,47 @@ export default function DigitalCheckInDashboardPage() {
                               >
                                 <Loader2 className="mr-1 h-4 w-4" /> Resend Link
                               </Button>
-                            ) : null}
-                            <Button
-                              variant="outline"
-                              size="xs"
-                              onClick={() =>
-                                handleRequestCorrection(session.id)
-                              }
-                            >
-                              <MessageCircle className="mr-1 h-4 w-4" /> Request
-                              Correction
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="xs"
-                              onClick={() => handleReject(session.id)}
-                              className="text-rose-500 hover:text-rose-700"
-                            >
-                              <X className="mr-1 h-4 w-4" /> Reject
-                            </Button>
-                            <Button
-                              variant={
-                                session.status === "pending_verification" ||
-                                session.status === "submitted"
-                                  ? "primary"
-                                  : "outline"
-                              }
-                              size="xs"
-                              onClick={() => handleApprove(session.id)}
-                              disabled={
-                                session.status !== "pending_verification" &&
-                                session.status !== "submitted"
-                              }
-                            >
-                              {session.status === "pending_verification" ||
-                              session.status === "submitted" ? (
-                                <>
+                            )}
+                            {(session.status === "submitted" ||
+                              session.status === "correction-requested") && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="xs"
+                                  onClick={() => {
+                                    setCorrectionModalSession(session);
+                                    setCorrectionMessage("");
+                                  }}
+                                >
+                                  <MessageCircle className="mr-1 h-4 w-4" />{" "}
+                                  Request Correction
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="xs"
+                                  onClick={() => {
+                                    setRejectModalSession(session);
+                                    setRejectReason("");
+                                  }}
+                                  className="text-rose-500 hover:text-rose-700"
+                                >
+                                  <X className="mr-1 h-4 w-4" /> Reject
+                                </Button>
+                                <Button
+                                  variant="primary"
+                                  size="xs"
+                                  onClick={() => handleApprove(session.id)}
+                                >
                                   <CheckCircle className="mr-1 h-4 w-4" />{" "}
                                   Approve & Check-in
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="mr-1 h-4 w-4" />{" "}
-                                  Approve
-                                </>
-                              )}
-                            </Button>
+                                </Button>
+                              </>
+                            )}
                             <Button
                               variant="outline"
                               size="xs"
-                              onClick={() => handleDelete(session.id)}
-                              className="text-muted-500 hover:text-muted-700"
+                              onClick={() => setDeleteConfirmSession(session)}
+                              className="text-muted-500 hover:text-rose-600"
                             >
                               <Trash2 className="mr-1 h-4 w-4" /> Delete
                             </Button>
@@ -574,6 +683,237 @@ export default function DigitalCheckInDashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Send Check-in Link Modal */}
+      {isSendLinkOpen && (
+        <Modal
+          isOpen={isSendLinkOpen}
+          onClose={() => setIsSendLinkOpen(false)}
+          title="Send Digital Check-in Link"
+          size="md"
+        >
+          <form onSubmit={handleSendLinkSubmit} className="space-y-4">
+            <p className="text-xs text-gray-500">
+              Invite the guest to complete their registration and identity
+              verification online prior to arrival.
+            </p>
+            <Input
+              label="Booking Reference / Reservation No."
+              placeholder="e.g. RES-2026-1001 or Booking ID"
+              value={sendReservationId}
+              onChange={(e) => setSendReservationId(e.target.value)}
+              required
+            />
+            <Input
+              label="Guest Email (Optional, overrides booking email)"
+              placeholder="guest@example.com"
+              type="email"
+              value={sendEmail}
+              onChange={(e) => setSendEmail(e.target.value)}
+            />
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-gray-700">
+                Custom Welcome Note (Optional)
+              </label>
+              <textarea
+                className="focus:border-brand-900 w-full rounded-lg border border-gray-200 p-2.5 text-xs text-gray-900 focus:outline-none"
+                rows={3}
+                placeholder="We look forward to welcoming you! Please complete this fast check-in form to ensure priority room key handover."
+                value={sendNote}
+                onChange={(e) => setSendNote(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => setIsSendLinkOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                type="submit"
+                loading={sendSubmitting}
+                icon={Send}
+              >
+                Dispatch Link
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Reject Modal */}
+      {rejectModalSession && (
+        <Modal
+          isOpen={Boolean(rejectModalSession)}
+          onClose={() => setRejectModalSession(null)}
+          title={`Reject Check-in — ${rejectModalSession.guestName || "Guest"}`}
+          size="md"
+        >
+          <form onSubmit={handleRejectSubmit} className="space-y-4">
+            <p className="text-xs text-gray-500">
+              Select or provide the reason for declining this digital check-in
+              submission:
+            </p>
+            <div className="space-y-2">
+              {[
+                "Submitted ID document is blurry or unreadable.",
+                "Government photo ID has expired.",
+                "Name on identity proof does not match reservation.",
+                "Live photo (selfie) does not match submitted photo ID.",
+                "Invalid document type submitted.",
+              ].map((preset) => (
+                <button
+                  type="button"
+                  key={preset}
+                  onClick={() => setRejectReason(preset)}
+                  className={`w-full rounded-lg border p-2 text-left text-xs transition ${
+                    rejectReason === preset
+                      ? "border-rose-500 bg-rose-50 font-semibold text-rose-900"
+                      : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-gray-700">
+                Custom Rejection Reason
+              </label>
+              <textarea
+                className="focus:border-brand-900 w-full rounded-lg border border-gray-200 p-2.5 text-xs text-gray-900 focus:outline-none"
+                rows={3}
+                placeholder="Enter specific details explaining why this submission cannot be approved..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => setRejectModalSession(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                type="submit"
+                loading={rejectSubmitting}
+                className="bg-rose-600 text-white hover:bg-rose-700"
+              >
+                Confirm Rejection
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Correction Request Modal */}
+      {correctionModalSession && (
+        <Modal
+          isOpen={Boolean(correctionModalSession)}
+          onClose={() => setCorrectionModalSession(null)}
+          title={`Request Correction — ${correctionModalSession.guestName || "Guest"}`}
+          size="md"
+        >
+          <form onSubmit={handleCorrectionSubmit} className="space-y-4">
+            <p className="text-xs text-gray-500">
+              Select preset instructions or enter guidance for the guest to
+              resubmit their details:
+            </p>
+            <div className="space-y-2">
+              {[
+                "Please upload a clear, high-resolution photo of your government ID.",
+                "Please provide a photo of the reverse side of your ID proof.",
+                "Please capture a clear live photo without sunglasses or cap.",
+                "Please provide a complete signature on the card.",
+              ].map((preset) => (
+                <button
+                  type="button"
+                  key={preset}
+                  onClick={() => setCorrectionMessage(preset)}
+                  className={`w-full rounded-lg border p-2 text-left text-xs transition ${
+                    correctionMessage === preset
+                      ? "border-amber-500 bg-amber-50 font-semibold text-amber-900"
+                      : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-gray-700">
+                Instructions for Guest
+              </label>
+              <textarea
+                className="focus:border-brand-900 w-full rounded-lg border border-gray-200 p-2.5 text-xs text-gray-900 focus:outline-none"
+                rows={3}
+                placeholder="Explain what needs to be updated..."
+                value={correctionMessage}
+                onChange={(e) => setCorrectionMessage(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => setCorrectionModalSession(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                type="submit"
+                loading={correctionSubmitting}
+              >
+                Send Request to Guest
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmSession && (
+        <Modal
+          isOpen={Boolean(deleteConfirmSession)}
+          onClose={() => setDeleteConfirmSession(null)}
+          title="Delete Check-in Session"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-gray-600">
+              Are you sure you want to permanently delete this digital check-in
+              session for{" "}
+              <strong>{deleteConfirmSession.guestName || "this guest"}</strong>?
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+              <Button
+                variant="secondary"
+                onClick={() => setDeleteConfirmSession(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleDeleteSubmit}
+                loading={deleteSubmitting}
+                className="bg-rose-600 text-white hover:bg-rose-700"
+              >
+                Delete Session
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Session Details & KYC Documents Modal */}
       {selectedSessionForModal && (

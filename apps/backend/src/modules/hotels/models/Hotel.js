@@ -42,6 +42,49 @@ const hotelSchema = new mongoose.Schema(
       default: "",
     },
 
+    state: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    pincode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    country: {
+      type: String,
+      trim: true,
+      default: "India",
+    },
+
+    currency: {
+      type: String,
+      trim: true,
+      default: "INR",
+    },
+
+    gstin: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: "",
+    },
+
+    cancellationPolicy: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    termsAndConditions: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     checkInTime: {
       type: String,
       trim: true,

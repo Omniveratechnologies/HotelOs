@@ -215,7 +215,7 @@ const seed = async () => {
       nightlyRate: rate,
       nights: Math.round((checkOut - checkIn) / 86400000),
       rooms,
-      taxPercent: hotel.taxPercent ?? 12,
+      taxPercent: hotel.taxPercent,
       commissionPercent,
     });
 

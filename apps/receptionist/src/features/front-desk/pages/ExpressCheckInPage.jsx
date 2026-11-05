@@ -66,9 +66,12 @@ export default function ExpressCheckInPage() {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       queryClient.invalidateQueries({ queryKey: ["key-cards"] });
       setBannerVariant("success");
-      setBannerMsg(res.message || "Express check-in successfully completed!");
+      setBannerMsg(
+        res.message ||
+          "Express check-in successfully completed! Guest room is now active.",
+      );
       setTimeout(() => {
-        navigate("/front-desk/check-out");
+        navigate("/front-desk/check-in");
       }, 2000);
     },
     onError: (err) => {
