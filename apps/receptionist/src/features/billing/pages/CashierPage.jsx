@@ -3,9 +3,11 @@ import { useQuery } from "@hotelos/query";
 import {
   Banknote,
   CalendarDays,
+  Download,
   LockKeyhole,
   MoreHorizontal,
   Plus,
+  Printer,
   Receipt,
   Wallet,
 } from "lucide-react";
@@ -16,6 +18,7 @@ import {
   KpiCard,
   Panel,
   StatusPill,
+  ThermalReceiptModal,
   money,
 } from "../billingUi.jsx";
 
@@ -30,9 +33,73 @@ export default function CashierPage() {
   const data = query.data || {};
   const [drawer, setDrawer] = useState("");
   const [tab, setTab] = useState("transactions");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [shiftSlipData, setShiftSlipData] = useState(null);
   const reload = () => {
     setDrawer("");
+    setMenuOpen(false);
     query.refetch();
+  };
+
+  const exportTransactionsCsv = () => {
+    if (!transactions.length) return;
+    const headers = [
+      "Time",
+      "Payment ID",
+      "Bill ID",
+      "Guest",
+      "Method",
+      "Amount",
+      "Status",
+    ];
+    const csvContent = [
+      headers.join(","),
+      ...transactions.map((t) =>
+        [
+          `"${t.createdAt ? new Date(t.createdAt).toISOString() : ""}"`,
+          `"${t.transactionId || t._id || ""}"`,
+          `"${t.billId || ""}"`,
+          `"${t.guestName || ""}"`,
+          `"${t.method || ""}"`,
+          t.amount || 0,
+          `"${t.status || "success"}"`,
+        ].join(","),
+      ),
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `cashier-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    setMenuOpen(false);
+  };
+
+  const openShiftSlip = () => {
+    setShiftSlipData({
+      invoiceNo: `SHIFT-${shift?._id ? String(shift._id).slice(-6).toUpperCase() : "CURR"}`,
+      createdAt: shift?.createdAt || new Date(),
+      guestName: "Front Desk Cashier Shift Summary",
+      subtotal: shift?.currentCash || data.metrics?.cash || 0,
+      totalAmount: data.metrics?.total || 0,
+      items: [
+        { name: "Opening Float", price: shift?.openingFloat || 0, quantity: 1 },
+        {
+          name: "Cash Collections",
+          price: data.metrics?.cash || 0,
+          quantity: 1,
+        },
+        { name: "Cash Pay-In", price: shift?.cashIn || 0, quantity: 1 },
+        { name: "Cash Pay-Out", price: -(shift?.cashOut || 0), quantity: 1 },
+        {
+          name: "Card Collections",
+          price: data.metrics?.card || 0,
+          quantity: 1,
+        },
+        { name: "UPI Collections", price: data.metrics?.upi || 0, quantity: 1 },
+      ],
+      method: "Cashier Shift Audit",
+    });
+    setMenuOpen(false);
   };
   if (query.isLoading)
     return <div className="p-8 text-sm text-slate-500">Loading cashier…</div>;
@@ -88,9 +155,35 @@ export default function CashierPage() {
           >
             <Banknote size={14} /> Cash Count
           </button>
-          <button className={`${button} px-2`}>
-            <MoreHorizontal size={16} />
-          </button>
+          <div className="relative">
+            <button
+              className={`${button} px-2`}
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="More actions"
+            >
+              <MoreHorizontal size={16} />
+            </button>
+            {menuOpen && (
+              <div className="absolute top-full right-0 z-20 mt-1 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  onClick={openShiftSlip}
+                >
+                  <Printer size={13} className="text-blue-600" /> Print Shift
+                  Summary Slip
+                </button>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  onClick={exportTransactionsCsv}
+                >
+                  <Download size={13} className="text-emerald-600" /> Export
+                  Shift (CSV)
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
@@ -254,7 +347,7 @@ export default function CashierPage() {
               <button className={button} onClick={() => setDrawer("entry")}>
                 <Banknote size={14} /> Petty Cash
               </button>
-              <button className={button} onClick={() => setDrawer("close")}>
+              <button className={button} onClick={() => setDrawer("report")}>
                 <CalendarDays size={14} /> Shift Report
               </button>
             </div>
@@ -296,6 +389,20 @@ export default function CashierPage() {
         <CashierRefundDrawer
           onClose={() => setDrawer("")}
           onComplete={reload}
+        />
+      )}
+      {drawer === "report" && (
+        <ShiftReportDrawer
+          shift={shift}
+          data={data}
+          onClose={() => setDrawer("")}
+        />
+      )}
+      {shiftSlipData && (
+        <ThermalReceiptModal
+          title="Shift Summary Slip"
+          data={shiftSlipData}
+          onClose={() => setShiftSlipData(null)}
         />
       )}
     </div>
@@ -354,13 +461,15 @@ function Refunds({ rows = [] }) {
 }
 function OpenDrawer({ onClose, onComplete }) {
   const [floatAmount, setFloatAmount] = useState("5000");
+  const [error, setError] = useState("");
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
     try {
       await billingApi.openCashierShift({ openingFloat: Number(floatAmount) });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Drawer could not be opened");
+    } catch (err) {
+      setError(err.message || "Drawer could not be opened");
     }
   };
   return (
@@ -381,20 +490,26 @@ function OpenDrawer({ onClose, onComplete }) {
         Only one open drawer is allowed at a time. All cashier payments will be
         stamped to this shift.
       </p>
+      {error && (
+        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
+      )}
     </ActionDrawer>
   );
 }
+
 function CloseDrawer({ shift, onClose, onComplete }) {
   const [cash, setCash] = useState("");
+  const [error, setError] = useState("");
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
     try {
       await billingApi.closeCashierShift(shift._id, {
         closingCash: Number(cash),
       });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Shift could not be closed");
+    } catch (err) {
+      setError(err.message || "Shift could not be closed");
     }
   };
   return (
@@ -415,18 +530,24 @@ function CloseDrawer({ shift, onClose, onComplete }) {
         The shift becomes immutable after closing. Variance will be recorded in
         the shift report.
       </p>
+      {error && (
+        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
+      )}
     </ActionDrawer>
   );
 }
+
 function EntryDrawer({ shift, onClose, onComplete }) {
   const [form, setForm] = useState({ type: "in" });
+  const [error, setError] = useState("");
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
     try {
       await billingApi.createCashEntry({ ...form, shiftId: shift?._id });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Cash entry could not be saved");
+    } catch (err) {
+      setError(err.message || "Cash entry could not be saved");
     }
   };
   return (
@@ -461,48 +582,123 @@ function EntryDrawer({ shift, onClose, onComplete }) {
         value={form.reason || ""}
         onChange={(event) => setForm({ ...form, reason: event.target.value })}
       />
+      {error && (
+        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
+      )}
     </ActionDrawer>
   );
 }
+
 function CountDrawer({ shift, onClose, onComplete }) {
-  const [total, setTotal] = useState("");
+  const [denoms, setDenoms] = useState({
+    500: 0,
+    200: 0,
+    100: 0,
+    50: 0,
+    20: 0,
+    10: 0,
+    coins: 0,
+  });
+  const [error, setError] = useState("");
+
+  const calculatedTotal = useMemo(() => {
+    return (
+      (Number(denoms[500]) || 0) * 500 +
+      (Number(denoms[200]) || 0) * 200 +
+      (Number(denoms[100]) || 0) * 100 +
+      (Number(denoms[50]) || 0) * 50 +
+      (Number(denoms[20]) || 0) * 20 +
+      (Number(denoms[10]) || 0) * 10 +
+      (Number(denoms.coins) || 0)
+    );
+  }, [denoms]);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
     try {
       await billingApi.recordCashCount({
         shiftId: shift?._id,
-        total: Number(total),
+        total: calculatedTotal,
       });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Cash count could not be saved");
+    } catch (err) {
+      setError(err.message || "Cash count could not be saved");
     }
   };
+
+  const updateDenom = (key, val) => {
+    setDenoms((prev) => ({
+      ...prev,
+      [key]: Math.max(0, parseInt(val, 10) || 0),
+    }));
+  };
+
   return (
     <ActionDrawer
-      title="Cash Count"
+      title="Denomination Cash Count"
       onClose={onClose}
       onSubmit={submit}
       submitLabel="Save Cash Count"
     >
-      <Field
-        label="Counted cash total"
-        type="number"
-        required
-        value={total}
-        onChange={(event) => setTotal(event.target.value)}
-      />
-      <p className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
-        Use the counted total from the denomination sheet. The difference from
-        expected cash is retained for manager review.
-      </p>
+      <div className="space-y-2 text-xs">
+        {[500, 200, 100, 50, 20, 10].map((val) => (
+          <div
+            className="flex items-center justify-between gap-3 border-b border-slate-50 pb-1.5"
+            key={val}
+          >
+            <span className="font-semibold text-slate-600">₹{val} notes</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                className="w-20 rounded border border-slate-200 px-2 py-1 text-right"
+                value={denoms[val] || ""}
+                placeholder="0"
+                onChange={(e) => updateDenom(val, e.target.value)}
+              />
+              <span className="w-16 text-right font-medium text-slate-500">
+                {money((denoms[val] || 0) * val)}
+              </span>
+            </div>
+          </div>
+        ))}
+        <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-1.5">
+          <span className="font-semibold text-slate-600">Coins</span>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              className="w-20 rounded border border-slate-200 px-2 py-1 text-right"
+              value={denoms.coins || ""}
+              placeholder="0"
+              onChange={(e) => updateDenom("coins", e.target.value)}
+            />
+            <span className="w-16 text-right font-medium text-slate-500">
+              {money(denoms.coins || 0)}
+            </span>
+          </div>
+        </div>
+        <div className="mt-3 flex justify-between rounded-lg bg-blue-50 p-3 font-bold text-blue-900">
+          <span>Total Counted</span>
+          <span>{money(calculatedTotal)}</span>
+        </div>
+      </div>
+      {error && (
+        <p className="mt-2 rounded bg-rose-50 p-2 text-xs text-rose-700">
+          {error}
+        </p>
+      )}
     </ActionDrawer>
   );
 }
+
 function CashierPaymentDrawer({ shift, onClose, onComplete }) {
   const [form, setForm] = useState({ method: "cash" });
+  const [error, setError] = useState("");
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
     try {
       await billingApi.createPayment({
         ...form,
@@ -511,8 +707,8 @@ function CashierPaymentDrawer({ shift, onClose, onComplete }) {
         source: "desk",
       });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Payment could not be recorded");
+    } catch (err) {
+      setError(err.message || "Payment could not be recorded");
     }
   };
   return (
@@ -554,14 +750,19 @@ function CashierPaymentDrawer({ shift, onClose, onComplete }) {
           setForm({ ...form, referenceNo: event.target.value })
         }
       />
+      {error && (
+        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
+      )}
     </ActionDrawer>
   );
 }
 
 function CashierRefundDrawer({ onClose, onComplete }) {
   const [form, setForm] = useState({});
+  const [error, setError] = useState("");
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
     try {
       await billingApi.createRefund({
         ...form,
@@ -569,8 +770,8 @@ function CashierRefundDrawer({ onClose, onComplete }) {
         reason: form.reason,
       });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Refund could not be recorded");
+    } catch (err) {
+      setError(err.message || "Refund could not be recorded");
     }
   };
   return (
@@ -601,6 +802,69 @@ function CashierRefundDrawer({ onClose, onComplete }) {
         value={form.reason || ""}
         onChange={(event) => setForm({ ...form, reason: event.target.value })}
       />
+      {error && (
+        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
+      )}
+    </ActionDrawer>
+  );
+}
+
+function ShiftReportDrawer({ shift, data, onClose }) {
+  return (
+    <ActionDrawer
+      title="Cashier Shift Summary Report"
+      onClose={onClose}
+      onSubmit={(e) => {
+        e.preventDefault();
+        window.print();
+      }}
+      submitLabel="Print Shift Summary"
+    >
+      <div className="space-y-3 text-xs">
+        <div className="rounded-lg bg-slate-50 p-3">
+          <p className="text-slate-500">
+            Status:{" "}
+            <strong className="capitalize">
+              {shift ? "Active Shift" : "No Shift Active"}
+            </strong>
+          </p>
+          {shift && (
+            <p className="text-slate-500">
+              Started:{" "}
+              {new Date(shift.createdAt).toLocaleTimeString("en-IN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          )}
+        </div>
+        <div className="space-y-2 border-t border-slate-100 pt-2">
+          <div className="flex justify-between">
+            <span>Opening Float</span>
+            <b>{money(shift?.openingFloat || 0)}</b>
+          </div>
+          <div className="flex justify-between">
+            <span>Cash Collected</span>
+            <b>{money(data.metrics?.cash || 0)}</b>
+          </div>
+          <div className="flex justify-between">
+            <span>Card Collected</span>
+            <b>{money(data.metrics?.card || 0)}</b>
+          </div>
+          <div className="flex justify-between">
+            <span>UPI Collected</span>
+            <b>{money(data.metrics?.upi || 0)}</b>
+          </div>
+          <div className="flex justify-between text-rose-600">
+            <span>Refunds Issued</span>
+            <b>{money(data.metrics?.refunds || 0)}</b>
+          </div>
+          <div className="flex justify-between border-t border-slate-200 pt-1 font-bold text-[#102b5c]">
+            <span>Net Shift Revenue</span>
+            <span>{money(data.metrics?.total || 0)}</span>
+          </div>
+        </div>
+      </div>
     </ActionDrawer>
   );
 }

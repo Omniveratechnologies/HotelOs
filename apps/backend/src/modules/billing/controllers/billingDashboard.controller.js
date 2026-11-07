@@ -25,10 +25,27 @@ export const getPaymentsDashboard = async (req, res) => {
     Bill.find({ hotelId }).sort({ createdAt: -1 }).limit(250).lean(),
   ]);
   const today = startOfDay();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
   const successful = payments.filter((payment) => payment.status === "success");
   const todayPayments = successful.filter(
     (payment) => new Date(payment.createdAt) >= today,
   );
+  const yesterdayPayments = successful.filter(
+    (payment) =>
+      new Date(payment.createdAt) >= yesterday &&
+      new Date(payment.createdAt) < today,
+  );
+  const yesterdayTotal = sum(yesterdayPayments);
+  const collectionTotal = sum(todayPayments);
+  const collectionsChange =
+    yesterdayTotal > 0
+      ? Math.round(((collectionTotal - yesterdayTotal) / yesterdayTotal) * 100)
+      : collectionTotal > 0
+        ? 100
+        : 0;
+
   const methodAmounts = ["upi", "card", "cash", "netbanking", "wallet"].map(
     (method) => ({
       method,
@@ -54,7 +71,6 @@ export const getPaymentsDashboard = async (req, res) => {
       (bill) => bill.paymentStatus !== "paid" && bill.status !== "cancelled",
     )
     .reduce((total, bill) => total + Number(bill.totalAmount || 0), 0);
-  const collectionTotal = sum(todayPayments);
   const refundRows = refunds.slice(0, 5).map((refund) => ({
     ...refund,
     guestName: billMap.get(String(refund.billId))?.guestName || "Guest",
@@ -62,12 +78,24 @@ export const getPaymentsDashboard = async (req, res) => {
       .slice(-6)
       .toUpperCase()}`,
   }));
+
+  const dynamicActivity = todayPayments.slice(0, 5).map((payment) => {
+    const bill = billMap.get(String(payment.billId));
+    return {
+      label: bill?.guestName
+        ? `${bill.guestName} (${bill.bookingId || "Room"})`
+        : "Guest Payment",
+      amount: Number(payment.amount || 0),
+      detail: (payment.method || "Payment").toUpperCase(),
+    };
+  });
+
   return res.json({
     success: true,
     data: {
       metrics: {
         todayCollections: collectionTotal,
-        todayCollectionsChange: 12,
+        todayCollectionsChange: collectionsChange,
         pendingPayments: payments.filter(
           (payment) => payment.status === "pending",
         ).length,
@@ -109,29 +137,34 @@ export const getPaymentsDashboard = async (req, res) => {
       },
       rows,
       refunds: refundRows,
-      activity: [
-        {
-          label: "Room / bulk payments",
-          amount: sum(
-            todayPayments.filter((payment) => payment.method === "netbanking"),
-          ),
-          detail: "Bank Transfer",
-        },
-        {
-          label: "Corporate booking",
-          amount: sum(
-            todayPayments.filter((payment) => payment.method === "card"),
-          ),
-          detail: "Card / NEFT",
-        },
-        {
-          label: "Walk-in guest",
-          amount: sum(
-            todayPayments.filter((payment) => payment.method === "cash"),
-          ),
-          detail: "Cash Payment",
-        },
-      ],
+      activity:
+        dynamicActivity.length > 0
+          ? dynamicActivity
+          : [
+              {
+                label: "Room / bulk payments",
+                amount: sum(
+                  todayPayments.filter(
+                    (payment) => payment.method === "netbanking",
+                  ),
+                ),
+                detail: "Bank Transfer",
+              },
+              {
+                label: "Corporate booking",
+                amount: sum(
+                  todayPayments.filter((payment) => payment.method === "card"),
+                ),
+                detail: "Card / NEFT",
+              },
+              {
+                label: "Walk-in guest",
+                amount: sum(
+                  todayPayments.filter((payment) => payment.method === "cash"),
+                ),
+                detail: "Cash Payment",
+              },
+            ],
       alerts: [
         {
           label: "Failed Payments",
@@ -398,6 +431,10 @@ export const getFolio = async (req, res) => {
         checkIn: booking?.checkIn,
         checkOut: booking?.checkOut,
         nights: booking?.nights,
+        companyName: booking?.groupInfo?.companyName || null,
+        companyGstin: booking?.groupInfo?.gstin || null,
+        billingInstruction: booking?.groupInfo?.billingMode || null,
+        remarks: booking?.specialRequests || bill.notes || "",
         summary: {
           ...departmentTotals,
           subtotal: bill.subtotal,
@@ -437,12 +474,10 @@ export const addFolioCharge = async (req, res) => {
   if (!bill)
     return res.status(404).json({ success: false, message: "Folio not found" });
   if (bill.status === "paid" || bill.status === "cancelled") {
-    return res
-      .status(409)
-      .json({
-        success: false,
-        message: "Closed folios cannot receive charges",
-      });
+    return res.status(409).json({
+      success: false,
+      message: "Closed folios cannot receive charges",
+    });
   }
   bill.items.push({
     name: description,
@@ -518,12 +553,10 @@ export const splitFolio = async (req, res) => {
   const moved = source.items.filter((_, index) => indexes.includes(index));
   const retained = source.items.filter((_, index) => !indexes.includes(index));
   if (!moved.length || !retained.length)
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "A split must leave charges in both folios",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "A split must leave charges in both folios",
+    });
   const target = await Bill.create({
     billNo: `FOL-${Date.now().toString().slice(-8)}`,
     hotelId: source.hotelId,
@@ -738,5 +771,135 @@ export const correctFolioCharge = async (req, res) => {
     data: { action, itemIndex: index, reason: req.body.reason },
     createdBy: req.user._id,
   });
+  return res.json({ success: true, data: bill });
+};
+
+export const applyDepositToFolio = async (req, res) => {
+  const bill = await Bill.findOne({
+    _id: req.params.id,
+    hotelId: req.user.hotelId,
+  });
+  if (!bill)
+    return res.status(404).json({ success: false, message: "Folio not found" });
+
+  const depositId = req.body.depositId;
+  const deposit = await BillingEntity.findOne({
+    _id: depositId,
+    hotelId: req.user.hotelId,
+    entityType: "deposit",
+  });
+  if (!deposit)
+    return res
+      .status(404)
+      .json({ success: false, message: "Deposit not found" });
+
+  const unappliedDeposit = Math.max(
+    0,
+    Number(deposit.amount || 0) - Number(deposit.data?.appliedAmount || 0),
+  );
+  if (unappliedDeposit <= 0) {
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "This deposit has already been fully applied",
+      });
+  }
+
+  const paid = await Payment.aggregate([
+    { $match: { billId: bill._id, hotelId: bill.hotelId, status: "success" } },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  const currentPaid = Number(paid[0]?.total || 0);
+  const folioBalance = Math.max(0, Number(bill.totalAmount || 0) - currentPaid);
+
+  if (folioBalance <= 0) {
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "Folio has no outstanding balance to settle",
+      });
+  }
+
+  const requestedAmount = Number(req.body.amount || folioBalance);
+  const allocateAmount = Math.min(
+    requestedAmount,
+    unappliedDeposit,
+    folioBalance,
+  );
+
+  if (allocateAmount <= 0) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid allocation amount" });
+  }
+
+  deposit.data = {
+    ...deposit.data,
+    appliedAmount: Number(deposit.data?.appliedAmount || 0) + allocateAmount,
+    appliedToFolioId: bill._id,
+    appliedAt: new Date(),
+  };
+  if (deposit.data.appliedAmount >= Number(deposit.amount || 0)) {
+    deposit.status = "applied";
+  }
+  await deposit.save();
+
+  const payment = await Payment.create({
+    transactionId: `DEP${Date.now().toString().slice(-8)}`,
+    hotelId: bill.hotelId,
+    billId: bill._id,
+    billNo: bill.billNo,
+    method: "deposit",
+    amount: allocateAmount,
+    referenceNo: deposit.reference || `DEP-${deposit._id}`,
+    staffId: req.user._id,
+    status: "success",
+  });
+
+  const nextPaid = currentPaid + allocateAmount;
+  bill.paymentStatus =
+    nextPaid >= Number(bill.totalAmount || 0) ? "paid" : "partial";
+  if (bill.paymentStatus === "paid") {
+    bill.status = "paid";
+  }
+  await bill.save();
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      bill,
+      payment,
+      deposit,
+      allocatedAmount: allocateAmount,
+      remainingFolioBalance: Math.max(
+        0,
+        Number(bill.totalAmount || 0) - nextPaid,
+      ),
+    },
+  });
+};
+
+export const transferChargeWindow = async (req, res) => {
+  const bill = await Bill.findOne({
+    _id: req.params.id,
+    hotelId: req.user.hotelId,
+  });
+  if (!bill)
+    return res.status(404).json({ success: false, message: "Folio not found" });
+
+  const { itemIndex, targetWindow = "B" } = req.body;
+  const idx = Number(itemIndex);
+  if (!bill.items[idx]) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Charge item not found" });
+  }
+
+  bill.items[idx].folioWindow = targetWindow;
+  bill.markModified("items");
+  await bill.save();
+
   return res.json({ success: true, data: bill });
 };

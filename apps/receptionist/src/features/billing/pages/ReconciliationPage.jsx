@@ -30,9 +30,14 @@ export default function ReconciliationPage() {
   const data = query.data || {};
   const [tab, setTab] = useState("overview");
   const [drawer, setDrawer] = useState("");
+  const [selectedDiscrepancy, setSelectedDiscrepancy] = useState(null);
   const [search, setSearch] = useState("");
+  const [runningJob, setRunningJob] = useState(false);
+  const [actionError, setActionError] = useState("");
+
   const reload = () => {
     setDrawer("");
+    setSelectedDiscrepancy(null);
     query.refetch();
   };
   if (query.isLoading)
@@ -45,13 +50,55 @@ export default function ReconciliationPage() {
         Reconciliation data could not be loaded.
       </div>
     );
-  const transactions = (data.transactions || []).filter((row) =>
-    `${row.billId} ${row.guestName} ${row.reference}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+
+  const transactions = (data.transactions || []).filter((row) => {
+    const matchesSearch =
+      `${row.billId || ""} ${row.guestName || ""} ${row.reference || ""} ${row.method || ""}`
+        .toLowerCase()
+        .includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (tab === "payment") {
+      return ["cash", "card", "upi", "bank_transfer"].includes(
+        (row.method || "").toLowerCase(),
+      );
+    }
+    if (tab === "pos") {
+      return (
+        row.source === "pos" ||
+        (row.category || "").toLowerCase().includes("pos") ||
+        (row.billId || "").startsWith("POS")
+      );
+    }
+    if (tab === "bank") {
+      return (
+        row.method === "bank_transfer" ||
+        row.source === "bank" ||
+        (row.gatewayTxnId || "").length > 0
+      );
+    }
+    if (tab === "folio") {
+      return row.folioId || row.roomNo || (row.billId || "").startsWith("FL");
+    }
+    if (tab === "discrepancies") {
+      return row.status === "discrepancy" || row.status === "pending";
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-full bg-[#f4f7fb] p-4 text-[#102b5c] sm:p-6">
+      {actionError && (
+        <div className="mb-4 flex items-center justify-between rounded-lg bg-red-50 p-3 text-xs text-red-700">
+          <span>{actionError}</span>
+          <button
+            className="font-bold underline"
+            onClick={() => setActionError("")}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <header className="mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
         <div>
           <div className="mb-1 text-[11px] font-semibold text-blue-600">
@@ -68,17 +115,23 @@ export default function ReconciliationPage() {
             <Upload size={14} /> Import Data
           </button>
           <button
-            className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+            disabled={runningJob}
             onClick={async () => {
+              setActionError("");
+              setRunningJob(true);
               try {
                 await billingApi.runReconciliationJob({});
                 reload();
               } catch (error) {
-                window.alert(error.message || "Reconciliation could not run");
+                setActionError(error.message || "Reconciliation could not run");
+              } finally {
+                setRunningJob(false);
               }
             }}
           >
-            <Play size={14} /> Run Reconciliation
+            <Play size={14} />{" "}
+            {runningJob ? "Running..." : "Run Reconciliation"}
           </button>
           <button className={button} onClick={() => setDrawer("lock")}>
             <LockKeyhole size={14} /> Lock Day
@@ -169,7 +222,42 @@ export default function ReconciliationPage() {
                 onChange={(event) => setSearch(event.target.value)}
               />
             </label>
-            <button className={button}>
+            <button
+              className={button}
+              onClick={() => {
+                if (!transactions.length) return;
+                const headers = [
+                  "Date",
+                  "Bill No",
+                  "Guest",
+                  "Method",
+                  "Amount",
+                  "Reference",
+                  "Status",
+                ];
+                const csv = [
+                  headers.join(","),
+                  ...transactions.map((r) =>
+                    [
+                      `"${new Date(r.createdAt).toLocaleDateString("en-IN")}"`,
+                      `"${r.billId || ""}"`,
+                      `"${r.guestName || "Guest"}"`,
+                      `"${r.method || ""}"`,
+                      r.amount || 0,
+                      `"${r.gatewayTxnId || r.reference || ""}"`,
+                      `"${r.status || ""}"`,
+                    ].join(","),
+                  ),
+                ].join("\n");
+                const blob = new Blob([csv], {
+                  type: "text/csv;charset=utf-8;",
+                });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = `reconciliation-${tab}-${new Date().toISOString().slice(0, 10)}.csv`;
+                a.click();
+              }}
+            >
               <Download size={14} /> Export
             </button>
           </div>
@@ -215,8 +303,17 @@ export default function ReconciliationPage() {
                     </td>
                     <td className="px-3 py-3">
                       <button
-                        className="rounded border border-slate-200 px-2 py-1 text-[10px]"
-                        onClick={() => setDrawer("resolve")}
+                        className="rounded border border-slate-200 px-2 py-1 text-[10px] hover:bg-slate-100"
+                        onClick={() => {
+                          setSelectedDiscrepancy({
+                            id: row._id || row.id,
+                            reference:
+                              row.gatewayTxnId || row.reference || row.billId,
+                            amount: row.amount,
+                            reason: `Verification for ${row.billId || "payment"} (${row.guestName || "Guest"})`,
+                          });
+                          setDrawer("resolve");
+                        }}
                       >
                         Review
                       </button>
@@ -232,12 +329,17 @@ export default function ReconciliationPage() {
             <div className="space-y-3">
               {(data.discrepancies || []).map((row) => (
                 <button
-                  className="flex w-full justify-between text-left text-xs"
+                  className="flex w-full items-center justify-between rounded-lg p-1.5 text-left text-xs transition-colors hover:bg-rose-50/50"
                   key={row.id}
-                  onClick={() => setDrawer("resolve")}
+                  onClick={() => {
+                    setSelectedDiscrepancy(row);
+                    setDrawer("resolve");
+                  }}
                 >
-                  <span>{row.reason || row.reference || "Mismatch"}</span>
-                  <b className="text-rose-600">{money(row.amount)}</b>
+                  <span className="truncate pr-2">
+                    {row.reason || row.reference || "Mismatch"}
+                  </span>
+                  <b className="shrink-0 text-rose-600">{money(row.amount)}</b>
                 </button>
               ))}
               {!data.discrepancies?.length && (
@@ -275,7 +377,7 @@ export default function ReconciliationPage() {
       )}
       {drawer === "resolve" && (
         <ResolveDrawer
-          discrepancy={data.discrepancies?.[0]}
+          discrepancy={selectedDiscrepancy || data.discrepancies?.[0]}
           onClose={() => setDrawer("")}
           onComplete={reload}
         />
@@ -312,35 +414,44 @@ function Bars({ rows = [] }) {
   );
 }
 function StatusSummary({ status = {} }) {
-  const total =
-    Number(status.matched || 0) +
-    Number(status.pending || 0) +
-    Number(status.discrepancy || 0);
+  const matched = Number(status.matched || 0);
+  const pending = Number(status.pending || 0);
+  const discrepancy = Number(status.discrepancy || 0);
+  const total = matched + pending + discrepancy;
+
+  let gradient = "#cbd5e1 0% 100%";
+  if (total > 0) {
+    const matchedPct = (matched / total) * 100;
+    const pendingPct = (pending / total) * 100;
+    const p1 = matchedPct;
+    const p2 = matchedPct + pendingPct;
+    gradient = `#10b981 0% ${p1.toFixed(1)}%, #f59e0b ${p1.toFixed(1)}% ${p2.toFixed(1)}%, #ef4444 ${p2.toFixed(1)}% 100%`;
+  }
+
   return (
     <div className="text-center">
       <div
         className="mx-auto grid size-28 place-items-center rounded-full"
         style={{
-          background:
-            "conic-gradient(#10b981 0 76%, #f59e0b 76% 91%, #ef4444 91% 100%)",
+          background: `conic-gradient(${gradient})`,
         }}
       >
         <div className="grid size-16 place-items-center rounded-full bg-white text-xl font-bold">
-          {total ? Math.round((status.matched / total) * 100) : 100}%
+          {total ? Math.round((matched / total) * 100) : 100}%
         </div>
       </div>
       <div className="mt-3 space-y-1 text-xs">
         <div className="flex justify-between">
           <span>Reconciled</span>
-          <b>{status.matched || 0}</b>
+          <b className="text-emerald-600">{matched}</b>
         </div>
         <div className="flex justify-between">
           <span>Pending</span>
-          <b>{status.pending || 0}</b>
+          <b className="text-amber-600">{pending}</b>
         </div>
         <div className="flex justify-between">
           <span>Discrepancy</span>
-          <b>{status.discrepancy || 0}</b>
+          <b className="text-rose-600">{discrepancy}</b>
         </div>
       </div>
     </div>
@@ -348,26 +459,39 @@ function StatusSummary({ status = {} }) {
 }
 function ImportDrawer({ onClose, onComplete }) {
   const [text, setText] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       const rows = text
         .split("\n")
+        .map((l) => l.trim())
         .filter(Boolean)
         .map((line) => {
-          const [date, amount, reference, method] = line.split(",");
+          const [date, amount, reference, method] = line
+            .split(",")
+            .map((s) => s.trim());
           return {
             date,
-            amount: Number(amount),
+            amount: Number(amount) || 0,
             reference,
-            method,
+            method: method || "bank_transfer",
             source: "bank",
           };
         });
+      if (!rows.length) {
+        throw new Error("Please enter at least one valid CSV row.");
+      }
       await billingApi.importReconciliation({ rows });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Import failed");
+    } catch (err) {
+      setError(err.message || "Import failed");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -375,13 +499,18 @@ function ImportDrawer({ onClose, onComplete }) {
       title="Import Bank / Gateway Data"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Import Transactions"
+      submitLabel={loading ? "Importing..." : "Import Transactions"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
       <Field
-        label="CSV rows"
+        label="CSV rows (Date, Amount, Reference, Method)"
         value={text}
         onChange={(event) => setText(event.target.value)}
-        placeholder="date,amount,reference,method"
+        placeholder="2026-11-05, 4500, TXN12345, bank_transfer"
       />
       <p className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
         Paste CSV rows or use the bank export format. Imported lines remain
@@ -392,13 +521,20 @@ function ImportDrawer({ onClose, onComplete }) {
 }
 function LockDrawer({ onClose, onComplete }) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       await billingApi.lockReconciliation({ businessDate: date });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Day could not be locked");
+    } catch (err) {
+      setError(err.message || "Day could not be locked");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -406,8 +542,13 @@ function LockDrawer({ onClose, onComplete }) {
       title="Lock Reconciliation Day"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Lock Day"
+      submitLabel={loading ? "Locking..." : "Lock Day"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
       <Field
         label="Business date"
         type="date"
@@ -422,14 +563,21 @@ function LockDrawer({ onClose, onComplete }) {
 }
 function ResolveDrawer({ discrepancy, onClose, onComplete }) {
   const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
     if (!discrepancy?.id) return onClose();
+    setError("");
+    setLoading(true);
     try {
       await billingApi.resolveDiscrepancy(discrepancy.id, { note });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Discrepancy could not be resolved");
+    } catch (err) {
+      setError(err.message || "Discrepancy could not be resolved");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -437,12 +585,25 @@ function ResolveDrawer({ discrepancy, onClose, onComplete }) {
       title="Resolve Discrepancy"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Mark Matched"
+      submitLabel={loading ? "Resolving..." : "Mark Matched"}
     >
-      <p className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
+      <div className="mb-3 rounded-lg bg-rose-50 p-3 text-xs text-rose-700">
+        <b className="block font-semibold">
+          {discrepancy?.reference || "Discrepancy Item"}
+        </b>
         {discrepancy?.reason ||
           "Review the system and external transaction before resolving."}
-      </p>
+        {discrepancy?.amount && (
+          <div className="mt-1 font-bold">
+            Amount: {money(discrepancy.amount)}
+          </div>
+        )}
+      </div>
       <Field
         label="Resolution note"
         required

@@ -155,6 +155,10 @@ export const billingApi = {
     mutate("post", `/api/v1/billing/folios/${id}/share`, body),
   folioTaxBreakdown: (id) =>
     request(`/api/v1/billing/folios/${id}/tax-breakdown`),
+  applyDeposit: (id, body) =>
+    mutate("post", `/api/v1/billing/folios/${id}/apply-deposit`, body),
+  transferWindow: (id, body) =>
+    mutate("post", `/api/v1/billing/folios/${id}/transfer-window`, body),
   correctFolioCharge: (id, action, body) =>
     mutate("post", `/api/v1/billing/folios/${id}/charges/${action}`, body),
 };

@@ -311,3 +311,168 @@ export const icons = {
   more: MoreHorizontal,
   chevron: ChevronDown,
 };
+
+export function ThermalReceiptModal({ title = "Receipt", data = {}, onClose }) {
+  if (!data) return null;
+  const items = data.items || data.charges || [];
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="max-h-[90vh] w-full max-w-[340px] overflow-y-auto rounded-xl bg-white p-5 shadow-2xl">
+        <div className="mb-4 flex items-center justify-between border-b pb-2 text-xs">
+          <span className="font-bold text-[#102b5c]">{title}</span>
+          <button
+            onClick={onClose}
+            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* 80mm POS Printable Area */}
+        <div
+          id="printable-receipt"
+          className="border border-dashed border-slate-300 bg-amber-50/20 p-3 font-mono text-[11px] leading-tight text-slate-800"
+        >
+          <div className="text-center">
+            <b className="block text-sm font-bold tracking-wider">
+              HOTELOS RESORT &amp; SPA
+            </b>
+            <p className="text-[10px] text-slate-500">
+              123 Shapesea Dev Street, Kolkata - 700001
+              <br />
+              GSTIN: 19ABCDE1234F1Z5 | Ph: +91 33 2244 5566
+            </p>
+          </div>
+          <div className="my-2 border-b border-dashed border-slate-400" />
+          <div className="flex justify-between text-[10px]">
+            <span>
+              RCPT:{" "}
+              {data.invoiceNo || data.billNo || data.folioNo || "RC-RECEIPT"}
+            </span>
+            <span>
+              {data.date || data.createdAt
+                ? new Date(data.date || data.createdAt).toLocaleDateString(
+                    "en-IN",
+                  )
+                : "Today"}
+            </span>
+          </div>
+          <div className="text-[10px]">
+            <span>
+              Guest: <b>{data.guestName || data.billTo || "Walk-in Guest"}</b>
+            </span>
+            {data.roomNumber && (
+              <span className="block">Room: {data.roomNumber}</span>
+            )}
+            {data.bookingNo && (
+              <span className="block">Booking: {data.bookingNo}</span>
+            )}
+          </div>
+          <div className="my-2 border-b border-dashed border-slate-400" />
+          <table className="w-full text-left text-[10px]">
+            <thead>
+              <tr className="border-b border-slate-300">
+                <th className="py-1">Item</th>
+                <th className="py-1 text-center">Qty</th>
+                <th className="py-1 text-right">Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it, idx) => (
+                <tr key={idx} className="border-b border-slate-100">
+                  <td className="py-1">{it.name || it.description}</td>
+                  <td className="py-1 text-center">
+                    {it.quantity || it.qty || 1}
+                  </td>
+                  <td className="py-1 text-right">
+                    {money(
+                      it.amount ||
+                        Number(it.price || it.rate || 0) *
+                          Number(it.quantity || it.qty || 1),
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="my-2 border-b border-dashed border-slate-400" />
+          <div className="space-y-1 text-right text-[10px]">
+            <div className="flex justify-between">
+              <span>Subtotal:</span>
+              <span>{money(data.subtotal || data.amount || 0)}</span>
+            </div>
+            {data.serviceCharge > 0 && (
+              <div className="flex justify-between">
+                <span>Service Charge:</span>
+                <span>{money(data.serviceCharge)}</span>
+              </div>
+            )}
+            {data.cgst > 0 && (
+              <div className="flex justify-between">
+                <span>CGST (9%):</span>
+                <span>{money(data.cgst)}</span>
+              </div>
+            )}
+            {data.sgst > 0 && (
+              <div className="flex justify-between">
+                <span>SGST (9%):</span>
+                <span>{money(data.sgst)}</span>
+              </div>
+            )}
+            <div className="flex justify-between border-t border-slate-300 pt-1 text-xs font-bold text-slate-900">
+              <span>TOTAL AMOUNT:</span>
+              <span>
+                {money(data.grandTotal || data.totalAmount || data.amount || 0)}
+              </span>
+            </div>
+            {(data.paid > 0 || data.totalPaid > 0) && (
+              <div className="flex justify-between text-emerald-700">
+                <span>
+                  PAID ({data.paymentMethod || data.method || "Cash"}):
+                </span>
+                <span>{money(data.paid || data.totalPaid)}</span>
+              </div>
+            )}
+            {data.balanceDue > 0 && (
+              <div className="flex justify-between font-bold text-rose-700">
+                <span>BALANCE DUE:</span>
+                <span>{money(data.balanceDue)}</span>
+              </div>
+            )}
+          </div>
+          <div className="my-2 border-b border-dashed border-slate-400" />
+          <div className="text-center text-[9px] text-slate-500">
+            <p>
+              IRN:{" "}
+              {data.irn
+                ? `${String(data.irn).slice(0, 10)}...`
+                : "948274...EINV"}{" "}
+              (E-Invoice Verified)
+            </p>
+            <p className="mt-1 font-bold">Thank You for Staying With Us!</p>
+            <p>Please Visit Again</p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={handlePrint}
+            className="flex-1 rounded-lg bg-[#102b5c] py-2 text-xs font-bold text-white shadow hover:bg-[#193d7c]"
+          >
+            Print 80mm Slip
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

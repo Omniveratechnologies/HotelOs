@@ -393,37 +393,12 @@ function submitAction(section, body) {
   if (section === "reconciliation") return billingApi.runReconciliation(body);
   if (section === "night-audit") return billingApi.startNightAudit(body);
   if (section === "folio") return billingApi.createCharge(body);
-  if (section === "invoices")
-    return billingApi.createResource("invoice", {
-      ...body,
-      status: "pending",
-      reference: body.folioId,
-      data: body,
-    });
-  if (section === "corporate")
-    return billingApi.createResource("company", {
-      ...body,
-      status: "active",
-      data: body,
-    });
-  if (section === "payables")
-    return billingApi.createResource("payable", {
-      ...body,
-      status: "pending",
-      data: body,
-    });
-  if (section === "expenses")
-    return billingApi.createResource("expense", {
-      ...body,
-      status: body.status || "pending",
-      data: body,
-    });
+  if (section === "invoices") return billingApi.createInvoice(body);
+  if (section === "corporate") return billingApi.createCompany(body);
+  if (section === "payables") return billingApi.createPayable(body);
+  if (section === "expenses") return billingApi.createExpense(body);
   if (section === "receivables")
-    return billingApi.createResource("receivable", {
-      ...body,
-      status: "pending",
-      data: body,
-    });
+    return billingApi.recordReceivablePayment(body);
   return billingApi.createBill(body);
 }
 

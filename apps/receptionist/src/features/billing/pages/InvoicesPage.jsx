@@ -13,7 +13,13 @@ import {
   XCircle,
 } from "lucide-react";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, StatusPill, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  StatusPill,
+  ThermalReceiptModal,
+  money,
+} from "../billingUi.jsx";
 
 const button =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-[#102b5c] shadow-sm hover:border-blue-300";
@@ -24,6 +30,8 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("All Invoice Types");
   const [status, setStatus] = useState("All Status");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const query = useQuery({
     queryKey: ["billing", "invoices", "summary"],
     queryFn: () => billingApi.invoicesSummary(),
@@ -33,7 +41,7 @@ export default function InvoicesPage() {
     () =>
       (data.rows || []).filter((row) => {
         const text =
-          `${row.invoiceNo} ${row.billTo} ${row.guestName} ${row.bookingNo}`.toLowerCase();
+          `${row.invoiceNo || ""} ${row.billTo || ""} ${row.guestName || ""} ${row.bookingNo || ""}`.toLowerCase();
         return (
           text.includes(search.toLowerCase()) &&
           (type === "All Invoice Types" ||
@@ -44,6 +52,50 @@ export default function InvoicesPage() {
       }),
     [data.rows, search, status, type],
   );
+
+  const paginatedRows = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return rows.slice(start, start + pageSize);
+  }, [rows, page, pageSize]);
+
+  const totalPages = Math.ceil(rows.length / pageSize) || 1;
+
+  const exportCsv = () => {
+    if (!rows.length) return;
+    const headers = [
+      "Invoice No",
+      "Date",
+      "Bill To",
+      "Booking",
+      "Amount",
+      "Status",
+      "Type",
+    ];
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((r) =>
+        [
+          `"${r.invoiceNo || ""}"`,
+          `"${r.createdAt || ""}"`,
+          `"${r.billTo || r.guestName || ""}"`,
+          `"${r.bookingNo || r.folioId || ""}"`,
+          r.amount || 0,
+          `"${r.status || ""}"`,
+          `"${r.type || ""}"`,
+        ].join(","),
+      ),
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute(
+      "download",
+      `invoices-export-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   if (query.isLoading)
     return <div className="p-8 text-sm text-slate-500">Loading invoices…</div>;
   if (query.isError)
@@ -124,13 +176,17 @@ export default function InvoicesPage() {
       <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_305px]">
         <section className="min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-wrap gap-2 border-b border-slate-100 p-3">
-            <button className={button}>
-              <CalendarDays size={14} /> 01 Oct 2026 - 05 Oct 2026
-            </button>
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+              <CalendarDays size={14} className="text-blue-600" />
+              All Dates
+            </span>
             <select
               className="rounded-lg border border-slate-200 px-3 text-xs"
               value={type}
-              onChange={(event) => setType(event.target.value)}
+              onChange={(event) => {
+                setType(event.target.value);
+                setPage(1);
+              }}
             >
               <option>All Invoice Types</option>
               <option value="tax">Tax Invoice</option>
@@ -142,21 +198,27 @@ export default function InvoicesPage() {
             <select
               className="rounded-lg border border-slate-200 px-3 text-xs"
               value={status}
-              onChange={(event) => setStatus(event.target.value)}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setPage(1);
+              }}
             >
               <option>All Status</option>
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            <button className={`${button} ml-auto`}>
-              <Download size={14} /> Export
+            <button className={`${button} ml-auto`} onClick={exportCsv}>
+              <Download size={14} /> Export CSV
             </button>
             <input
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none"
               placeholder="Search invoice no, guest name..."
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
             />
           </div>
           <div className="overflow-x-auto">
@@ -183,7 +245,7 @@ export default function InvoicesPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {paginatedRows.map((row) => (
                   <tr
                     className={`cursor-pointer border-b border-slate-50 ${selected?.id === row.id ? "bg-blue-50/50" : ""}`}
                     key={row.id}
@@ -216,6 +278,7 @@ export default function InvoicesPage() {
                         className="rounded border border-slate-200 p-1"
                         onClick={(event) => {
                           event.stopPropagation();
+                          setSelected(row);
                           setDrawer("invoice-menu");
                         }}
                       >
@@ -234,25 +297,55 @@ export default function InvoicesPage() {
           </div>
           <div className="flex items-center justify-between border-t border-slate-100 p-3 text-[10px] text-slate-500">
             <span>
-              Showing 1 to {Math.min(rows.length, 10)} of {rows.length} invoices
+              Showing {rows.length === 0 ? 0 : (page - 1) * pageSize + 1} to{" "}
+              {Math.min(page * pageSize, rows.length)} of {rows.length} invoices
             </span>
-            <div className="flex gap-1">
-              <button className={button}>‹</button>
-              <button className="rounded bg-[#102b5c] px-3 py-2 text-white">
-                1
+            <div className="flex items-center gap-1">
+              <button
+                className={button}
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                ‹ Prev
               </button>
-              <button className={button}>2</button>
-              <button className={button}>3</button>
-              <select className="ml-3 rounded border border-slate-200 px-2">
-                <option>10 per page</option>
-                <option>25 per page</option>
+              <span className="px-2 font-semibold text-[#102b5c]">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                className={button}
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next ›
+              </button>
+              <select
+                className="ml-3 rounded border border-slate-200 px-2 py-1"
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+              >
+                <option value={10}>10 per page</option>
+                <option value={25}>25 per page</option>
+                <option value={50}>50 per page</option>
               </select>
             </div>
           </div>
         </section>
         <InvoicePreview invoice={selected} onAction={setDrawer} />
       </div>
-      {drawer && (
+      {drawer === "thermal" && selected && (
+        <ThermalReceiptModal
+          title={`Tax Invoice — ${selected.invoiceNo || "Slip"}`}
+          data={{
+            ...selected,
+            paymentMethod: selected.paymentMethod || "Bank/Card",
+          }}
+          onClose={() => setDrawer("")}
+        />
+      )}
+      {drawer && drawer !== "thermal" && (
         <InvoiceDrawer
           type={drawer}
           selected={selected}
@@ -392,18 +485,40 @@ function InvoicePreview({ invoice, onAction }) {
             red
           />
         </div>
-        <div className="my-4 flex h-16 items-center justify-center bg-slate-50 text-[9px]">
-          QR code to pay
+        <div className="my-3 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/50 p-2 text-[9px]">
+          <div className="grid size-12 shrink-0 place-items-center rounded border border-slate-200 bg-white p-1 shadow-xs">
+            <svg viewBox="0 0 24 24" className="size-10 fill-slate-800">
+              <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v4h-4v-4zm-4-2h2v2h-2v-2zm2 4h2v2h-2v-2zm-2 2h2v2h-2v-2zm4-4h2v2h-2v-2zm2 4h2v2h-2v-2z" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1 leading-tight text-slate-500">
+            <span className="block font-bold text-slate-700">
+              GST E-Invoice (NIC IRN)
+            </span>
+            <span className="block truncate font-mono text-[8px] text-slate-600">
+              {invoice.irn ||
+                "8a4f9e72bc13d09a5b67e41c3d2891f043e8b15d6c97a213e4b50c18d9e23f47"}
+            </span>
+            <span>
+              Ack Date:{" "}
+              {invoice.createdAt
+                ? new Date(invoice.createdAt).toLocaleDateString("en-IN")
+                : "Today"}
+            </span>
+          </div>
         </div>
         <p className="text-center text-slate-500">
           Thank you for staying with us!
         </p>
-        <div className="mt-3 grid grid-cols-4 gap-1">
+        <div className="mt-3 grid grid-cols-5 gap-1">
           <button className={button} onClick={() => onAction("download")}>
             <Download size={12} /> PDF
           </button>
           <button className={button} onClick={() => onAction("print")}>
             <Printer size={12} /> Print
+          </button>
+          <button className={button} onClick={() => onAction("thermal")}>
+            <Printer size={12} /> 80mm
           </button>
           <button className={button} onClick={() => onAction("email")}>
             <Send size={12} /> Email
@@ -446,6 +561,35 @@ function typeLabel(type) {
 }
 function InvoiceDrawer({ type, selected, onClose, onComplete }) {
   const [error, setError] = useState("");
+  const requiresSelected = [
+    "credit-note",
+    "cancel",
+    "email",
+    "whatsapp",
+    "print",
+    "download",
+    "invoice-menu",
+  ].includes(type);
+
+  if (requiresSelected && !selected?.id) {
+    return (
+      <ActionDrawer
+        title={type.replace("-", " ")}
+        onClose={onClose}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+        submitLabel="Close"
+      >
+        <div className="rounded-lg bg-amber-50 p-4 text-xs text-amber-800">
+          Please select an invoice from the list first before performing this
+          action.
+        </div>
+      </ActionDrawer>
+    );
+  }
+
   const submit = async (event) => {
     event.preventDefault();
     const body = Object.fromEntries(
@@ -460,17 +604,87 @@ function InvoiceDrawer({ type, selected, onClose, onComplete }) {
         await billingApi.sendInvoice(selected.id, { ...body, channel: type });
       else if (type === "cancel")
         await billingApi.cancelInvoice(selected.id, body);
+      else if (type === "print") {
+        window.print();
+      } else if (type === "download") {
+        const dataStr =
+          "data:text/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(selected, null, 2));
+        const downloadAnchor = document.createElement("a");
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute(
+          "download",
+          `invoice-${selected.invoiceNo || selected.id}.json`,
+        );
+        downloadAnchor.click();
+      }
       onComplete();
     } catch (requestError) {
       setError(requestError.message || "Invoice action failed.");
     }
   };
+
   return (
     <ActionDrawer
       title={type.replace("-", " ")}
       onClose={onClose}
       onSubmit={submit}
+      submitLabel={
+        type === "print"
+          ? "Print Invoice"
+          : type === "download"
+            ? "Download File"
+            : type === "invoice-menu"
+              ? "Done"
+              : "Save"
+      }
     >
+      {type === "invoice-menu" && selected && (
+        <div className="space-y-3 text-xs">
+          <p className="font-semibold text-slate-600">
+            Invoice: {selected.invoiceNo}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="rounded-lg border border-slate-200 p-2 font-medium hover:bg-slate-50"
+              onClick={() => {
+                window.print();
+                onClose();
+              }}
+            >
+              Print Invoice
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-slate-200 p-2 font-medium hover:bg-slate-50"
+              onClick={() => {
+                const dataStr =
+                  "data:text/json;charset=utf-8," +
+                  encodeURIComponent(JSON.stringify(selected, null, 2));
+                const a = document.createElement("a");
+                a.href = dataStr;
+                a.download = `invoice-${selected.invoiceNo}.json`;
+                a.click();
+                onClose();
+              }}
+            >
+              Download JSON
+            </button>
+          </div>
+        </div>
+      )}
+      {type === "print" && (
+        <p className="text-xs text-slate-600">
+          Click below to open the print dialog for invoice {selected?.invoiceNo}
+          .
+        </p>
+      )}
+      {type === "download" && (
+        <p className="text-xs text-slate-600">
+          Click below to export invoice data for {selected?.invoiceNo}.
+        </p>
+      )}
       {["invoice", "proforma"].includes(type) && (
         <>
           <Field label="Folio ID" name="folioId" required />
@@ -481,22 +695,43 @@ function InvoiceDrawer({ type, selected, onClose, onComplete }) {
       )}
       {type === "credit-note" && (
         <>
+          <div className="mb-2 text-xs text-slate-500">
+            Original Invoice: <b>{selected?.invoiceNo}</b> (₹
+            {selected?.amount || 0})
+          </div>
           <Field
-            label="Amount"
+            label="Credit amount"
             name="amount"
             type="number"
             min="0"
+            max={selected?.amount}
             step="0.01"
+            defaultValue={selected?.amount}
             required
           />
-          <Field label="Reason" name="reason" required />
+          <Field
+            label="Reason"
+            name="reason"
+            required
+            placeholder="e.g. Rate adjustment or billing correction"
+          />
         </>
       )}
       {["email", "whatsapp"].includes(type) && (
-        <Field label="Recipient" name="recipient" required />
+        <Field
+          label="Recipient (Email / Phone)"
+          name="recipient"
+          required
+          defaultValue={selected?.guestEmail || selected?.guestPhone || ""}
+        />
       )}
       {type === "cancel" && (
-        <Field label="Cancellation reason" name="reason" required />
+        <>
+          <div className="mb-2 text-xs text-rose-600">
+            You are cancelling invoice {selected?.invoiceNo}.
+          </div>
+          <Field label="Cancellation reason" name="reason" required />
+        </>
       )}
       {error && (
         <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>

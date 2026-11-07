@@ -32,14 +32,26 @@ export default function CorporateBillingPage() {
   const data = query.data || {};
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
+  const [industryFilter, setIndustryFilter] = useState("all");
   const [drawer, setDrawer] = useState("");
   const [selected, setSelected] = useState(null);
+
+  const industries = useMemo(() => {
+    const set = new Set();
+    (data.rows || []).forEach((r) => {
+      if (r.industry) set.add(r.industry);
+    });
+    return Array.from(set);
+  }, [data.rows]);
+
   const rows = useMemo(
     () =>
       (data.rows || []).filter((row) => {
-        const text = `${row.name} ${row.industry} ${row.email}`.toLowerCase();
+        const text =
+          `${row.name || ""} ${row.industry || ""} ${row.email || ""}`.toLowerCase();
         return (
           text.includes(search.toLowerCase()) &&
+          (industryFilter === "all" || row.industry === industryFilter) &&
           (tab === "all" ||
             (tab === "active" && row.status === "active") ||
             (tab === "outstanding" && row.outstanding > 0) ||
@@ -47,8 +59,38 @@ export default function CorporateBillingPage() {
             (tab === "inactive" && row.status === "inactive"))
         );
       }),
-    [data.rows, search, tab],
+    [data.rows, search, tab, industryFilter],
   );
+
+  const exportCsv = () => {
+    if (!rows.length) return;
+    const headers = [
+      "Company",
+      "Industry",
+      "GSTIN",
+      "Credit Limit",
+      "Outstanding",
+      "Status",
+    ];
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) =>
+        [
+          `"${r.name || ""}"`,
+          `"${r.industry || ""}"`,
+          `"${r.gstin || ""}"`,
+          r.creditLimit || 0,
+          r.outstanding || 0,
+          `"${r.status || ""}"`,
+        ].join(","),
+      ),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `corporate-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  };
   if (query.isLoading)
     return (
       <div className="p-8 text-sm text-slate-500">
@@ -85,7 +127,7 @@ export default function CorporateBillingPage() {
           <button className={button} onClick={() => setDrawer("invoice")}>
             <FileText size={14} /> Generate Invoice
           </button>
-          <button className={button}>
+          <button className={button} onClick={exportCsv}>
             <Download size={14} /> Export
           </button>
         </div>
@@ -155,11 +197,20 @@ export default function CorporateBillingPage() {
                 onChange={(event) => setSearch(event.target.value)}
               />
             </label>
-            <select className="rounded-lg border border-slate-200 px-3 text-xs">
-              <option>All Industries</option>
+            <select
+              className="rounded-lg border border-slate-200 px-3 text-xs"
+              value={industryFilter}
+              onChange={(e) => setIndustryFilter(e.target.value)}
+            >
+              <option value="all">All Industries</option>
+              {industries.map((ind) => (
+                <option value={ind} key={ind}>
+                  {ind}
+                </option>
+              ))}
             </select>
-            <button className={button}>
-              <Download size={14} /> Export
+            <button className={button} onClick={exportCsv}>
+              <Download size={14} /> Export CSV
             </button>
           </div>
           <div className="overflow-x-auto">
@@ -204,7 +255,15 @@ export default function CorporateBillingPage() {
                       {money(row.outstanding)}
                     </td>
                     <td className="px-3 py-3">
-                      <StatusPill value={row.status || "active"} />
+                      <div className="flex flex-col items-start gap-1">
+                        <StatusPill value={row.status || "active"} />
+                        {row.creditLimit > 0 &&
+                          row.outstanding >= row.creditLimit && (
+                            <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-800">
+                              Credit Locked
+                            </span>
+                          )}
+                      </div>
                     </td>
                     <td className="px-3 py-3">
                       <button
@@ -316,13 +375,15 @@ function AgeChart({ rows = [] }) {
 }
 function CompanyDrawer({ onClose, onComplete }) {
   const [form, setForm] = useState({});
+  const [error, setError] = useState("");
   const save = async (event) => {
     event.preventDefault();
+    setError("");
     try {
       await billingApi.createCompany(form);
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Company could not be saved");
+    } catch (err) {
+      setError(err.message || "Company could not be saved");
     }
   };
   const set = (key) => (event) =>
@@ -381,58 +442,144 @@ function CompanyDrawer({ onClose, onComplete }) {
           <option value="room_fnb">Room + F&amp;B</option>
         </select>
       </Field>
+      {error && (
+        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
+      )}
     </ActionDrawer>
   );
 }
 function CompanyInvoiceDrawer({ company, onClose, onComplete }) {
   const [amount, setAmount] = useState("");
+  const [managerOverride, setManagerOverride] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  if (!company?.id) {
+    return (
+      <ActionDrawer
+        title="Generate Invoice"
+        onClose={onClose}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+        submitLabel="Close"
+      >
+        <p className="rounded bg-amber-50 p-3 text-xs text-amber-800">
+          Please select a company from the corporate accounts table first before
+          generating an invoice.
+        </p>
+      </ActionDrawer>
+    );
+  }
+
+  const isExceeded =
+    company.creditLimit > 0 &&
+    Number(company.outstanding || 0) + Number(amount || 0) >
+      Number(company.creditLimit);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
-      await billingApi.createCompanyInvoice(company?.id, {
+      await billingApi.createCompanyInvoice(company.id, {
         amount: Number(amount),
+        managerOverride,
       });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Invoice could not be generated");
+    } catch (err) {
+      setError(err.message || "Invoice could not be generated");
+    } finally {
+      setLoading(false);
     }
   };
   return (
     <ActionDrawer
-      title={`Generate Invoice${company ? ` — ${company.name}` : ""}`}
+      title={`Generate Invoice — ${company.name}`}
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Generate Corporate Invoice"
+      submitLabel={loading ? "Generating..." : "Generate Corporate Invoice"}
     >
+      <Field label="Company" value={company.name} readOnly />
+      <div className="mb-3 flex justify-between rounded-lg bg-slate-50 p-2.5 text-xs">
+        <span>
+          Credit Limit: <b>{money(company.creditLimit)}</b>
+        </span>
+        <span>
+          Outstanding: <b>{money(company.outstanding)}</b>
+        </span>
+      </div>
       <Field
-        label="Company"
-        value={company?.name || "Select a company from the table"}
-        readOnly
-      />
-      <Field
-        label="Invoice amount"
+        label="Invoice amount (₹)"
         type="number"
         required
         value={amount}
         onChange={(event) => setAmount(event.target.value)}
       />
+      {isExceeded && (
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          <p className="font-semibold text-rose-700">
+            ⚠️ Warning: Adding this invoice exceeds the approved credit limit by{" "}
+            {money(
+              Number(company.outstanding || 0) +
+                Number(amount || 0) -
+                Number(company.creditLimit),
+            )}
+            .
+          </p>
+          <label className="mt-2 flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={managerOverride}
+              onChange={(e) => setManagerOverride(e.target.checked)}
+            />
+            <span className="font-bold">Apply Authorized Manager Override</span>
+          </label>
+        </div>
+      )}
+      {error && (
+        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
+      )}
     </ActionDrawer>
   );
 }
 function CompanyPaymentDrawer({ company, onClose, onComplete }) {
   const [form, setForm] = useState({});
+  const [error, setError] = useState("");
+
+  if (!company?.id) {
+    return (
+      <ActionDrawer
+        title="Record Payment"
+        onClose={onClose}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+        submitLabel="Close"
+      >
+        <p className="rounded bg-amber-50 p-3 text-xs text-amber-800">
+          Please select a company from the corporate accounts table first before
+          recording a payment.
+        </p>
+      </ActionDrawer>
+    );
+  }
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
     try {
       await billingApi.createCompanyPayment(company.id, form);
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Payment could not be recorded");
+    } catch (err) {
+      setError(err.message || "Payment could not be recorded");
     }
   };
   return (
     <ActionDrawer
-      title={`Record Payment — ${company?.name}`}
+      title={`Record Payment — ${company.name}`}
       onClose={onClose}
       onSubmit={submit}
       submitLabel="Record & Allocate Payment"
@@ -462,6 +609,9 @@ function CompanyPaymentDrawer({ company, onClose, onComplete }) {
           setForm({ ...form, reference: event.target.value })
         }
       />
+      {error && (
+        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
+      )}
     </ActionDrawer>
   );
 }

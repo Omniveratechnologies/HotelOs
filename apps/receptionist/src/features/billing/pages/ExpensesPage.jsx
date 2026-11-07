@@ -324,14 +324,36 @@ function Trend({ rows = [] }) {
   );
 }
 function Donut({ rows = [] }) {
-  const total = rows.reduce((sum, row) => sum + row.amount, 0);
+  const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const colors = [
+    "#2563eb",
+    "#10b981",
+    "#f59e0b",
+    "#8b5cf6",
+    "#ec4899",
+    "#06b6d4",
+    "#64748b",
+  ];
+  let currentPercent = 0;
+  const gradientParts =
+    rows.length && total > 0
+      ? rows
+          .map((row, idx) => {
+            const pct = ((Number(row.amount) || 0) / total) * 100;
+            const start = currentPercent;
+            currentPercent += pct;
+            const color = colors[idx % colors.length];
+            return `${color} ${start.toFixed(1)}% ${currentPercent.toFixed(1)}%`;
+          })
+          .join(", ")
+      : "#cbd5e1 0% 100%";
+
   return (
     <div className="flex items-center gap-4">
       <div
         className="grid size-24 place-items-center rounded-full"
         style={{
-          background:
-            "conic-gradient(#2563eb 0 28%, #10b981 28% 46%, #f59e0b 46% 61%, #8b5cf6 61% 76%, #ec4899 76% 100%)",
+          background: `conic-gradient(${gradientParts})`,
         }}
       >
         <div className="grid size-14 place-items-center rounded-full bg-white text-center text-[10px] font-bold">
@@ -339,9 +361,18 @@ function Donut({ rows = [] }) {
         </div>
       </div>
       <div className="space-y-1 text-[10px]">
-        {rows.slice(0, 7).map((row) => (
-          <div className="flex justify-between gap-4" key={row.category}>
-            <span>{row.category}</span>
+        {rows.slice(0, 7).map((row, idx) => (
+          <div
+            className="flex items-center justify-between gap-4"
+            key={row.category || idx}
+          >
+            <span className="flex items-center gap-1.5">
+              <span
+                className="size-2 rounded-full"
+                style={{ backgroundColor: colors[idx % colors.length] }}
+              />
+              {row.category}
+            </span>
             <b>{money(row.amount)}</b>
           </div>
         ))}
@@ -371,14 +402,28 @@ function Bars({ rows = [] }) {
   );
 }
 function ExpenseDrawer({ onClose, onComplete }) {
-  const [form, setForm] = useState({ status: "paid" });
+  const [form, setForm] = useState({
+    status: "paid",
+    category: "Utilities",
+    paymentMethod: "bank_transfer",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
-      await billingApi.createExpense(form);
+      await billingApi.createExpense({
+        ...form,
+        amount: Number(form.amount) || 0,
+      });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Expense could not be saved");
+    } catch (err) {
+      setError(err.message || "Expense could not be saved");
+    } finally {
+      setLoading(false);
     }
   };
   const set = (key) => (event) =>
@@ -388,8 +433,13 @@ function ExpenseDrawer({ onClose, onComplete }) {
       title="Add Expense"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Save Expense"
+      submitLabel={loading ? "Saving..." : "Save Expense"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
       <Field
         label="Date"
         type="date"
@@ -404,8 +454,8 @@ function ExpenseDrawer({ onClose, onComplete }) {
       />
       <Field label="Category">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
-          value={form.category || "Utilities"}
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          value={form.category}
           onChange={set("category")}
         >
           <option>Utilities</option>
@@ -423,7 +473,7 @@ function ExpenseDrawer({ onClose, onComplete }) {
         onChange={set("vendorName")}
       />
       <Field
-        label="Amount"
+        label="Amount (₹)"
         type="number"
         required
         value={form.amount || ""}
@@ -431,8 +481,8 @@ function ExpenseDrawer({ onClose, onComplete }) {
       />
       <Field label="Payment method">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
-          value={form.paymentMethod || "bank_transfer"}
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          value={form.paymentMethod}
           onChange={set("paymentMethod")}
         >
           <option value="bank_transfer">Bank transfer</option>
@@ -443,7 +493,7 @@ function ExpenseDrawer({ onClose, onComplete }) {
       </Field>
       <Field label="Status">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
           value={form.status}
           onChange={set("status")}
         >
@@ -456,13 +506,23 @@ function ExpenseDrawer({ onClose, onComplete }) {
 }
 function RecurringDrawer({ onClose, onComplete }) {
   const [form, setForm] = useState({ frequency: "monthly" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
-      await billingApi.createRecurringExpense(form);
+      await billingApi.createRecurringExpense({
+        ...form,
+        amount: Number(form.amount) || 0,
+      });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Recurring expense could not be saved");
+    } catch (err) {
+      setError(err.message || "Recurring expense could not be saved");
+    } finally {
+      setLoading(false);
     }
   };
   const set = (key) => (event) =>
@@ -472,8 +532,13 @@ function RecurringDrawer({ onClose, onComplete }) {
       title="Add Recurring Expense"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Save Recurring Expense"
+      submitLabel={loading ? "Saving..." : "Save Recurring Expense"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
       <Field
         label="Description"
         required
@@ -486,7 +551,7 @@ function RecurringDrawer({ onClose, onComplete }) {
         onChange={set("category")}
       />
       <Field
-        label="Amount"
+        label="Amount (₹)"
         type="number"
         required
         value={form.amount || ""}
@@ -501,7 +566,7 @@ function RecurringDrawer({ onClose, onComplete }) {
       />
       <Field label="Frequency">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
           value={form.frequency}
           onChange={set("frequency")}
         >
@@ -514,15 +579,22 @@ function RecurringDrawer({ onClose, onComplete }) {
 }
 function UploadDrawer({ onClose }) {
   const [files, setFiles] = useState([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       await billingApi.bulkUploadExpenses({
         files: files.map((file) => ({ fileName: file.name })),
       });
       onClose();
-    } catch (error) {
-      window.alert(error.message || "Bills could not be uploaded");
+    } catch (err) {
+      setError(err.message || "Bills could not be uploaded");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -530,8 +602,13 @@ function UploadDrawer({ onClose }) {
       title="Upload Bills"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Review Uploads"
+      submitLabel={loading ? "Uploading..." : "Review Uploads"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
       <input
         className="w-full rounded-lg border border-dashed border-slate-300 p-8 text-xs"
         type="file"

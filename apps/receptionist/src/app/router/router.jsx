@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import DashboardLayout from "../layouts/DashboardLayout.jsx";
 import PrintLayout from "../layouts/PrintLayout.jsx";
 import AuthLayout from "../AuthLayout.jsx";
@@ -255,6 +255,10 @@ export const router = createBrowserRouter([
                   () =>
                     import("../../features/settings/pages/SettingsPage.jsx"),
                 ),
+              },
+              {
+                path: "billing",
+                element: <Navigate to="/billing/folio" replace />,
               },
               {
                 path: "billing/folio",

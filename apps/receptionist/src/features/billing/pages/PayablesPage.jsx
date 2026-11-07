@@ -354,14 +354,36 @@ function date(value) {
     : "—";
 }
 function Donut({ rows = [] }) {
-  const total = rows.reduce((sum, row) => sum + row.amount, 0);
+  const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const colors = [
+    "#2563eb",
+    "#10b981",
+    "#f59e0b",
+    "#8b5cf6",
+    "#ec4899",
+    "#06b6d4",
+    "#64748b",
+  ];
+  let currentPercent = 0;
+  const gradientParts =
+    rows.length && total > 0
+      ? rows
+          .map((row, idx) => {
+            const pct = ((Number(row.amount) || 0) / total) * 100;
+            const start = currentPercent;
+            currentPercent += pct;
+            const color = colors[idx % colors.length];
+            return `${color} ${start.toFixed(1)}% ${currentPercent.toFixed(1)}%`;
+          })
+          .join(", ")
+      : "#cbd5e1 0% 100%";
+
   return (
     <div className="flex items-center gap-4">
       <div
         className="grid size-24 place-items-center rounded-full"
         style={{
-          background:
-            "conic-gradient(#2563eb 0 32%, #10b981 32% 50%, #f59e0b 50% 68%, #8b5cf6 68% 81%, #ec4899 81% 100%)",
+          background: `conic-gradient(${gradientParts})`,
         }}
       >
         <div className="grid size-14 place-items-center rounded-full bg-white text-center text-[10px] font-bold">
@@ -369,9 +391,18 @@ function Donut({ rows = [] }) {
         </div>
       </div>
       <div className="space-y-1 text-[10px]">
-        {rows.map((row) => (
-          <div className="flex justify-between gap-5" key={row.category}>
-            <span>{row.category}</span>
+        {rows.map((row, idx) => (
+          <div
+            className="flex items-center justify-between gap-5"
+            key={row.category || idx}
+          >
+            <span className="flex items-center gap-1.5">
+              <span
+                className="size-2 rounded-full"
+                style={{ backgroundColor: colors[idx % colors.length] }}
+              />
+              {row.category}
+            </span>
             <b>{money(row.amount)}</b>
           </div>
         ))}
@@ -419,14 +450,27 @@ function StatusChart({ rows = [] }) {
   );
 }
 function BillDrawer({ onClose, onComplete }) {
-  const [form, setForm] = useState({ approvalStatus: "submitted" });
+  const [form, setForm] = useState({
+    approvalStatus: "submitted",
+    category: "Food & Beverages",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
-      await billingApi.createPayable(form);
+      await billingApi.createPayable({
+        ...form,
+        amount: Number(form.amount) || 0,
+      });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Bill could not be saved");
+    } catch (err) {
+      setError(err.message || "Bill could not be saved");
+    } finally {
+      setLoading(false);
     }
   };
   const set = (key) => (event) =>
@@ -436,8 +480,13 @@ function BillDrawer({ onClose, onComplete }) {
       title="Add Vendor Bill"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Save Bill"
+      submitLabel={loading ? "Saving..." : "Save Bill"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
       <Field
         label="Bill number"
         required
@@ -452,8 +501,8 @@ function BillDrawer({ onClose, onComplete }) {
       />
       <Field label="Category">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
-          value={form.category || "Food & Beverages"}
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          value={form.category}
           onChange={set("category")}
         >
           <option>Food &amp; Beverages</option>
@@ -477,7 +526,7 @@ function BillDrawer({ onClose, onComplete }) {
         onChange={set("dueDate")}
       />
       <Field
-        label="Total amount"
+        label="Total amount (₹)"
         type="number"
         required
         value={form.amount || ""}
@@ -485,7 +534,7 @@ function BillDrawer({ onClose, onComplete }) {
       />
       <Field label="Save as">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
           value={form.approvalStatus}
           onChange={set("approvalStatus")}
         >
@@ -496,25 +545,44 @@ function BillDrawer({ onClose, onComplete }) {
     </ActionDrawer>
   );
 }
-function PaymentDrawer({ ids, rows, bulk, onClose, onComplete }) {
+function PaymentDrawer({ ids = [], rows = [], bulk, onClose, onComplete }) {
   const selected = rows.filter((row) => ids.includes(row.id));
-  const [form, setForm] = useState({});
+  const defaultTotal = selected.reduce(
+    (sum, r) => sum + (Number(r.balance) || Number(r.amount) || 0),
+    0,
+  );
+  const [form, setForm] = useState({
+    amount: defaultTotal > 0 ? defaultTotal : "",
+    mode: "bank_transfer",
+    reference: "",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     const allocations = selected
       .map((row) => ({
         billId: row.id,
-        amount: Math.min(Number(form.amount || 0), row.balance),
+        amount: Math.min(
+          Number(form.amount || 0),
+          row.balance || row.amount || 0,
+        ),
       }))
       .filter((row) => row.amount > 0);
     try {
       await billingApi.createVendorPayment({
         ...form,
+        amount: Number(form.amount) || 0,
         allocations: bulk ? allocations : allocations.slice(0, 1),
       });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Payment could not be recorded");
+    } catch (err) {
+      setError(err.message || "Payment could not be recorded");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -522,19 +590,24 @@ function PaymentDrawer({ ids, rows, bulk, onClose, onComplete }) {
       title={bulk ? "Bulk Vendor Payment" : "Record Vendor Payment"}
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Record Payment"
+      submitLabel={loading ? "Recording..." : "Record Payment"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
       <Field
-        label="Amount"
+        label="Amount (₹)"
         type="number"
         required
-        value={form.amount || ""}
+        value={form.amount}
         onChange={(event) => setForm({ ...form, amount: event.target.value })}
       />
       <Field label="Payment mode">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
-          value={form.mode || "bank_transfer"}
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          value={form.mode}
           onChange={(event) => setForm({ ...form, mode: event.target.value })}
         >
           <option value="bank_transfer">Bank transfer / NEFT</option>
@@ -544,16 +617,16 @@ function PaymentDrawer({ ids, rows, bulk, onClose, onComplete }) {
         </select>
       </Field>
       <Field
-        label="Reference"
+        label="Reference / Transaction ID"
         required
-        value={form.reference || ""}
+        value={form.reference}
         onChange={(event) =>
           setForm({ ...form, reference: event.target.value })
         }
       />
       <p className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
         {selected.length
-          ? `${selected.length} bill(s) selected for oldest-first allocation.`
+          ? `${selected.length} bill(s) selected (${money(defaultTotal)}) for oldest-first allocation.`
           : "Select bills from the table before recording a payment."}
       </p>
     </ActionDrawer>

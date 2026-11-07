@@ -13,13 +13,21 @@ import {
   WalletCards,
 } from "lucide-react";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, StatusPill, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  StatusPill,
+  ThermalReceiptModal,
+  money,
+} from "../billingUi.jsx";
 
 const buttonClass =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-[#102b5c] shadow-sm hover:border-blue-300";
 
 export default function PaymentsPage() {
   const [drawer, setDrawer] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [thermalReceipt, setThermalReceipt] = useState(null);
   const [search, setSearch] = useState("");
   const [method, setMethod] = useState("All Payment Methods");
   const [status, setStatus] = useState("All Status");
@@ -32,7 +40,7 @@ export default function PaymentsPage() {
     () =>
       (data.rows || []).filter((row) => {
         const queryText =
-          `${row.guestName} ${row.referenceNo} ${row.bookingNo} ${row.folioNo}`.toLowerCase();
+          `${row.guestName || ""} ${row.referenceNo || ""} ${row.bookingNo || ""} ${row.folioNo || ""}`.toLowerCase();
         return (
           queryText.includes(search.toLowerCase()) &&
           (method === "All Payment Methods" || row.method === method) &&
@@ -41,6 +49,40 @@ export default function PaymentsPage() {
       }),
     [data.rows, method, search, status],
   );
+
+  const exportCsv = () => {
+    if (!rows.length) return;
+    const headers = [
+      "Payment ID",
+      "Date",
+      "Guest",
+      "Folio / Bill",
+      "Method",
+      "Amount",
+      "Status",
+      "Reference",
+    ];
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((r) =>
+        [
+          `"${r.transactionId || r._id || ""}"`,
+          `"${r.createdAt ? new Date(r.createdAt).toISOString() : ""}"`,
+          `"${r.guestName || ""}"`,
+          `"${r.folioNo || r.billId || ""}"`,
+          `"${r.method || ""}"`,
+          r.amount || 0,
+          `"${r.status || r.displayStatus || "success"}"`,
+          `"${r.referenceNo || r.reference || ""}"`,
+        ].join(","),
+      ),
+    ].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `payments-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+  };
   if (query.isLoading)
     return <div className="p-8 text-sm text-slate-500">Loading payments…</div>;
   if (query.isError)
@@ -63,9 +105,9 @@ export default function PaymentsPage() {
           </p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
-          <button className={buttonClass}>
-            <CalendarDays size={14} /> 01 Oct 2026 - 05 Oct 2026
-          </button>
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+            <CalendarDays size={14} className="text-blue-600" /> All Recent
+          </span>
           <button
             className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white"
             onClick={() => setDrawer("collect")}
@@ -124,7 +166,7 @@ export default function PaymentsPage() {
             <h2 className="border-l-2 border-amber-500 pl-2 text-sm font-bold">
               All Payments
             </h2>
-            <button className={buttonClass}>
+            <button className={buttonClass} onClick={exportCsv}>
               <Download size={13} /> Export
             </button>
           </div>
@@ -203,7 +245,10 @@ export default function PaymentsPage() {
                     <td className="px-3 py-3">
                       <button
                         className="rounded border border-slate-200 p-1"
-                        onClick={() => setDrawer("payment-menu")}
+                        onClick={() => {
+                          setSelectedPayment(row);
+                          setDrawer("payment-menu");
+                        }}
                       >
                         <MoreHorizontal size={14} />
                       </button>
@@ -231,11 +276,44 @@ export default function PaymentsPage() {
       {drawer && (
         <PaymentDrawer
           type={drawer}
-          onClose={() => setDrawer("")}
+          selected={selectedPayment}
+          onOpenThermal={(p) => setThermalReceipt(p)}
+          onClose={() => {
+            setDrawer("");
+            setSelectedPayment(null);
+          }}
           onComplete={() => {
             setDrawer("");
+            setSelectedPayment(null);
             query.refetch();
           }}
+        />
+      )}
+      {thermalReceipt && (
+        <ThermalReceiptModal
+          title="Payment Slip"
+          data={{
+            invoiceNo:
+              thermalReceipt.referenceNo ||
+              thermalReceipt.reference ||
+              `RCT-${thermalReceipt._id ? String(thermalReceipt._id).slice(-6) : "PAY"}`,
+            createdAt: thermalReceipt.createdAt || new Date(),
+            guestName: thermalReceipt.guestName || "Guest Payment",
+            roomNumber: thermalReceipt.roomNo || thermalReceipt.roomNumber,
+            bookingNo: thermalReceipt.bookingNo || thermalReceipt.folioNo,
+            subtotal: thermalReceipt.amount,
+            totalAmount: thermalReceipt.amount,
+            items: [
+              {
+                name: `Payment - ${methodLabel(thermalReceipt.method)}`,
+                price: thermalReceipt.amount,
+                quantity: 1,
+                notes: thermalReceipt.referenceNo || thermalReceipt.reference,
+              },
+            ],
+            method: thermalReceipt.method,
+          }}
+          onClose={() => setThermalReceipt(null)}
         />
       )}
     </div>
@@ -268,27 +346,32 @@ function Kpi({ label, value, detail, tone, icon: Icon }) {
 }
 function MethodBreakdown({ items }) {
   const total = items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const colors = ["#2879e8", "#1fb98e", "#f4a261", "#835de8", "#ec4899"];
+
+  const gradient = useMemo(() => {
+    if (!total) return "#e2e8f0";
+    let acc = 0;
+    const stops = items.map((item, index) => {
+      const pct = (Number(item.amount || 0) / total) * 100;
+      const start = acc;
+      acc += pct;
+      return `${colors[index % colors.length]} ${start.toFixed(1)}% ${acc.toFixed(1)}%`;
+    });
+    return `conic-gradient(${stops.join(", ")})`;
+  }, [items, total]);
+
   return (
-    <Panel
-      title="Payment Method Breakdown"
-      action={
-        <select className="rounded border border-slate-200 px-2 py-1 text-[10px]">
-          <option>Today</option>
-          <option>Week</option>
-          <option>Month</option>
-        </select>
-      }
-    >
+    <Panel title="Payment Method Breakdown">
       <div className="flex items-center gap-4">
         <div
           className="grid size-28 place-items-center rounded-full"
           style={{
-            background: `conic-gradient(#2879e8 0 33%, #1fb98e 33% 60%, #f4a261 60% 78%, #835de8 78% 100%)`,
+            background: gradient,
           }}
         >
           <div className="grid size-16 place-items-center rounded-full bg-white text-center text-[10px] font-bold">
             {money(total)}
-            <span className="font-normal text-slate-400">Total Collected</span>
+            <span className="font-normal text-slate-400">Total</span>
           </div>
         </div>
         <div className="flex-1 space-y-1 text-[10px]">
@@ -296,7 +379,7 @@ function MethodBreakdown({ items }) {
             <div className="flex justify-between gap-2" key={item.method}>
               <span>
                 <i
-                  className={`mr-1 inline-block size-2 rounded-full ${["bg-blue-500", "bg-cyan-500", "bg-orange-400", "bg-emerald-500", "bg-violet-500"][index]}`}
+                  className={`mr-1 inline-block size-2 rounded-full ${["bg-blue-500", "bg-emerald-500", "bg-orange-400", "bg-violet-500", "bg-pink-500"][index % 5]}`}
                 />
                 {methodLabel(item.method)}
               </span>
@@ -468,7 +551,7 @@ function dateTime(value) {
     ? `${new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} ${new Date(value).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`
     : "—";
 }
-function PaymentDrawer({ type, onClose, onComplete }) {
+function PaymentDrawer({ type, selected, onOpenThermal, onClose, onComplete }) {
   const [error, setError] = useState("");
   const submit = async (event) => {
     event.preventDefault();
@@ -498,11 +581,60 @@ function PaymentDrawer({ type, onClose, onComplete }) {
             ? "Record External Payment"
             : type === "refund"
               ? "Issue Refund"
-              : "Reconcile Payments"
+              : type === "payment-menu"
+                ? "Payment Actions"
+                : "Reconcile Payments"
       }
       onClose={onClose}
-      onSubmit={submit}
+      onSubmit={
+        type === "payment-menu"
+          ? (e) => {
+              e.preventDefault();
+              onClose();
+            }
+          : submit
+      }
+      submitLabel={type === "payment-menu" ? "Done" : "Save"}
     >
+      {type === "payment-menu" && selected && (
+        <div className="space-y-3 text-xs">
+          <div className="rounded-lg bg-slate-50 p-3">
+            <p className="font-semibold text-slate-700">
+              {selected.guestName || "Guest Payment"}
+            </p>
+            <p className="text-slate-400">
+              Ref: {selected.referenceNo || selected.reference || "—"} · Folio:{" "}
+              {selected.folioNo || "—"}
+            </p>
+            <p className="mt-1 font-bold text-emerald-600">
+              {money(selected.amount)} ({methodLabel(selected.method)})
+            </p>
+          </div>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-2.5 text-left font-medium hover:bg-slate-50"
+            onClick={() => {
+              onOpenThermal?.(selected);
+              onClose();
+            }}
+          >
+            <span>Print 80mm POS Slip</span>
+            <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+              Thermal
+            </span>
+          </button>
+          <button
+            type="button"
+            className="w-full rounded-lg border border-slate-200 p-2.5 text-left font-medium hover:bg-slate-50"
+            onClick={() => {
+              window.print();
+              onClose();
+            }}
+          >
+            Print Full Statement (A4)
+          </button>
+        </div>
+      )}
       {(type === "collect" || type === "record") && (
         <>
           <Field label="Bill / Folio ID" name="billId" required />

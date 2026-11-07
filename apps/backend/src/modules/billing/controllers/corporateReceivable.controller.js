@@ -148,12 +148,10 @@ export const createCompany = async (req, res) => {
       })
     : null;
   if (duplicate && (gstin || pan))
-    return res
-      .status(409)
-      .json({
-        success: false,
-        message: "A company with this GSTIN or PAN already exists",
-      });
+    return res.status(409).json({
+      success: false,
+      message: "A company with this GSTIN or PAN already exists",
+    });
   const row = await BillingEntity.create({
     hotelId: req.user.hotelId,
     entityType: "company",
@@ -204,22 +202,81 @@ export const createCompanyInvoice = async (req, res) => {
     return res
       .status(404)
       .json({ success: false, message: "Company not found" });
+
+  const amount = Number(req.body.amount || 0);
+  const creditLimit = Number(company.data?.creditLimit || 0);
+
+  // Compute existing outstanding for this company
+  const companyInvoices = await BillingEntity.find({
+    hotelId: req.user.hotelId,
+    entityType: "invoice",
+    status: { $nin: ["paid", "cancelled"] },
+    $or: [
+      { "data.companyId": company._id },
+      { "data.billToCompanyId": company._id },
+    ],
+  }).lean();
+
+  const currentOutstanding = companyInvoices.reduce(
+    (sum, inv) =>
+      sum +
+      Math.max(
+        0,
+        money(inv.amount || inv.data?.grandTotal) - money(inv.data?.paidAmount),
+      ),
+    0,
+  );
+
+  // Check 1: Credit limit enforcement
+  if (
+    creditLimit > 0 &&
+    currentOutstanding + amount > creditLimit &&
+    !req.body.managerOverride
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: `Credit limit of ₹${creditLimit.toLocaleString("en-IN")} exceeded. Current outstanding: ₹${currentOutstanding.toLocaleString("en-IN")}. Manager override required.`,
+      creditLimitExceeded: true,
+      currentOutstanding,
+      creditLimit,
+    });
+  }
+
+  // Check 2: Aging hold (receivables > 90 days overdue)
+  const hasCriticalOverdue = companyInvoices.some((inv) => {
+    const dueDate = inv.data?.dueDate || inv.createdAt;
+    return daysSince(dueDate) > 90;
+  });
+
+  if (hasCriticalOverdue && !req.body.managerOverride) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Direct billing locked: Company has overdue receivables over 90 days old. Manager override required.",
+      agingHold: true,
+    });
+  }
+
   const invoice = await BillingEntity.create({
     hotelId: req.user.hotelId,
     entityType: "invoice",
     status: "pending",
-    reference: `CORP-${Date.now()}`,
-    amount: Number(req.body.amount || 0),
+    reference: `CORP-${Date.now().toString().slice(-8)}`,
+    amount,
     data: {
       ...req.body,
       companyId: company._id,
       billToCompanyId: company._id,
+      companyName: company.data?.name || company.reference,
       type: "corporate",
       paidAmount: 0,
       issueDate: new Date(),
       dueDate:
         req.body.dueDate ||
-        new Date(Date.now() + Number(company.data.creditDays || 30) * 86400000),
+        new Date(
+          Date.now() + Number(company.data?.creditDays || 30) * 86400000,
+        ),
+      managerOverrideUsed: Boolean(req.body.managerOverride),
     },
     createdBy: req.user._id,
   });
@@ -231,12 +288,10 @@ export const createCompanyInvoice = async (req, res) => {
 export const createCompanyPayment = async (req, res) => {
   const amount = Number(req.body.amount || 0);
   if (amount <= 0)
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Payment amount must be greater than zero",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Payment amount must be greater than zero",
+    });
   let allocations = req.body.allocations || [];
   if (!allocations.length) {
     const openInvoices = await BillingEntity.find({
@@ -391,12 +446,24 @@ export const receivableSummary = async (req, res) => {
 };
 
 export const createReminder = async (req, res) => {
+  const channel = req.body.channel || "email";
+  const template = req.body.template || "friendly";
+  const trackingId = `TRK-${Date.now().toString().slice(-8)}`;
+
   const row = await BillingEntity.create({
     hotelId: req.user.hotelId,
     entityType: "reminder",
-    status: "queued",
-    reference: `REM-${Date.now()}`,
-    data: { ...req.body, sentAt: new Date(), sentBy: req.user._id },
+    status: "sent",
+    reference: `REM-${Date.now().toString().slice(-8)}`,
+    data: {
+      ...req.body,
+      channel,
+      template,
+      trackingId,
+      dispatchedAt: new Date(),
+      deliveryStatus: "delivered",
+      sentBy: req.user._id,
+    },
     createdBy: req.user._id,
   });
   return res.status(201).json({ success: true, data: dataOf(row.toObject()) });
@@ -404,12 +471,10 @@ export const createReminder = async (req, res) => {
 
 export const recordReceivablePayment = async (req, res) => {
   if (Number(req.body.amount || 0) <= 0)
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Payment amount must be greater than zero",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Payment amount must be greater than zero",
+    });
   const amount = Number(req.body.amount);
   let allocations = req.body.allocations || [];
   if (!allocations.length) {

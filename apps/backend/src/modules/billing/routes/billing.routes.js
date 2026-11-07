@@ -40,6 +40,8 @@ import {
   collectFolioPayment,
   shareFolio,
   correctFolioCharge,
+  applyDepositToFolio,
+  transferChargeWindow,
 } from "../controllers/billingDashboard.controller.js";
 import {
   openCashierShift,
@@ -209,6 +211,8 @@ router.post("/folios/:id/invoice", generateFolioInvoice);
 router.post("/folios/:id/payments", collectFolioPayment);
 router.post("/folios/:id/share", shareFolio);
 router.post("/folios/:id/charges/:action", correctFolioCharge);
+router.post("/folios/:id/apply-deposit", applyDepositToFolio);
+router.post("/folios/:id/transfer-window", transferChargeWindow);
 router.post("/cashier/shifts/open", openCashierShift);
 router.post("/cashier/shifts/:id/close", closeCashierShift);
 router.get("/cashier/shifts/current", currentCashier);

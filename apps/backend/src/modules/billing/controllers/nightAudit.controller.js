@@ -64,7 +64,32 @@ export const nightAuditOverview = async (req, res) => {
     bills.filter((row) => row.billType === "room-charge"),
     "totalAmount",
   );
-  const totalRevenue = total(bills, "totalAmount");
+  const fnbRevenue = total(
+    bills.filter((row) =>
+      ["dine-in", "takeaway", "room-service", "fnb"].includes(row.billType),
+    ),
+    "totalAmount",
+  );
+  const miscRevenue = total(
+    bills.filter(
+      (row) =>
+        [
+          "miscellaneous",
+          "misc",
+          "laundry",
+          "spa",
+          "minibar",
+          "paid-amenity",
+          "other",
+        ].includes(row.billType) ||
+        !["room-charge", "dine-in", "takeaway", "room-service", "fnb"].includes(
+          row.billType,
+        ),
+    ),
+    "totalAmount",
+  );
+  const totalRevenue =
+    total(bills, "totalAmount") || roomRevenue + fnbRevenue + miscRevenue;
   const alerts = [
     departures.filter((row) => row.status === "checked-in").length
       ? `${departures.filter((row) => row.status === "checked-in").length} departures pending check-out`
@@ -105,18 +130,15 @@ export const nightAuditOverview = async (req, res) => {
       },
       revenue: [
         { label: "Room Revenue", value: roomRevenue },
-        {
-          label: "F&B Revenue",
-          value: total(
-            bills.filter((row) => row.billType === "dine-in"),
-            "totalAmount",
-          ),
-        },
+        { label: "F&B Revenue", value: fnbRevenue },
         {
           label: "Other Charges",
-          value: Math.max(0, totalRevenue - roomRevenue),
+          value: Math.max(
+            0,
+            totalRevenue - roomRevenue - fnbRevenue - miscRevenue,
+          ),
         },
-        { label: "Miscellaneous", value: 0 },
+        { label: "Miscellaneous", value: miscRevenue },
         { label: "Total Revenue", value: totalRevenue },
       ],
       occupancy: [
@@ -156,13 +178,11 @@ export const startNightAuditRun = async (req, res) => {
     status: { $in: ["running", "open"] },
   });
   if (existing)
-    return res
-      .status(409)
-      .json({
-        success: false,
-        message: "A night audit is already running",
-        data: existing,
-      });
+    return res.status(409).json({
+      success: false,
+      message: "A night audit is already running",
+      data: existing,
+    });
   const run = await BillingWorkflow.create({
     hotelId: req.user.hotelId,
     type: "night-audit",
@@ -190,6 +210,277 @@ export const executeNightAuditStep = async (req, res) => {
     return res
       .status(404)
       .json({ success: false, message: "Active night audit not found" });
+
+  let stepResult = { completedAt: new Date() };
+
+  // Step 1: Verify all bookings and in-house folios
+  if (stepNo === 1) {
+    const inHouse = await Booking.countDocuments({
+      hotelId: req.user.hotelId,
+      status: "checked-in",
+    });
+    const pendingArrivals = await Booking.countDocuments({
+      hotelId: req.user.hotelId,
+      status: "reserved",
+      checkIn: { $lte: run.businessDate },
+    });
+    const pendingDepartures = await Booking.countDocuments({
+      hotelId: req.user.hotelId,
+      status: "checked-in",
+      checkOut: { $lte: run.businessDate },
+    });
+    stepResult = {
+      ...stepResult,
+      inHouseCount: inHouse,
+      pendingArrivals,
+      pendingDepartures,
+      summary: `Verified ${inHouse} in-house guests, ${pendingArrivals} pending arrivals, ${pendingDepartures} pending check-outs.`,
+    };
+  }
+
+  // Step 2: Post room charges for in-house guests
+  else if (stepNo === 2) {
+    const inHouseBookings = await Booking.find({
+      hotelId: req.user.hotelId,
+      status: "checked-in",
+    })
+      .populate("roomId")
+      .lean();
+
+    let postedCount = 0;
+    let totalTariffPosted = 0;
+
+    for (const b of inHouseBookings) {
+      const existing = await Bill.findOne({
+        hotelId: req.user.hotelId,
+        bookingId: b._id,
+        billType: "room-charge",
+        createdAt: { $gte: run.businessDate },
+      });
+
+      if (!existing) {
+        const nightlyRate = Number(
+          b.pricing?.totalRoomRate ||
+            b.pricing?.baseRate ||
+            b.roomId?.basePrice ||
+            2500,
+        );
+        const cgst = Math.round(nightlyRate * 0.09);
+        const sgst = Math.round(nightlyRate * 0.09);
+        const totalRoomCharge = nightlyRate + cgst + sgst;
+
+        await Bill.create({
+          billNo: `RC-${Date.now().toString().slice(-6)}-${b.roomId?.roomNumber || "RM"}`,
+          hotelId: req.user.hotelId,
+          bookingId: b._id,
+          roomId: b.roomId?._id,
+          guestName: b.guestDetails?.primaryGuest?.name || "In-House Guest",
+          guestPhone: b.guestDetails?.primaryGuest?.phone || "",
+          billType: "room-charge",
+          subtotal: nightlyRate,
+          cgst,
+          sgst,
+          totalAmount: totalRoomCharge,
+          paymentStatus: "unpaid",
+          status: "saved",
+          cashierId: req.user._id,
+          items: [
+            {
+              name: `Room Tariff - Room ${b.roomId?.roomNumber || ""}`,
+              price: nightlyRate,
+              quantity: 1,
+              notes: "Night audit automated room charge posting",
+            },
+          ],
+        });
+        postedCount++;
+        totalTariffPosted += totalRoomCharge;
+      }
+    }
+
+    stepResult = {
+      ...stepResult,
+      postedCount,
+      totalTariffPosted,
+      summary: `Posted room tariff charges for ${postedCount} in-house room(s) totaling ₹${totalTariffPosted}.`,
+    };
+  }
+
+  // Step 3: Post recurring charges
+  else if (stepNo === 3) {
+    const recurring = await BillingEntity.find({
+      hotelId: req.user.hotelId,
+      entityType: "recurring-expense",
+      status: "active",
+    });
+
+    let recurringCount = 0;
+    let recurringAmount = 0;
+
+    for (const rec of recurring) {
+      const nextDate = rec.data?.nextDate
+        ? new Date(rec.data.nextDate)
+        : new Date();
+      if (nextDate <= new Date(run.businessDate)) {
+        await BillingEntity.create({
+          hotelId: req.user.hotelId,
+          entityType: "expense",
+          status: "pending",
+          reference: `REC-${rec.reference || "Recurring Charge"}`,
+          amount: Number(rec.amount || 0),
+          data: {
+            description: `Recurring: ${rec.reference || "Expense"}`,
+            category: rec.data?.category || "Utilities",
+            amount: Number(rec.amount || 0),
+            paymentStatus: "pending",
+            sourceRecurringId: rec._id,
+            postedByNightAudit: true,
+          },
+          createdBy: req.user._id,
+        });
+
+        // Advance nextDate by 1 month
+        const updatedDate = new Date(nextDate);
+        updatedDate.setMonth(updatedDate.getMonth() + 1);
+        rec.data = { ...rec.data, nextDate: updatedDate };
+        await rec.save();
+
+        recurringCount++;
+        recurringAmount += Number(rec.amount || 0);
+      }
+    }
+
+    stepResult = {
+      ...stepResult,
+      recurringCount,
+      recurringAmount,
+      summary: `Processed ${recurringCount} recurring charge(s) totaling ₹${recurringAmount}.`,
+    };
+  }
+
+  // Step 4: Verify payments and settlements
+  else if (stepNo === 4) {
+    const todayPayments = await Payment.find({
+      hotelId: req.user.hotelId,
+      createdAt: { $gte: run.businessDate },
+    }).lean();
+
+    const verifiedTotal = todayPayments
+      .filter((p) => p.status === "success")
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+    stepResult = {
+      ...stepResult,
+      paymentsVerifiedCount: todayPayments.length,
+      verifiedTotal,
+      summary: `Verified ${todayPayments.length} payment transactions totaling ₹${verifiedTotal}.`,
+    };
+  }
+
+  // Step 5: Generate no-show and cancellation charges
+  else if (stepNo === 5) {
+    const noShowBookings = await Booking.find({
+      hotelId: req.user.hotelId,
+      status: "reserved",
+      checkIn: { $lt: run.businessDate },
+    });
+
+    let noShowCount = 0;
+    for (const b of noShowBookings) {
+      b.status = "no-show";
+      await b.save();
+
+      const retentionFee = Number(b.pricing?.baseRate || 1500);
+      await Bill.create({
+        billNo: `NOSHOW-${Date.now().toString().slice(-6)}`,
+        hotelId: req.user.hotelId,
+        bookingId: b._id,
+        guestName: b.guestDetails?.primaryGuest?.name || "No-Show Guest",
+        billType: "room-charge",
+        subtotal: retentionFee,
+        totalAmount: retentionFee,
+        paymentStatus: "unpaid",
+        status: "saved",
+        items: [
+          {
+            name: "No-Show Retention Charge (1 Night)",
+            price: retentionFee,
+            quantity: 1,
+            notes: "Reservation did not arrive prior to night audit cutoff",
+          },
+        ],
+      });
+      noShowCount++;
+    }
+
+    stepResult = {
+      ...stepResult,
+      noShowCount,
+      summary: `Processed ${noShowCount} no-show reservation(s) with retention charges.`,
+    };
+  }
+
+  // Step 6: Reconcile POS postings
+  else if (stepNo === 6) {
+    const draftBills = await Bill.countDocuments({
+      hotelId: req.user.hotelId,
+      status: "draft",
+    });
+
+    stepResult = {
+      ...stepResult,
+      unpostedPosCount: draftBills,
+      summary: draftBills
+        ? `Found ${draftBills} unposted POS bill(s) requiring cashier review.`
+        : "All POS and outlet postings verified and reconciled.",
+    };
+  }
+
+  // Step 7: Run audit reports
+  else if (stepNo === 7) {
+    const [allBills, allRooms] = await Promise.all([
+      Bill.find({
+        hotelId: req.user.hotelId,
+        createdAt: { $gte: run.businessDate },
+      }).lean(),
+      Room.find({ hotelId: req.user.hotelId }).lean(),
+    ]);
+
+    const revenue = allBills.reduce(
+      (s, b) => s + Number(b.totalAmount || 0),
+      0,
+    );
+    stepResult = {
+      ...stepResult,
+      trialBalanceRevenue: revenue,
+      totalRooms: allRooms.length,
+      summary: `Financial snapshot prepared: Total revenue ₹${revenue} across ${allRooms.length} rooms.`,
+    };
+  }
+
+  // Step 8: Roll over to next business date
+  else if (stepNo === 8) {
+    const openShifts = await BillingWorkflow.updateMany(
+      { hotelId: req.user.hotelId, type: "cashier-shift", status: "open" },
+      {
+        $set: {
+          status: "closed",
+          "payload.closingNote": "Closed by Night Audit Rollover",
+        },
+      },
+    );
+
+    const nextDate = new Date(run.businessDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    stepResult = {
+      ...stepResult,
+      closedShiftsCount: openShifts.modifiedCount,
+      nextBusinessDate: nextDate,
+      summary: `Closed ${openShifts.modifiedCount} open cashier shift(s). Property rolled over to business date ${nextDate.toLocaleDateString("en-IN")}.`,
+    };
+  }
+
   const row = await BillingEntity.findOneAndUpdate(
     {
       hotelId: req.user.hotelId,
@@ -205,7 +496,7 @@ export const executeNightAuditStep = async (req, res) => {
           runId: run._id,
           stepNo,
           name: steps[stepNo - 1],
-          result: { completedAt: new Date() },
+          result: stepResult,
           completedBy: req.user._id,
         },
       },
@@ -256,12 +547,10 @@ export const completeNightAudit = async (req, res) => {
     status: { $in: ["completed", "confirmed"] },
   });
   if (completed < steps.length && !req.body.overrideReason)
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: `Complete all ${steps.length} audit steps before rollover`,
-      });
+    return res.status(400).json({
+      success: false,
+      message: `Complete all ${steps.length} audit steps before rollover`,
+    });
   run.status = "completed";
   run.closedBy = req.user._id;
   run.payload = {

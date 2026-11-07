@@ -13,6 +13,16 @@ const list = (hotelId, entityType) =>
     .sort({ createdAt: -1 })
     .limit(1000)
     .lean();
+const getLast6Months = () => {
+  const months = [];
+  const d = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const past = new Date(d.getFullYear(), d.getMonth() - i, 1);
+    months.push(past.toLocaleString("en-IN", { month: "short" }));
+  }
+  return months;
+};
+
 const daysUntil = (date) =>
   Math.ceil((new Date(date || Date.now()).getTime() - Date.now()) / 86400000);
 const payableStatus = (row) => {
@@ -88,7 +98,7 @@ export const payablesSummary = async (req, res) => {
           .filter((row) => (row.category || "Others") === category)
           .reduce((sum, row) => sum + row.balance, 0),
       })),
-      trend: ["Apr", "May", "Jun", "Jul", "Aug", "Sep"].map((month) => ({
+      trend: getLast6Months().map((month) => ({
         month,
         bills: rows
           .filter(
@@ -143,12 +153,10 @@ export const createPayable = async (req, res) => {
       .status(400)
       .json({ success: false, message: "Bill number and vendor are required" });
   if (value(amount || total) <= 0)
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Bill amount must be greater than zero",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Bill amount must be greater than zero",
+    });
   const duplicate = await BillingEntity.findOne({
     hotelId: req.user.hotelId,
     entityType: "payable",
@@ -201,12 +209,10 @@ export const approvePayable = async (req, res) => {
 export const createVendorPayment = async (req, res) => {
   const amount = value(req.body.amount);
   if (amount <= 0)
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Payment amount must be greater than zero",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Payment amount must be greater than zero",
+    });
   const allocations =
     req.body.allocations ||
     (req.body.billId ? [{ billId: req.body.billId, amount }] : []);
@@ -219,12 +225,10 @@ export const createVendorPayment = async (req, res) => {
     if (!bill) continue;
     const balance = Math.max(0, value(bill.amount) - value(bill.data?.paid));
     if (value(allocation.amount) > balance)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Payment cannot exceed bill balance",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Payment cannot exceed bill balance",
+      });
     const paid = value(bill.data?.paid) + value(allocation.amount);
     bill.data = {
       ...bill.data,
@@ -256,12 +260,10 @@ export const createPaymentBatch = createVendorPayment;
 export const createExpense = async (req, res) => {
   const amount = value(req.body.amount);
   if (!req.body.description?.trim() || amount <= 0)
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Description and a positive amount are required",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Description and a positive amount are required",
+    });
   const row = await BillingEntity.create({
     hotelId: req.user.hotelId,
     entityType: "expense",
@@ -376,7 +378,7 @@ export const expenseSummary = async (req, res) => {
           .filter((row) => (row.category || "Others") === category)
           .reduce((sum, row) => sum + value(row.amount), 0),
       })),
-      trend: ["Apr", "May", "Jun", "Jul", "Aug", "Sep"].map((month) => ({
+      trend: getLast6Months().map((month) => ({
         month,
         amount: rows
           .filter(

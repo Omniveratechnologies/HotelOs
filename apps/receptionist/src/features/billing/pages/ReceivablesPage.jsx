@@ -80,14 +80,54 @@ export default function ReceivablesPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white">
+          <button
+            className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white"
+            onClick={() => setDrawer("invoice")}
+          >
             <Plus size={14} /> Create Invoice
           </button>
           <button className={button} onClick={() => setDrawer("reminder")}>
             <Send size={14} /> Send Reminder
           </button>
-          <button className={button}>
-            <Download size={14} /> Export
+          <button
+            className={button}
+            onClick={() => {
+              if (!rows.length) return;
+              const headers = [
+                "Account",
+                "Type",
+                "Invoice No",
+                "Due Date",
+                "Billed",
+                "Paid",
+                "Outstanding",
+                "Ageing Days",
+                "Status",
+              ];
+              const csv = [
+                headers.join(","),
+                ...rows.map((r) =>
+                  [
+                    `"${r.accountName || ""}"`,
+                    `"${r.accountType || ""}"`,
+                    `"${r.invoiceNo || r.reference || ""}"`,
+                    `"${r.dueDate || ""}"`,
+                    r.amount || r.grandTotal || 0,
+                    r.paidAmount || r.paid || 0,
+                    r.balance || 0,
+                    r.ageingDays || 0,
+                    `"${r.status || ""}"`,
+                  ].join(","),
+                ),
+              ].join("\n");
+              const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = `receivables-${new Date().toISOString().slice(0, 10)}.csv`;
+              a.click();
+            }}
+          >
+            <Download size={14} /> Export CSV
           </button>
         </div>
       </header>
@@ -301,6 +341,15 @@ export default function ReceivablesPage() {
           </Panel>
         </div>
       </div>
+      {drawer === "invoice" && (
+        <CreateReceivableInvoiceDrawer
+          onClose={() => setDrawer("")}
+          onComplete={() => {
+            setDrawer("");
+            query.refetch();
+          }}
+        />
+      )}
       {drawer === "reminder" && (
         <ReminderDrawer
           ids={selected}
@@ -313,6 +362,8 @@ export default function ReceivablesPage() {
       )}
       {drawer === "payment" && (
         <PaymentDrawer
+          selectedId={selected[0]}
+          rows={rows}
           onClose={() => setDrawer("")}
           onComplete={() => {
             setDrawer("");
@@ -391,15 +442,113 @@ function Action({ label, value, onClick }) {
     </button>
   );
 }
-function ReminderDrawer({ ids, onClose, onComplete }) {
-  const [form, setForm] = useState({ template: "friendly", channel: "email" });
+function CreateReceivableInvoiceDrawer({ onClose, onComplete }) {
+  const [form, setForm] = useState({
+    billTo: "",
+    accountType: "corporate",
+    amount: "",
+    dueDate: "",
+    description: "Accommodation & Services",
+  });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      await billingApi.createInvoice({
+        billTo: form.billTo,
+        customerType: form.accountType,
+        totalAmount: Number(form.amount) || 0,
+        dueDate: form.dueDate,
+        items: [
+          {
+            description: form.description,
+            quantity: 1,
+            rate: Number(form.amount) || 0,
+            amount: Number(form.amount) || 0,
+          },
+        ],
+      });
+      onComplete();
+    } catch (err) {
+      setError(err?.message || "Failed to create receivable invoice");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <ActionDrawer
+      title="Create Direct Invoice"
+      onClose={onClose}
+      onSubmit={submit}
+      submitLabel={submitting ? "Creating..." : "Create Invoice"}
+    >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
+      <Field
+        label="Bill To / Account Name"
+        required
+        value={form.billTo}
+        onChange={(e) => setForm({ ...form, billTo: e.target.value })}
+      />
+      <Field label="Account Type">
+        <select
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          value={form.accountType}
+          onChange={(e) => setForm({ ...form, accountType: e.target.value })}
+        >
+          <option value="corporate">Corporate</option>
+          <option value="direct_guest">Direct Guest</option>
+          <option value="travel_agent">Travel Agent</option>
+          <option value="other">Other</option>
+        </select>
+      </Field>
+      <Field
+        label="Invoice Amount (₹)"
+        type="number"
+        required
+        value={form.amount}
+        onChange={(e) => setForm({ ...form, amount: e.target.value })}
+      />
+      <Field
+        label="Due Date"
+        type="date"
+        required
+        value={form.dueDate}
+        onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+      />
+      <Field
+        label="Description / Remarks"
+        value={form.description}
+        onChange={(e) => setForm({ ...form, description: e.target.value })}
+      />
+    </ActionDrawer>
+  );
+}
+
+function ReminderDrawer({ ids, onClose, onComplete }) {
+  const [form, setForm] = useState({ template: "friendly", channel: "email" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       await billingApi.sendReceivableReminders({ ...form, receivableIds: ids });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Reminder could not be queued");
+    } catch (err) {
+      setError(err.message || "Reminder could not be queued");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -407,11 +556,24 @@ function ReminderDrawer({ ids, onClose, onComplete }) {
       title="Send Payment Reminder"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Queue Reminder"
+      submitLabel={loading ? "Queuing..." : "Queue Reminder"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
+      <div className="mb-3 rounded-lg bg-slate-50 p-2.5 text-xs text-slate-600">
+        Target:{" "}
+        <b className="text-slate-800">
+          {ids.length
+            ? `${ids.length} selected account(s)`
+            : "All pending accounts"}
+        </b>
+      </div>
       <Field label="Template">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
           value={form.template}
           onChange={(event) =>
             setForm({ ...form, template: event.target.value })
@@ -424,7 +586,7 @@ function ReminderDrawer({ ids, onClose, onComplete }) {
       </Field>
       <Field label="Channel">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
           value={form.channel}
           onChange={(event) =>
             setForm({ ...form, channel: event.target.value })
@@ -442,15 +604,29 @@ function ReminderDrawer({ ids, onClose, onComplete }) {
     </ActionDrawer>
   );
 }
-function PaymentDrawer({ onClose, onComplete }) {
-  const [form, setForm] = useState({});
+
+function PaymentDrawer({ selectedId, rows = [], onClose, onComplete }) {
+  const selectedRow = rows.find((r) => r.id === selectedId);
+  const [form, setForm] = useState({
+    receivableId: selectedId || "",
+    amount: selectedRow?.balance || selectedRow?.amount || "",
+    method: "bank_transfer",
+    reference: "",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       await billingApi.recordReceivablePayment(form);
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Payment could not be recorded");
+    } catch (err) {
+      setError(err.message || "Payment could not be recorded");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -458,19 +634,30 @@ function PaymentDrawer({ onClose, onComplete }) {
       title="Record Receivable Payment"
       onClose={onClose}
       onSubmit={submit}
-      submitLabel="Record & Allocate"
+      submitLabel={loading ? "Recording..." : "Record & Allocate"}
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
+      {selectedRow && (
+        <div className="mb-3 rounded-lg bg-blue-50 p-2.5 text-xs text-blue-800">
+          Recording for <b>{selectedRow.accountName}</b> (Balance:{" "}
+          {money(selectedRow.balance)})
+        </div>
+      )}
       <Field
-        label="Payment amount"
+        label="Payment amount (₹)"
         type="number"
         required
-        value={form.amount || ""}
+        value={form.amount}
         onChange={(event) => setForm({ ...form, amount: event.target.value })}
       />
       <Field label="Method">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
-          value={form.method || "bank_transfer"}
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          value={form.method}
           onChange={(event) => setForm({ ...form, method: event.target.value })}
         >
           <option value="bank_transfer">Bank transfer</option>
@@ -479,9 +666,9 @@ function PaymentDrawer({ onClose, onComplete }) {
         </select>
       </Field>
       <Field
-        label="Reference"
+        label="Reference / Transaction ID"
         required
-        value={form.reference || ""}
+        value={form.reference}
         onChange={(event) =>
           setForm({ ...form, reference: event.target.value })
         }
@@ -489,17 +676,25 @@ function PaymentDrawer({ onClose, onComplete }) {
     </ActionDrawer>
   );
 }
+
 function DecisionDrawer({ type, id, onClose, onComplete }) {
   const [reason, setReason] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       if (type === "dispute")
         await billingApi.disputeReceivable(id, { reason });
       else await billingApi.writeOffReceivable(id, { reason, amount: 0 });
       onComplete();
-    } catch (error) {
-      window.alert(error.message || "Action could not be completed");
+    } catch (err) {
+      setError(err.message || "Action could not be completed");
+    } finally {
+      setLoading(false);
     }
   };
   return (
@@ -509,8 +704,19 @@ function DecisionDrawer({ type, id, onClose, onComplete }) {
       }
       onClose={onClose}
       onSubmit={submit}
-      submitLabel={type === "dispute" ? "Mark Disputed" : "Submit for Approval"}
+      submitLabel={
+        loading
+          ? "Submitting..."
+          : type === "dispute"
+            ? "Mark Disputed"
+            : "Submit for Approval"
+      }
     >
+      {error && (
+        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+          {error}
+        </div>
+      )}
       <Field
         label="Reason"
         required
