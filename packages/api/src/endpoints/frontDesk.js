@@ -2,7 +2,7 @@ import { api } from "../apiFetch.js";
 
 /**
  * Fetch arrivals queue for front desk.
- * @param {Object} params - { date, expressOnly, q }
+ * @param {Object} params - { date, expressOnly, q, bookingId }
  */
 export const getArrivalsQueue = async (params = {}) => {
   const result = await api.get("/api/v1/bookings/front-desk/arrivals", {

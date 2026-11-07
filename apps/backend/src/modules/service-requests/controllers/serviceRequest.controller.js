@@ -41,6 +41,16 @@ async function publishRequest(
 
 export const createServiceRequest = async (req, res) => {
   try {
+    if (req.user.role === "GUEST") {
+      if (!req.currentBooking || req.currentBooking.status !== "checked-in") {
+        return res.status(403).json({
+          success: false,
+          message:
+            "In-room service requests are only available after completing check-in for an active stay",
+        });
+      }
+    }
+
     const { type, description, items, details } = req.body;
     if (!type)
       return res
@@ -303,6 +313,66 @@ export const updateHotelRequestStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to update service request",
+    });
+  }
+};
+
+/**
+ * Creates an assistance request originating from a dining table or kiosk.
+ */
+export const createTableOrderServiceRequest = async (req, res) => {
+  try {
+    const { type, description, items, details } = req.body;
+    if (!type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Request type is required" });
+    }
+
+    const session = req.session;
+    const hotelId = session ? session.hotelId : req.body.hotelId;
+    const tableId =
+      session && session.type === "QR_GUEST"
+        ? session.tableId
+        : req.body.tableId || session?.tableId;
+
+    const serviceRequest = await ServiceRequest.create({
+      hotelId,
+      tableId,
+      guestId: null,
+      roomId: null,
+      type,
+      description: description || null,
+      items: items || [],
+      details: details || {},
+      status: "REQUESTED",
+      priority: type === "EMERGENCY" ? "high" : "normal",
+    });
+
+    const populated = await ServiceRequest.findById(serviceRequest._id)
+      .populate("tableId", "tableNumber section")
+      .lean();
+
+    try {
+      emitToHotel(
+        hotelId,
+        SOCKET_EVENTS.SERVICE_REQUEST_CREATED,
+        serviceRequestDTO(populated),
+      );
+    } catch {
+      // Socket may not be initialized in test environment
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Assistance request submitted successfully",
+      data: serviceRequestDTO(populated),
+    });
+  } catch (error) {
+    logger.error(error, "Create table order service request error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create assistance request",
     });
   }
 };

@@ -42,6 +42,49 @@ const hotelSchema = new mongoose.Schema(
       default: "",
     },
 
+    state: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    pincode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    country: {
+      type: String,
+      trim: true,
+      default: "India",
+    },
+
+    currency: {
+      type: String,
+      trim: true,
+      default: "INR",
+    },
+
+    gstin: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      default: "",
+    },
+
+    cancellationPolicy: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    termsAndConditions: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     checkInTime: {
       type: String,
       trim: true,
@@ -91,6 +134,20 @@ const hotelSchema = new mongoose.Schema(
       type: Number,
       default: 12,
       min: 0,
+    },
+
+    // Physical coordinates for proximity verification
+    coordinates: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
+    },
+
+    // Geolocation verification policy settings
+    locationSettings: {
+      tableRadiusMeters: { type: Number, default: 50 },
+      hotelRadiusMeters: { type: Number, default: 100 },
+      maxAccuracyMeters: { type: Number, default: 50 },
+      isLocationVerificationRequired: { type: Boolean, default: true },
     },
   },
   {

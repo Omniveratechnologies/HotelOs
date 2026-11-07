@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "#/config/env.js";
 import logger from "#/utils/logger.js";
 import { createServer } from "node:http";
 import { initSocket } from "#/config/socket.js";

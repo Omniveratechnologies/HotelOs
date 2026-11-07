@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import { socketAuth } from "#/shared/middleware/socket-auth.middleware.js";
 import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
+import { resolveKioskAssignedUrl } from "#/modules/kiosks/config/kioskDashboards.js";
 
 let io;
 
@@ -52,7 +53,7 @@ export function initSocket(httpServer) {
             socket.emit("device:config-updated", {
               status: kiosk.status,
               targetDashboard: kiosk.targetDashboard,
-              assignedUrl: kiosk.assignedUrl,
+              assignedUrl: resolveKioskAssignedUrl(kiosk),
             });
           }
         })

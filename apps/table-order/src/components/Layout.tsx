@@ -16,6 +16,7 @@ import {
   Bell,
   ChevronRight,
   ClipboardList,
+  Clock,
   Heart,
   Home,
   Leaf,
@@ -25,8 +26,13 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
+import { formatCurrency } from "@hotelos/utils";
 import { api } from "../services/api";
 import { CartProvider, useCart } from "../context/CartContext";
+import { SessionProvider } from "../context/SessionContext";
+import { OrdersProvider, useOrders } from "../context/OrdersContext";
+import { LocationPromptModal } from "./LocationPromptModal";
+import { OrderProgressCarousel } from "./OrderProgressCarousel";
 import type { FoodItem } from "../types";
 
 export function AppLayout() {
@@ -42,13 +48,18 @@ export function AppLayout() {
       .finally(() => setMenuReady(true));
   }, [hotelId]);
   return (
-    <CartProvider hotelId={hotelId} tableId={tableId}>
-      <MenuDataContext.Provider value={{ menu, ready: menuReady }}>
-        <Shell drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen}>
-          <Outlet />
-        </Shell>
-      </MenuDataContext.Provider>
-    </CartProvider>
+    <SessionProvider hotelId={hotelId} tableId={tableId}>
+      <OrdersProvider hotelId={hotelId} tableId={tableId}>
+        <CartProvider hotelId={hotelId} tableId={tableId}>
+          <MenuDataContext.Provider value={{ menu, ready: menuReady }}>
+            <Shell drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen}>
+              <Outlet />
+            </Shell>
+            <LocationPromptModal />
+          </MenuDataContext.Provider>
+        </CartProvider>
+      </OrdersProvider>
+    </SessionProvider>
   );
 }
 export function MenuLayout() {
@@ -98,6 +109,7 @@ export function BottomNav() {
     </nav>
   );
 }
+
 function Shell({
   children,
   drawerOpen,
@@ -107,6 +119,7 @@ function Shell({
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
 }) {
+  const { activeOrders } = useOrders();
   return (
     <div className="app-shell">
       <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
@@ -116,6 +129,7 @@ function Shell({
         aria-label="Open menu"
       >
         <MenuIcon size={20} />
+        {activeOrders.length > 0 && <span className="menu-pulse-badge" />}
       </button>
       <div
         className="app-main"
@@ -130,6 +144,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { hotelId = "", tableId = "" } = useParams();
   const { menu } = useMenuContext();
   const { itemCount } = useCart();
+  const { orders, activeOrders, latestOrder } = useOrders();
   const location = useLocation();
   const base = `/${hotelId}/table/${tableId}`;
   const categories = [
@@ -137,7 +152,8 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   ];
   const isActive = (path: string) =>
     location.pathname === path ||
-    (path.endsWith("/menu") && location.pathname.includes("/menu"));
+    (path.endsWith("/menu") && location.pathname.includes("/menu")) ||
+    (path.includes("/order") && location.pathname.includes("/order"));
   const links = [
     [`${base}`, "Home", Home],
     [`${base}/menu`, "Categories", MenuIcon],
@@ -158,6 +174,14 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             <X size={18} />
           </button>
         </div>
+
+        {/* Highlighted Live Order Progress Carousel in Sidebar */}
+        <OrderProgressCarousel
+          activeOrders={activeOrders}
+          base={base}
+          onClose={onClose}
+        />
+
         <nav className="sidebar-nav">
           {links.map(([to, label, Icon]) => (
             <Link
@@ -196,12 +220,24 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             {itemCount > 0 && <b>{itemCount}</b>}
           </Link>
           <Link
+            className={location.pathname.includes("/order") ? "active" : ""}
+            to={
+              latestOrder ? `${base}/order/${latestOrder.id}` : `${base}/order`
+            }
+            onClick={onClose}
+          >
+            <Clock size={16} />
+            <span>My Orders</span>
+            {activeOrders.length > 0 && <b>{activeOrders.length}</b>}
+          </Link>
+          <Link
             className={isActive(`${base}/bill`) ? "active" : ""}
             to={`${base}/bill`}
             onClick={onClose}
           >
             <ClipboardList size={16} />
             <span>Billing / Pay</span>
+            {orders.length > 0 && <b>{orders.length}</b>}
           </Link>
           <Link
             className={isActive(`${base}/assistance`) ? "active" : ""}
@@ -264,5 +300,5 @@ export function PageHeader({
   );
 }
 export function formatMoney(value?: number) {
-  return value == null ? "—" : `₹${value.toLocaleString("en-IN")}`;
+  return value == null ? "—" : formatCurrency(value);
 }

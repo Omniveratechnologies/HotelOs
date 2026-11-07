@@ -5,6 +5,7 @@ import {
   useUpdateRoom,
   useUpdateRoomStatus,
   useDeleteRoom,
+  useCheckOutRoom,
 } from "../features/rooms/hooks/useRooms.js";
 import {
   useGuests,
@@ -87,6 +88,7 @@ export function useHotelOS() {
   const updateRoomMut = useUpdateRoom();
   const updateStatusMut = useUpdateRoomStatus();
   const deleteRoomMut = useDeleteRoom();
+  const checkOutRoomMut = useCheckOutRoom();
 
   const createReservationMut = useCreateReservation();
   const updateReservationMut = useUpdateReservation();
@@ -155,6 +157,8 @@ export function useHotelOS() {
     refreshData,
     updateRoomStatus: (roomId, status, guestData) =>
       updateStatusMut.mutateAsync({ roomId, status, guestData }),
+    checkOutRoom: (roomId, opts = {}) =>
+      checkOutRoomMut.mutateAsync({ roomId, ...opts }),
     updateRoom: (roomId, updates) =>
       updateRoomMut.mutateAsync({ roomId, updates }),
     addRoom: (data) => createRoomMut.mutateAsync(data),

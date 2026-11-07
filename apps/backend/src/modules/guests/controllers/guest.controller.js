@@ -23,6 +23,7 @@ import {
 import { guestProfileDTO } from "../dto/guest.dto.js";
 
 import Hotel from "#/modules/hotels/models/Hotel.js";
+import { getIo } from "#/config/socket.js";
 import logger from "#/utils/logger.js";
 
 // =====================================================
@@ -395,9 +396,15 @@ export const deleteGuestDocument = async (req, res) => {
 export const getMyProfile = async (req, res) => {
   try {
     const user = req.user;
-    const booking = req.currentBooking || null;
+    let booking = req.currentBooking || null;
     let room = null;
     let hotel = null;
+
+    if (!booking) {
+      booking = await Booking.findOne({ guestId: user._id }).sort({
+        createdAt: -1,
+      });
+    }
 
     if (booking?.roomId) {
       room = await Room.findById(booking.roomId);
@@ -410,6 +417,7 @@ export const getMyProfile = async (req, res) => {
       success: true,
       data: {
         ...guestProfileDTO(user, booking, room),
+        hotelName: hotel?.name || null,
         wifi: hotel
           ? { networkName: hotel.wifiNetworkName, password: hotel.wifiPassword }
           : null,
@@ -434,15 +442,31 @@ export const updateDND = async (req, res) => {
 
     const booking = req.currentBooking;
 
-    if (!booking) {
-      return res.status(400).json({
+    if (!booking || booking.status !== "checked-in") {
+      return res.status(403).json({
         success: false,
-        message: "No active booking found for this guest",
+        message:
+          "Do Not Disturb control is only available during an active checked-in stay",
       });
     }
 
     booking.dndEnabled = enabled;
     await booking.save();
+
+    // Broadcast DND update to guest socket and room socket for real-time mobile/kiosk sync
+    try {
+      const io = getIo();
+      io.to(`guest:${req.user._id}`).emit("dnd:updated", {
+        dndEnabled: booking.dndEnabled,
+      });
+      if (booking.roomId) {
+        io.to(`room:${booking.roomId}`).emit("dnd:updated", {
+          dndEnabled: booking.dndEnabled,
+        });
+      }
+    } catch {
+      // Socket might not be available in test/standalone environments
+    }
 
     return res
       .status(200)

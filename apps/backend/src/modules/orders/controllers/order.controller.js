@@ -137,6 +137,16 @@ async function createLinkedBill(order, { tableId = null, roomId = null } = {}) {
 
 export const createOrder = async (req, res) => {
   try {
+    if (req.user.role === "GUEST") {
+      if (!req.currentBooking || req.currentBooking.status !== "checked-in") {
+        return res.status(403).json({
+          success: false,
+          message:
+            "In-room food ordering is only available after completing check-in for an active stay",
+        });
+      }
+    }
+
     const { items, paymentMethod } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -377,14 +387,20 @@ export const deleteOrder = async (req, res) => {
 export const createTableOrder = async (req, res) => {
   try {
     const {
-      hotelId,
-      tableId,
       items,
       orderType,
       couponCode,
       notes,
       paymentMode,
+      idempotencyKey: bodyIdempotencyKey,
     } = req.body;
+
+    const session = req.session;
+    const hotelId = session ? session.hotelId : req.body.hotelId;
+    const tableId =
+      session && session.type === "QR_GUEST"
+        ? session.tableId
+        : req.body.tableId || session?.tableId;
 
     if (!hotelId || !tableId || !items?.length) {
       return res.status(400).json({
@@ -393,23 +409,76 @@ export const createTableOrder = async (req, res) => {
       });
     }
 
+    // Idempotency check: prevent duplicate order submissions from retries or double taps
+    const idempotencyKey =
+      req.headers["x-idempotency-key"] || bodyIdempotencyKey || null;
+
+    if (idempotencyKey) {
+      const existingOrder = await Order.findOne({
+        idempotencyKey,
+        hotelId,
+        tableId,
+      });
+
+      if (existingOrder) {
+        return res.status(200).json({
+          success: true,
+          message: "Order already processed (idempotent response)",
+          data: orderDTO(existingOrder),
+        });
+      }
+    }
+
+    // Validate quantities and item presence
+    for (const item of items) {
+      if (
+        !item.foodItemId ||
+        typeof item.quantity !== "number" ||
+        item.quantity < 1 ||
+        item.quantity > 100
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Each item must have a valid foodItemId and quantity between 1 and 100",
+        });
+      }
+    }
+
+    // Strictly verify food items belong to the authorized hotel and are available
+    const foodItemIds = items.map((i) => i.foodItemId);
     const foodItems = await FoodItem.find({
-      _id: { $in: items.map((i) => i.foodItemId) },
+      _id: { $in: foodItemIds },
+      hotelId,
     });
+
+    if (foodItems.length !== foodItemIds.length) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "One or more food items do not belong to this hotel or do not exist",
+      });
+    }
+
+    const unavailableItem = foodItems.find((f) => f.isAvailable === false);
+    if (unavailableItem) {
+      return res.status(400).json({
+        success: false,
+        message: `"${unavailableItem.name}" is currently sold out or unavailable`,
+      });
+    }
 
     let subtotal = 0;
     const orderItems = items.map((reqItem) => {
       const foodItem = foodItems.find(
         (f) => f._id.toString() === reqItem.foodItemId,
       );
-      if (!foodItem)
-        throw new Error(`Food item not found: ${reqItem.foodItemId}`);
 
       const addonsTotal = (reqItem.addons || []).reduce(
         (sum, a) => sum + (a.price || 0),
         0,
       );
-      const quantity = reqItem.quantity || 1;
+      const quantity = Math.floor(reqItem.quantity || 1);
       subtotal += (foodItem.price + addonsTotal) * quantity;
 
       return {
@@ -442,6 +511,7 @@ export const createTableOrder = async (req, res) => {
         await coupon.save();
       }
     }
+
     const gst = subtotal * 0.05;
     const totalAmount = subtotal - discount + gst;
     let razorpayOrder = null;
@@ -467,6 +537,8 @@ export const createTableOrder = async (req, res) => {
     const order = await Order.create({
       hotelId,
       tableId,
+      sessionId: session?._id || null,
+      idempotencyKey,
       roomId: null,
       guestId: null,
       items: orderItems,
@@ -522,20 +594,85 @@ export const markPaymentFailed = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Order not found" });
+
+    // Verify caller session has ownership of this order if session is present
+    if (req.session) {
+      if (order.hotelId.toString() !== req.session.hotelId.toString()) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Unauthorized access to order" });
+      }
+      if (req.session.type === "QR_GUEST" && req.session.tableId) {
+        if (
+          !order.tableId ||
+          order.tableId.toString() !== req.session.tableId.toString()
+        ) {
+          return res
+            .status(403)
+            .json({ success: false, message: "Unauthorized access to order" });
+        }
+      }
+    }
+
+    // Set paymentStatus to FAILED, but keep order status as NEW so it remains
+    // active and eligible for retry or Cash on Delivery settlement.
     order.paymentStatus = "FAILED";
-    order.status = "REJECTED";
     await order.save();
-    await Bill.updateOne(
-      { linkedOrderIds: order._id },
-      { $set: { paymentStatus: "unpaid", status: "cancelled" } },
-    );
+
     emitToHotel(order.hotelId, SOCKET_EVENTS.ORDER_UPDATED, orderDTO(order));
-    return res.status(200).json({ success: true });
+    return res
+      .status(200)
+      .json({ success: true, message: "Payment status recorded as failed" });
   } catch (error) {
     logger.error(error, "Mark payment failed error");
     return res
       .status(500)
       .json({ success: false, message: "Failed to update order" });
+  }
+};
+
+/**
+ * GET /orders/table-order
+ * Retrieves all orders created during the caller's active dining session.
+ */
+export const getSessionOrders = async (req, res) => {
+  try {
+    const { session } = req;
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        message: "Session authentication required",
+      });
+    }
+
+    const conditions = [{ sessionId: session._id }];
+
+    if (session.tableId) {
+      const sessionWindowStart =
+        session.createdAt || new Date(Date.now() - 8 * 60 * 60 * 1000);
+      conditions.push({
+        tableId: session.tableId,
+        createdAt: { $gte: sessionWindowStart },
+      });
+    }
+
+    const query = {
+      hotelId: session.hotelId,
+      $or: conditions,
+    };
+
+    const orders = await Order.find(query).sort({ createdAt: -1 }).limit(30);
+
+    return res.status(200).json({
+      success: true,
+      data: orders.map(orderDTO),
+    });
+  } catch (error) {
+    logger.error(error, "Get session orders error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve session orders",
+    });
   }
 };
 
@@ -546,6 +683,26 @@ export const getPublicOrder = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Order not found" });
+
+    // Enforce authorization via session if session is authenticated
+    if (req.session) {
+      if (order.hotelId.toString() !== req.session.hotelId.toString()) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Unauthorized access to order" });
+      }
+      if (req.session.type === "QR_GUEST" && req.session.tableId) {
+        if (
+          !order.tableId ||
+          order.tableId.toString() !== req.session.tableId.toString()
+        ) {
+          return res
+            .status(403)
+            .json({ success: false, message: "Unauthorized access to order" });
+        }
+      }
+    }
+
     return res.status(200).json({ success: true, data: orderDTO(order) });
   } catch (error) {
     logger.error(error, "Get public order error");
@@ -584,6 +741,25 @@ export const verifyTableOrderPayment = async (req, res) => {
         .json({ success: false, message: "Order not found" });
     }
 
+    // Verify session authorization if present
+    if (req.session) {
+      if (order.hotelId.toString() !== req.session.hotelId.toString()) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Unauthorized access to order" });
+      }
+      if (req.session.type === "QR_GUEST" && req.session.tableId) {
+        if (
+          !order.tableId ||
+          order.tableId.toString() !== req.session.tableId.toString()
+        ) {
+          return res
+            .status(403)
+            .json({ success: false, message: "Unauthorized access to order" });
+        }
+      }
+    }
+
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -591,12 +767,7 @@ export const verifyTableOrderPayment = async (req, res) => {
 
     if (expectedSignature !== razorpay_signature) {
       order.paymentStatus = "FAILED";
-      order.status = "REJECTED";
       await order.save();
-      await Bill.updateOne(
-        { linkedOrderIds: order._id },
-        { $set: { paymentStatus: "unpaid", status: "cancelled" } },
-      );
 
       return res
         .status(400)
@@ -604,8 +775,10 @@ export const verifyTableOrderPayment = async (req, res) => {
     }
 
     order.paymentStatus = "PAID";
+    order.status = "CONFIRMED";
     order.razorpayPaymentId = razorpay_payment_id;
     await order.save();
+
     await Bill.updateOne(
       { linkedOrderIds: order._id },
       { $set: { paymentStatus: "paid", status: "paid" } },

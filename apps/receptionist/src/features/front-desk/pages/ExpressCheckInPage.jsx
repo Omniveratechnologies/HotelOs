@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import {
   Header,
   KpiTile,
@@ -18,7 +18,9 @@ import {
 
 export default function ExpressCheckInPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const urlBookingId = searchParams.get("bookingId");
   const [selectedArrival, setSelectedArrival] = useState(null);
   const [keyCardNumber, setKeyCardNumber] = useState("");
   const [bannerMsg, setBannerMsg] = useState("");
@@ -26,8 +28,16 @@ export default function ExpressCheckInPage() {
 
   // Fetch live express-eligible arrivals
   const { data: arrivalsData, isLoading: arrivalsLoading } = useQuery({
-    queryKey: ["front-desk", "arrivals", { expressOnly: "true" }],
-    queryFn: () => getArrivalsQueue({ expressOnly: "true" }),
+    queryKey: [
+      "front-desk",
+      "arrivals",
+      { expressOnly: "true", bookingId: urlBookingId || undefined },
+    ],
+    queryFn: () =>
+      getArrivalsQueue({
+        expressOnly: "true",
+        ...(urlBookingId ? { bookingId: urlBookingId } : {}),
+      }),
   });
 
   const { data: statsData } = useQuery({
@@ -38,7 +48,16 @@ export default function ExpressCheckInPage() {
   const arrivals = arrivalsData || [];
   const stats = statsData || { pendingArrivals: 0, checkedInToday: 0 };
   const currentArrival =
-    selectedArrival || (arrivals.length > 0 ? arrivals[0] : null);
+    selectedArrival ||
+    (urlBookingId
+      ? arrivals.find(
+          (a) =>
+            String(a.id) === String(urlBookingId) ||
+            String(a._id) === String(urlBookingId) ||
+            String(a.bookingNo) === String(urlBookingId),
+        )
+      : null) ||
+    (arrivals.length > 0 ? arrivals[0] : null);
 
   const checkInMutation = useMutation({
     mutationFn: ({ bookingId, data }) => checkInBooking(bookingId, data),
@@ -47,9 +66,12 @@ export default function ExpressCheckInPage() {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
       queryClient.invalidateQueries({ queryKey: ["key-cards"] });
       setBannerVariant("success");
-      setBannerMsg(res.message || "Express check-in successfully completed!");
+      setBannerMsg(
+        res.message ||
+          "Express check-in successfully completed! Guest room is now active.",
+      );
       setTimeout(() => {
-        navigate("/front-desk/check-out");
+        navigate("/front-desk/check-in");
       }, 2000);
     },
     onError: (err) => {
@@ -60,10 +82,18 @@ export default function ExpressCheckInPage() {
 
   const handleComplete = () => {
     if (!currentArrival?.id) return;
+    const targetRoomIds =
+      currentArrival.assignedRoomIds?.length > 0
+        ? currentArrival.assignedRoomIds
+        : currentArrival.roomId
+          ? [currentArrival.roomId]
+          : [];
+
     checkInMutation.mutate({
       bookingId: currentArrival.id,
       data: {
-        roomId: currentArrival.roomId,
+        roomId: targetRoomIds[0] || currentArrival.roomId,
+        roomIds: targetRoomIds,
         keyCardNumber: keyCardNumber || undefined,
         depositAmount: 0,
         notes: "Express Fast-Track check-in verified and completed.",
@@ -180,10 +210,13 @@ export default function ExpressCheckInPage() {
 
                   <div className="grid grid-cols-3 gap-3 rounded-xl bg-gray-50 p-3 text-xs">
                     <div>
-                      <span className="block text-gray-500">ID Document:</span>
+                      <span className="block text-gray-500">
+                        ID Verification:
+                      </span>
                       <strong className="text-gray-800">
-                        {currentArrival.idType || "ID Document"} (
-                        {currentArrival.idNumber || "Not recorded"})
+                        {currentArrival.documents?.length > 1
+                          ? `${currentArrival.documents.length} Verified Documents`
+                          : `${currentArrival.idType || "ID Document"} (${currentArrival.idNumber || "Recorded"})`}
                       </strong>
                     </div>
                     <div>

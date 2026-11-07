@@ -84,8 +84,14 @@ src/
 ├── config/                 Shared infrastructure
 │   ├── db.js               MongoDB connection
 │   ├── env.js              Loads & validates env vars
+│   ├── models.js           Central Mongoose schema registry (workers & server)
+│   ├── redis.js            Redis client for BullMQ queues & workers
 │   ├── r2.js               Cloudflare R2 (presigned URLs)
 │   └── razorpay.js         Razorpay client (lazy-init)
+│
+├── workers/                BullMQ asynchronous job workers
+│   ├── index.js            Worker process runner & queue reconciliation
+│   └── email/              Email workers (checkInReminder.worker.js)
 │
 ├── utils/
 │   └── logger.js           Centralized Pino logger (singleton)
@@ -342,20 +348,26 @@ cp apps/backend/.env.example apps/backend/.env
 
 Required variables (validated in `src/config/env.js`):
 
-| Variable                                                                   | Required | Description                                                          |
-| -------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------- |
-| `MONGODB_URI`                                                              | Yes      | MongoDB connection string                                            |
-| `JWT_SECRET`                                                               | Yes      | Long random secret used to sign tokens                               |
-| `PORT`                                                                     | No       | Server port. **Frontends expect `5001`**                             |
-| `JWT_EXPIRES_IN`                                                           | No       | Token lifetime (default `1d`)                                        |
-| `CLIENT_URL`                                                               | No       | Frontend origin for CORS                                             |
-| `SUB_ADMIN_FRONTEND_URL`                                                   | No       | Base URL for invite / reset links (default `http://localhost:5175`)  |
-| `SUPER_ADMIN_PASSWORD`                                                     | No       | Used by the seed script                                              |
-| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD` | No       | SMTP config for transactional emails                                 |
-| `NODE_ENV`                                                                 | No       | `development` (default) or `production`. Controls log formatting     |
-| `LOG_LEVEL`                                                                | No       | Minimum log level (default `info`). e.g. `debug`, `warn`, `error`    |
-| `GROQ_API_KEY`                                                             | No       | Enables Groq narration; aggregate dashboard metrics are sent to Groq |
-| `MODEL`                                                                    | No       | Groq model ID (defaults to `qwen/qwen3.8-27b`)                       |
+| Variable                                                                   | Required | Description                                                               |
+| -------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------- |
+| `MONGODB_URI`                                                              | Yes      | MongoDB connection string                                                 |
+| `JWT_SECRET`                                                               | Yes      | Long random secret used to sign tokens                                    |
+| `REDIS_URL`                                                                | Yes      | Redis connection URL for BullMQ queues and background workers             |
+| `PORT`                                                                     | No       | Server port. **Frontends expect `5001`**                                  |
+| `JWT_EXPIRES_IN`                                                           | No       | Token lifetime (default `1d`)                                             |
+| `SUPER_ADMIN_FRONTEND_URL`                                                 | No       | Base URL for Super Admin app (default `http://localhost:5173`)            |
+| `SUB_ADMIN_FRONTEND_URL`                                                   | No       | Base URL for invite / reset links (default `http://localhost:5174`)       |
+| `RECEPTIONIST_FRONTEND_URL`                                                | No       | Base URL for Receptionist app (default `http://localhost:5175`)           |
+| `KITCHEN_FRONTEND_URL`                                                     | No       | Base URL for Kitchen display app (default `http://localhost:5176`)        |
+| `GUEST_FRONTEND_URL`                                                       | No       | Base URL for Guest Dashboard / Kiosk (default `http://localhost:5177`)    |
+| `SELF_CHECKIN_FRONTEND_URL`                                                | No       | Base URL for Self Check-in / Kiosk (default `http://localhost:5178`)      |
+| `TABLE_ORDER_FRONTEND_URL`                                                 | No       | Base URL for Table Order / Digital Menu (default `http://localhost:5179`) |
+| `SUPER_ADMIN_PASSWORD`                                                     | No       | Used by the seed script                                                   |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SECURE`, `EMAIL_USER`, `EMAIL_PASSWORD` | No       | SMTP config for transactional emails                                      |
+| `NODE_ENV`                                                                 | No       | `development` (default) or `production`. Controls log formatting          |
+| `LOG_LEVEL`                                                                | No       | Minimum log level (default `info`). e.g. `debug`, `warn`, `error`         |
+| `GROQ_API_KEY`                                                             | No       | Enables Groq narration; aggregate dashboard metrics are sent to Groq      |
+| `MODEL`                                                                    | No       | Groq model ID (defaults to `qwen/qwen3.8-27b`)                            |
 
 > **Note:** the port default is `5001` in `src/server.js`. Make sure your
 > `.env` sets `PORT=5001` (or leaves it unset) so the frontends, which
@@ -370,12 +382,28 @@ pnpm seed -F backend
 This creates a `SUPER_ADMIN` user with username `superadmin` and the
 password from `SUPER_ADMIN_PASSWORD` (skips if one already exists).
 
-### 4. Run the server
+### 4. Run the server & workers
+
+In development, `pnpm dev` launches both Express and the background worker concurrently:
 
 ```bash
-pnpm dev -F backend        # nodemon (dev)
-pnpm start -F backend      # node
+pnpm dev -F backend           # Launches API server + BullMQ worker concurrently (nodemon)
+pnpm dev:server -F backend    # Launches only the Express API server
+pnpm dev:worker -F backend    # Launches only the BullMQ background worker
+
+# In production:
+pnpm start -F backend         # node src/server.js
+pnpm start:worker -F backend  # node src/workers/index.js
 ```
+
+#### BullMQ & Redis Email Scheduling
+
+The backend includes a crash-resilient asynchronous job queue powered by **BullMQ + Redis**:
+
+- **Check-In Reminder Queue (`check-in-email`)**: When reservations are confirmed or dates update, a delayed job is scheduled for **2 hours prior to the hotel's `checkInTime`** on arrival day.
+- **Worker Execution (`src/workers/email/checkInReminder.worker.js`)**: Validates the reservation status, generates a secure check-in session token, and emails the guest their self check-in magic link (`SELF_CHECKIN_FRONTEND_URL/check-in/:token`).
+- **Retry Mechanism**: Up to 5 attempts with exponential backoff on transient SMTP failures.
+- **Crash Recovery**: On worker startup, `reconcileCheckInReminders()` audits MongoDB against Redis to guarantee zero missed reminders across server restarts.
 
 Health check:
 
@@ -713,13 +741,14 @@ and a JWT is returned so the user is logged in immediately.
 
 Scoped to the authenticated user's hotel.
 
-| Method | Endpoint     | Auth | Roles                   | Description   |
-| ------ | ------------ | ---- | ----------------------- | ------------- |
-| GET    | `/rooms`     | Yes  | SUB_ADMIN, RECEPTIONIST | List rooms    |
-| GET    | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Get a room    |
-| POST   | `/rooms`     | Yes  | SUB_ADMIN, RECEPTIONIST | Create a room |
-| PATCH  | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Update a room |
-| DELETE | `/rooms/:id` | Yes  | SUB_ADMIN, RECEPTIONIST | Delete a room |
+| Method | Endpoint               | Auth | Roles                                | Description                                |
+| ------ | ---------------------- | ---- | ------------------------------------ | ------------------------------------------ |
+| GET    | `/rooms`               | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | List rooms (optional `?status=` filter)    |
+| GET    | `/rooms/:id`           | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Get a room                                 |
+| POST   | `/rooms`               | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Create a room                              |
+| PATCH  | `/rooms/:id`           | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Update a room                              |
+| POST   | `/rooms/:id/check-out` | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Check out room & all active bookings on it |
+| DELETE | `/rooms/:id`           | Yes  | SUPER_ADMIN, SUB_ADMIN, RECEPTIONIST | Delete a room                              |
 
 **Create room** (`POST /rooms`):
 
@@ -739,6 +768,17 @@ Scoped to the authenticated user's hotel.
 **Update room** — accepts any of `status`, `type`, `rate`, `floor`,
 `currentGuest`, `checkIn`, `checkOut`. Room `status` values:
 `available` | `occupied` | `reserved` | `cleaning`.
+_Note: If an occupied room's status is changed to `cleaning` or `available`, the backend automatically checks out any active stay on that room to maintain database consistency._
+
+**Check-out room from Room Grid** (`POST /rooms/:id/check-out`):
+Executes an official front-desk check-out from the Dashboard Room Grid modal:
+
+- Finds all active checked-in bookings for that room (`status: "checked-in"`).
+- Transitions them to `status: "checked-out"` with payment status `paid` and check-out audit trails.
+- Sets the Room status to `cleaning`, clearing `currentGuest`, `checkIn`, and `checkOut`.
+- Automatically generates a turnover Housekeeping task (`type: "HOUSEKEEPING"`, priority: `"high"`).
+- Returns & deactivates all assigned KeyCards.
+- Emits real-time Socket.IO event `kiosk:guest-checked-out` to any in-room tablet for that room so it resets to standby mode.
 
 Room response DTO fields:
 
@@ -1054,6 +1094,47 @@ Sends battery level, app version, and IP. Returns `{ "received": true, "config":
 
 **Remote Commands** (`POST /kiosks/:id/command`):
 Body: `{ "command": "device:reload" | "device:exit-kiosk", "payload": {} }`. Dispatched live over Socket.IO to the specific kiosk terminal.
+
+---
+
+### Sessions & Kiosk Handoff (`/sessions`)
+
+Handles QR guest sessions, table dining geofencing, and in-room kiosk auto-login handoffs.
+
+| Method | Endpoint                      | Auth | Roles          | Description                                             |
+| ------ | ----------------------------- | ---- | -------------- | ------------------------------------------------------- |
+| POST   | `/sessions/qr-guest`          | No   | Public (Guest) | Create dining session via table QR scan with GPS verify |
+| POST   | `/sessions/kiosk-exchange`    | No   | Public / Kiosk | Exchange single-use handoff code for guest/standby JWT  |
+| GET    | `/sessions/kiosk-room-status` | Yes  | KIOSK          | Idempotent room status check on tablet reload           |
+| GET    | `/sessions/validate`          | Yes  | Session Token  | Validate dining session generation & geofencing         |
+| POST   | `/sessions/revoke`            | Yes  | Session Token  | Revoke active dining session                            |
+
+**Kiosk Exchange** (`POST /sessions/kiosk-exchange`):
+
+- Body: `{ "handoffCode": "<sha256_code>" }`
+- Automatically checks if the kiosk's assigned room has an active stay (sorting `{ createdAt: -1 }` to select the newest valid check-in).
+- If occupied: issues a guest JWT (`role: "GUEST"`) with auto-login payload `{ activeStay: true, guestToken, user, reservationNo }`.
+- If vacant: issues standby payload `{ activeStay: false, standbyToken, hotel, room }` to display in-room standby screen.
+
+**Idempotent Kiosk Status** (`GET /sessions/kiosk-room-status`):
+
+- Authenticated via the kiosk's hardware device token.
+- Returns current stay state without consuming single-use handoff codes, enabling smooth Android WebView reloads during an active guest stay.
+
+---
+
+### Public Self Check-In (`/public/check-in`)
+
+Public guest-facing check-in wizard endpoints for remote mobile devices and lobby kiosk terminals.
+
+| Method | Endpoint                              | Auth | Description                                        |
+| ------ | ------------------------------------- | ---- | -------------------------------------------------- |
+| POST   | `/public/check-in/lookup`             | No   | Search reservation by reservation number or email  |
+| POST   | `/public/check-in/verify-otp`         | No   | Verify 6-digit OTP and generate session token      |
+| GET    | `/public/check-in/:token`             | No   | Resolve check-in session state & booking details   |
+| PUT    | `/public/check-in/:token/steps/:step` | No   | Save progress on a wizard step (1–10)              |
+| POST   | `/public/check-in/:token/uploads`     | No   | Generate presigned R2 upload URLs for ID / photo   |
+| POST   | `/public/check-in/:token/submit`      | No   | Finalize check-in submission for front-desk review |
 
 ---
 

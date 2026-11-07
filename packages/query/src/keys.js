@@ -169,4 +169,9 @@ export const queryKeys = {
     details: () => [...queryKeys.kiosks.all, "detail"],
     detail: (id) => [...queryKeys.kiosks.details(), id],
   },
+  tables: {
+    all: ["tables"],
+    lists: () => [...queryKeys.tables.all, "list"],
+    list: (filters) => [...queryKeys.tables.lists(), filters || {}],
+  },
 };

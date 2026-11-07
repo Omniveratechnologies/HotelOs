@@ -79,10 +79,15 @@ NOTES.md
 PLANS.md
 
 # ------------------------------------------------------
-# 📱 Kiosk / Android
+# 📱 Kiosk / React Native / Android & iOS
 # ------------------------------------------------------
 .expo/
 apps/kiosk/android/
+apps/kiosk/ios/
+.gradle/
+.kotlin/
+*.iml
+local.properties
 *.jks
 *.keystore
 keystore.properties

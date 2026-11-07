@@ -15,6 +15,7 @@ import * as Application from "expo-application";
 import { getDeviceId } from "@modules/kiosk-manager";
 import { kioskApi } from "@/services/kioskApi";
 import { kioskStorage, serverUrlStorage } from "@/lib/storage";
+import { kioskUnlockState } from "@/lib/kioskUnlockState";
 
 const DEFAULT_SERVER_URL =
   process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:5001";
@@ -100,6 +101,7 @@ export function PairingScreen() {
 
   useEffect(() => {
     if (status === "success") {
+      kioskUnlockState.setUnlocked(false);
       const timeout = setTimeout(() => router.replace("/kiosk"), 1200);
       return () => clearTimeout(timeout);
     }
@@ -189,9 +191,11 @@ export function PairingScreen() {
             </Pressable>
           )}
 
-          <Pressable onPress={() => router.back()} style={styles.cancelLink}>
-            <Text style={styles.linkText}>Back to Device Info</Text>
-          </Pressable>
+          {router.canGoBack() && kioskUnlockState.isUnlocked() && (
+            <Pressable onPress={() => router.back()} style={styles.cancelLink}>
+              <Text style={styles.linkText}>Back to Device Info</Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

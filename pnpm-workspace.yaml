@@ -8,7 +8,10 @@ packages:
 allowBuilds:
   core-js: true
   esbuild: true
+  msgpackr-extract: true
   unrs-resolver: true
+  electron: true
+  electron-winstaller: true
 #
 # Put the virtual store at the project root (./.pnpm) instead of the default
 # node_modules/.pnpm. This removes the `node_modules/` path segment from every

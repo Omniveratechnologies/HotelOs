@@ -342,3 +342,74 @@ export const sendPasswordResetEmail = async ({ email, name, resetUrl }) => {
     html,
   });
 };
+
+// =====================================================
+// KIOSK / SELF-CHECKIN OTP VERIFICATION EMAIL
+// =====================================================
+
+export const sendCheckInOtpEmail = async ({
+  email,
+  name,
+  otp,
+  hotelName = "HotelOS",
+}) => {
+  const subject = `${otp} is your Self Check-In Verification Code - ${hotelName}`;
+
+  const html = `
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 24px;
+        background-color: #f9fafb;
+        border-radius: 8px;
+      "
+    >
+      <h2 style="color: #0f1f3d; margin-top: 0;">Self Check-In Verification</h2>
+
+      <p>Hello ${name || "Guest"},</p>
+
+      <p>
+        Use the verification code below on the kiosk terminal to access your check-in:
+      </p>
+
+      <div
+        style="
+          margin: 24px 0;
+          padding: 16px;
+          background-color: #ffffff;
+          border: 2px dashed #0284c7;
+          border-radius: 8px;
+          text-align: center;
+        "
+      >
+        <span
+          style="
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 6px;
+            color: #0f1f3d;
+            font-family: monospace;
+          "
+        >
+          ${otp}
+        </span>
+      </div>
+
+      <p style="color: #64748b; font-size: 14px;">
+        This code is valid for <strong>10 minutes</strong>. If you did not initiate this check-in request, please contact the front desk.
+      </p>
+
+      <br />
+      <p style="color: #334155; font-weight: 500;">${hotelName} Team</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject,
+    html,
+  });
+};

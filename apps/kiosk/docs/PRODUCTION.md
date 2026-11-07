@@ -101,10 +101,18 @@ Active admin set to component ...
 
 Once provisioned:
 
-- Android Lock Task Mode is fully enforced without any screen pinning dialogs.
-- System navigation buttons (Home, Recents, Notifications shade) and power menu escape routes are permanently disabled.
-- The app registers as the default Android `HOME` launcher.
-- The app automatically launches whenever the tablet is powered on or rebooted.
+- `KioskDeviceAdminReceiver` immediately applies enterprise policies:
+  - Whitelists `com.kioskpoc.app` for silent, dialog-free Lock Task Mode.
+  - Configures `LOCK_TASK_FEATURE_NONE` so Home, Recents, and Notifications are completely turned off.
+  - Registers `com.kioskpoc.app.MainActivity` as the persistent system `HOME` launcher.
+  - Disables the Android keyguard (lockscreen) so the kiosk never wakes to a swipe or PIN prompt.
+  - Suppresses crash error dialogs and blocks safe-boot escapes (`DISALLOW_SAFE_BOOT`, `DISALLOW_SYSTEM_ERROR_DIALOGS`, `DISALLOW_CREATE_WINDOWS`).
+- To verify or immediately force the default home launcher on tablets with pre-existing stock launchers:
+  ```bash
+  adb shell cmd package set-home-activity com.kioskpoc.app/.MainActivity
+  ```
+- In active kiosk mode (`/kiosk`), `setStatusBarDisabled(true)` completely blocks the top shutter (notification shade and quick settings), while `WindowInsetsController` hides all system navigation bars.
+- The app automatically launches directly into `/kiosk` whenever the tablet is powered on or rebooted, hiding technical Terminal Info from guests.
 
 ---
 
@@ -128,7 +136,7 @@ Once deployed, the physical tablet is managed 100% remotely through the HotelOS 
   - Staff can click **Turn On Maintenance** whenever the tablet requires cleaning or physical maintenance. The tablet displays a guest-friendly notice advising guests to approach the concierge.
   - Staff can click **Turn Off Maintenance** to instantly resume guest check-in or ordering operations.
 - **Super Admin Central Control**:
-  - Super Admin can reassign terminals to different hotels or switch target dashboards (`GUEST_CHECKIN`, `TABLE_ORDER`, `RECEPTIONIST_EXPRESS`, `CUSTOM_URL`, `DEMO_PORTAL`).
+  - Super Admin can reassign terminals to different hotels or switch target dashboards (`GUEST_DASHBOARD`, `SELF_CHECKIN`, `DIGITAL_MENU`).
   - Super Admin can remotely trigger **Reload** or **Exit Kiosk** over WebSocket.
 - **Applying App Updates**:
   - To install an updated APK on a deployed tablet, connect via USB and run `adb install -r <new-apk-path>`. Because the keystore is identical, the APK updates seamlessly without losing Device Owner provisioning.

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@hotelos/query";
-import { reservationsApi } from "@hotelos/api";
+import { reservationsApi, sendCheckInLink } from "@hotelos/api";
 import { normalizeReservation } from "./useReservations.js";
 
 /**
@@ -72,6 +72,20 @@ export function useExtendReservationStay() {
     mutationFn: ({ id, checkOut }) =>
       reservationsApi.extendReservationStay(id, { checkOut }),
     onSuccess: invalidate,
+  });
+}
+
+export function useSendSelfCheckInLink() {
+  const invalidate = useInvalidateReservations();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reservationId, email, message }) =>
+      sendCheckInLink({ reservationId, email, message }),
+    onSuccess: () => {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["check-in"] });
+      queryClient.invalidateQueries({ queryKey: ["front-desk"] });
+    },
   });
 }
 

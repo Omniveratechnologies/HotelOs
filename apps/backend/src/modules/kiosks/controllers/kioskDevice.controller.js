@@ -1,4 +1,8 @@
+import crypto from "node:crypto";
+import { SESSION_POLICIES } from "@hotelos/utils";
 import KioskDevice from "../models/KioskDevice.js";
+import Session from "#/modules/sessions/models/Session.js";
+import KioskHandoff from "#/modules/sessions/models/KioskHandoff.js";
 import {
   KIOSK_DASHBOARDS,
   resolveKioskAssignedUrl,
@@ -87,6 +91,8 @@ export const getKioskDevices = async (req, res) => {
     const [devices, stats] = await Promise.all([
       KioskDevice.find(filter)
         .populate("hotelId", "name hotelCode city")
+        .populate("tableId", "tableNumber section seats status")
+        .populate("roomId", "roomNumber type floor status")
         .sort({ createdAt: -1 })
         .lean(),
       KioskDevice.aggregate([
@@ -97,11 +103,16 @@ export const getKioskDevices = async (req, res) => {
 
     const statusMap = Object.fromEntries(stats.map((s) => [s._id, s.count]));
 
+    const populatedDevices = devices.map((d) => ({
+      ...d,
+      assignedUrl: resolveKioskAssignedUrl(d),
+    }));
+
     return res.status(200).json({
       success: true,
       message: "Kiosks fetched",
       data: {
-        devices,
+        devices: populatedDevices,
         stats: {
           total: devices.length,
           online: statusMap.ONLINE || 0,
@@ -130,7 +141,8 @@ export const createKioskDevice = async (req, res) => {
       name,
       location,
       targetDashboard,
-      customUrl,
+      tableId,
+      roomId,
       supportedFeatures,
       firmwareVersion,
     } = req.body;
@@ -154,7 +166,7 @@ export const createKioskDevice = async (req, res) => {
     }
 
     const pairCode = generatePairCode();
-    const dashboardType = targetDashboard || "DEMO_URL";
+    const dashboardType = targetDashboard || "GUEST_DASHBOARD";
 
     const initialKiosk = {
       hotelId: assignedHotelId,
@@ -162,7 +174,8 @@ export const createKioskDevice = async (req, res) => {
       name: name.trim(),
       location: location?.trim() || "Main Lobby",
       targetDashboard: dashboardType,
-      customUrl: customUrl?.trim() || null,
+      tableId: dashboardType === "DIGITAL_MENU" ? tableId || null : null,
+      roomId: dashboardType === "GUEST_DASHBOARD" ? roomId || null : null,
       pairCode,
       status: "ONLINE",
       firmwareVersion: firmwareVersion?.trim() || "v1.4.0",
@@ -174,16 +187,17 @@ export const createKioskDevice = async (req, res) => {
       isPaired: false,
     };
 
-    const assignedUrl = resolveKioskAssignedUrl(initialKiosk);
-
-    const device = await KioskDevice.create({
-      ...initialKiosk,
-      assignedUrl,
-    });
+    const device = await KioskDevice.create(initialKiosk);
 
     const populated = await KioskDevice.findById(device._id)
       .populate("hotelId", "name hotelCode city")
+      .populate("tableId", "tableNumber section seats status")
+      .populate("roomId", "roomNumber type floor status")
       .lean();
+
+    if (populated) {
+      populated.assignedUrl = resolveKioskAssignedUrl(populated);
+    }
 
     return res.status(201).json({
       success: true,
@@ -224,16 +238,21 @@ export const updateKioskDevice = async (req, res) => {
         });
       }
 
-      // Prohibit non-super-admins from reassigning hotel, dashboard preset, or customUrl
+      // Prohibit non-super-admins from reassigning hotel, dashboard, table, room, or hardware settings
       if (
         req.body.hotelId !== undefined ||
         req.body.targetDashboard !== undefined ||
-        req.body.customUrl !== undefined
+        req.body.tableId !== undefined ||
+        req.body.roomId !== undefined ||
+        req.body.supportedFeatures !== undefined ||
+        req.body.name !== undefined ||
+        req.body.location !== undefined ||
+        req.body.firmwareVersion !== undefined
       ) {
         return res.status(403).json({
           success: false,
           message:
-            "Only Super Admin can reassign hotel or dashboard configuration",
+            "Receptionists can only update operational status (maintenance mode). Configuration changes require Super Admin access.",
         });
       }
     }
@@ -244,7 +263,8 @@ export const updateKioskDevice = async (req, res) => {
       "location",
       "status",
       "targetDashboard",
-      "customUrl",
+      "tableId",
+      "roomId",
       "firmwareVersion",
       "supportedFeatures",
       "isActive",
@@ -257,7 +277,8 @@ export const updateKioskDevice = async (req, res) => {
         if (
           key === "hotelId" ||
           key === "targetDashboard" ||
-          key === "customUrl"
+          key === "tableId" ||
+          key === "roomId"
         ) {
           if (String(device[key]) !== String(req.body[key])) {
             urlOrHotelChanged = true;
@@ -267,28 +288,64 @@ export const updateKioskDevice = async (req, res) => {
       }
     }
 
-    if (urlOrHotelChanged) {
-      device.assignedUrl = resolveKioskAssignedUrl(device);
+    // Clear tableId if switching away from DIGITAL_MENU
+    if (
+      req.body.targetDashboard &&
+      req.body.targetDashboard !== "DIGITAL_MENU" &&
+      req.body.tableId === undefined
+    ) {
+      device.tableId = null;
+    }
+
+    // Clear roomId if switching away from GUEST_DASHBOARD
+    if (
+      req.body.targetDashboard &&
+      req.body.targetDashboard !== "GUEST_DASHBOARD" &&
+      req.body.roomId === undefined
+    ) {
+      device.roomId = null;
     }
 
     await device.save();
 
+    const assignedUrl = resolveKioskAssignedUrl(device);
+
     const populated = await KioskDevice.findById(device._id)
       .populate("hotelId", "name hotelCode city")
+      .populate("tableId", "tableNumber section seats status")
+      .populate("roomId", "roomNumber type floor status")
       .lean();
+
+    if (populated) {
+      populated.assignedUrl = assignedUrl;
+    }
 
     // Notify connected terminal via Socket.IO if URL or target dashboard changed
     if (urlOrHotelChanged || req.body.status) {
       safeEmitToDevice(device.deviceId, "device:navigate", {
-        url: device.assignedUrl,
+        url: assignedUrl,
         targetDashboard: device.targetDashboard,
         hotelId: device.hotelId,
       });
       safeEmitToDevice(device.deviceId, "device:config-updated", {
         status: device.status,
         targetDashboard: device.targetDashboard,
-        assignedUrl: device.assignedUrl,
+        assignedUrl,
       });
+    }
+
+    // If terminal is disabled or deactivated, immediately revoke all its active sessions
+    if (device.status === "DISABLED" || device.isActive === false) {
+      await Session.updateMany(
+        { kioskId: device._id, status: "ACTIVE" },
+        {
+          $set: {
+            status: "REVOKED",
+            revokedAt: new Date(),
+            revocationReason: "KIOSK_DISABLED",
+          },
+        },
+      );
     }
 
     return res.status(200).json({
@@ -319,6 +376,18 @@ export const regeneratePairCode = async (req, res) => {
     device.pairCode = generatePairCode();
     device.isPaired = false;
     await device.save();
+
+    // Revoke any active sessions when a device is unpaired
+    await Session.updateMany(
+      { kioskId: device._id, status: "ACTIVE" },
+      {
+        $set: {
+          status: "REVOKED",
+          revokedAt: new Date(),
+          revocationReason: "KIOSK_UNPAIRED",
+        },
+      },
+    );
 
     return res.status(200).json({
       success: true,
@@ -375,6 +444,17 @@ export const deleteKioskDevice = async (req, res) => {
     safeEmitToDevice(device.deviceId, "device:exit-kiosk", {
       reason: "Terminal deleted by Super Admin",
     });
+
+    await Session.updateMany(
+      { kioskId: device._id, status: "ACTIVE" },
+      {
+        $set: {
+          status: "REVOKED",
+          revokedAt: new Date(),
+          revocationReason: "KIOSK_DELETED",
+        },
+      },
+    );
 
     await device.deleteOne();
 
@@ -439,8 +519,9 @@ export const pairKiosk = async (req, res) => {
     if (ipAddress) device.ipAddress = ipAddress.trim();
     if (supportedFeatures?.length) device.supportedFeatures = supportedFeatures;
 
-    device.assignedUrl = resolveKioskAssignedUrl(device);
     await device.save();
+
+    const assignedUrl = resolveKioskAssignedUrl(device);
 
     // Generate cryptographic device JWT token
     const token = generateKioskToken(device);
@@ -458,7 +539,9 @@ export const pairKiosk = async (req, res) => {
           hotelId: device.hotelId?._id || device.hotelId,
           hotelName: device.hotelId?.name || "Assigned Hotel",
           targetDashboard: device.targetDashboard,
-          assignedUrl: device.assignedUrl,
+          roomId: device.roomId || null,
+          tableId: device.tableId || null,
+          assignedUrl,
         },
       },
     });
@@ -497,11 +580,13 @@ export const kioskHeartbeat = async (req, res) => {
 
     await device.save();
 
+    const assignedUrl = resolveKioskAssignedUrl(device);
+
     return res.status(200).json({
       success: true,
       message: "Heartbeat acknowledged",
       data: {
-        assignedUrl: device.assignedUrl,
+        assignedUrl,
         targetDashboard: device.targetDashboard,
         status: device.status,
       },
@@ -521,7 +606,13 @@ export const getKioskStatus = async (req, res) => {
   try {
     const device = await KioskDevice.findById(req.kiosk._id)
       .populate("hotelId", "name hotelCode city")
+      .populate("tableId", "tableNumber section seats status")
+      .populate("roomId", "roomNumber type floor status")
       .lean();
+
+    if (device) {
+      device.assignedUrl = resolveKioskAssignedUrl(device);
+    }
 
     return res.status(200).json({
       success: true,
@@ -532,5 +623,54 @@ export const getKioskStatus = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to fetch kiosk status" });
+  }
+};
+
+// =====================================================
+// CREATE SINGLE-USE KIOSK HANDOFF CODE (Authenticated Kiosk)
+// =====================================================
+export const createKioskHandoffCode = async (req, res) => {
+  try {
+    const kiosk = req.kiosk;
+    if (!kiosk || !kiosk.isActive || kiosk.status === "DISABLED") {
+      return res.status(403).json({
+        success: false,
+        message: "Kiosk terminal is not authorized or has been disabled",
+      });
+    }
+
+    const handoffCode = crypto.randomBytes(32).toString("hex");
+    const codeHash = crypto
+      .createHash("sha256")
+      .update(handoffCode)
+      .digest("hex");
+    const ttlSeconds = SESSION_POLICIES.KIOSK_HANDOFF_TTL_SECONDS || 60;
+    const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+
+    await KioskHandoff.create({
+      codeHash,
+      kioskId: kiosk._id,
+      hotelId: kiosk.hotelId,
+      targetDashboard: kiosk.targetDashboard || "GUEST_DASHBOARD",
+      tableId: kiosk.tableId || null,
+      roomId: kiosk.roomId || null,
+      consumed: false,
+      expiresAt,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Single-use handoff code generated successfully",
+      data: {
+        handoffCode,
+        expiresInSeconds: ttlSeconds,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Create Kiosk Handoff Code Error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate kiosk handoff code",
+    });
   }
 };

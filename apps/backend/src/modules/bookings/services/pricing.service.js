@@ -124,9 +124,14 @@ export function computePricing({
   rooms = 1,
   addOns = [],
   discount = null,
-  taxPercent = 12,
+  taxPercent,
   commissionPercent = null,
 }) {
+  if (taxPercent == null || Number.isNaN(Number(taxPercent))) {
+    throw new Error(
+      "taxPercent is required and must be provided from the hotel configuration in DB",
+    );
+  }
   const safeNights = Math.max(1, Number(nights) || 1);
   const safeRooms = Math.max(1, Number(rooms) || 1);
   const rate = round(nightlyRate);
@@ -214,9 +219,14 @@ export function computeCompoundPricing({
   nights = 1,
   addOns = [],
   discount = null,
-  taxPercent = 12,
+  taxPercent,
   commissionPercent = null,
 }) {
+  if (taxPercent == null || Number.isNaN(Number(taxPercent))) {
+    throw new Error(
+      "taxPercent is required and must be provided from the hotel configuration in DB",
+    );
+  }
   const safeNights = Math.max(1, Number(nights) || 1);
 
   let totalRooms = 0;
@@ -324,9 +334,14 @@ export async function resolveCompoundPricing({
   ratePlanId,
   addOns = [],
   discount = null,
-  taxPercent = 12,
+  taxPercent,
   commissionPercent = null,
 }) {
+  if (taxPercent == null || Number.isNaN(Number(taxPercent))) {
+    throw new Error(
+      "taxPercent is required and must be provided from the hotel configuration in DB",
+    );
+  }
   const itemizedLines = await Promise.all(
     requirements.map(async (req) => {
       const code = req.roomTypeCode

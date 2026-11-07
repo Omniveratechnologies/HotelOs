@@ -10,6 +10,7 @@ import {
   kioskHeartbeat,
   getKioskStatus,
   getKioskDashboards,
+  createKioskHandoffCode,
 } from "../controllers/kioskDevice.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
@@ -22,6 +23,7 @@ const router = express.Router();
 router.post("/pair", pairKiosk);
 router.post("/heartbeat", authenticate, kioskHeartbeat);
 router.get("/status", authenticate, getKioskStatus);
+router.post("/handoff-code", authenticate, createKioskHandoffCode);
 
 // =====================================================
 // MANAGEMENT ENDPOINTS

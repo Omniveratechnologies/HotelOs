@@ -15,6 +15,21 @@ const tableSchema = new mongoose.Schema(
       ref: "Hotel",
       required: true,
     },
+    // Optional table-specific coordinates for fine-grained 50m proximity
+    coordinates: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
+    },
+    // Monotonically increasing generation counter; incrementing resets active QR sessions
+    sessionGeneration: {
+      type: Number,
+      default: 1,
+    },
+    // Allows staff to temporarily halt digital ordering on this table
+    isOrderingEnabled: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true },
 );

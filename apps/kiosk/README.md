@@ -23,7 +23,10 @@ All native Android capabilities are managed through **Expo Modules** and **Expo 
 2. **Centralized Fleet Control (Super Admin)**:
    - Full lifecycle management from `apps/super-admin` (`/kiosks`).
    - Reassign terminals between hotels with one click.
-   - Switch target dashboard modes: `GUEST_CHECKIN`, `TABLE_ORDER`, `RECEPTIONIST_EXPRESS`, `CUSTOM_URL`, or `DEMO_PORTAL`.
+   - Switch target dashboard modes:
+     - `GUEST_DASHBOARD`: Hotel room guest portal (`apps/guest`, port `5177`)
+     - `SELF_CHECKIN`: Express guest self check-in wizard (`apps/self-checkin`, port `5178`)
+     - `DIGITAL_MENU`: Restaurant dining menu & ordering (`apps/table-order`, port `5179`)
    - Real-time remote controls: **Reload** WebView and **Exit Kiosk** mode over WebSocket.
 
 3. **Front-Desk Maintenance Mode (Receptionist)**:
@@ -38,6 +41,11 @@ All native Android capabilities are managed through **Expo Modules** and **Expo 
 5. **In-App WebView Back Navigation & Domain Security**:
    - Hardware back button navigates backwards through web history inside the WebView, stopping safely at the assigned dashboard landing page.
    - Native security boundary (`onShouldStartLoadWithRequest`) enforces same-site domain isolation, blocking all third-party external URLs or malicious redirects.
+
+6. **True Escape-Proof Lockdown & Persistent Launcher**:
+   - Enterprise Android Device Owner provisioning completely blocks the top shutter (notification shade & quick settings via `setStatusBarDisabled`) and disables Home/Recents multitasking (`LOCK_TASK_FEATURE_NONE`).
+   - Automatically registers as the persistent default Android `HOME` launcher, preventing app minimization or desktop escape.
+   - On restart or reboot, paired terminals boot directly into the active dashboard (`/kiosk`), hiding technical Terminal Info unless Super Admin explicitly dispatches `device:exit-kiosk`.
 
 ---
 
@@ -71,14 +79,19 @@ apps/kiosk/
 ## Quick Start
 
 ```bash
-# 1. Set environment variables
+# 1. From monorepo root, run unified interactive development launcher:
+# (Auto-syncs local LAN IP, launches Expo in a dedicated interactive terminal, and starts Turborepo)
+pnpm dev:kiosk
+
+# 2. Or standalone setup inside apps/kiosk:
 cp .env.example .env
-
-# 2. Generate native Android project
 pnpm prebuild
-
-# 3. Launch debug build on connected Android emulator or device
 pnpm android
 ```
+
+### Local Network Scripts
+
+- **`pnpm dev:kiosk` (`scripts/dev-kiosk.mjs`)**: Launches Expo in an independent native terminal window (PowerShell / cmd / Terminal) with full interactive keystroke support (`a` to launch Android, `r` to reload), while running all backend and frontend services concurrently in the main console.
+- **`pnpm sync:ip` (`scripts/sync-kiosk-ip.mjs`)**: Scans host network interfaces, identifies the active IPv4 Wi-Fi/Ethernet address, and updates `apps/kiosk/.env` along with all frontend `.env` files automatically.
 
 Follow the detailed step-by-step instructions in **[`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)** to provision Device Owner and complete activation.

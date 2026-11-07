@@ -24,9 +24,18 @@ export const socketAuth = async (socket, next) => {
       socket.data.role = "KIOSK";
       socket.data.hotelId = kiosk.hotelId.toString();
 
+      // Channel subscriptions:
+      // - hotel:* allows hotel-wide broadcasts (e.g. maintenance alerts)
+      // - kiosk:* / device:* allows hardware-specific commands (e.g. status changes)
+      // - room:* allows in-room terminals in standby mode to receive Front Desk check-in/out events
       socket.join(`hotel:${kiosk.hotelId}`);
       socket.join(`kiosk:${kiosk._id}`);
       socket.join(`device:${kiosk.deviceId}`);
+
+      const assignedRoom = kiosk.roomId || decoded.roomId;
+      if (assignedRoom) {
+        socket.join(`room:${assignedRoom}`);
+      }
 
       return next();
     }

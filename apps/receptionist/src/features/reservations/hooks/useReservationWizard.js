@@ -267,7 +267,42 @@ export function useReservationWizard({
 
   // Field mutators
   const onFieldChange = (field, value) => {
-    setForm((f) => ({ ...f, [field]: value }));
+    setForm((f) => {
+      const next = { ...f, [field]: value };
+      if (field === "rooms") {
+        const numRooms = Math.max(1, Number(value) || 1);
+        if (numRooms > 1) {
+          const defaultType =
+            f.roomTypeCode ||
+            roomTypes?.[0]?.roomTypeCode ||
+            roomTypes?.[0]?.roomCode ||
+            "";
+          const reqs = Array.isArray(f.roomRequirements)
+            ? [...f.roomRequirements]
+            : [];
+          if (reqs.length === 0) {
+            next.roomRequirements = [
+              {
+                roomTypeCode: defaultType,
+                rooms: numRooms,
+                adultsPerRoom: Math.max(
+                  1,
+                  Math.floor(Number(f.adults || 1) / numRooms),
+                ),
+                childrenPerRoom: 0,
+                notes: "",
+              },
+            ];
+            if (defaultType && !next.roomTypeCode) {
+              next.roomTypeCode = defaultType;
+            }
+          } else if (reqs.length === 1) {
+            next.roomRequirements = [{ ...reqs[0], rooms: numRooms }];
+          }
+        }
+      }
+      return next;
+    });
     if (errors[field]) {
       setErrors((err) => {
         const next = { ...err };
@@ -371,6 +406,14 @@ export function useReservationWizard({
       }
       if (!form.rooms || form.rooms < 1) {
         errs.rooms = "At least 1 room is required";
+      } else if (form.rooms > 1) {
+        const totalAllocated = (form.roomRequirements || []).reduce(
+          (sum, r) => sum + Number(r.rooms || 0),
+          0,
+        );
+        if (totalAllocated !== Number(form.rooms)) {
+          errs.roomRequirements = `Please allocate all ${form.rooms} rooms across the room types in the matrix (${totalAllocated} allocated, ${form.rooms - totalAllocated > 0 ? `${form.rooms - totalAllocated} remaining` : `${totalAllocated - form.rooms} over`}).`;
+        }
       }
     }
 
@@ -379,9 +422,23 @@ export function useReservationWizard({
         Array.isArray(form.roomRequirements) &&
         form.roomRequirements.length > 0;
       if (form.rooms > 1 || hasReqs) {
-        if (!hasReqs) {
+        const totalAllocated = (form.roomRequirements || []).reduce(
+          (sum, r) => sum + Number(r.rooms || 0),
+          0,
+        );
+        if (!hasReqs || totalAllocated === 0) {
           errs.roomRequirements =
-            "Please add at least one room block to the matrix";
+            "Please configure the room type matrix for all rooms";
+        } else if (totalAllocated !== Number(form.rooms || 1)) {
+          errs.roomRequirements = `Please allocate all ${form.rooms} rooms across the room types in the matrix (${totalAllocated} allocated, ${form.rooms - totalAllocated > 0 ? `${form.rooms - totalAllocated} remaining` : `${totalAllocated - form.rooms} over`}).`;
+        } else {
+          const hasMissingType = form.roomRequirements.some(
+            (r) => !r.roomTypeCode,
+          );
+          if (hasMissingType) {
+            errs.roomRequirements =
+              "Please select a room type for all rows in the room matrix";
+          }
         }
       } else {
         if (!form.roomTypeCode) {

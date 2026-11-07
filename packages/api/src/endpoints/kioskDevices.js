@@ -24,7 +24,7 @@ export const getKioskDevices = async (params = {}) => {
 
 /**
  * Register a new kiosk terminal (Super Admin only).
- * @param {Object} data - { hotelId, deviceId, name, location, targetDashboard, customUrl, supportedFeatures, firmwareVersion }
+ * @param {Object} data - { hotelId, deviceId, name, location, targetDashboard, supportedFeatures, firmwareVersion }
  */
 export const createKioskDevice = async (data) => {
   const result = await api.post("/api/v1/kiosks", data, {

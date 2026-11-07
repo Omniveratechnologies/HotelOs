@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
   ActivityIndicator,
@@ -10,21 +10,22 @@ import {
 } from "react-native";
 import { DeviceInfoCard } from "@/components/DeviceInfoCard";
 import { useDeviceInfo } from "@/hooks/useDeviceInfo";
-import { isPairedAndKioskEligible, kioskStorage } from "@/lib/storage";
-import { consumeLaunchedFromBoot } from "@modules/kiosk-manager";
+import { kioskStorage } from "@/lib/storage";
+import { kioskUnlockState } from "@/lib/kioskUnlockState";
 import { KioskAuthData } from "@/types";
 
 /**
  * Home Screen
  * Displays device info, pairing status, server URL, and controls
  * to enter the Kiosk WebView or setup/reset pairing.
+ *
+ * ONLY shown when Super Admin remotely dispatches 'device:exit-kiosk'.
  */
 export function HomeScreen() {
   const router = useRouter();
   const deviceInfo = useDeviceInfo();
   const [auth, setAuth] = useState<KioskAuthData | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const bootAutoStartHandled = useRef(false);
 
   const loadAuth = useCallback(async () => {
     setCheckingAuth(true);
@@ -38,22 +39,6 @@ export function HomeScreen() {
     loadAuth();
   }, [loadAuth]);
 
-  // Auto-enter kiosk on boot launch (one-shot)
-  useEffect(() => {
-    if (bootAutoStartHandled.current) return;
-    bootAutoStartHandled.current = true;
-
-    (async () => {
-      const [fromBoot, eligible] = await Promise.all([
-        consumeLaunchedFromBoot(),
-        isPairedAndKioskEligible(),
-      ]);
-      if (fromBoot && eligible) {
-        router.replace("/kiosk");
-      }
-    })();
-  }, [router]);
-
   useFocusEffect(
     useCallback(() => {
       loadAuth();
@@ -61,8 +46,9 @@ export function HomeScreen() {
   );
 
   const handleEnterKiosk = () => {
+    kioskUnlockState.setUnlocked(false);
     if (auth?.token && auth?.assignedUrl) {
-      router.push("/kiosk");
+      router.replace("/kiosk");
     } else {
       router.push("/pairing");
     }
@@ -79,7 +65,8 @@ export function HomeScreen() {
           style: "destructive",
           onPress: async () => {
             await kioskStorage.clearAuth();
-            await loadAuth();
+            kioskUnlockState.setUnlocked(false);
+            router.replace("/pairing");
           },
         },
       ],

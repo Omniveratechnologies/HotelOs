@@ -23,7 +23,58 @@ const seed = async () => {
       name: "Test Hotel",
       email: "test@hotelos.com",
       hotelCode: "TEST",
+      checkInTime: "14:00",
+      checkOutTime: "12:00",
+      taxPercent: 12,
+      gstin: "29AABCU9603R1ZM",
+      address: "12, Residency Road",
+      city: "Bengaluru",
+      state: "Karnataka",
+      pincode: "560001",
+      country: "India",
+      currency: "INR",
+      cancellationPolicy: "Free cancellation up to 24 hours prior to check-in.",
+      termsAndConditions:
+        "Valid government-issued photo ID is required upon check-in. The hotel reserves the right of admission.",
     });
+  } else {
+    let updated = false;
+    if (!hotel.checkInTime) {
+      hotel.checkInTime = "14:00";
+      updated = true;
+    }
+    if (!hotel.checkOutTime) {
+      hotel.checkOutTime = "12:00";
+      updated = true;
+    }
+    if (hotel.taxPercent == null) {
+      hotel.taxPercent = 12;
+      updated = true;
+    }
+    if (!hotel.gstin) {
+      hotel.gstin = "29AABCU9603R1ZM";
+      updated = true;
+    }
+    if (!hotel.city) {
+      hotel.city = "Bengaluru";
+      updated = true;
+    }
+    if (!hotel.state) {
+      hotel.state = "Karnataka";
+      updated = true;
+    }
+    if (!hotel.pincode) {
+      hotel.pincode = "560001";
+      updated = true;
+    }
+    if (!hotel.termsAndConditions) {
+      hotel.termsAndConditions =
+        "Valid government-issued photo ID is required upon check-in. The hotel reserves the right of admission.";
+      updated = true;
+    }
+    if (updated) {
+      await hotel.save();
+    }
   }
 
   if (!hotel.wifiNetworkName || !hotel.wifiPassword) {

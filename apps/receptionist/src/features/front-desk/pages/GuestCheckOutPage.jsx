@@ -206,8 +206,10 @@ export default function GuestCheckOutPage() {
                         Scheduled Check-out:
                       </span>
                       <strong className="text-gray-800">
-                        {currentDeparture.checkOut || "Not specified"} (
-                        {currentDeparture.checkoutTime || "11:00 AM"})
+                        {currentDeparture.checkOut || "Not specified"}
+                        {currentDeparture.checkoutTime
+                          ? ` (${currentDeparture.checkoutTime})`
+                          : ""}
                       </strong>
                     </div>
                     <div>

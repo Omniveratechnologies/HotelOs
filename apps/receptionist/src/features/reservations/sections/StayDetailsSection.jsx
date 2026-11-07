@@ -181,6 +181,7 @@ export function StayDetailsSection({
               targetRooms={value.rooms}
               title="Room Allocation Matrix"
               compact={true}
+              error={errors.roomRequirements}
             />
           </div>
         )}

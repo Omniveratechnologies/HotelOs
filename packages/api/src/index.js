@@ -22,6 +22,7 @@ export * as frontDeskApi from "./endpoints/frontDesk.js";
 export * as keyCardsApi from "./endpoints/keyCards.js";
 export * as kioskDevicesApi from "./endpoints/kioskDevices.js";
 export * as corporateCompaniesApi from "./endpoints/corporateCompanies.js";
+export * as tablesApi from "./endpoints/tables.js";
 
 // Also re-export direct functions for convenient imports
 export {
@@ -62,3 +63,4 @@ export * from "./endpoints/frontDesk.js";
 export * from "./endpoints/keyCards.js";
 export * from "./endpoints/kioskDevices.js";
 export * from "./endpoints/corporateCompanies.js";
+export * from "./endpoints/tables.js";

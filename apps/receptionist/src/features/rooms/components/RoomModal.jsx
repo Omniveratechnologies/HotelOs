@@ -44,6 +44,7 @@ export default function RoomModal({
   onClose,
   updateRoomStatus,
   updateRoom,
+  checkOutRoom,
 }) {
   const navigate = useNavigate();
   const [view, setView] = useState("info"); // "info" | "checkout"
@@ -73,9 +74,29 @@ export default function RoomModal({
     }
   };
 
-  const handleCheckOut = () => {
+  const handleCheckOut = async () => {
     if (saving) return;
-    runUpdate("cleaning", { guest: null, checkIn: null, checkOut: null });
+    setError("");
+    setSaving(true);
+    try {
+      // Execute official room checkout to check out active reservations,
+      // release keycards, emit real-time kiosk logout, and switch room to cleaning.
+      if (checkOutRoom) {
+        await checkOutRoom(room.id);
+      } else {
+        await runUpdate("cleaning", {
+          guest: null,
+          checkIn: null,
+          checkOut: null,
+        });
+      }
+      onClose?.();
+    } catch (err) {
+      console.error("Room checkout failed:", err);
+      setError(err.message || "Failed to check out room.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleMarkClean = () => {
@@ -338,8 +359,9 @@ export default function RoomModal({
                     icon={LogIn}
                     onClick={() => {
                       onClose?.();
+                      const bId = room.reservationId || room.bookingId || "";
                       navigate(
-                        `/front-desk/check-in?roomId=${room.id}&guest=${encodeURIComponent(room.guest || "")}`,
+                        `/front-desk/check-in?roomId=${room.id}&guest=${encodeURIComponent(room.guest || "")}${bId ? `&bookingId=${bId}` : ""}`,
                       );
                     }}
                     disabled={saving || unverified}

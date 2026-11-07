@@ -474,7 +474,8 @@ export default function GuestDetailsModal({
                             </span>
                           </div>
                           <span className="mt-1 block text-[10px] text-gray-400">
-                            Type: {doc.docType || "Identity"}
+                            Type: {doc.docType || doc.idType || "Identity"}
+                            {doc.idNumber ? ` · ${doc.idNumber}` : ""}
                           </span>
                         </div>
                         {doc.url && (

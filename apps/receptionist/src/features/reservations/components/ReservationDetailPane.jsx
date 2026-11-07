@@ -18,6 +18,10 @@ import {
   ExternalLink,
   User,
   CalendarRange,
+  Mail,
+  Send,
+  Copy,
+  Check,
 } from "lucide-react";
 import {
   formatCurrency,
@@ -36,6 +40,7 @@ import {
   useCancelReservation,
   useReconfirmReservation,
   useChangeReservationRoom,
+  useSendSelfCheckInLink,
 } from "../hooks/useAllReservations.js";
 import {
   STATUS_VARIANT,
@@ -417,6 +422,181 @@ function GuestEditModal({ booking, onClose, onSave, isSaving }) {
   );
 }
 
+function SendSelfCheckInModal({ booking, onClose, onSend, isSending }) {
+  const initialEmail =
+    booking.guest?.email || booking.email || booking.guestId?.email || "";
+
+  const [email, setEmail] = useState(initialEmail);
+  const [message, setMessage] = useState(
+    "Please complete your check-in online before arrival to skip the front desk queue.",
+  );
+  const [error, setError] = useState("");
+  const [generatedLink, setGeneratedLink] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError("Please provide a recipient email address.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setError("Please provide a valid email address.");
+      return;
+    }
+    setError("");
+
+    try {
+      const res = await onSend({
+        reservationId: booking.id || booking._id,
+        email: cleanEmail,
+        message: message.trim(),
+      });
+      if (res?.data?.link) {
+        setGeneratedLink(res.data.link);
+      }
+      if (res?.data?.emailSent === false) {
+        setError(
+          "Check-in link created, but the email could not be delivered. You can copy the link below.",
+        );
+      } else {
+        onClose(cleanEmail);
+      }
+    } catch (err) {
+      setError(err?.message || "Failed to send self-check-in email.");
+    }
+  };
+
+  const handleCopy = () => {
+    if (!generatedLink) return;
+    navigator.clipboard.writeText(generatedLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <Modal
+      open={true}
+      onClose={() => !isSending && onClose(null)}
+      title="Send Self Check-In Email"
+    >
+      <div className="space-y-4">
+        {error && <InlineBanner variant="error">{error}</InlineBanner>}
+
+        <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs text-blue-900">
+          <p className="font-semibold">
+            Skip the Queue via Mobile Self Check-In
+          </p>
+          <p className="mt-0.5 text-blue-800">
+            The guest will receive a secure digital check-in link to verify
+            their details and upload identification prior to arriving at the
+            hotel.
+          </p>
+        </div>
+
+        {/* Stay summary */}
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
+          <span>
+            <strong>Reservation:</strong> #
+            {booking.reservationNo || booking.id || booking._id}
+          </span>
+          <span>·</span>
+          <span>
+            <strong>Guest:</strong> {booking.name || "Guest"}
+          </span>
+          <span>·</span>
+          <span>
+            <strong>Stay:</strong>{" "}
+            {booking.checkIn && booking.checkOut
+              ? `${formatDate(booking.checkIn)} → ${formatDate(booking.checkOut)}`
+              : "Pending dates"}
+          </span>
+        </div>
+
+        {/* Guest Email Input */}
+        <Input
+          label="Recipient Email Address *"
+          type="email"
+          placeholder="e.g. guest@example.com"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (error) setError("");
+          }}
+          required
+        />
+
+        {/* Custom Message */}
+        <div>
+          <label
+            htmlFor="guest-checkin-msg"
+            className="text-brand-900 mb-1.5 block text-xs font-semibold"
+          >
+            Custom Message / Instructions (Optional)
+          </label>
+          <textarea
+            id="guest-checkin-msg"
+            rows={3}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Add personal greetings or check-in instructions..."
+            className="text-brand-900 focus:border-primary-500 focus:ring-primary-500/15 w-full rounded-lg border border-gray-200 bg-white p-2.5 text-xs outline-none focus:ring-2"
+          />
+        </div>
+
+        {/* Fallback copy link if generated */}
+        {generatedLink && (
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+            <span className="mb-1 block text-[11px] font-bold text-gray-700 uppercase">
+              Direct Check-In Link
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={generatedLink}
+                className="flex-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 select-all"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                icon={copied ? Check : Copy}
+                onClick={handleCopy}
+                className="shrink-0 text-xs"
+              >
+                {copied ? "Copied!" : "Copy Link"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 border-t border-gray-100 pt-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => onClose(null)}
+            disabled={isSending}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            icon={Send}
+            onClick={handleSend}
+            loading={isSending}
+          >
+            {generatedLink ? "Resend Email" : "Confirm & Send Email"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /**
  * Right-side reservation detail pane (docked ≥1280 via parent layout, overlay
  * below) with tabs, quick in-place edits (Stay & Guest), and full edit navigation.
@@ -443,10 +623,12 @@ export function ReservationDetailPane({
   const [changeRoomOpen, setChangeRoomOpen] = useState(false);
   const [stayEditOpen, setStayEditOpen] = useState(false);
   const [guestEditOpen, setGuestEditOpen] = useState(false);
+  const [sendCheckInOpen, setSendCheckInOpen] = useState(false);
 
   // Form states for small edits
   const [newRoomId, setNewRoomId] = useState("");
   const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
 
   const resId = reservationId || reservation?.id || reservation?._id;
   const detail = useReservation(resId);
@@ -456,6 +638,7 @@ export function ReservationDetailPane({
   const reconfirm = useReconfirmReservation();
   const changeRoom = useChangeReservationRoom();
   const updateRes = useUpdateReservation();
+  const sendSelfCheckIn = useSendSelfCheckInLink();
 
   const booking = detail.data || reservation;
 
@@ -463,7 +646,8 @@ export function ReservationDetailPane({
     cancel.isPending ||
     reconfirm.isPending ||
     changeRoom.isPending ||
-    updateRes.isPending;
+    updateRes.isPending ||
+    sendSelfCheckIn.isPending;
 
   const run = (mutation, payload, onDone) => {
     setActionError("");
@@ -517,6 +701,9 @@ export function ReservationDetailPane({
     "draft",
   ].includes(booking.status);
   const canCheckIn = ["confirmed", "reserved"].includes(booking.status);
+  const canSendSelfCheckIn = ["confirmed", "reserved", "pending"].includes(
+    booking.status,
+  );
 
   const pricing = booking.pricing;
 
@@ -548,6 +735,9 @@ export function ReservationDetailPane({
       onTabChange={setTab}
       footer={
         <div className="space-y-2.5">
+          {actionSuccess && (
+            <InlineBanner variant="success">{actionSuccess}</InlineBanner>
+          )}
           {actionError && (
             <InlineBanner variant="error">{actionError}</InlineBanner>
           )}
@@ -653,7 +843,24 @@ export function ReservationDetailPane({
             )}
           </div>
 
-          {/* Row 3: Full Wizard Edit */}
+          {/* Row 3: Send Self Check-in Email Quick Action */}
+          {canSendSelfCheckIn && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Mail}
+              className="text-brand-900 w-full justify-center border-gray-300 text-xs font-semibold hover:bg-gray-50"
+              onClick={() => {
+                setActionError("");
+                setSendCheckInOpen(true);
+              }}
+              disabled={actionsPending}
+            >
+              Send Self-Check-in Email
+            </Button>
+          )}
+
+          {/* Row 4: Full Wizard Edit */}
           {canModify && (
             <Button
               variant="secondary"
@@ -1132,6 +1339,25 @@ export function ReservationDetailPane({
           }
         }}
       />
+
+      {sendCheckInOpen && (
+        <SendSelfCheckInModal
+          booking={booking}
+          onClose={(sentEmail) => {
+            setSendCheckInOpen(false);
+            if (sentEmail) {
+              setActionSuccess(
+                `Self-check-in email sent successfully to ${sentEmail}!`,
+              );
+              setTimeout(() => setActionSuccess(""), 6000);
+              detail.refetch();
+              onChanged?.();
+            }
+          }}
+          onSend={(payload) => sendSelfCheckIn.mutateAsync(payload)}
+          isSending={sendSelfCheckIn.isPending}
+        />
+      )}
     </DetailDrawer>
   );
 }

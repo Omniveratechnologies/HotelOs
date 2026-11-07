@@ -14,14 +14,19 @@ import {
   CheckCircle2,
   MapPin,
   Battery,
-  ShieldCheck,
+  Eye,
+  UtensilsCrossed,
+  DoorOpen,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@hotelos/query";
 import { getKioskDevices, updateKioskDevice } from "@hotelos/api";
+import { formatTime, KIOSK_DASHBOARDS_METADATA } from "@hotelos/utils";
+import KioskDetailsModal from "../components/KioskDetailsModal.jsx";
 
 export default function KioskDevicesPage() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedKiosk, setSelectedKiosk] = useState(null);
   const [bannerMsg, setBannerMsg] = useState("");
   const [bannerVariant, setBannerVariant] = useState("success");
 
@@ -41,10 +46,19 @@ export default function KioskDevicesPage() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => updateKioskDevice(id, { status }),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["kiosks"] });
       setBannerVariant("success");
-      setBannerMsg("Terminal status updated.");
+      setBannerMsg(
+        vars.status === "MAINTENANCE"
+          ? "Terminal switched to Maintenance Mode."
+          : "Terminal restored to normal operational mode.",
+      );
+      if (selectedKiosk && selectedKiosk._id === vars.id) {
+        setSelectedKiosk((prev) =>
+          prev ? { ...prev, status: vars.status } : null,
+        );
+      }
       setTimeout(() => setBannerMsg(""), 3500);
     },
     onError: (err) => {
@@ -62,16 +76,6 @@ export default function KioskDevicesPage() {
       />
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {/* Info notice about Super Admin centralized control */}
-        <div className="flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-xs text-sky-800">
-          <ShieldCheck className="h-5 w-5 shrink-0 text-sky-600" />
-          <div>
-            <span className="font-semibold">Centralized Fleet Management:</span>{" "}
-            Terminal registration, physical device pairing keys, and dashboard
-            assignments are centrally managed from the Super Admin dashboard.
-          </div>
-        </div>
-
         {/* KPI Row */}
         <KpiTileRow>
           <KpiTile
@@ -212,24 +216,57 @@ export default function KioskDevicesPage() {
                       </div>
                       <div className="flex justify-between text-gray-500">
                         <span>Dashboard Mode:</span>
-                        <span className="rounded bg-gray-100 px-1.5 py-0.5 font-medium text-gray-800">
-                          {k.targetDashboard || "DEMO_URL"}
+                        <span
+                          className={`rounded px-1.5 py-0.5 font-medium ${
+                            KIOSK_DASHBOARDS_METADATA[k.targetDashboard]
+                              ?.color || "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {KIOSK_DASHBOARDS_METADATA[k.targetDashboard]?.name ||
+                            k.targetDashboard ||
+                            "Guest Dashboard"}
                         </span>
                       </div>
-                      <div className="flex justify-between text-gray-500">
-                        <span>Firmware:</span>
-                        <span>{k.firmwareVersion || "v1.4.0"}</span>
-                      </div>
+
+                      {k.targetDashboard === "GUEST_DASHBOARD" && (
+                        <div className="flex justify-between text-gray-500">
+                          <span>Assigned Room:</span>
+                          {k.roomId ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-1.5 py-0.5 font-semibold text-sky-900">
+                              <DoorOpen className="h-3 w-3 text-sky-600" />
+                              Room #{k.roomId.roomNumber}
+                              {k.roomId.type ? ` (${k.roomId.type})` : ""}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">
+                              Unassigned Room
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {k.targetDashboard === "DIGITAL_MENU" && (
+                        <div className="flex justify-between text-gray-500">
+                          <span>Dining Table:</span>
+                          {k.tableId ? (
+                            <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-900">
+                              <UtensilsCrossed className="h-3 w-3 text-amber-600" />
+                              Table #{k.tableId.tableNumber}
+                              {k.tableId.section
+                                ? ` (${k.tableId.section})`
+                                : ""}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400 italic">
+                              Unassigned (Landing scan)
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex justify-between text-gray-500">
                         <span>Last Heartbeat:</span>
-                        <span>
-                          {k.lastHeartbeat
-                            ? new Date(k.lastHeartbeat).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "Online"}
-                        </span>
+                        <span>{formatTime(k.lastHeartbeat) || "Online"}</span>
                       </div>
                       {typeof k.batteryLevel === "number" && (
                         <div className="flex justify-between text-gray-500">
@@ -243,7 +280,17 @@ export default function KioskDevicesPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-end border-t border-gray-100 pt-3 text-xs">
+                  <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedKiosk(k)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 font-medium text-gray-700 shadow-2xs transition hover:bg-gray-100"
+                      title="View terminal operational status and assigned experience"
+                    >
+                      <Eye className="h-3.5 w-3.5 text-gray-500" />
+                      View Details
+                    </button>
+
                     <div className="flex items-center gap-2">
                       {k.status === "MAINTENANCE" ? (
                         <button
@@ -286,6 +333,20 @@ export default function KioskDevicesPage() {
           )}
         </div>
       </div>
+
+      {/* Read-Only Kiosk Details Modal for Receptionists */}
+      <KioskDetailsModal
+        kiosk={selectedKiosk}
+        open={Boolean(selectedKiosk)}
+        onClose={() => setSelectedKiosk(null)}
+        onToggleMaintenance={(targetKiosk, nextStatus) =>
+          updateStatusMutation.mutate({
+            id: targetKiosk._id,
+            status: nextStatus,
+          })
+        }
+        isUpdatingMaintenance={updateStatusMutation.isPending}
+      />
     </div>
   );
 }

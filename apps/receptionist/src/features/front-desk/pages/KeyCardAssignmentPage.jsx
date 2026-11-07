@@ -14,7 +14,7 @@ export default function KeyCardAssignmentPage() {
   const queryClient = useQueryClient();
   const [selectedGuest, setSelectedGuest] = useState(null);
   const [keyType, setKeyType] = useState("RFID_CARD");
-  const [cardNo, setCardNo] = useState("RC-2026-1001");
+  const [cardNo, setCardNo] = useState("");
   const [bannerMsg, setBannerMsg] = useState("");
   const [bannerVariant, setBannerVariant] = useState("success");
 
@@ -46,27 +46,43 @@ export default function KeyCardAssignmentPage() {
       queryClient.invalidateQueries({ queryKey: ["key-cards"] });
       queryClient.invalidateQueries({ queryKey: ["front-desk"] });
       setBannerVariant("success");
-      setBannerMsg(res.message || `Card assigned successfully!`);
-      setTimeout(() => setBannerMsg(""), 4000);
+      setBannerMsg(
+        res.message ||
+          "Room key card assigned successfully! Card is now active.",
+      );
+      setCardNo("");
+      setTimeout(() => setBannerMsg(""), 5000);
     },
     onError: (err) => {
       setBannerVariant("error");
-      setBannerMsg(err?.message || "Failed to assign key card");
+      setBannerMsg(
+        err?.message ||
+          "Failed to assign key card. Please verify card number and retry.",
+      );
     },
   });
 
   const handleGenerateNew = () => {
     const randomHex = Math.floor(1000 + Math.random() * 9000);
-    setCardNo(`RC-2026-${randomHex}`);
+    setCardNo(`RC-${new Date().getFullYear()}-${randomHex}`);
   };
 
   const handleAssignCard = () => {
-    if (!currentGuest?.id) return;
+    if (!currentGuest?.id) {
+      setBannerVariant("warning");
+      setBannerMsg("Please select an arrival from the list first.");
+      return;
+    }
+    if (!cardNo.trim()) {
+      setBannerVariant("warning");
+      setBannerMsg("Please enter, scan, or auto-generate a key card number.");
+      return;
+    }
     assignMutation.mutate({
-      cardNumber: cardNo,
+      cardNumber: cardNo.trim(),
       bookingId: currentGuest.id,
       roomId: currentGuest.roomId,
-      notes: `Issued via Key Assignment Console for Room ${currentGuest.room}`,
+      notes: `Issued via Front Desk Console for ${currentGuest.name} (${currentGuest.room || "Room unassigned"})`,
     });
   };
 

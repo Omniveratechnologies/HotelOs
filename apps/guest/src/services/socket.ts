@@ -4,10 +4,14 @@ import { getStoredToken } from "@/services/apiClient";
 import type { Order, ServiceRequest } from "@/types/guest-dashboard";
 
 type GuestSocketHandlers = {
-  onOrderCreated: (order: Order) => void;
-  onOrderUpdated: (order: Order) => void;
-  onRequestCreated: (request: ServiceRequest) => void;
-  onRequestUpdated: (request: ServiceRequest) => void;
+  onOrderCreated?: (order: Order) => void;
+  onOrderUpdated?: (order: Order) => void;
+  onRequestCreated?: (request: ServiceRequest) => void;
+  onRequestUpdated?: (request: ServiceRequest) => void;
+  onDndUpdated?: (dndEnabled: boolean) => void;
+  onStayStatusUpdated?: (data: { status: string; roomId?: string }) => void;
+  onKioskGuestCheckedIn?: (data: unknown) => void;
+  onKioskGuestCheckedOut?: (data: unknown) => void;
 };
 
 function getSocketUrl() {
@@ -15,25 +19,53 @@ function getSocketUrl() {
 }
 
 /**
- * Connect an authenticated guest socket. The backend derives the guest's
- * identity from the handshake JWT and automatically joins the socket to
- * `guest:<userId>` — no client-emitted `join:*` events are needed.
- *
- * Listens to the four documented realtime events:
- *   order:created, order:updated,
- *   serviceRequest:created, serviceRequest:updated
+ * Connect an authenticated guest or kiosk socket.
+ * - When logged in as a guest: uses the signed guest JWT from localStorage.
+ * - When in kiosk standby mode (room vacant): falls back to `kiosk_standby_token` from sessionStorage
+ *   so the in-room tablet joins room:* and device:* channels to receive check-in socket events in real time.
  */
-export function connectGuestSocket(handlers: GuestSocketHandlers): Socket {
+export function connectGuestSocket(
+  handlers: GuestSocketHandlers,
+  customToken?: string,
+): Socket {
+  const token =
+    customToken ||
+    getStoredToken() ||
+    (typeof window !== "undefined"
+      ? sessionStorage.getItem("kiosk_standby_token")
+      : null);
   const socket = io(getSocketUrl(), {
-    auth: { token: getStoredToken() },
+    auth: { token },
     transports: ["websocket", "polling"],
     autoConnect: false,
   });
 
-  socket.on("order:created", handlers.onOrderCreated);
-  socket.on("order:updated", handlers.onOrderUpdated);
-  socket.on("serviceRequest:created", handlers.onRequestCreated);
-  socket.on("serviceRequest:updated", handlers.onRequestUpdated);
+  if (handlers.onOrderCreated) {
+    socket.on("order:created", handlers.onOrderCreated);
+  }
+  if (handlers.onOrderUpdated) {
+    socket.on("order:updated", handlers.onOrderUpdated);
+  }
+  if (handlers.onRequestCreated) {
+    socket.on("serviceRequest:created", handlers.onRequestCreated);
+  }
+  if (handlers.onRequestUpdated) {
+    socket.on("serviceRequest:updated", handlers.onRequestUpdated);
+  }
+  if (handlers.onDndUpdated) {
+    socket.on("dnd:updated", (data: { dndEnabled: boolean }) => {
+      handlers.onDndUpdated?.(data.dndEnabled);
+    });
+  }
+  if (handlers.onStayStatusUpdated) {
+    socket.on("stay:status-updated", handlers.onStayStatusUpdated);
+  }
+  if (handlers.onKioskGuestCheckedIn) {
+    socket.on("kiosk:guest-checked-in", handlers.onKioskGuestCheckedIn);
+  }
+  if (handlers.onKioskGuestCheckedOut) {
+    socket.on("kiosk:guest-checked-out", handlers.onKioskGuestCheckedOut);
+  }
 
   socket.connect();
 

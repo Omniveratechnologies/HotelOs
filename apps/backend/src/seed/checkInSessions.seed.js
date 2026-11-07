@@ -50,7 +50,7 @@ const seed = async () => {
     "link-sent",
     "in-progress",
     "submitted",
-    "pending-verification",
+    "correction-requested",
     "approved",
     "rejected",
     "expired",

@@ -1,12 +1,13 @@
 import User from "#/modules/users/models/User.js";
 import Booking from "#/modules/bookings/models/Booking.js";
-import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
 import { generateToken } from "#/shared/utils/jwt.js";
 import { generateInviteToken } from "#/shared/utils/invitation.js";
 import {
   sendUsernameReminderEmail,
   sendPasswordResetEmail,
 } from "#/shared/services/email.service.js";
+import env from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 export const login = async (req, res) => {
@@ -47,16 +48,25 @@ export const login = async (req, res) => {
 
     const token = generateToken(user);
 
-    // Guests are tied to a stay via Booking; resolve their current room from it
+    // Guests are tied to a stay via Booking; resolve their current room and stay state
     let roomId = null;
+    let bookingStatus = "none";
+    let reservationNo = null;
+    let hotelName = null;
 
     if (user.role === "GUEST") {
       const currentBooking = await Booking.findOne({
         guestId: user._id,
-        status: { $in: ACTIVE_STAY_STATUSES },
       }).sort({ createdAt: -1 });
 
       roomId = currentBooking?.roomId ?? null;
+      bookingStatus = currentBooking?.status ?? "none";
+      reservationNo = currentBooking?.reservationNo ?? null;
+
+      if (user.hotelId) {
+        const hotel = await Hotel.findById(user.hotelId).select("name");
+        hotelName = hotel?.name ?? null;
+      }
     }
 
     return res.status(200).json({
@@ -70,7 +80,10 @@ export const login = async (req, res) => {
           username: user.username,
           role: user.role,
           hotelId: user.hotelId,
+          hotelName,
           roomId,
+          bookingStatus,
+          reservationNo,
           mustChangePassword: user.mustChangePassword,
         },
       },
@@ -237,10 +250,7 @@ export const forgotPassword = async (req, res) => {
 
     await user.save();
 
-    const subAdminFrontendUrl =
-      process.env.SUB_ADMIN_FRONTEND_URL || "http://localhost:5175";
-
-    const resetUrl = `${subAdminFrontendUrl}/reset-password?token=${resetToken}`;
+    const resetUrl = `${env.frontendUrls.subAdmin}/reset-password?token=${resetToken}`;
 
     await sendPasswordResetEmail({
       email: user.email,

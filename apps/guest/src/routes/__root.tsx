@@ -15,6 +15,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useAuth } from "@/context/useAuth";
 import { GuestDashboardProvider } from "@/context/GuestDashboardContext";
 import { LoginPage } from "@/components/auth/LoginPage";
+import { KioskRoomStandby } from "@/components/kiosk/KioskRoomStandby";
 
 function NotFoundComponent() {
   return (
@@ -136,13 +137,26 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function AppGate() {
-  const { user, loading } = useAuth();
+  const { user, loading, isKiosk, kioskIdle, kioskInfo, refreshKioskSession } =
+    useAuth();
 
   if (loading) {
     return (
       <div className="bg-background flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground text-sm">Loading…</p>
       </div>
+    );
+  }
+
+  // If in kiosk mode and the room has no active checked-in guest -> render In-Room Standby Welcome Screen
+  if (isKiosk && (kioskIdle || !user)) {
+    return (
+      <KioskRoomStandby
+        roomNumber={kioskInfo?.roomNumber}
+        roomType={kioskInfo?.roomType}
+        hotelName={kioskInfo?.hotelName}
+        onRefreshSession={refreshKioskSession}
+      />
     );
   }
 

@@ -35,22 +35,24 @@ authenticated user's JWT (`req.user.hotelId`).
 This is a **pnpm + Turborepo** monorepo. Workspaces are defined in
 `pnpm-workspace.yaml` (`apps/*` and `packages/*`).
 
-| Path                | Name              | Description                                              | Dev port |
-| ------------------- | ----------------- | -------------------------------------------------------- | -------- |
-| `apps/backend`      | `backend`         | Express + MongoDB REST API                               | `5001`   |
-| `apps/super-admin`  | `super-admin`     | Platform operator dashboard (React + Vite)               | `5173`   |
-| `apps/sub-admin`    | `sub-admin`       | Hotel admin dashboard + marketing site (React + Vite)    | `5174`   |
-| `apps/receptionist` | `receptionist`    | Front-desk dashboard (React + Vite)                      | `5175`   |
-| `apps/kitchen`      | `kitchen`         | Kitchen display system & live order board (React + Vite) | `5176`   |
-| `apps/guest`        | `guest`           | Hotel room guest dashboard & portal (React + Vite)       | `5177`   |
-| `apps/kiosk`        | `kiosk`           | Standalone Android touchscreen kiosk app (Expo + Kotlin) | `8081`   |
-| `packages/api`      | `@hotelos/api`    | Shared fetch client used by frontends                    | —        |
-| `packages/query`    | `@hotelos/query`  | Shared TanStack Query v5 client, provider & query keys   | —        |
-| `packages/socket`   | `@hotelos/socket` | Shared Socket.IO client & query cache realtime sync      | —        |
-| `packages/stores`   | `@hotelos/stores` | Shared Zustand stores for UI state (sidebar, modals)     | —        |
-| `packages/styles`   | `@hotelos/styles` | Shared Tailwind CSS v4 design tokens and theme styles    | —        |
-| `packages/ui`       | `@hotelos/ui`     | Shared UI components (header, sidebar, screens, icons)   | —        |
-| `packages/utils`    | `@hotelos/utils`  | Shared formatters, normalizers, rate plan code utils, cn | —        |
+| Path                | Name              | Description                                                | Dev port |
+| ------------------- | ----------------- | ---------------------------------------------------------- | -------- |
+| `apps/backend`      | `backend`         | Express + MongoDB REST API & BullMQ workers                | `5001`   |
+| `apps/super-admin`  | `super-admin`     | Platform operator dashboard (React + Vite)                 | `5173`   |
+| `apps/sub-admin`    | `sub-admin`       | Hotel admin dashboard + marketing site (React + Vite)      | `5174`   |
+| `apps/receptionist` | `receptionist`    | Front-desk dashboard (React + Vite Web & Electron Desktop) | `5175`   |
+| `apps/kitchen`      | `kitchen`         | Kitchen display system & live order board (React + Vite)   | `5176`   |
+| `apps/guest`        | `guest`           | Hotel room guest dashboard & portal (React + Vite)         | `5177`   |
+| `apps/self-checkin` | `self-checkin`    | Standalone guest self check-in wizard & kiosk webapp       | `5178`   |
+| `apps/table-order`  | `table-order`     | Guest digital dining menu & table order app (React + Vite) | `5179`   |
+| `apps/kiosk`        | `kiosk`           | Standalone Android touchscreen kiosk app (Expo + Kotlin)   | `8081`   |
+| `packages/api`      | `@hotelos/api`    | Shared fetch client used by frontends                      | —        |
+| `packages/query`    | `@hotelos/query`  | Shared TanStack Query v5 client, provider & query keys     | —        |
+| `packages/socket`   | `@hotelos/socket` | Shared Socket.IO client & query cache realtime sync        | —        |
+| `packages/stores`   | `@hotelos/stores` | Shared Zustand stores for UI state (sidebar, modals)       | —        |
+| `packages/styles`   | `@hotelos/styles` | Shared Tailwind CSS v4 design tokens and theme styles      | —        |
+| `packages/ui`       | `@hotelos/ui`     | Shared UI components (header, sidebar, screens, icons)     | —        |
+| `packages/utils`    | `@hotelos/utils`  | Shared formatters, normalizers, rate plan code utils, cn   | —        |
 
 ---
 
@@ -76,7 +78,7 @@ navigation only and are never a security boundary.
 - **Backend** — Node.js, Express 5, MongoDB / Mongoose, JWT, bcryptjs, Multer,
   Nodemailer, Pino (struct/log + HTTP request logging), Cloudflare R2, Razorpay,
   Aiosell Channel Manager (approvals, distribution, sync, webhooks)
-- **Frontend** — React 19, Vite (`@tailwindcss/vite`), Tailwind CSS v4, React Router
+- **Frontend & Desktop** — React 19, Vite (`@tailwindcss/vite`), Tailwind CSS v4, React Router, Electron 45 (`receptionist` desktop app)
 - **Kiosk & Hardware** — React Native, Expo SDK 54+, Expo Modules (Kotlin native module), Android Device Owner + Lock Task Mode, react-native-webview
 - **State management** — TanStack Query v5 (server state), Zustand (UI state)
 - **Realtime** — Socket.IO (unified hub + automatic TanStack Query cache invalidation)
@@ -115,17 +117,25 @@ cp apps/sub-admin/.env.example apps/sub-admin/.env
 cp apps/receptionist/.env.example apps/receptionist/.env
 cp apps/kitchen/.env.example apps/kitchen/.env
 cp apps/guest/.env.example apps/guest/.env
+cp apps/self-checkin/.env.example apps/self-checkin/.env
+cp apps/table-order/.env.example apps/table-order/.env
+cp apps/kiosk/.env.example apps/kiosk/.env
 ```
 
 Required backend variables (see `apps/backend/.env.example`):
 
 - `MONGODB_URI` — MongoDB connection string (required)
 - `JWT_SECRET` — long random secret (required)
-- `PORT` — defaults to `5000`, the frontends expect `5001`
+- `REDIS_URL` — Redis connection string for BullMQ queues & email workers (required)
+- `PORT` — defaults to `5001`
 - `JWT_EXPIRES_IN` — defaults to `1d`
-- `CLIENT_URL` — allowed frontend origin
-- `SUB_ADMIN_FRONTEND_URL` — base URL used when building invite / password
-  reset links (defaults to `http://localhost:5175`)
+- `SUPER_ADMIN_FRONTEND_URL` — base URL for Super Admin app (`http://localhost:5173`)
+- `SUB_ADMIN_FRONTEND_URL` — base URL used for invite and password reset links (`http://localhost:5174`)
+- `RECEPTIONIST_FRONTEND_URL` — base URL for Receptionist app (`http://localhost:5175`)
+- `KITCHEN_FRONTEND_URL` — base URL for Kitchen Display app (`http://localhost:5176`)
+- `GUEST_FRONTEND_URL` — base URL for Guest Dashboard & Kiosk Preset (`http://localhost:5177`)
+- `SELF_CHECKIN_FRONTEND_URL` — base URL for Guest Self Check-In & Kiosk Preset (`http://localhost:5178`)
+- `TABLE_ORDER_FRONTEND_URL` — base URL for Table QR links & Kiosk Preset (`http://localhost:5179`)
 - `NODE_ENV` — `development` (default) or `production`; controls log formatting
 - `LOG_LEVEL` — minimum log level, defaults to `info` (e.g. `debug`, `warn`)
 
@@ -142,12 +152,13 @@ pnpm seed -F backend
 
 ### 4. Run the development servers
 
+Start all apps via Turborepo in parallel:
+
 ```bash
 pnpm dev
 ```
 
-This starts all apps via Turborepo in parallel. Each app is served on its
-own port:
+Each app is served on its own port:
 
 | App            | Scope / Role                | Local URL               |
 | -------------- | --------------------------- | ----------------------- |
@@ -157,6 +168,22 @@ own port:
 | `receptionist` | Front-Desk Operations       | `http://localhost:5175` |
 | `kitchen`      | Kitchen Display System      | `http://localhost:5176` |
 | `guest`        | Guest Harmony Portal        | `http://localhost:5177` |
+| `self-checkin` | Standalone Self Check-In    | `http://localhost:5178` |
+| `table-order`  | Digital Menu & Table Orders | `http://localhost:5179` |
+
+### 5. Kiosk & Tablet Hardware Testing over LAN
+
+When testing with physical Android kiosk tablets or mobile devices on your local Wi-Fi:
+
+```bash
+# Automatically detects host LAN IPv4, syncs .env files, opens Expo in an independent interactive terminal, and starts backend + dashboards in Turbo
+pnpm dev:kiosk
+
+# Or sync IP standalone:
+pnpm sync:ip
+# Or with a manual IP:
+pnpm sync:ip 192.168.1.100
+```
 
 The backend health check is available at:
 
@@ -170,15 +197,20 @@ GET http://localhost:5001/api/v1/health
 
 All scripts run from the repository root:
 
-| Command             | Description                                            |
-| ------------------- | ------------------------------------------------------ |
-| `pnpm dev`          | Start all apps in development mode (Turbo, persistent) |
-| `pnpm build`        | Build all apps for production (Turbo, cached)          |
-| `pnpm preview`      | Preview production builds locally                      |
-| `pnpm lint`         | Lint the whole repo with oxlint                        |
-| `pnpm lint:fix`     | Lint and auto-fix with oxlint                          |
-| `pnpm format`       | Format all source files with Prettier                  |
-| `pnpm format:check` | Check formatting without writing                       |
+| Command                                         | Description                                                           |
+| ----------------------------------------------- | --------------------------------------------------------------------- |
+| `pnpm dev`                                      | Start all apps in development mode (Turbo, persistent)                |
+| `pnpm dev:kiosk`                                | Sync LAN IP, open Expo in interactive terminal, and run apps in Turbo |
+| `pnpm sync:ip`                                  | Auto-detect physical LAN IPv4 and sync across all .env files          |
+| `pnpm build`                                    | Build all apps for production (Turbo, cached)                         |
+| `pnpm preview`                                  | Preview production builds locally                                     |
+| `pnpm lint`                                     | Lint the whole repo with oxlint                                       |
+| `pnpm lint:fix`                                 | Lint and auto-fix with oxlint                                         |
+| `pnpm format`                                   | Format all source files with Prettier                                 |
+| `pnpm format:check`                             | Check formatting without writing                                      |
+| `pnpm --filter receptionist dev:electron`       | Run Receptionist in Electron desktop development mode                 |
+| `pnpm --filter receptionist pack:electron`      | Build and package Receptionist desktop app (unpacked)                 |
+| `pnpm --filter receptionist build:electron:win` | Build Windows installer for Receptionist desktop app                  |
 
 ### Install pnpm
 
@@ -252,9 +284,51 @@ role-specific fetch wrappers:
 - **`kitchen`** connects directly via `src/config/api.js` using
   `VITE_API_BASE_URL` (defaults to `http://localhost:5001/api`).
 - **`guest`** connects via `src/config/api.ts` using `VITE_API_URL` (defaults to
-  `http://localhost:5001/api/v1`).
+  `http://localhost:5001/api/v1`). Features in-room tablet standby mode (`KioskRoomStandby.tsx`), automatic kiosk session exchange, idempotent reload status checks, and dual-device real-time sync.
+- **`self-checkin`** connects via `src/features/check-in/api/checkInApi.ts` using
+  `VITE_API_URL` (defaults to `http://localhost:5001/api/v1`). Reuses `@hotelos/api` and `@hotelos/ui` for a 10-step touch wizard with remote magic link and lobby OTP entry points.
+- **`table-order`** connects via `src/services/api.ts` using `VITE_API_URL` (defaults to
+  `http://localhost:5001/api/v1`). Implements dynamic dining sessions with GPS geofencing & kiosk bypass tokens, multi-order progress tracking, and consolidated master billing.
+- **`kiosk`** native shell connects via `src/services/kioskApi.ts` using
+  `EXPO_PUBLIC_API_URL` (defaults to `http://10.0.2.2:5001` or LAN IP). Communicates over HTTP and Socket.IO for telemetry, heartbeat, and remote commands.
 
 See individual package READMEs in `packages/*` for detailed APIs and usage patterns.
+
+---
+
+## Kiosk & Hardware Architecture
+
+HotelOS includes an enterprise-grade hardware kiosk and in-room tablet subsystem:
+
+### 1. Dynamic Kiosk Routing (3 Dashboard Presets)
+
+Kiosk devices are enrolled once via Super Admin (`apps/super-admin`, `/kiosks`) with a 6-digit pairing code. Each tablet is assigned a target dashboard:
+
+- `GUEST_DASHBOARD`: Pointed at `apps/guest` (`http://<LAN_IP>:5177?kioskCode=...`).
+- `SELF_CHECKIN`: Pointed at `apps/self-checkin` (`http://<LAN_IP>:5178`).
+- `DIGITAL_MENU`: Pointed at `apps/table-order` (`http://<LAN_IP>:5179?tableId=...`).
+
+### 2. In-Room Tablet Lifecycle (Vacant Standby vs. Checked-In Guest)
+
+In-room tablets mounted in guest rooms operate seamlessly across stay transitions:
+
+- **Standby Mode (`KioskRoomStandby.tsx`)**: When a room is vacant (`cleaning` or `available`), the tablet displays hotel branding, live clock, Wi-Fi details, and concierge instructions.
+- **Auto-Login upon Check-In**: When front desk checks a guest into the room, the backend emits `kiosk:guest-checked-in`. The tablet immediately transitions in-place from standby mode to the authenticated guest dashboard without requiring manual login.
+- **Auto-Logout upon Check-Out**: Checking out a room from the Receptionist Dashboard Room Grid (`POST /api/v1/rooms/:id/check-out`) transitions active reservations to `checked-out`, releases keycards, creates turnover cleaning tasks, and emits `kiosk:guest-checked-out`. In-room tablets instantly reset to standby mode.
+- **Idempotent Status Polling**: Tablets reloading during a stay query `GET /api/v1/sessions/kiosk-room-status` using their device token, avoiding 401s on page refresh.
+
+### 3. Escape-Proof Lockdown & Persistent Launcher (Device Owner)
+
+Kiosk terminals provisioned via `adb shell dpm set-device-owner` enforce true enterprise hardware containment:
+
+- **Top Shutter Disabled**: Completely blocks notifications and quick settings pull-down via `setStatusBarDisabled(true)`.
+- **Zero Minimization**: `LOCK_TASK_FEATURE_NONE` disables Home, Recents, and Keyguard, preventing guests from escaping to the desktop or switching tasks.
+- **Persistent Launcher**: Automatically registers as the default Android `HOME` launcher so restarts and home key events always return to the kiosk.
+- **Direct Dashboard Launch on Restart**: Paired terminals boot directly into the active dashboard (`/kiosk`) on reboot without flashing technician screens, which only appear if Super Admin dispatches `device:exit-kiosk`.
+
+### 4. BullMQ Worker Central Model Registry
+
+To prevent Mongoose `MissingSchemaError: Schema hasn't been registered for model "User"` errors in background workers, all models are pre-registered centrally in [`apps/backend/src/config/models.js`](apps/backend/src/config/models.js) before Redis queues (`src/workers/index.js`) start processing jobs.
 
 ---
 
@@ -327,6 +401,9 @@ Each app and package documents its own setup and scope:
 - [Receptionist](apps/receptionist/README.md)
 - [Kitchen](apps/kitchen/README.md)
 - [Guest](apps/guest/README.md)
+- [Self Check-In](apps/self-checkin/README.md)
+- [Table Order](apps/table-order/README.md)
+- [Kiosk Native Shell](apps/kiosk/README.md)
 - [@hotelos/api](packages/api/README.md)
 - [@hotelos/query](packages/query/README.md)
 - [@hotelos/socket](packages/socket/README.md)

@@ -7,6 +7,8 @@ export const guestProfileDTO = (user, booking, room) => ({
   checkIn: booking?.checkIn ?? null,
   checkOut: booking?.checkOut ?? null,
   dndEnabled: booking?.dndEnabled ?? false,
+  bookingStatus: booking?.status ?? "none",
+  reservationNo: booking?.reservationNo ?? null,
   room: room
     ? {
         id: room._id,

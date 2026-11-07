@@ -1,9 +1,11 @@
 import Booking from "#/modules/bookings/models/Booking.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
+import User from "#/modules/users/models/User.js";
 import CheckInSession, { CHECKIN_STATUSES } from "../models/CheckInSession.js";
 import { checkInSessionDTO } from "../dto/checkIn.dto.js";
 import { createSessionToken, hashToken } from "../services/token.service.js";
 import { sendCheckInEmail } from "#/shared/services/email.service.js";
+import env from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 // Receptionist-facing digital check-in link management + review.
@@ -14,16 +16,6 @@ const BOOKABLE_STATUSES = new Set([
   "pending",
   "checked-in",
 ]);
-
-function buildCheckInUrl(token) {
-  // Guest self check-in lives in the receptionist app (public route).
-  const base = (
-    process.env.RECEPTIONIST_FRONTEND_URL ||
-    process.env.CLIENT_URL ||
-    "http://localhost:5175"
-  ).replace(/\/$/, "");
-  return `${base}/check-in/${token}`;
-}
 
 function expiresAtFor(reservation) {
   // The link stays valid until the end of the check-out day.
@@ -44,7 +36,7 @@ async function loadReservation(req, id) {
 
 export const createCheckInLink = async (req, res) => {
   try {
-    const { reservationId, message } = req.body;
+    const { reservationId, message, email: customEmail } = req.body;
 
     const reservation = await loadReservation(req, reservationId);
     if (!reservation) {
@@ -61,13 +53,36 @@ export const createCheckInLink = async (req, res) => {
     }
 
     const guestEmail =
-      reservation.guestId?.email || reservation.populated("guestId")?.email;
+      customEmail?.trim() ||
+      reservation.guestId?.email ||
+      reservation.email ||
+      null;
+
     if (!guestEmail) {
       return res.status(400).json({
         success: false,
         message:
-          "Notification could not be shared — the reservation has no email on file",
+          "Notification could not be shared — the reservation has no email on file. Please enter an email address.",
       });
+    }
+
+    // Persist email to guest record if guest had no email
+    if (
+      customEmail?.trim() &&
+      reservation.guestId &&
+      !reservation.guestId.email
+    ) {
+      try {
+        await User.findByIdAndUpdate(
+          reservation.guestId._id || reservation.guestId,
+          { $set: { email: customEmail.trim() } },
+        );
+      } catch (err) {
+        logger.warn(
+          err,
+          "Failed to persist guest email during check-in link creation",
+        );
+      }
     }
 
     // Reuse an open session for the same reservation, else create one.
@@ -109,7 +124,7 @@ export const createCheckInLink = async (req, res) => {
 
     const hotel = await Hotel.findById(req.user.hotelId).select("name").lean();
 
-    const url = buildCheckInUrl(token);
+    const url = `${env.frontendUrls.selfCheckin}/check-in/${token}`;
     let emailSent = true;
     try {
       await sendCheckInEmail({
@@ -406,7 +421,7 @@ export const resendCheckInLink = async (req, res) => {
           subject: "Complete your online check-in",
           heading: "Your check-in link",
           body: "Please complete your check-in online before arrival.",
-          actionUrl: buildCheckInUrl(token),
+          actionUrl: `${env.frontendUrls.selfCheckin}/check-in/${token}`,
           actionLabel: "Continue Check-in",
         });
       } catch (error) {
@@ -543,7 +558,7 @@ async function reviewSession(req, res, decision) {
           body: config.body,
           actionUrl:
             decision === "correction-requested"
-              ? buildCheckInUrl(token)
+              ? `${env.frontendUrls.selfCheckin}/check-in/${token}`
               : undefined,
           actionLabel: "Open Check-in",
         });

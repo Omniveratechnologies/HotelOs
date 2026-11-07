@@ -42,6 +42,10 @@ import {
 } from "#/shared/services/inventory.service.js";
 
 import logger from "#/utils/logger.js";
+import {
+  scheduleCheckInReminder,
+  cancelCheckInReminder,
+} from "#/modules/check-ins/queues/checkInEmail.queue.js";
 
 // =====================================================
 // HELPERS
@@ -252,6 +256,14 @@ async function buildPricingSnapshot({
     overrideRate: rateOverride,
   });
 
+  const effectiveTaxPercent =
+    taxPercent != null ? Number(taxPercent) : hotelTaxPercent;
+  if (effectiveTaxPercent == null || Number.isNaN(effectiveTaxPercent)) {
+    throw new Error(
+      "Hotel tax rate is not configured in property settings. Please configure property tax settings first.",
+    );
+  }
+
   const pricing = {
     ...computePricing({
       nightlyRate,
@@ -259,7 +271,7 @@ async function buildPricingSnapshot({
       rooms,
       addOns,
       discount,
-      taxPercent: taxPercent ?? hotelTaxPercent ?? 12,
+      taxPercent: effectiveTaxPercent,
       commissionPercent,
     }),
     rateSource,
@@ -701,6 +713,9 @@ export const createReservation = async (req, res) => {
       },
       "Reservation created",
     );
+
+    // Schedule automated check-in reminder email via BullMQ
+    await scheduleCheckInReminder(createdBooking);
 
     const populated = await Booking.findById(createdBooking._id)
       .populate("guestId")
@@ -1537,6 +1552,13 @@ export const updateBooking = async (req, res) => {
     );
     await aiosellSyncInventory(req.user.hotelId, syncStart, syncEnd);
 
+    // Sync BullMQ automated check-in email reminder
+    if (["cancelled", "checked-in", "checked-out"].includes(booking.status)) {
+      await cancelCheckInReminder(booking._id);
+    } else {
+      await scheduleCheckInReminder(booking);
+    }
+
     const populated = await Booking.findById(booking._id)
       .populate("guestId")
       .populate("roomId", "roomNumber type rate floor roomCode")
@@ -1656,6 +1678,7 @@ export const cancelBooking = async (req, res) => {
       booking.checkIn,
       booking.checkOut,
     );
+    await cancelCheckInReminder(booking._id);
 
     return res.status(200).json({
       success: true,
@@ -1732,6 +1755,7 @@ export const reconfirmBooking = async (req, res) => {
       booking.checkIn,
       booking.checkOut,
     );
+    await cancelCheckInReminder(booking._id);
 
     return res.status(200).json({
       success: true,
@@ -1831,6 +1855,7 @@ export const changeBookingRoom = async (req, res) => {
       booking.checkIn,
       booking.checkOut,
     );
+    await cancelCheckInReminder(booking._id);
 
     const populated = await Booking.findById(booking._id)
       .populate("guestId")

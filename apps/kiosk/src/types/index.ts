@@ -20,7 +20,7 @@ export interface KioskAuthData {
   hotelId: string;
   /** Assigned hotel name. */
   hotelName?: string;
-  /** Mode: DEMO_URL | GUEST_CHECKIN | TABLE_ORDER | RECEPTIONIST_KIOSK | CUSTOM_URL. */
+  /** Mode: GUEST_DASHBOARD | SELF_CHECKIN | DIGITAL_MENU. */
   targetDashboard: string;
   /** URL currently rendered by the WebView. */
   assignedUrl: string;
@@ -114,4 +114,17 @@ export interface KioskManagerModuleType {
   isDeviceOwner(): Promise<boolean>;
   consumeLaunchedFromBoot(): Promise<boolean>;
   getDeviceId(): Promise<string>;
+}
+
+/** JavaScript bridge object exposed to embedded dashboard WebViews */
+export interface HotelOSKioskBridge {
+  readonly isKiosk: true;
+  readonly platform: "hotelos";
+  readonly version: string;
+}
+
+declare global {
+  interface Window {
+    kiosk?: HotelOSKioskBridge;
+  }
 }

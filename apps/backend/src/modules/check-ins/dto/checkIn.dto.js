@@ -1,8 +1,32 @@
 import { generateDownloadUrl } from "#/config/r2.js";
 
 const withUrl = async (file) => {
-  if (!file?.key) return file || null;
-  return { ...file, url: await generateDownloadUrl(file.key) };
+  if (!file) return null;
+  const raw =
+    typeof file.toObject === "function"
+      ? file.toObject()
+      : typeof file.toJSON === "function"
+        ? file.toJSON()
+        : file;
+  if (!raw?.key) return null;
+  try {
+    const url = await generateDownloadUrl(raw.key);
+    return {
+      key: raw.key,
+      filename: raw.filename || "",
+      mimeType: raw.mimeType || "",
+      size: raw.size || 0,
+      url,
+    };
+  } catch {
+    return {
+      key: raw.key,
+      filename: raw.filename || "",
+      mimeType: raw.mimeType || "",
+      size: raw.size || 0,
+      url: null,
+    };
+  }
 };
 
 /**
@@ -50,11 +74,26 @@ export const checkInSessionDTO = async (session) => {
       : null,
     stepData: session.stepData
       ? {
-          ...session.stepData,
-          idFront: await withUrl(session.stepData.idFront),
-          idBack: await withUrl(session.stepData.idBack),
+          guestName: session.stepData.guestName || "",
+          email: session.stepData.email || "",
+          phone: session.stepData.phone || "",
+          nationality: session.stepData.nationality || "",
+          dateOfBirth: session.stepData.dateOfBirth || "",
+          documents: session.stepData.documents?.length
+            ? await Promise.all(
+                session.stepData.documents.map(async (doc) => ({
+                  idType: doc.idType,
+                  idNumber: doc.idNumber,
+                  front: await withUrl(doc.front),
+                  back: await withUrl(doc.back),
+                })),
+              )
+            : [],
           selfie: await withUrl(session.stepData.selfie),
           signature: await withUrl(session.stepData.signature),
+          preferences: session.stepData.preferences || [],
+          remarks: session.stepData.remarks || "",
+          termsAcceptedAt: session.stepData.termsAcceptedAt || null,
         }
       : null,
     auditTrail: session.auditTrail || [],
@@ -75,6 +114,16 @@ export const publicCheckInSessionDTO = async (session) => {
     status: session.status,
     currentStep: session.currentStep,
     correctionMessage: session.review?.message || null,
+    rejectionMessage:
+      session.review?.decision === "rejected"
+        ? session.review?.message || null
+        : null,
+    review: session.review
+      ? {
+          message: session.review.message || null,
+          decision: session.review.decision || null,
+        }
+      : null,
     correctionSteps:
       session.review?.decision === "correction-requested"
         ? session.review.steps || []
@@ -82,6 +131,7 @@ export const publicCheckInSessionDTO = async (session) => {
     booking: booking
       ? {
           reservationNo: booking.reservationNo || null,
+          status: booking.status || null,
           roomType: booking.roomTypeCode || booking.roomId?.type || null,
           roomNumber: booking.roomId?.roomNumber || null,
           checkIn: booking.checkIn,
@@ -102,11 +152,21 @@ export const publicCheckInSessionDTO = async (session) => {
     },
     stepData: session.stepData
       ? {
-          idType: session.stepData.idType || "",
-          idNumber: session.stepData.idNumber || "",
+          guestName: session.stepData.guestName || "",
+          email: session.stepData.email || "",
+          phone: session.stepData.phone || "",
+          nationality: session.stepData.nationality || "",
           dateOfBirth: session.stepData.dateOfBirth || "",
-          idFront: await withUrl(session.stepData.idFront),
-          idBack: await withUrl(session.stepData.idBack),
+          documents: session.stepData.documents?.length
+            ? await Promise.all(
+                session.stepData.documents.map(async (doc) => ({
+                  idType: doc.idType,
+                  idNumber: doc.idNumber,
+                  front: await withUrl(doc.front),
+                  back: await withUrl(doc.back),
+                })),
+              )
+            : [],
           selfie: await withUrl(session.stepData.selfie),
           signature: await withUrl(session.stepData.signature),
           preferences: session.stepData.preferences || [],

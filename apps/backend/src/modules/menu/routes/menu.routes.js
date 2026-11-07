@@ -11,6 +11,29 @@ import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
 
 const router = express.Router();
+
+const getPublicDiscounts = async (req, res) => {
+  try {
+    const discounts = await Discount.find({
+      hotelId: req.params.hotelId,
+      status: true,
+    });
+    return res
+      .status(200)
+      .json({ success: true, data: discounts.map(discountDTO) });
+  } catch {
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch offers" });
+  }
+};
+
+// PUBLIC — accessed by guest table-order app without staff credentials
+router.get("/discounts/public/:hotelId", (req, res, next) =>
+  Promise.resolve(getPublicDiscounts(req, res, next)).catch(next),
+);
+
+// Staff-managed routes
 router.use(authenticate, authorize("SUB_ADMIN", "KITCHEN", "RECEPTIONIST"));
 
 router.get("/categories", categoryCrud.list);
@@ -32,24 +55,5 @@ router.get("/pricing-rules", pricingRuleCrud.list);
 router.post("/pricing-rules", pricingRuleCrud.create);
 router.patch("/pricing-rules/:id", pricingRuleCrud.update);
 router.delete("/pricing-rules/:id", pricingRuleCrud.remove);
-const getPublicDiscounts = async (req, res) => {
-  try {
-    const discounts = await Discount.find({
-      hotelId: req.params.hotelId,
-      status: true,
-    });
-    return res
-      .status(200)
-      .json({ success: true, data: discounts.map(discountDTO) });
-  } catch {
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch offers" });
-  }
-};
-
-router.get("/discounts/public/:hotelId", (req, res, next) =>
-  Promise.resolve(getPublicDiscounts(req, res, next)).catch(next),
-);
 
 export default router;

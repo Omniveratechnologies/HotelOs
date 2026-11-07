@@ -18,6 +18,7 @@ import { heartbeatService } from "@/services/heartbeatService";
 import { socketService } from "@/services/socketService";
 import { kioskApi } from "@/services/kioskApi";
 import { kioskStorage } from "@/lib/storage";
+import { kioskUnlockState } from "@/lib/kioskUnlockState";
 import { isSameSiteUrl, isSameOrInitialUrl } from "@/lib/urlSecurity";
 import { KioskAuthData } from "@/types";
 
@@ -35,6 +36,44 @@ export function KioskScreen() {
   >("ONLINE");
   const [canGoBack, setCanGoBack] = useState(false);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
+  const [webViewUri, setWebViewUri] = useState<string | null>(null);
+  const [handoffCode, setHandoffCode] = useState<string | null>(null);
+
+  // Acquire a single-use handoff code whenever base URL or credentials change
+  useEffect(() => {
+    if (!url || !auth?.serverUrl || !auth?.token) {
+      setWebViewUri(url);
+      setHandoffCode(null);
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      try {
+        const { handoffCode: code } = await kioskApi.getHandoffCode(
+          auth.serverUrl,
+          auth.token,
+        );
+        if (!isMounted) return;
+        setHandoffCode(code);
+        const separator = url.includes("?") ? "&" : "?";
+        setWebViewUri(`${url}${separator}kioskHandoffCode=${code}`);
+      } catch (err: unknown) {
+        console.warn(
+          "[KioskScreen] Handoff code fallback:",
+          (err as Error)?.message,
+        );
+        if (isMounted) {
+          setHandoffCode(null);
+          setWebViewUri(url);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [url, auth]);
 
   useEffect(() => {
     (async () => {
@@ -45,9 +84,7 @@ export function KioskScreen() {
         return;
       }
       setAuth(storedAuth);
-      setUrl(
-        storedAuth.assignedUrl || "https://demo.hotelos.com/kiosk-showcase",
-      );
+      setUrl(storedAuth.assignedUrl || "");
 
       // Auto-sync status immediately on mount
       kioskApi
@@ -169,8 +206,9 @@ export function KioskScreen() {
   }, []);
 
   const handleExit = useCallback(async () => {
+    kioskUnlockState.setUnlocked(true);
     await kiosk.exit();
-    router.replace("/");
+    router.replace({ pathname: "/", params: { unlocked: "true" } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
@@ -273,7 +311,18 @@ export function KioskScreen() {
     <View style={styles.container}>
       <WebView
         ref={webviewRef}
-        source={{ uri: url }}
+        source={{ uri: webViewUri || url }}
+        injectedJavaScriptBeforeContentLoaded={`
+          window.kiosk = Object.freeze({
+            isKiosk: true,
+            platform: "hotelos",
+            version: "1.0.0",
+            ${handoffCode ? `handoffCode: ${JSON.stringify(handoffCode)},` : ""}
+            ${auth?.deviceId ? `deviceId: ${JSON.stringify(auth.deviceId)},` : ""}
+          });
+
+          true;
+        `}
         style={styles.webview}
         onNavigationStateChange={handleNavigationStateChange}
         onShouldStartLoadWithRequest={handleShouldStartLoad}
