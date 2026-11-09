@@ -9,16 +9,10 @@ import {
   Split,
   Upload,
 } from "lucide-react";
-import { billingApi } from "./billingApi.js";
-import {
-  ActionDrawer,
-  Field,
-  KpiTile,
-  Panel,
-  StatusChip,
-  Button,
-  money,
-} from "./billingUi.jsx";
+import { Button, KpiTile, StatusChip } from "@hotelos/ui/components";
+import { formatCurrency as money } from "@hotelos/utils";
+import { billingApi } from "../api/billingApi.js";
+import { ActionDrawer, Field, Panel } from "./BillingUiComponents.jsx";
 
 const tabs = [
   "Folio",

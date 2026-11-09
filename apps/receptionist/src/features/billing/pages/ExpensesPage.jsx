@@ -16,15 +16,9 @@ import {
   KpiTileRow,
   StatusChip,
 } from "@hotelos/ui/components";
-import { formatDate as date } from "@hotelos/utils";
-import { billingApi } from "../billingApi.js";
-import {
-  ActionDrawer,
-  Field,
-  Panel,
-  money,
-  BillingPageSkeleton,
-} from "../billingUi.jsx";
+import { formatDate as date, formatCurrency as money } from "@hotelos/utils";
+import { billingApi } from "../api/billingApi.js";
+import { ActionDrawer, Field, Panel, BillingPageSkeleton } from "../components";
 
 const tabs = [
   ["all", "All"],

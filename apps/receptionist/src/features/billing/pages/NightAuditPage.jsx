@@ -16,15 +16,12 @@ import {
   KpiTileRow,
   StatusChip,
 } from "@hotelos/ui/components";
-import { formatDate as dateText } from "@hotelos/utils";
-import { billingApi } from "../billingApi.js";
 import {
-  ActionDrawer,
-  Field,
-  Panel,
-  money,
-  BillingPageSkeleton,
-} from "../billingUi.jsx";
+  formatDate as dateText,
+  formatCurrency as money,
+} from "@hotelos/utils";
+import { billingApi } from "../api/billingApi.js";
+import { ActionDrawer, Field, Panel, BillingPageSkeleton } from "../components";
 
 export default function NightAuditPage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));

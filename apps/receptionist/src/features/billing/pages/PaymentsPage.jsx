@@ -19,14 +19,9 @@ import {
   Search,
   WalletCards,
 } from "lucide-react";
-import { billingApi } from "../billingApi.js";
-import {
-  ActionDrawer,
-  Field,
-  Panel,
-  money,
-  BillingPageSkeleton,
-} from "../billingUi.jsx";
+import { formatCurrency as money } from "@hotelos/utils";
+import { billingApi } from "../api/billingApi.js";
+import { ActionDrawer, Field, Panel, BillingPageSkeleton } from "../components";
 
 const buttonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-brand-900 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer";

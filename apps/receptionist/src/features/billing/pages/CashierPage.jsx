@@ -19,14 +19,9 @@ import {
   StatusChip,
   ReceiptModal,
 } from "@hotelos/ui/components";
-import { billingApi } from "../billingApi.js";
-import {
-  ActionDrawer,
-  Field,
-  Panel,
-  money,
-  BillingPageSkeleton,
-} from "../billingUi.jsx";
+import { formatCurrency as money } from "@hotelos/utils";
+import { billingApi } from "../api/billingApi.js";
+import { ActionDrawer, Field, Panel, BillingPageSkeleton } from "../components";
 
 export default function CashierPage() {
   const query = useQuery({

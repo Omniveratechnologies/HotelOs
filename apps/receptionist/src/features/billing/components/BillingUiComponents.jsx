@@ -1,42 +1,7 @@
-import { useMemo, useState } from "react";
-import { formatCurrency, formatDate } from "@hotelos/utils";
-import {
-  StatusChip,
-  ReceiptModal,
-  DataTable,
-  KpiTile,
-  KpiTileRow,
-  Button,
-  Input,
-  Header,
-} from "@hotelos/ui/components";
-import {
-  ArrowDownToLine,
-  ArrowUpRight,
-  CalendarDays,
-  ChevronDown,
-  MoreHorizontal,
-} from "lucide-react";
+import { Button } from "@hotelos/ui/components";
 
-// Canonical formatters
-export const money = (value) => formatCurrency(value);
-export const dateText = (value) => formatDate(value);
-export const idOf = (value) => value?.id || value?._id || "";
-
-// Canonical UI components re-exported for single source
-export {
-  StatusChip,
-  StatusChip as StatusPill,
-  ReceiptModal,
-  ReceiptModal as ThermalReceiptModal,
-  DataTable,
-  DataTable as BillingTable,
-  KpiTile,
-  KpiTileRow,
-  Button,
-  Input,
-  Header,
-};
+const EMPTY_FIELDS = [];
+const EMPTY_VALUES = [];
 
 export function Panel({ title, action, children, className = "" }) {
   return (
@@ -106,7 +71,7 @@ export function ActionDrawer({
   );
 }
 
-export function DetailDrawer({ title, row, onClose, fields = [] }) {
+export function DetailDrawer({ title, row, onClose, fields = EMPTY_FIELDS }) {
   if (!row) return null;
   return (
     <aside className="rounded-2xl border border-gray-200 bg-white shadow-xs">
@@ -161,19 +126,7 @@ export function Field({ label, children, ...props }) {
   );
 }
 
-export function useFilteredRows(rows) {
-  const [search, setSearch] = useState("");
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return rows;
-    return rows.filter((row) =>
-      JSON.stringify(row).toLowerCase().includes(query),
-    );
-  }, [rows, search]);
-  return { search, setSearch, filtered };
-}
-
-export function MiniBars({ values = [] }) {
+export function MiniBars({ values = EMPTY_VALUES }) {
   const max = Math.max(...values, 1);
   return (
     <div className="flex h-28 items-end gap-2">
@@ -189,14 +142,6 @@ export function MiniBars({ values = [] }) {
     </div>
   );
 }
-
-export const icons = {
-  collection: ArrowDownToLine,
-  outgoing: ArrowUpRight,
-  calendar: CalendarDays,
-  more: MoreHorizontal,
-  chevron: ChevronDown,
-};
 
 export function KpiSkeletonRow({ count = 4 }) {
   return (

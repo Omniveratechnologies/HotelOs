@@ -16,14 +16,9 @@ import {
   KpiTileRow,
   StatusChip,
 } from "@hotelos/ui/components";
-import { billingApi } from "../billingApi.js";
-import {
-  ActionDrawer,
-  Field,
-  Panel,
-  money,
-  BillingPageSkeleton,
-} from "../billingUi.jsx";
+import { formatCurrency as money } from "@hotelos/utils";
+import { billingApi } from "../api/billingApi.js";
+import { ActionDrawer, Field, Panel, BillingPageSkeleton } from "../components";
 
 const typeLabels = {
   corporate: "Corporate",

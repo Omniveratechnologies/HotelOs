@@ -20,13 +20,9 @@ import {
   Wallet,
   WalletCards,
 } from "lucide-react";
-import { billingApi } from "../billingApi.js";
-import {
-  ActionDrawer,
-  Field,
-  money,
-  BillingPageSkeleton,
-} from "../billingUi.jsx";
+import { formatCurrency as money } from "@hotelos/utils";
+import { billingApi } from "../api/billingApi.js";
+import { ActionDrawer, Field, BillingPageSkeleton } from "../components";
 
 const tabs = [
   "Folio",

@@ -7,9 +7,10 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
-import { billingApi } from "./billingApi.js";
-import { billingScreens } from "./billingConfig.js";
-import { FolioWorkspace, ScreenWorkspace } from "./BillingWorkspaces.jsx";
+import {
+  formatCurrency as money,
+  formatDate as dateText,
+} from "@hotelos/utils";
 import {
   Header,
   Button,
@@ -17,15 +18,19 @@ import {
   KpiTile,
   KpiTileRow,
   StatusChip,
-  DetailDrawer,
+} from "@hotelos/ui/components";
+import { billingApi } from "../api/billingApi.js";
+import { billingScreens } from "../config/billingConfig.js";
+import {
   ActionDrawer,
+  DetailDrawer,
   Field,
   MiniBars,
   Panel,
-  dateText,
-  money,
-  useFilteredRows,
-} from "./billingUi.jsx";
+  FolioWorkspace,
+  ScreenWorkspace,
+} from "../components";
+import { useFilteredRows } from "../hooks/useFilteredRows.js";
 
 function normalizeResponse(response) {
   if (Array.isArray(response)) return { rows: response, metrics: {} };
