@@ -13,9 +13,10 @@ import { billingApi } from "./billingApi.js";
 import {
   ActionDrawer,
   Field,
-  KpiCard,
+  KpiTile,
   Panel,
-  StatusPill,
+  StatusChip,
+  Button,
   money,
 } from "./billingUi.jsx";
 
@@ -28,8 +29,9 @@ const tabs = [
   "Corporate",
   "Remarks",
 ];
+
 const actionClass =
-  "inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-700";
+  "inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-brand-900 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer";
 
 export function FolioWorkspace({ row, onRefresh }) {
   const [tab, setTab] = useState("Folio");
@@ -74,22 +76,22 @@ export function FolioWorkspace({ row, onRefresh }) {
     }
   };
   return (
-    <div className="space-y-5">
-      <Panel title="Guest folio">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="grid size-12 place-items-center rounded-full bg-blue-100 text-lg font-bold text-blue-700">
-            {(row.guestName || "G").slice(0, 1)}
+    <div className="space-y-6">
+      <Panel title="Guest Folio Summary">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="bg-brand-50 text-brand-700 grid size-12 place-items-center rounded-xl text-lg font-bold">
+            {(row.guestName || "G").slice(0, 1).toUpperCase()}
           </div>
           <div className="mr-auto">
-            <p className="font-bold text-[#102b5c]">
+            <p className="font-display text-brand-900 font-semibold">
               {row.guestName || "Guest folio"}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-gray-500">
               Folio {row.folioNo || row.billNo || "—"} · Booking{" "}
               {row.bookingId || "—"}
             </p>
           </div>
-          <StatusPill value={row.status} />
+          <StatusChip variant={row.status}>{row.status || "Open"}</StatusChip>
           <button className={actionClass} onClick={() => setDrawer("charge")}>
             Add Charge
           </button>
@@ -103,10 +105,10 @@ export function FolioWorkspace({ row, onRefresh }) {
             <FileDown size={14} /> Generate Invoice
           </button>
         </div>
-        <div className="mt-4 flex flex-wrap gap-1 border-b border-slate-100">
+        <div className="mt-5 flex flex-wrap gap-1 border-b border-gray-100">
           {tabs.map((item) => (
             <button
-              className={`px-3 py-2 text-xs font-semibold ${tab === item ? "border-b-2 border-blue-600 text-blue-700" : "text-slate-500"}`}
+              className={`px-3.5 py-2 text-xs font-semibold transition-colors ${tab === item ? "border-brand-900 text-brand-900 border-b-2" : "hover:text-brand-900 text-gray-500"}`}
               key={item}
               onClick={() => setTab(item)}
             >
@@ -115,36 +117,39 @@ export function FolioWorkspace({ row, onRefresh }) {
           ))}
         </div>
       </Panel>
+
       {tab === "Folio" ? (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <Panel title="Charges and adjustments">
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {(row.charges || row.items || []).map((charge, index) => (
                 <div
-                  className="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-xs"
+                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3 text-xs"
                   key={charge.id || charge._id || `${charge.name}-${index}`}
                 >
-                  <Layers3 size={15} className="text-blue-600" />
+                  <Layers3 size={16} className="text-brand-700" />
                   <div className="mr-auto">
-                    <p className="font-semibold text-slate-700">
+                    <p className="text-brand-900 font-semibold">
                       {charge.name || charge.description}
                     </p>
-                    <p className="text-slate-400">
-                      {charge.notes || "F&B"} · Qty {charge.quantity || 1}
+                    <p className="text-gray-400">
+                      {charge.notes || "Charge"} · Qty {charge.quantity || 1}
                     </p>
                   </div>
-                  <span className="font-semibold text-slate-700">
+                  <span className="text-brand-900 font-semibold">
                     {money(
                       Number(charge.price || charge.amount || 0) *
                         Number(charge.quantity || 1),
                     )}
                   </span>
-                  <StatusPill value={charge.status || "posted"} />
+                  <StatusChip variant={charge.status || "posted"}>
+                    {charge.status || "posted"}
+                  </StatusChip>
                 </div>
               ))}
               {!(row.charges || row.items || []).length && (
-                <p className="py-8 text-center text-sm text-slate-400">
-                  No posted charges.
+                <p className="py-8 text-center text-sm text-gray-400">
+                  No posted charges found on this folio.
                 </p>
               )}
             </div>
@@ -168,9 +173,10 @@ export function FolioWorkspace({ row, onRefresh }) {
               ))}
             </div>
           </Panel>
-          <div className="space-y-5">
+
+          <div className="space-y-6">
             <Panel title="Folio summary">
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2.5 text-sm">
                 <SummaryLine label="Subtotal" value={row.total} />
                 <SummaryLine
                   label="Service charge"
@@ -184,12 +190,13 @@ export function FolioWorkspace({ row, onRefresh }) {
                   danger
                 />
               </div>
-              <button
-                className="mt-4 w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white"
+              <Button
+                variant="primary"
+                className="mt-4 w-full"
                 onClick={() => setDrawer("payment")}
               >
                 Collect Payment
-              </button>
+              </Button>
             </Panel>
             <Panel title="Quick actions">
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -208,8 +215,8 @@ export function FolioWorkspace({ row, onRefresh }) {
                           channel,
                         });
                         onRefresh?.();
-                      } catch (error) {
-                        setError(error.message || "Folio action failed");
+                      } catch (err) {
+                        setError(err.message || "Folio action failed");
                       }
                     }}
                   >
@@ -223,27 +230,28 @@ export function FolioWorkspace({ row, onRefresh }) {
         </div>
       ) : (
         <Panel title={tab}>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <KpiCard
+          <div className="grid gap-4 sm:grid-cols-3">
+            <KpiTile
               label={`${tab} records`}
               value="—"
-              detail="Select a folio record to load"
+              delta="Select a folio record to load"
             />
-            <KpiCard
+            <KpiTile
               label="Current balance"
               value={money(row.balanceDue)}
-              detail="Calculated server-side"
-              tone="red"
+              delta="Calculated server-side"
+              iconClassName="bg-rose-50 text-rose-700"
             />
-            <KpiCard
+            <KpiTile
               label="Audit history"
               value="Available"
-              detail="Every financial write is logged"
-              tone="green"
+              delta="Every financial write is logged"
+              iconClassName="bg-emerald-50 text-emerald-700"
             />
           </div>
         </Panel>
       )}
+
       {drawer && (
         <ActionDrawer
           title={drawerTitle(drawer)}
@@ -252,7 +260,7 @@ export function FolioWorkspace({ row, onRefresh }) {
         >
           {folioFields(drawer, correctionAction)}
           {error && (
-            <p className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">
+            <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
               {error}
             </p>
           )}
@@ -265,7 +273,7 @@ export function FolioWorkspace({ row, onRefresh }) {
 function SummaryLine({ label, value, danger }) {
   return (
     <div
-      className={`flex justify-between ${danger ? "font-bold text-rose-600" : "text-slate-600"}`}
+      className={`flex justify-between ${danger ? "font-bold text-rose-600" : "text-gray-600"}`}
     >
       <span>{label}</span>
       <span>{money(value)}</span>
@@ -444,18 +452,20 @@ export function ScreenWorkspace({ section }) {
       ],
     }[section] || [];
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {details.map((title) => (
         <Panel title={title} key={title}>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <CheckCircle2 size={15} className="text-emerald-500" /> Live records
-            and actions are connected to the billing API.
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <CheckCircle2 size={15} className="shrink-0 text-emerald-500" />
+            <span>
+              Live records and actions are connected to the billing API.
+            </span>
           </div>
           {section === "night-audit" && title.includes("Checklist") && (
-            <div className="mt-3 grid grid-cols-4 gap-1">
+            <div className="mt-3 grid grid-cols-4 gap-1.5">
               {Array.from({ length: 8 }, (_, index) => (
                 <span
-                  className="rounded bg-amber-50 px-2 py-2 text-center text-[10px]"
+                  className="rounded-lg bg-amber-50 px-2 py-2 text-center text-[10px] font-semibold text-amber-800"
                   key={index}
                 >
                   Step {index + 1}

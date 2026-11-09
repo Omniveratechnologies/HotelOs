@@ -1,20 +1,28 @@
 import { useState } from "react";
 import { useQuery } from "@hotelos/query";
-import { AlertCircle, CheckCircle2, Plus, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  Plus,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import { billingApi } from "./billingApi.js";
 import { billingScreens } from "./billingConfig.js";
 import { FolioWorkspace, ScreenWorkspace } from "./BillingWorkspaces.jsx";
 import {
-  BillingPageHeader,
-  ActionDrawer,
-  BillingTable,
-  BillingToolbar,
+  Header,
+  Button,
+  DataTable,
+  KpiTile,
+  KpiTileRow,
+  StatusChip,
   DetailDrawer,
+  ActionDrawer,
   Field,
-  KpiCard,
   MiniBars,
   Panel,
-  StatusPill,
   dateText,
   money,
   useFilteredRows,
@@ -34,7 +42,12 @@ function renderValue(row, field, type) {
   const value = row[field];
   if (type === "money") return money(value);
   if (type === "date") return dateText(value);
-  if (type === "status") return <StatusPill value={value} />;
+  if (type === "status")
+    return (
+      <StatusChip variant={value}>
+        {String(value || "Pending").replaceAll("_", " ")}
+      </StatusChip>
+    );
   return value || "—";
 }
 
@@ -56,157 +69,183 @@ export default function BillingPage({ section }) {
     render: (row) => renderValue(row, key, type),
   }));
 
+  const toneClassMap = {
+    blue: "bg-blue-50 text-blue-700",
+    green: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+    red: "bg-rose-50 text-rose-700",
+    purple: "bg-purple-50 text-purple-700",
+  };
+
   return (
-    <div className="min-h-full bg-[#f5f8fc] p-4 sm:p-6 lg:p-8">
-      <BillingPageHeader
-        title={screen.title}
-        description={screen.description}
-        actions={[
-          {
-            label: actionLabel(section),
-            primary: true,
-            icon: Plus,
-            onClick: () => setActionOpen(true),
-          },
-          { label: "Export" },
-        ]}
-      />
-
-      {query.isError && (
-        <div className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          <span className="flex items-center gap-2">
-            <AlertCircle size={16} />
-            {query.error?.message || "Billing data could not be loaded."}
-          </span>
-          <button
-            className="inline-flex items-center gap-2 font-semibold"
-            onClick={() => query.refetch()}
-          >
-            <RefreshCw size={14} /> Retry
-          </button>
-        </div>
-      )}
-
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-        {screen.kpis.map(([label, key, tone, Icon]) => (
-          <KpiCard
-            key={key}
-            label={label}
-            value={query.isLoading ? "—" : moneyOrCount(payload.metrics[key])}
-            detail={payload.metrics[`${key}Detail`] || "Live backend data"}
-            tone={tone}
-            icon={Icon}
-          />
-        ))}
-      </div>
-
-      <div className="mb-5 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
-        <Panel
-          title={
-            section === "night-audit" ? "Revenue Summary" : "Activity Trend"
-          }
+    <>
+      <Header pageTitle={screen.title} pageDescription={screen.description}>
+        <Button
+          variant="primary"
+          icon={Plus}
+          onClick={() => setActionOpen(true)}
         >
-          {payload.chart.length ? (
-            <MiniBars
-              values={payload.chart.map((item) =>
-                Number(item.value || item.amount || 0),
-              )}
-            />
-          ) : (
-            <div className="flex h-28 items-center justify-center text-sm text-slate-400">
-              Charts will populate from confirmed transactions.
-            </div>
-          )}
-        </Panel>
-        <Panel
-          title={
-            section === "night-audit"
-              ? "Audit Checklist"
-              : "Operational Summary"
-          }
-        >
-          <div className="space-y-3">
-            {(payload.alerts.length
-              ? payload.alerts
-              : ["No outstanding alerts returned by the backend."]
-            ).map((alert) => (
-              <div
-                className="flex items-center gap-3 text-xs text-slate-600"
-                key={
-                  typeof alert === "string" ? alert : alert.id || alert.message
-                }
-              >
-                <CheckCircle2 className="text-emerald-500" size={16} />
-                {typeof alert === "string" ? alert : alert.message}
-              </div>
-            ))}
+          {actionLabel(section)}
+        </Button>
+        <Button variant="secondary" icon={Download}>
+          Export
+        </Button>
+      </Header>
+
+      <div className="space-y-6 p-6">
+        {query.isError && (
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
+            <span className="flex items-center gap-2">
+              <AlertCircle size={16} />
+              {query.error?.message || "Billing data could not be loaded."}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={RefreshCw}
+              onClick={() => query.refetch()}
+            >
+              Retry
+            </Button>
           </div>
-        </Panel>
-      </div>
+        )}
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <Panel title={screen.title}>
-          <BillingToolbar search={search} setSearch={setSearch} />
-          {query.isLoading ? (
-            <div className="p-12 text-center text-sm text-slate-400">
-              Loading billing data…
-            </div>
-          ) : (
-            <BillingTable
-              rows={filtered}
-              columns={columns}
-              onRow={setSelected}
-              empty="No billing records have been returned for this view."
+        <KpiTileRow>
+          {screen.kpis.map(([label, key, tone, Icon]) => (
+            <KpiTile
+              key={key}
+              label={label}
+              value={query.isLoading ? "—" : moneyOrCount(payload.metrics[key])}
+              delta={payload.metrics[`${key}Detail`] || "Live backend data"}
+              icon={Icon}
+              iconClassName={toneClassMap[tone] || "bg-brand-50 text-brand-700"}
             />
-          )}
-        </Panel>
-        <DetailDrawer
-          title="Details"
-          row={selected}
-          onClose={() => setSelected(null)}
-          fields={screen.columns.map(([label, key, type]) => ({
-            label,
-            key,
-            render: (row) => renderValue(row, key, type),
-          }))}
-        />
-      </div>
-      {section === "folio" && (
-        <FolioWorkspace row={selected} onRefresh={() => query.refetch()} />
-      )}
-      {section !== "folio" && <ScreenWorkspace section={section} />}
-      {actionOpen && (
-        <ActionDrawer
-          title={actionTitle(section)}
-          onClose={() => {
-            setActionOpen(false);
-            setActionError("");
-          }}
-          onSubmit={async (event) => {
-            event.preventDefault();
-            setActionError("");
-            const form = new FormData(event.currentTarget);
-            try {
-              await submitAction(section, Object.fromEntries(form.entries()));
-              setActionOpen(false);
-              await query.refetch();
-            } catch (error) {
-              setActionError(
-                error.message || "The billing action could not be completed.",
-              );
+          ))}
+        </KpiTileRow>
+
+        <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+          <Panel
+            title={
+              section === "night-audit" ? "Revenue Summary" : "Activity Trend"
             }
-          }}
-          submitLabel={actionSubmitLabel(section)}
-        >
-          {actionFields(section)}
-          {actionError && (
-            <p className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">
-              {actionError}
-            </p>
-          )}
-        </ActionDrawer>
-      )}
-    </div>
+          >
+            {payload.chart.length ? (
+              <MiniBars
+                values={payload.chart.map((item) =>
+                  Number(item.value || item.amount || 0),
+                )}
+              />
+            ) : (
+              <div className="flex h-28 items-center justify-center text-sm text-gray-400">
+                Charts will populate from confirmed transactions.
+              </div>
+            )}
+          </Panel>
+          <Panel
+            title={
+              section === "night-audit"
+                ? "Audit Checklist"
+                : "Operational Summary"
+            }
+          >
+            <div className="space-y-3">
+              {(payload.alerts.length
+                ? payload.alerts
+                : ["No outstanding alerts returned by the backend."]
+              ).map((alert) => (
+                <div
+                  className="flex items-center gap-3 text-xs text-gray-600"
+                  key={
+                    typeof alert === "string"
+                      ? alert
+                      : alert.id || alert.message
+                  }
+                >
+                  <CheckCircle2
+                    className="shrink-0 text-emerald-500"
+                    size={16}
+                  />
+                  <span>
+                    {typeof alert === "string" ? alert : alert.message}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+
+        {/* Search Bar */}
+        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm shadow-2xs">
+          <Search size={16} className="text-gray-400" />
+          <input
+            className="text-brand-900 w-full outline-none placeholder:text-gray-400"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search records, guests, vouchers..."
+          />
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <DataTable
+            title={screen.title}
+            description={`Showing ${filtered.length} of ${payload.rows.length} items`}
+            columns={columns}
+            rows={filtered}
+            loading={query.isLoading}
+            onRowClick={setSelected}
+            emptyTitle="No billing records"
+            emptyDescription="No records returned for this billing view."
+          />
+          <DetailDrawer
+            title="Details"
+            row={selected}
+            onClose={() => setSelected(null)}
+            fields={screen.columns.map(([label, key, type]) => ({
+              label,
+              key,
+              render: (row) => renderValue(row, key, type),
+            }))}
+          />
+        </div>
+
+        {section === "folio" && (
+          <FolioWorkspace row={selected} onRefresh={() => query.refetch()} />
+        )}
+        {section !== "folio" && <ScreenWorkspace section={section} />}
+
+        {actionOpen && (
+          <ActionDrawer
+            title={actionTitle(section)}
+            onClose={() => {
+              setActionOpen(false);
+              setActionError("");
+            }}
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setActionError("");
+              const form = new FormData(event.currentTarget);
+              try {
+                await submitAction(section, Object.fromEntries(form.entries()));
+                setActionOpen(false);
+                await query.refetch();
+              } catch (error) {
+                setActionError(
+                  error.message || "The billing action could not be completed.",
+                );
+              }
+            }}
+            submitLabel={actionSubmitLabel(section)}
+          >
+            {actionFields(section)}
+            {actionError && (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                {actionError}
+              </p>
+            )}
+          </ActionDrawer>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -246,48 +285,73 @@ function actionFields(section) {
           step="0.01"
           required
         />
-        <Field label="Method">
-          <select
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 font-normal"
-            name="method"
-            defaultValue="cash"
-          >
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="upi">UPI</option>
-            <option value="netbanking">Bank Transfer</option>
-          </select>
-        </Field>
-        <Field label="Reference" name="referenceNo" />
+        <Field label="Payment method" name="method" defaultValue="cash" />
+        <Field label="Reference / Transaction note" name="reference" />
       </>
     );
   }
   if (section === "taxes-charges") {
     return (
       <>
-        <Field label="Name" name="name" required />
+        <Field label="Tax / Surcharge Name" name="name" required />
+        <Field label="Type" name="type" defaultValue="tax" required />
         <Field
-          label="Rate / Amount"
-          name="value"
+          label="Rate (%)"
+          name="rate"
           type="number"
           min="0"
           step="0.01"
           required
         />
         <Field
-          label="Applicable department"
-          name="applicableOn"
-          placeholder="room, fnb, service or other"
+          label="Applies to"
+          name="appliesTo"
+          defaultValue="room"
           required
         />
       </>
     );
   }
-  if (section === "payables" || section === "expenses") {
+  if (section === "corporate") {
     return (
       <>
-        <Field label="Description" name="description" required />
-        <Field label="Vendor" name="vendorName" required />
+        <Field label="Company name" name="name" required />
+        <Field
+          label="Credit limit"
+          name="creditLimit"
+          type="number"
+          min="0"
+          required
+        />
+        <Field label="Billing contact" name="contactPerson" required />
+        <Field label="Contact email" name="email" type="email" required />
+        <Field label="Payment terms (days)" name="terms" defaultValue="30" />
+      </>
+    );
+  }
+  if (section === "payables") {
+    return (
+      <>
+        <Field label="Vendor name" name="vendorName" required />
+        <Field label="Invoice reference" name="invoiceNo" required />
+        <Field
+          label="Total amount"
+          name="amount"
+          type="number"
+          min="0"
+          step="0.01"
+          required
+        />
+        <Field label="Due date" name="dueDate" type="date" required />
+        <Field label="Expense category" name="category" required />
+      </>
+    );
+  }
+  if (section === "expenses") {
+    return (
+      <>
+        <Field label="Expense title" name="title" required />
+        <Field label="Department" name="department" required />
         <Field
           label="Amount"
           name="amount"
@@ -297,51 +361,11 @@ function actionFields(section) {
           required
         />
         <Field
-          label="Tax"
-          name="tax"
-          type="number"
-          min="0"
-          step="0.01"
-          defaultValue="0"
+          label="Payment method"
+          name="paymentMethod"
+          defaultValue="cash"
         />
-        <Field label="Category" name="category" required />
-        <Field label="Due date" name="dueDate" type="date" />
-        <Field
-          label="Cost centre"
-          name="costCentre"
-          placeholder="Rooms, F&B, Admin"
-        />
-      </>
-    );
-  }
-  if (section === "corporate") {
-    return (
-      <>
-        <Field label="Legal company name" name="companyName" required />
-        <Field label="GSTIN" name="gstin" />
-        <Field label="Industry" name="industry" />
-        <Field label="Contact person" name="contactName" required />
-        <Field label="Email" name="email" type="email" />
-        <Field
-          label="Credit limit"
-          name="creditLimit"
-          type="number"
-          min="0"
-          step="0.01"
-          required
-        />
-        <Field
-          label="Credit days"
-          name="creditDays"
-          type="number"
-          min="0"
-          defaultValue="30"
-        />
-        <Field
-          label="Billing instruction"
-          name="billingInstruction"
-          placeholder="Room only / Room + F&B"
-        />
+        <Field label="Recorded date" name="date" type="date" required />
       </>
     );
   }

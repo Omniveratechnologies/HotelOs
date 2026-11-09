@@ -11,18 +11,15 @@ import {
   Search,
   Wallet,
 } from "lucide-react";
-import { billingApi } from "../billingApi.js";
 import {
-  ActionDrawer,
-  Field,
-  KpiCard,
-  Panel,
-  StatusPill,
-  money,
-} from "../billingUi.jsx";
-
-const button =
-  "inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-[#102b5c] shadow-sm hover:border-blue-300";
+  Button,
+  Header,
+  KpiTile,
+  KpiTileRow,
+  StatusChip,
+} from "@hotelos/ui/components";
+import { billingApi } from "../billingApi.js";
+import { ActionDrawer, Field, Panel, money } from "../billingUi.jsx";
 
 export default function CorporateBillingPage() {
   const query = useQuery({
@@ -91,9 +88,10 @@ export default function CorporateBillingPage() {
     a.download = `corporate-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   };
+
   if (query.isLoading)
     return (
-      <div className="p-8 text-sm text-slate-500">
+      <div className="p-8 text-sm text-gray-500">
         Loading corporate billing…
       </div>
     );
@@ -103,223 +101,261 @@ export default function CorporateBillingPage() {
         Corporate billing could not be loaded.
       </div>
     );
+
   return (
-    <div className="min-h-full bg-[#f4f7fb] p-4 text-[#102b5c] sm:p-6">
-      <header className="mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
-        <div>
-          <div className="mb-1 text-[11px] font-semibold text-blue-600">
-            Billing &amp; Folio <span className="px-2 text-slate-400">›</span>{" "}
-            Corporate Billing
-          </div>
-          <h1 className="text-2xl font-bold">Corporate Billing</h1>
-          <p className="text-xs text-slate-500">
-            Manage corporate accounts, contracts, credit limits and city-ledger
-            collections.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white"
-            onClick={() => setDrawer("company")}
-          >
-            <Plus size={14} /> Add Corporate Account
-          </button>
-          <button className={button} onClick={() => setDrawer("invoice")}>
-            <FileText size={14} /> Generate Invoice
-          </button>
-          <button className={button} onClick={exportCsv}>
-            <Download size={14} /> Export
-          </button>
-        </div>
-      </header>
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-        <KpiCard
-          label="Total Accounts"
-          value={data.metrics?.totalAccounts || 0}
-          detail={`${data.metrics?.newThisMonth || 0} new this month`}
-          icon={Building2}
-        />
-        <KpiCard
-          label="Total Billed This Month"
-          value={money(data.metrics?.totalBilled)}
-          detail="Current period"
-          tone="green"
-          icon={FileText}
-        />
-        <KpiCard
-          label="Outstanding Amount"
-          value={money(data.metrics?.outstanding)}
-          detail={`${data.metrics?.outstandingAccounts || 0} companies`}
-          tone="amber"
-          icon={Wallet}
-        />
-        <KpiCard
-          label="Overdue Amount"
-          value={money(data.metrics?.overdue)}
-          detail="Needs follow-up"
-          tone="red"
-          icon={CreditCard}
-        />
-        <KpiCard
-          label="Active Contracts"
-          value={data.metrics?.activeContracts || 0}
-          detail="Expiring soon included"
-          tone="purple"
-          icon={CalendarDays}
-        />
-      </div>
-      <div className="mb-3 flex flex-wrap gap-2">
-        {[
-          ["all", "All"],
-          ["active", "Active"],
-          ["outstanding", "With Outstanding"],
-          ["overdue", "Overdue"],
-          ["inactive", "Inactive"],
-        ].map(([value, label]) => (
-          <button
-            className={`rounded-lg px-3 py-2 text-xs font-semibold ${tab === value ? "bg-[#102b5c] text-white" : "border border-slate-200 bg-white text-slate-600"}`}
-            key={value}
-            onClick={() => setTab(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <Panel title="Corporate Accounts">
-          <div className="mb-3 flex flex-wrap gap-2">
-            <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-400">
-              <Search size={14} />
-              <input
-                className="min-w-0 flex-1 outline-none"
-                placeholder="Search company, GSTIN or contact..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </label>
-            <select
-              className="rounded-lg border border-slate-200 px-3 text-xs"
-              value={industryFilter}
-              onChange={(e) => setIndustryFilter(e.target.value)}
+    <div>
+      <Header
+        pageTitle="Corporate Accounts & Direct Billing"
+        pageDescription="Manage corporate accounts, contracts, credit limits and city-ledger collections."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
+              onClick={() => setDrawer("company")}
             >
-              <option value="all">All Industries</option>
-              {industries.map((ind) => (
-                <option value={ind} key={ind}>
-                  {ind}
-                </option>
-              ))}
-            </select>
-            <button className={button} onClick={exportCsv}>
-              <Download size={14} /> Export CSV
+              <Plus size={14} /> Add Corporate Account
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-gray-200 text-gray-700"
+              onClick={() => setDrawer("invoice")}
+            >
+              <FileText size={14} /> Generate Invoice
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-gray-200 text-gray-700"
+              onClick={exportCsv}
+            >
+              <Download size={14} /> Export
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="space-y-6 p-6">
+        <KpiTileRow>
+          <KpiTile
+            title="Total Accounts"
+            value={data.metrics?.totalAccounts || 0}
+            subtitle={`${data.metrics?.newThisMonth || 0} new this month`}
+            icon={Building2}
+          />
+          <KpiTile
+            title="Total Billed This Month"
+            value={money(data.metrics?.totalBilled)}
+            subtitle="Current period"
+            icon={FileText}
+          />
+          <KpiTile
+            title="Outstanding Amount"
+            value={money(data.metrics?.outstanding)}
+            subtitle={`${data.metrics?.outstandingAccounts || 0} companies`}
+            icon={Wallet}
+          />
+          <KpiTile
+            title="Overdue Amount"
+            value={money(data.metrics?.overdue)}
+            subtitle="Needs follow-up"
+            icon={CreditCard}
+          />
+          <KpiTile
+            title="Active Contracts"
+            value={data.metrics?.activeContracts || 0}
+            subtitle="Expiring soon included"
+            icon={CalendarDays}
+          />
+        </KpiTileRow>
+
+        <div className="flex flex-wrap gap-2">
+          {[
+            ["all", "All"],
+            ["active", "Active"],
+            ["outstanding", "With Outstanding"],
+            ["overdue", "Overdue"],
+            ["inactive", "Inactive"],
+          ].map(([value, label]) => (
+            <button
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                tab === value
+                  ? "bg-brand-900 text-white"
+                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+              key={value}
+              onClick={() => setTab(value)}
+            >
+              {label}
             </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[780px] text-left text-[11px]">
-              <thead className="border-b border-slate-100 text-[10px] text-slate-500 uppercase">
-                <tr>
-                  {[
-                    "Company",
-                    "Industry / Contact",
-                    "Credit Limit",
-                    "Outstanding",
-                    "Status",
-                    "Actions",
-                  ].map((label) => (
-                    <th className="px-3 py-3" key={label}>
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr
-                    className="cursor-pointer border-b border-slate-50 hover:bg-blue-50/40"
-                    key={row.id}
-                    onClick={() => setSelected(row)}
-                  >
-                    <td className="px-3 py-3 font-semibold">
-                      {row.name}
-                      <div className="text-[10px] font-normal text-slate-400">
-                        {row.gstin || "GSTIN not added"}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3">
-                      {row.industry || "—"}
-                      <div className="text-[10px] text-slate-400">
-                        {row.email || row.phone || "No contact"}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3">{money(row.creditLimit)}</td>
-                    <td className="px-3 py-3 font-bold">
-                      {money(row.outstanding)}
-                    </td>
-                    <td className="px-3 py-3">
-                      <div className="flex flex-col items-start gap-1">
-                        <StatusPill value={row.status || "active"} />
-                        {row.creditLimit > 0 &&
-                          row.outstanding >= row.creditLimit && (
-                            <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-800">
-                              Credit Locked
-                            </span>
-                          )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3">
-                      <button
-                        className="rounded border border-slate-200 p-1"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setDrawer("payment");
-                          setSelected(row);
-                        }}
-                      >
-                        <MoreHorizontal size={14} />
-                      </button>
-                    </td>
-                  </tr>
+          ))}
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
+          <Panel title="Corporate Accounts">
+            <div className="mb-4 flex flex-wrap gap-2">
+              <label className="focus-within:ring-primary-500 flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-400 focus-within:ring-1">
+                <Search size={14} />
+                <input
+                  className="min-w-0 flex-1 text-gray-900 placeholder-gray-400 outline-none"
+                  placeholder="Search company, GSTIN or contact..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </label>
+              <select
+                className="focus:ring-primary-500 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700 focus:ring-1 focus:outline-none"
+                value={industryFilter}
+                onChange={(e) => setIndustryFilter(e.target.value)}
+              >
+                <option value="all">All Industries</option>
+                {industries.map((ind) => (
+                  <option value={ind} key={ind}>
+                    {ind}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-            {!rows.length && (
-              <p className="p-8 text-center text-xs text-slate-400">
-                No corporate accounts match these filters.
-              </p>
-            )}
-          </div>
-        </Panel>
-        <div className="space-y-3">
-          <Panel title="Outstanding by Age">
-            <AgeChart rows={data.aging} />
+              </select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-gray-200 text-gray-700"
+                onClick={exportCsv}
+              >
+                <Download size={14} /> Export CSV
+              </Button>
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="w-full min-w-[780px] text-left text-xs">
+                <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
+                  <tr>
+                    {[
+                      "Company",
+                      "Industry / Contact",
+                      "Credit Limit",
+                      "Outstanding",
+                      "Status",
+                      "Actions",
+                    ].map((label) => (
+                      <th className="px-4 py-3" key={label}>
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {rows.map((row) => (
+                    <tr
+                      className="hover:bg-primary-50/20 cursor-pointer"
+                      key={row.id}
+                      onClick={() => setSelected(row)}
+                    >
+                      <td className="text-brand-900 px-4 py-3 font-semibold">
+                        {row.name}
+                        <div className="text-[11px] font-normal text-gray-400">
+                          {row.gstin || "GSTIN not added"}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {row.industry || "—"}
+                        <div className="text-[11px] text-gray-400">
+                          {row.email || row.phone || "No contact"}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-800">
+                        {money(row.creditLimit)}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-gray-900">
+                        {money(row.outstanding)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col items-start gap-1">
+                          <StatusChip status={row.status || "active"} />
+                          {row.creditLimit > 0 &&
+                            row.outstanding >= row.creditLimit && (
+                              <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
+                                Credit Locked
+                              </span>
+                            )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          className="rounded border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDrawer("payment");
+                            setSelected(row);
+                          }}
+                        >
+                          <MoreHorizontal size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!rows.length && (
+                <p className="p-8 text-center text-xs text-gray-400">
+                  No corporate accounts match these filters.
+                </p>
+              )}
+            </div>
           </Panel>
-          <Panel title="Top 5 Outstanding Companies">
-            <div className="space-y-3">
-              {(data.rows || [])
-                .slice()
-                .sort((a, b) => b.outstanding - a.outstanding)
-                .slice(0, 5)
-                .map((row) => (
-                  <div className="flex justify-between text-xs" key={row.id}>
-                    <span className="font-semibold">{row.name}</span>
-                    <b>{money(row.outstanding)}</b>
+
+          <div className="space-y-6">
+            <Panel title="Outstanding by Age">
+              <AgeChart rows={data.aging} />
+            </Panel>
+            <Panel title="Top 5 Outstanding Companies">
+              <div className="space-y-3">
+                {(data.rows || [])
+                  .slice()
+                  .sort((a, b) => b.outstanding - a.outstanding)
+                  .slice(0, 5)
+                  .map((row) => (
+                    <div
+                      className="flex justify-between border-b border-gray-50 py-1 text-xs last:border-0"
+                      key={row.id}
+                    >
+                      <span className="font-medium text-gray-800">
+                        {row.name}
+                      </span>
+                      <b className="text-gray-900">{money(row.outstanding)}</b>
+                    </div>
+                  ))}
+                {!data.rows?.length && (
+                  <p className="py-2 text-xs text-gray-400">
+                    No corporate accounts.
+                  </p>
+                )}
+              </div>
+            </Panel>
+            <Panel title="Contract Expiry">
+              <div className="space-y-2">
+                {(data.contracts || []).map((row) => (
+                  <div
+                    className="flex justify-between border-b border-gray-50 py-1 text-xs last:border-0"
+                    key={row.id}
+                  >
+                    <span className="text-gray-700">{row.name}</span>
+                    <span className="font-medium text-amber-700">
+                      {new Date(row.contractEnd).toLocaleDateString("en-IN")}
+                    </span>
                   </div>
                 ))}
-            </div>
-          </Panel>
-          <Panel title="Contract Expiry">
-            <div className="space-y-2">
-              {(data.contracts || []).map((row) => (
-                <div className="flex justify-between text-xs" key={row.id}>
-                  <span>{row.name}</span>
-                  <span className="text-amber-600">
-                    {new Date(row.contractEnd).toLocaleDateString("en-IN")}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Panel>
+                {!data.contracts?.length && (
+                  <p className="py-2 text-xs text-gray-400">
+                    No contract data available.
+                  </p>
+                )}
+              </div>
+            </Panel>
+          </div>
         </div>
       </div>
+
       {drawer === "company" && (
         <CompanyDrawer
           onClose={() => setDrawer("")}
@@ -356,23 +392,26 @@ export default function CorporateBillingPage() {
 function AgeChart({ rows = [] }) {
   const max = Math.max(...rows.map((row) => Number(row.amount || 0)), 1);
   return (
-    <div className="flex h-36 items-end gap-3">
+    <div className="flex h-36 items-end gap-3 pt-4">
       {rows.map((row) => (
         <div
-          className="flex flex-1 flex-col items-center gap-1"
+          className="flex flex-1 flex-col items-center gap-1.5"
           key={row.bucket}
         >
-          <span className="text-[10px] font-semibold">{money(row.amount)}</span>
+          <span className="text-[10px] font-semibold text-gray-700">
+            {money(row.amount)}
+          </span>
           <div
-            className="w-full rounded-t bg-blue-500"
-            style={{ height: `${Math.max((row.amount / max) * 100, 5)}px` }}
+            className="bg-primary-600 w-full rounded-t transition-all"
+            style={{ height: `${Math.max((row.amount / max) * 100, 6)}px` }}
           />
-          <span className="text-[10px] text-slate-500">{row.bucket}</span>
+          <span className="text-[10px] text-gray-500">{row.bucket}</span>
         </div>
       ))}
     </div>
   );
 }
+
 function CompanyDrawer({ onClose, onComplete }) {
   const [form, setForm] = useState({});
   const [error, setError] = useState("");
@@ -434,7 +473,7 @@ function CompanyDrawer({ onClose, onComplete }) {
       />
       <Field label="Billing instructions">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 font-normal"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs font-normal text-gray-800 focus:ring-1 focus:outline-none"
           value={form.billingInstructions || "room_only"}
           onChange={set("billingInstructions")}
         >
@@ -448,6 +487,7 @@ function CompanyDrawer({ onClose, onComplete }) {
     </ActionDrawer>
   );
 }
+
 function CompanyInvoiceDrawer({ company, onClose, onComplete }) {
   const [amount, setAmount] = useState("");
   const [managerOverride, setManagerOverride] = useState(false);
@@ -465,7 +505,7 @@ function CompanyInvoiceDrawer({ company, onClose, onComplete }) {
         }}
         submitLabel="Close"
       >
-        <p className="rounded bg-amber-50 p-3 text-xs text-amber-800">
+        <p className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
           Please select a company from the corporate accounts table first before
           generating an invoice.
         </p>
@@ -502,12 +542,14 @@ function CompanyInvoiceDrawer({ company, onClose, onComplete }) {
       submitLabel={loading ? "Generating..." : "Generate Corporate Invoice"}
     >
       <Field label="Company" value={company.name} readOnly />
-      <div className="mb-3 flex justify-between rounded-lg bg-slate-50 p-2.5 text-xs">
-        <span>
-          Credit Limit: <b>{money(company.creditLimit)}</b>
+      <div className="mb-3 flex justify-between rounded-lg border border-gray-100 bg-gray-50 p-2.5 text-xs">
+        <span className="text-gray-600">
+          Credit Limit:{" "}
+          <b className="text-gray-900">{money(company.creditLimit)}</b>
         </span>
-        <span>
-          Outstanding: <b>{money(company.outstanding)}</b>
+        <span className="text-gray-600">
+          Outstanding:{" "}
+          <b className="text-gray-900">{money(company.outstanding)}</b>
         </span>
       </div>
       <Field
@@ -534,7 +576,9 @@ function CompanyInvoiceDrawer({ company, onClose, onComplete }) {
               checked={managerOverride}
               onChange={(e) => setManagerOverride(e.target.checked)}
             />
-            <span className="font-bold">Apply Authorized Manager Override</span>
+            <span className="font-bold text-gray-900">
+              Apply Authorized Manager Override
+            </span>
           </label>
         </div>
       )}
@@ -544,6 +588,7 @@ function CompanyInvoiceDrawer({ company, onClose, onComplete }) {
     </ActionDrawer>
   );
 }
+
 function CompanyPaymentDrawer({ company, onClose, onComplete }) {
   const [form, setForm] = useState({});
   const [error, setError] = useState("");
@@ -559,7 +604,7 @@ function CompanyPaymentDrawer({ company, onClose, onComplete }) {
         }}
         submitLabel="Close"
       >
-        <p className="rounded bg-amber-50 p-3 text-xs text-amber-800">
+        <p className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
           Please select a company from the corporate accounts table first before
           recording a payment.
         </p>
@@ -593,7 +638,7 @@ function CompanyPaymentDrawer({ company, onClose, onComplete }) {
       />
       <Field label="Method">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs text-gray-800 focus:ring-1 focus:outline-none"
           value={form.mode || "bank_transfer"}
           onChange={(event) => setForm({ ...form, mode: event.target.value })}
         >

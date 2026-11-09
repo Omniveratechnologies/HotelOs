@@ -10,18 +10,17 @@ import {
   Search,
   Wallet,
 } from "lucide-react";
-import { billingApi } from "../billingApi.js";
 import {
-  ActionDrawer,
-  Field,
-  KpiCard,
-  Panel,
-  StatusPill,
-  money,
-} from "../billingUi.jsx";
+  Button,
+  Header,
+  KpiTile,
+  KpiTileRow,
+  StatusChip,
+} from "@hotelos/ui/components";
+import { formatDate as date } from "@hotelos/utils";
+import { billingApi } from "../billingApi.js";
+import { ActionDrawer, Field, Panel, money } from "../billingUi.jsx";
 
-const button =
-  "inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-[#102b5c] shadow-sm";
 const tabs = [
   ["all", "All Bills"],
   ["pending", "Pending"],
@@ -29,6 +28,7 @@ const tabs = [
   ["paid", "Paid"],
   ["draft", "Drafts"],
 ];
+
 const downloadCsv = (rows, name) => {
   const csv = rows.length
     ? [
@@ -58,6 +58,7 @@ export default function PayablesPage() {
   const [drawer, setDrawer] = useState("");
   const [selected, setSelected] = useState([]);
   const [now] = useState(() => Date.now());
+
   const rows = useMemo(
     () =>
       (data.rows || []).filter(
@@ -69,257 +70,309 @@ export default function PayablesPage() {
       ),
     [data.rows, search, tab],
   );
+
   const reload = () => {
     setDrawer("");
     query.refetch();
   };
+
   if (query.isLoading)
-    return <div className="p-8 text-sm text-slate-500">Loading payables…</div>;
+    return <div className="p-8 text-sm text-gray-500">Loading payables…</div>;
   if (query.isError)
     return (
       <div className="m-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
         Payables could not be loaded.
       </div>
     );
+
   return (
-    <div className="min-h-full bg-[#f4f7fb] p-4 text-[#102b5c] sm:p-6">
-      <header className="mb-4 flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
-        <div>
-          <div className="mb-1 text-[11px] font-semibold text-blue-600">
-            Billing &amp; Folio <span className="px-2 text-slate-400">›</span>{" "}
-            Payables
-          </div>
-          <h1 className="text-2xl font-bold">Payables</h1>
-          <p className="text-xs text-slate-500">
-            Manage vendor bills, supplier payments and outstanding liabilities.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white"
-            onClick={() => setDrawer("bill")}
-          >
-            <Plus size={14} /> Add Bill
-          </button>
-          <button className={button} onClick={() => setDrawer("payment")}>
-            <Wallet size={14} /> Record Payment
-          </button>
-          <button className={button} onClick={() => setDrawer("bulk")}>
-            <Receipt size={14} /> Bulk Payment
-          </button>
-          <button
-            className={button}
-            onClick={() => downloadCsv(data.rows || [], "payables.csv")}
-          >
-            <Download size={14} /> Export
-          </button>
-        </div>
-      </header>
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          label="Total Payables"
-          value={money(data.metrics?.totalPayables)}
-          detail={`Across ${data.metrics?.supplierCount || 0} suppliers`}
-          icon={Receipt}
-        />
-        <KpiCard
-          label="Pending Payments"
-          value={money(data.metrics?.pendingPayments)}
-          detail="Bills awaiting payment"
-          tone="amber"
-          icon={CalendarClock}
-        />
-        <KpiCard
-          label="Paid This Month"
-          value={money(data.metrics?.paidThisMonth)}
-          detail="Vendor payments"
-          tone="green"
-          icon={CheckCircle2}
-        />
-        <KpiCard
-          label="Overdue Amount"
-          value={money(data.metrics?.overdueAmount)}
-          detail={`${data.metrics?.overdueCount || 0} bills overdue`}
-          tone="purple"
-          icon={CalendarClock}
-        />
-      </div>
-      <div className="mb-3 grid gap-3 lg:grid-cols-[1fr_1fr_270px]">
-        <Panel title="Payables by Category">
-          <Donut rows={data.category} />
-        </Panel>
-        <Panel title="Monthly Payables Trend">
-          <Trend rows={data.trend} />
-        </Panel>
-        <Panel title="Payables by Status">
-          <StatusChart rows={data.status} />
-        </Panel>
-      </div>
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_290px]">
-        <Panel title="All Payables">
-          <div className="mb-3 flex flex-wrap gap-2">
-            <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-400">
-              <Search size={14} />
-              <input
-                className="min-w-0 flex-1 outline-none"
-                placeholder="Search vendor, invoice no..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </label>
-            <button
-              className={button}
-              onClick={() => downloadCsv(rows, "payables-filtered.csv")}
+    <div>
+      <Header
+        pageTitle="Accounts Payable & Vendor Bills"
+        pageDescription="Manage vendor bills, supplier payments and outstanding liabilities."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
+              onClick={() => setDrawer("bill")}
+            >
+              <Plus size={14} /> Add Bill
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-gray-200 text-gray-700"
+              onClick={() => setDrawer("payment")}
+            >
+              <Wallet size={14} /> Record Payment
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-gray-200 text-gray-700"
+              onClick={() => setDrawer("bulk")}
+            >
+              <Receipt size={14} /> Bulk Payment
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-gray-200 text-gray-700"
+              onClick={() => downloadCsv(data.rows || [], "payables.csv")}
             >
               <Download size={14} /> Export
-            </button>
+            </Button>
           </div>
-          <div className="mb-3 flex flex-wrap gap-2">
-            {tabs.map(([value, label]) => (
-              <button
-                className={`rounded-lg px-3 py-2 text-xs font-semibold ${tab === value ? "bg-[#102b5c] text-white" : "border border-slate-200 bg-white text-slate-600"}`}
-                key={value}
-                onClick={() => setTab(value)}
+        }
+      />
+
+      <div className="space-y-6 p-6">
+        <KpiTileRow>
+          <KpiTile
+            title="Total Payables"
+            value={money(data.metrics?.totalPayables)}
+            subtitle={`Across ${data.metrics?.supplierCount || 0} suppliers`}
+            icon={Receipt}
+          />
+          <KpiTile
+            title="Pending Payments"
+            value={money(data.metrics?.pendingPayments)}
+            subtitle="Bills awaiting payment"
+            icon={CalendarClock}
+          />
+          <KpiTile
+            title="Paid This Month"
+            value={money(data.metrics?.paidThisMonth)}
+            subtitle="Vendor payments"
+            icon={CheckCircle2}
+          />
+          <KpiTile
+            title="Overdue Amount"
+            value={money(data.metrics?.overdueAmount)}
+            subtitle={`${data.metrics?.overdueCount || 0} bills overdue`}
+            icon={CalendarClock}
+          />
+        </KpiTileRow>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_1fr_300px]">
+          <Panel title="Payables by Category">
+            <Donut rows={data.category} />
+          </Panel>
+          <Panel title="Monthly Payables Trend">
+            <Trend rows={data.trend} />
+          </Panel>
+          <Panel title="Payables by Status">
+            <StatusChart rows={data.status} />
+          </Panel>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <Panel title="All Payables">
+            <div className="mb-4 flex flex-wrap gap-2">
+              <label className="focus-within:ring-primary-500 flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-400 focus-within:ring-1">
+                <Search size={14} />
+                <input
+                  className="min-w-0 flex-1 text-gray-900 placeholder-gray-400 outline-none"
+                  placeholder="Search vendor, invoice no..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </label>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 border-gray-200 text-gray-700"
+                onClick={() => downloadCsv(rows, "payables-filtered.csv")}
               >
-                {label} (
-                {
-                  (data.rows || []).filter(
-                    (row) => value === "all" || row.status === value,
-                  ).length
-                }
-                )
-              </button>
-            ))}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-[11px]">
-              <thead className="border-b border-slate-100 text-[10px] text-slate-500 uppercase">
-                <tr>
-                  <th className="px-3 py-3">
-                    <input
-                      type="checkbox"
-                      onChange={(event) =>
-                        setSelected(
-                          event.target.checked ? rows.map((row) => row.id) : [],
-                        )
-                      }
-                    />
-                  </th>
-                  {[
-                    "Invoice No.",
-                    "Vendor Name",
-                    "Category",
-                    "Invoice Date",
-                    "Due Date",
-                    "Amount",
-                    "Paid",
-                    "Balance",
-                    "Status",
-                    "Actions",
-                  ].map((label) => (
-                    <th className="px-3 py-3" key={label}>
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr
-                    className="border-b border-slate-50 hover:bg-blue-50/40"
-                    key={row.id}
-                  >
-                    <td className="px-3 py-3">
+                <Download size={14} /> Export
+              </Button>
+            </div>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {tabs.map(([value, label]) => (
+                <button
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    tab === value
+                      ? "bg-brand-900 text-white"
+                      : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                  key={value}
+                  onClick={() => setTab(value)}
+                >
+                  {label} (
+                  {
+                    (data.rows || []).filter(
+                      (row) => value === "all" || row.status === value,
+                    ).length
+                  }
+                  )
+                </button>
+              ))}
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="w-full min-w-[820px] text-left text-xs">
+                <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
+                  <tr>
+                    <th className="px-4 py-3">
                       <input
                         type="checkbox"
-                        checked={selected.includes(row.id)}
-                        onChange={() =>
+                        className="text-primary-600 focus:ring-primary-500 rounded border-gray-300"
+                        onChange={(event) =>
                           setSelected(
-                            selected.includes(row.id)
-                              ? selected.filter((id) => id !== row.id)
-                              : [...selected, row.id],
+                            event.target.checked
+                              ? rows.map((row) => row.id)
+                              : [],
                           )
                         }
                       />
-                    </td>
-                    <td className="px-3 py-3 font-semibold text-blue-700">
-                      {row.billNo || row.invoiceNo || "—"}
-                    </td>
-                    <td className="px-3 py-3">
-                      {row.vendorName || row.vendor || "—"}
-                    </td>
-                    <td className="px-3 py-3">{date(row.billDate)}</td>
-                    <td className="px-3 py-3">{date(row.dueDate)}</td>
-                    <td className="px-3 py-3 font-semibold">
-                      {money(row.amount)}
-                    </td>
-                    <td className="px-3 py-3">{money(row.paid)}</td>
-                    <td className="px-3 py-3 font-bold">
-                      {money(row.balance)}
-                    </td>
-                    <td className="px-3 py-3">
-                      <StatusPill value={row.status} />
-                    </td>
-                    <td className="px-3 py-3">
-                      <button
-                        className="rounded border border-slate-200 p-1"
-                        onClick={() => {
-                          setSelected([row.id]);
-                          setDrawer("payment");
-                        }}
-                      >
-                        <MoreHorizontal size={14} />
-                      </button>
-                    </td>
+                    </th>
+                    {[
+                      "Invoice No.",
+                      "Vendor Name",
+                      "Category",
+                      "Invoice Date",
+                      "Due Date",
+                      "Amount",
+                      "Paid",
+                      "Balance",
+                      "Status",
+                      "Actions",
+                    ].map((label) => (
+                      <th className="px-4 py-3" key={label}>
+                        {label}
+                      </th>
+                    ))}
                   </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {rows.map((row) => (
+                    <tr className="hover:bg-primary-50/20" key={row.id}>
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          className="text-primary-600 focus:ring-primary-500 rounded border-gray-300"
+                          checked={selected.includes(row.id)}
+                          onChange={() =>
+                            setSelected(
+                              selected.includes(row.id)
+                                ? selected.filter((id) => id !== row.id)
+                                : [...selected, row.id],
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="text-primary-700 px-4 py-3 font-semibold">
+                        {row.billNo || row.invoiceNo || "—"}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {row.vendorName || row.vendor || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {row.category || "General"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {date(row.billDate)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {date(row.dueDate)}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-gray-900">
+                        {money(row.amount)}
+                      </td>
+                      <td className="px-4 py-3 text-emerald-700">
+                        {money(row.paid)}
+                      </td>
+                      <td className="px-4 py-3 font-bold text-gray-900">
+                        {money(row.balance)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusChip status={row.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          className="rounded border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
+                          onClick={() => {
+                            setSelected([row.id]);
+                            setDrawer("payment");
+                          }}
+                        >
+                          <MoreHorizontal size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!rows.length && (
+                <p className="p-8 text-center text-xs text-gray-400">
+                  No payable bills match these filters.
+                </p>
+              )}
+            </div>
+          </Panel>
+
+          <div className="space-y-6">
+            <Panel title="Upcoming Payments">
+              <div className="space-y-3">
+                {(data.upcoming || []).map((row) => (
+                  <div
+                    className="flex justify-between border-b border-gray-50 py-1 text-xs last:border-0"
+                    key={row.id}
+                  >
+                    <span>
+                      <b className="block text-gray-900">
+                        {row.vendorName || "Supplier"}
+                      </b>
+                      <small className="text-gray-400">
+                        Due in{" "}
+                        {Math.max(
+                          0,
+                          Math.ceil((new Date(row.dueDate) - now) / 86400000),
+                        )}{" "}
+                        days
+                      </small>
+                    </span>
+                    <b className="text-gray-900">{money(row.balance)}</b>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-            {!rows.length && (
-              <p className="p-8 text-center text-xs text-slate-400">
-                No payable bills match these filters.
-              </p>
-            )}
+                {!data.upcoming?.length && (
+                  <p className="py-2 text-xs text-gray-400">
+                    No upcoming payments due.
+                  </p>
+                )}
+              </div>
+            </Panel>
+
+            <Panel title="Recent Payments">
+              <div className="space-y-3">
+                {(data.recentPayments || []).slice(0, 6).map((row) => (
+                  <div
+                    className="flex justify-between border-b border-gray-50 py-1 text-xs last:border-0"
+                    key={row.id}
+                  >
+                    <span>
+                      <span className="font-medium text-gray-800">
+                        {row.vendorName || "Supplier"}
+                      </span>
+                      <small className="block text-gray-400">
+                        {row.paymentMode || "Bank transfer"}
+                      </small>
+                    </span>
+                    <b className="text-emerald-700">{money(row.paid)}</b>
+                  </div>
+                ))}
+                {!data.recentPayments?.length && (
+                  <p className="py-2 text-xs text-gray-400">
+                    No recent payments.
+                  </p>
+                )}
+              </div>
+            </Panel>
           </div>
-        </Panel>
-        <div className="space-y-3">
-          <Panel title="Upcoming Payments">
-            <div className="space-y-3">
-              {(data.upcoming || []).map((row) => (
-                <div className="flex justify-between text-xs" key={row.id}>
-                  <span>
-                    <b className="block">{row.vendorName || "Supplier"}</b>
-                    <small className="text-slate-400">
-                      Due in{" "}
-                      {Math.max(
-                        0,
-                        Math.ceil((new Date(row.dueDate) - now) / 86400000),
-                      )}{" "}
-                      days
-                    </small>
-                  </span>
-                  <b>{money(row.balance)}</b>
-                </div>
-              ))}
-            </div>
-          </Panel>
-          <Panel title="Recent Payments">
-            <div className="space-y-3">
-              {(data.recentPayments || []).slice(0, 6).map((row) => (
-                <div className="flex justify-between text-xs" key={row.id}>
-                  <span>
-                    {row.vendorName || "Supplier"}
-                    <small className="block text-slate-400">
-                      {row.paymentMode || "Bank transfer"}
-                    </small>
-                  </span>
-                  <b>{money(row.paid)}</b>
-                </div>
-              ))}
-            </div>
-          </Panel>
         </div>
       </div>
+
       {drawer === "bill" && (
         <BillDrawer onClose={() => setDrawer("")} onComplete={reload} />
       )}
@@ -344,15 +397,6 @@ export default function PayablesPage() {
   );
 }
 
-function date(value) {
-  return value
-    ? new Date(value).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : "—";
-}
 function Donut({ rows = [] }) {
   const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const colors = [
@@ -379,76 +423,84 @@ function Donut({ rows = [] }) {
       : "#cbd5e1 0% 100%";
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-6">
       <div
-        className="grid size-24 place-items-center rounded-full"
+        className="grid size-28 shrink-0 place-items-center rounded-full shadow-inner"
         style={{
           background: `conic-gradient(${gradientParts})`,
         }}
       >
-        <div className="grid size-14 place-items-center rounded-full bg-white text-center text-[10px] font-bold">
+        <div className="text-brand-900 grid size-16 place-items-center rounded-full bg-white text-center text-xs font-bold shadow-sm">
           {money(total)}
         </div>
       </div>
-      <div className="space-y-1 text-[10px]">
+      <div className="flex-1 space-y-1.5 text-xs">
         {rows.map((row, idx) => (
           <div
-            className="flex items-center justify-between gap-5"
+            className="flex items-center justify-between gap-4"
             key={row.category || idx}
           >
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 truncate text-gray-600">
               <span
-                className="size-2 rounded-full"
+                className="size-2 shrink-0 rounded-full"
                 style={{ backgroundColor: colors[idx % colors.length] }}
               />
               {row.category}
             </span>
-            <b>{money(row.amount)}</b>
+            <b className="text-gray-900">{money(row.amount)}</b>
           </div>
         ))}
       </div>
     </div>
   );
 }
+
 function Trend({ rows = [] }) {
   const max = Math.max(...rows.map((row) => row.bills), 1);
   return (
-    <div className="flex h-28 items-end gap-2">
+    <div className="flex h-32 items-end gap-2 pt-4">
       {rows.map((row) => (
         <div
-          className="flex flex-1 flex-col items-center gap-1"
+          className="flex flex-1 flex-col items-center gap-1.5"
           key={row.month}
         >
           <div
-            className="w-full rounded-t bg-blue-400"
-            style={{ height: `${Math.max((row.bills / max) * 80, 4)}px` }}
+            className="bg-primary-600 w-full rounded-t transition-all"
+            style={{ height: `${Math.max((row.bills / max) * 85, 6)}px` }}
           />
-          <span className="text-[9px] text-slate-400">{row.month}</span>
+          <span className="w-full truncate text-center text-[10px] text-gray-500">
+            {row.month}
+          </span>
         </div>
       ))}
     </div>
   );
 }
+
 function StatusChart({ rows = [] }) {
   return (
     <div className="space-y-3">
       {rows.map((row) => (
         <div key={row.status}>
-          <div className="mb-1 flex justify-between text-[10px]">
-            <span className="capitalize">{row.status}</span>
-            <b>{row.count}</b>
+          <div className="mb-1 flex justify-between text-xs">
+            <span className="text-gray-600 capitalize">{row.status}</span>
+            <b className="text-gray-900">{row.count}</b>
           </div>
-          <div className="h-2 rounded-full bg-slate-100">
+          <div className="h-2 overflow-hidden rounded-full bg-gray-100">
             <div
-              className="h-2 rounded-full bg-emerald-400"
+              className="h-2 rounded-full bg-emerald-500"
               style={{ width: `${Math.min(row.count * 10, 100)}%` }}
             />
           </div>
         </div>
       ))}
+      {!rows.length && (
+        <p className="py-2 text-xs text-gray-400">No status data.</p>
+      )}
     </div>
   );
 }
+
 function BillDrawer({ onClose, onComplete }) {
   const [form, setForm] = useState({
     approvalStatus: "submitted",
@@ -483,7 +535,7 @@ function BillDrawer({ onClose, onComplete }) {
       submitLabel={loading ? "Saving..." : "Save Bill"}
     >
       {error && (
-        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+        <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
           {error}
         </div>
       )}
@@ -501,7 +553,7 @@ function BillDrawer({ onClose, onComplete }) {
       />
       <Field label="Category">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs text-gray-800 focus:ring-1 focus:outline-none"
           value={form.category}
           onChange={set("category")}
         >
@@ -534,7 +586,7 @@ function BillDrawer({ onClose, onComplete }) {
       />
       <Field label="Save as">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs text-gray-800 focus:ring-1 focus:outline-none"
           value={form.approvalStatus}
           onChange={set("approvalStatus")}
         >
@@ -545,6 +597,7 @@ function BillDrawer({ onClose, onComplete }) {
     </ActionDrawer>
   );
 }
+
 function PaymentDrawer({ ids = [], rows = [], bulk, onClose, onComplete }) {
   const selected = rows.filter((row) => ids.includes(row.id));
   const defaultTotal = selected.reduce(
@@ -593,7 +646,7 @@ function PaymentDrawer({ ids = [], rows = [], bulk, onClose, onComplete }) {
       submitLabel={loading ? "Recording..." : "Record Payment"}
     >
       {error && (
-        <div className="mb-3 rounded-lg bg-red-50 p-2 text-xs text-red-600">
+        <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
           {error}
         </div>
       )}
@@ -606,7 +659,7 @@ function PaymentDrawer({ ids = [], rows = [], bulk, onClose, onComplete }) {
       />
       <Field label="Payment mode">
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs text-gray-800 focus:ring-1 focus:outline-none"
           value={form.mode}
           onChange={(event) => setForm({ ...form, mode: event.target.value })}
         >
@@ -624,7 +677,7 @@ function PaymentDrawer({ ids = [], rows = [], bulk, onClose, onComplete }) {
           setForm({ ...form, reference: event.target.value })
         }
       />
-      <p className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+      <p className="bg-primary-50 border-primary-100 text-primary-800 rounded-lg border p-3 text-xs">
         {selected.length
           ? `${selected.length} bill(s) selected (${money(defaultTotal)}) for oldest-first allocation.`
           : "Select bills from the table before recording a payment."}

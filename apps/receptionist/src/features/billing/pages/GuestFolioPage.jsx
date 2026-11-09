@@ -1,6 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@hotelos/query";
 import {
+  Header,
+  Button,
+  StatusChip,
+  ReceiptModal,
+} from "@hotelos/ui/components";
+import {
   ArrowRightLeft,
   ChevronDown,
   FileDown,
@@ -15,13 +21,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { billingApi } from "../billingApi.js";
-import {
-  ActionDrawer,
-  Field,
-  StatusPill,
-  ThermalReceiptModal,
-  money,
-} from "../billingUi.jsx";
+import { ActionDrawer, Field, money } from "../billingUi.jsx";
 
 const tabs = [
   "Folio",
@@ -33,7 +33,8 @@ const tabs = [
   "Remarks",
 ];
 const buttonClass =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-[#102b5c] shadow-sm hover:border-blue-300";
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-brand-900 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer";
+const EMPTY_CHARGES = [];
 
 export default function GuestFolioPage() {
   const [selectedId, setSelectedId] = useState("");
@@ -41,7 +42,7 @@ export default function GuestFolioPage() {
   const [activeWindow, setActiveWindow] = useState("all");
   const [drawer, setDrawer] = useState("");
   const [selectedChargeIndex, setSelectedChargeIndex] = useState(0);
-  const [thermalReceipt, setThermalReceipt] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [transactionType, setTransactionType] = useState("All Transactions");
   const foliosQuery = useQuery({
@@ -58,7 +59,7 @@ export default function GuestFolioPage() {
   const aggregate = detailQuery.data || {};
   const folio =
     aggregate.folio || folios.find((item) => item.id === folioId) || {};
-  const charges = aggregate.charges || folio.charges || [];
+  const charges = aggregate.charges || folio.charges || EMPTY_CHARGES;
   const visibleCharges = useMemo(
     () =>
       charges.filter((charge) => {
@@ -85,241 +86,245 @@ export default function GuestFolioPage() {
 
   if (foliosQuery.isLoading || detailQuery.isLoading)
     return (
-      <div className="p-8 text-sm text-slate-500">Loading guest folio…</div>
+      <div className="p-8 text-sm text-gray-500">Loading guest folio…</div>
     );
   if (foliosQuery.isError || detailQuery.isError)
     return (
-      <div className="m-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+      <div className="m-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
         Guest folio could not be loaded. Please retry.
       </div>
     );
   if (!folioId)
     return (
-      <div className="m-6 rounded-xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500">
+      <div className="m-6 rounded-2xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
         No open guest folios are available.
       </div>
     );
 
   return (
-    <div className="min-h-full bg-[#f4f7fb] p-4 text-[#102b5c] sm:p-6">
-      <div className="mb-3 flex items-end justify-between gap-4">
-        <div>
-          <div className="mb-1 text-[11px] font-semibold text-blue-600">
-            Billing &amp; Folio <span className="px-2 text-slate-400">›</span>{" "}
-            Folio
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Guest Folio</h1>
-          <p className="text-xs text-slate-500">
-            View and manage guest charges, payments and invoices.
-          </p>
-        </div>
-        <div className="flex flex-wrap justify-end gap-2">
-          <select
-            className={buttonClass}
-            value={folioId}
-            onChange={(event) => setSelectedId(event.target.value)}
-            aria-label="Select property folio"
-          >
-            {folios.map((item) => (
-              <option value={item.id} key={item.id}>
-                {item.guestName || "Guest"} —{" "}
-                {item.folioNo ||
-                  `FL-${String(item.id).slice(-6).toUpperCase()}`}
-                {item.roomId ? ` (Room ${item.roomId})` : ""}
-              </option>
-            ))}
-          </select>
-          <button
-            className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white"
-            onClick={() => setDrawer("charge")}
-          >
-            <Plus size={14} /> Add Charge
-          </button>
-          <button className={buttonClass} onClick={() => setDrawer("split")}>
-            <Split size={14} /> Split Folio
-          </button>
-          <button className={buttonClass} onClick={() => setDrawer("merge")}>
-            <Share2 size={14} /> Merge Folio
-          </button>
-          <button
-            className={`${buttonClass} px-2`}
-            onClick={() => setDrawer("menu")}
-            aria-label="More folio actions"
-          >
-            <MoreHorizontal size={16} />
-          </button>
-        </div>
-      </div>
+    <>
+      <Header
+        pageTitle="Guest Folio"
+        pageDescription="View and manage guest charges, payments and invoices."
+      >
+        <select
+          className={buttonClass}
+          value={folioId}
+          onChange={(event) => setSelectedId(event.target.value)}
+          aria-label="Select property folio"
+        >
+          {folios.map((item) => (
+            <option value={item.id} key={item.id}>
+              {item.guestName || "Guest"} —{" "}
+              {item.folioNo || `FL-${String(item.id).slice(-6).toUpperCase()}`}
+              {item.roomId ? ` (Room ${item.roomId})` : ""}
+            </option>
+          ))}
+        </select>
+        <Button
+          variant="primary"
+          icon={Plus}
+          onClick={() => setDrawer("charge")}
+        >
+          Add Charge
+        </Button>
+        <Button
+          variant="secondary"
+          icon={Split}
+          onClick={() => setDrawer("split")}
+        >
+          Split Folio
+        </Button>
+        <Button
+          variant="secondary"
+          icon={Share2}
+          onClick={() => setDrawer("merge")}
+        >
+          Merge Folio
+        </Button>
+        <Button
+          variant="secondary"
+          icon={MoreHorizontal}
+          onClick={() => setDrawer("menu")}
+          aria-label="More folio actions"
+        />
+      </Header>
 
-      <GuestStrip folio={folio} />
-      <div className="mt-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_238px]">
-        <main className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex overflow-x-auto border-b border-slate-200 px-3">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-3 text-[11px] font-semibold whitespace-nowrap ${activeTab === tab ? "border-b-2 border-[#102b5c] text-[#102b5c]" : "text-slate-500"}`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          {activeTab === "Folio" ? (
-            <>
-              {/* Multi-Window Folio Tabs */}
-              <div className="flex items-center gap-1 border-b border-slate-100 bg-slate-50/70 px-3 py-2 text-xs">
-                <span className="mr-2 text-[10px] font-bold text-slate-400 uppercase">
-                  Folio Windows:
-                </span>
-                {[
-                  ["all", "All Charges"],
-                  ["A", "Folio A (Room / Pkg)"],
-                  ["B", "Folio B (Incidentals)"],
-                  ["C", "Folio C (Direct Bill)"],
-                ].map(([win, winLabel]) => (
-                  <button
-                    key={win}
-                    onClick={() => setActiveWindow(win)}
-                    className={`rounded-md px-3 py-1 text-[11px] font-bold transition-all ${
-                      activeWindow === win
-                        ? "bg-[#102b5c] text-white shadow-xs"
-                        : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
-                    }`}
-                  >
-                    {winLabel}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-2 border-b border-slate-100 p-3">
-                <label className="flex min-w-[160px] flex-1 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-400">
-                  <Search size={14} />
-                  <input
-                    className="min-w-0 flex-1 outline-none"
-                    placeholder="Search charges..."
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                  />
-                </label>
-                <select
-                  className="rounded-lg border border-slate-200 px-3 text-xs"
-                  value={transactionType}
-                  onChange={(event) => setTransactionType(event.target.value)}
-                >
-                  <option>All Transactions</option>
-                  <option>Charges</option>
-                  <option>Payments</option>
-                  <option>Adjustments</option>
-                  <option>Voids</option>
-                </select>
+      <div className="space-y-6 p-6">
+        <GuestStrip folio={folio} />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <main className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
+            <div className="flex overflow-x-auto border-b border-gray-100 px-4">
+              {tabs.map((tab) => (
                 <button
-                  className={buttonClass}
-                  onClick={() => setThermalReceipt(true)}
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors ${activeTab === tab ? "border-brand-900 text-brand-900 border-b-2" : "hover:text-brand-900 text-gray-500"}`}
                 >
-                  <Printer size={13} /> 80mm Slip
+                  {tab}
                 </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-[11px]">
-                  <thead className="bg-slate-50 text-[10px] tracking-wide text-slate-500 uppercase">
-                    <tr>
-                      {[
-                        "Date & Time",
-                        "Description",
-                        "Win",
-                        "Department",
-                        "Qty",
-                        "Rate (₹)",
-                        "Amount (₹)",
-                        "Status",
-                        "Actions",
-                      ].map((label) => (
-                        <th className="px-3 py-3 font-semibold" key={label}>
-                          {label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleCharges.map((charge, index) => (
-                      <ChargeRow
-                        charge={charge}
-                        index={index}
-                        key={
-                          charge._id ||
-                          charge.id ||
-                          `${charge.description}-${index}`
-                        }
-                        onAction={(action) => setDrawer(action)}
-                        onTransferWindow={() => {
-                          setSelectedChargeIndex(index);
-                          setDrawer("transfer-window");
-                        }}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-                {!visibleCharges.length && (
-                  <p className="p-10 text-center text-xs text-slate-400">
-                    No transactions match the selected filters.
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 p-3">
-                <div className="flex gap-2">
-                  <button
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#0d5bd7] px-4 py-2 text-xs font-bold text-white"
-                    onClick={() => setDrawer("charge")}
+              ))}
+            </div>
+            {activeTab === "Folio" ? (
+              <>
+                {/* Multi-Window Folio Tabs */}
+                <div className="flex items-center gap-1.5 border-b border-gray-100 bg-gray-50/70 px-4 py-2.5 text-xs">
+                  <span className="mr-2 text-[10px] font-bold text-gray-400 uppercase">
+                    Folio Windows:
+                  </span>
+                  {[
+                    ["all", "All Charges"],
+                    ["A", "Folio A (Room / Pkg)"],
+                    ["B", "Folio B (Incidentals)"],
+                    ["C", "Folio C (Direct Bill)"],
+                  ].map(([win, winLabel]) => (
+                    <button
+                      key={win}
+                      onClick={() => setActiveWindow(win)}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                        activeWindow === win
+                          ? "bg-brand-900 text-white shadow-2xs"
+                          : "hover:text-brand-900 text-gray-600 hover:bg-gray-100"
+                      }`}
+                    >
+                      {winLabel}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2 border-b border-slate-100 p-3">
+                  <label className="flex min-w-[160px] flex-1 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-400">
+                    <Search size={14} />
+                    <input
+                      className="min-w-0 flex-1 outline-none"
+                      placeholder="Search charges..."
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  </label>
+                  <select
+                    className="rounded-lg border border-slate-200 px-3 text-xs"
+                    value={transactionType}
+                    onChange={(event) => setTransactionType(event.target.value)}
                   >
-                    <Plus size={14} /> Add Charge
-                  </button>
+                    <option>All Transactions</option>
+                    <option>Charges</option>
+                    <option>Payments</option>
+                    <option>Adjustments</option>
+                    <option>Voids</option>
+                  </select>
                   <button
                     className={buttonClass}
-                    onClick={() => setDrawer("adjust")}
+                    onClick={() => setThermalReceipt(true)}
                   >
-                    <WalletCards size={14} /> Adjust Charge
+                    <Printer size={13} /> 80mm Slip
                   </button>
                 </div>
-                <button
-                  className="text-[11px] font-semibold text-blue-600"
-                  onClick={() => setDrawer("tax")}
-                >
-                  Show Tax Breakdown{" "}
-                  <ChevronDown size={13} className="inline" />
-                </button>
-              </div>
-            </>
-          ) : (
-            <TabPlaceholder
-              tab={activeTab}
-              payments={aggregate.payments}
-              folio={folio}
-            />
-          )}
-        </main>
-        <FolioSummary
-          folio={folio}
-          deposits={aggregate.deposits || []}
-          onAction={setDrawer}
-        />
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[720px] text-left text-[11px]">
+                    <thead className="bg-slate-50 text-[10px] tracking-wide text-slate-500 uppercase">
+                      <tr>
+                        {[
+                          "Date & Time",
+                          "Description",
+                          "Win",
+                          "Department",
+                          "Qty",
+                          "Rate (₹)",
+                          "Amount (₹)",
+                          "Status",
+                          "Actions",
+                        ].map((label) => (
+                          <th className="px-3 py-3 font-semibold" key={label}>
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleCharges.map((charge, index) => (
+                        <ChargeRow
+                          charge={charge}
+                          index={index}
+                          key={
+                            charge._id ||
+                            charge.id ||
+                            `${charge.description}-${index}`
+                          }
+                          onAction={(action) => setDrawer(action)}
+                          onTransferWindow={() => {
+                            setSelectedChargeIndex(index);
+                            setDrawer("transfer-window");
+                          }}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                  {!visibleCharges.length && (
+                    <p className="p-10 text-center text-xs text-slate-400">
+                      No transactions match the selected filters.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 p-4">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={Plus}
+                      onClick={() => setDrawer("charge")}
+                    >
+                      Add Charge
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={WalletCards}
+                      onClick={() => setDrawer("adjust")}
+                    >
+                      Adjust Charge
+                    </Button>
+                  </div>
+                  <button
+                    className="text-brand-700 hover:text-brand-900 text-xs font-semibold transition-colors"
+                    onClick={() => setDrawer("tax")}
+                  >
+                    Show Tax Breakdown{" "}
+                    <ChevronDown size={13} className="inline" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <TabPlaceholder
+                tab={activeTab}
+                payments={aggregate.payments}
+                folio={folio}
+              />
+            )}
+          </main>
+          <FolioSummary
+            folio={folio}
+            deposits={aggregate.deposits || []}
+            onAction={setDrawer}
+          />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_1.2fr_1.8fr]">
+          <RecentPayments
+            payments={aggregate.payments || []}
+            onViewAll={() => setActiveTab("Payments")}
+          />
+          <Deposits
+            deposits={aggregate.deposits || []}
+            onApply={() => setDrawer("apply-deposit")}
+          />
+          <QuickActions
+            onAction={setDrawer}
+            onPrintThermal={() => setReceiptOpen(true)}
+          />
+        </div>
       </div>
-      <div className="mt-2 grid gap-2 lg:grid-cols-[1.2fr_1.2fr_1.8fr]">
-        <RecentPayments
-          payments={aggregate.payments || []}
-          onViewAll={() => setActiveTab("Payments")}
-        />
-        <Deposits
-          deposits={aggregate.deposits || []}
-          onApply={() => setDrawer("apply-deposit")}
-        />
-        <QuickActions
-          onAction={setDrawer}
-          onPrintThermal={() => setThermalReceipt(true)}
-        />
-      </div>
-      {thermalReceipt && (
-        <ThermalReceiptModal
+      {receiptOpen && (
+        <ReceiptModal
           title={`Guest Folio Receipt - ${folio.folioNo || folio.guestName}`}
           data={{
             ...folio,
@@ -328,7 +333,7 @@ export default function GuestFolioPage() {
             balanceDue: folio.summary?.balanceDue ?? folio.balanceDue ?? 0,
             paymentMethod: "Split/Deposit",
           }}
-          onClose={() => setThermalReceipt(false)}
+          onClose={() => setReceiptOpen(false)}
         />
       )}
       {drawer && (
@@ -344,7 +349,7 @@ export default function GuestFolioPage() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -365,7 +370,7 @@ function GuestStrip({ folio }) {
       <div className="min-w-[180px] flex-1">
         <div className="flex items-center gap-2">
           <strong className="text-sm">{folio.guestName || "Guest"}</strong>
-          <StatusPill value={folio.status || "In House"} />
+          <StatusChip status={folio.status || "In House"} />
           {folio.isVip && (
             <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">
               VIP
@@ -451,7 +456,7 @@ function ChargeRow({ charge, onAction, onTransferWindow }) {
       </td>
       <td className="px-3 py-3 font-bold">{money(amount)}</td>
       <td className="px-3 py-3">
-        <StatusPill value={charge.status || "Posted"} />
+        <StatusChip status={charge.status || "Posted"} />
       </td>
       <td className="px-3 py-3">
         <div className="flex items-center gap-1">
@@ -693,40 +698,44 @@ function QuickActions({ onAction, onPrintThermal }) {
 function TabPlaceholder({ tab, payments = [], folio }) {
   if (tab === "Payments") {
     return (
-      <div className="p-4">
-        <h2 className="mb-3 text-sm font-bold text-[#102b5c]">
+      <div className="p-5">
+        <h2 className="font-display text-brand-900 mb-3 text-sm font-semibold">
           Payments & Settlements
         </h2>
         {payments.length ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-100 text-[10px] text-slate-400 uppercase">
+              <thead className="border-b border-gray-100 text-[10px] text-gray-400 uppercase">
                 <tr>
-                  <th className="py-2">Date & Time</th>
-                  <th className="py-2">Method</th>
-                  <th className="py-2">Reference</th>
-                  <th className="py-2">Amount</th>
-                  <th className="py-2">Status</th>
+                  <th className="py-2.5">Date & Time</th>
+                  <th className="py-2.5">Method</th>
+                  <th className="py-2.5">Reference</th>
+                  <th className="py-2.5">Amount</th>
+                  <th className="py-2.5">Status</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-50">
                 {payments.map((p) => (
                   <tr
-                    className="border-b border-slate-50"
+                    className="transition-colors hover:bg-gray-50/50"
                     key={p._id || p.transactionId}
                   >
-                    <td className="py-2 text-slate-500">
+                    <td className="py-2.5 text-gray-500">
                       {dateTime(p.createdAt)}
                     </td>
-                    <td className="py-2 font-medium capitalize">{p.method}</td>
-                    <td className="py-2 text-slate-400">
+                    <td className="py-2.5 font-medium text-gray-800 capitalize">
+                      {p.method}
+                    </td>
+                    <td className="py-2.5 text-gray-400">
                       {p.referenceNo || p.reference || "—"}
                     </td>
-                    <td className="py-2 font-bold text-emerald-600">
+                    <td className="py-2.5 font-bold text-emerald-600">
                       {money(p.amount)}
                     </td>
-                    <td className="py-2">
-                      <StatusPill value={p.status || "success"} />
+                    <td className="py-2.5">
+                      <StatusChip variant={p.status || "success"}>
+                        {p.status || "success"}
+                      </StatusChip>
                     </td>
                   </tr>
                 ))}
@@ -734,7 +743,7 @@ function TabPlaceholder({ tab, payments = [], folio }) {
             </table>
           </div>
         ) : (
-          <p className="py-6 text-center text-xs text-slate-400">
+          <p className="py-8 text-center text-xs text-gray-400">
             No payments recorded for this folio.
           </p>
         )}
@@ -744,26 +753,36 @@ function TabPlaceholder({ tab, payments = [], folio }) {
 
   if (tab === "Guest Details") {
     return (
-      <div className="space-y-3 p-4 text-xs">
-        <h2 className="text-sm font-bold text-[#102b5c]">Guest Profile</h2>
-        <div className="grid max-w-md grid-cols-2 gap-3">
+      <div className="space-y-3 p-5 text-xs">
+        <h2 className="font-display text-brand-900 text-sm font-semibold">
+          Guest Profile
+        </h2>
+        <div className="grid max-w-md grid-cols-2 gap-4">
           <div>
-            <span className="block text-[10px] text-slate-400">Full Name</span>
-            <strong>{folio.guestName || "—"}</strong>
+            <span className="block text-[10px] text-gray-400">Full Name</span>
+            <strong className="text-brand-900 text-sm">
+              {folio.guestName || "—"}
+            </strong>
           </div>
           <div>
-            <span className="block text-[10px] text-slate-400">Phone</span>
-            <strong>{folio.guestPhone || "—"}</strong>
+            <span className="block text-[10px] text-gray-400">Phone</span>
+            <strong className="text-brand-900">
+              {folio.guestPhone || "—"}
+            </strong>
           </div>
           <div>
-            <span className="block text-[10px] text-slate-400">Email</span>
-            <strong>{folio.guestEmail || "—"}</strong>
+            <span className="block text-[10px] text-gray-400">Email</span>
+            <strong className="text-brand-900">
+              {folio.guestEmail || "—"}
+            </strong>
           </div>
           <div>
-            <span className="block text-[10px] text-slate-400">
+            <span className="block text-[10px] text-gray-400">
               Room Assigned
             </span>
-            <strong>{folio.roomNumber || folio.roomId || "—"}</strong>
+            <strong className="text-brand-900">
+              {folio.roomNumber || folio.roomId || "—"}
+            </strong>
           </div>
         </div>
       </div>
@@ -772,36 +791,48 @@ function TabPlaceholder({ tab, payments = [], folio }) {
 
   if (tab === "Stay History") {
     return (
-      <div className="space-y-3 p-4 text-xs">
-        <h2 className="text-sm font-bold text-[#102b5c]">Stay Information</h2>
-        <div className="grid max-w-lg grid-cols-3 gap-3">
+      <div className="space-y-3 p-5 text-xs">
+        <h2 className="font-display text-brand-900 text-sm font-semibold">
+          Stay Information
+        </h2>
+        <div className="grid max-w-lg grid-cols-3 gap-4">
           <div>
-            <span className="block text-[10px] text-slate-400">Check-in</span>
-            <strong>{dateTime(folio.checkIn)}</strong>
+            <span className="block text-[10px] text-gray-400">Check-in</span>
+            <strong className="text-brand-900">
+              {dateTime(folio.checkIn)}
+            </strong>
           </div>
           <div>
-            <span className="block text-[10px] text-slate-400">Check-out</span>
-            <strong>{dateTime(folio.checkOut)}</strong>
+            <span className="block text-[10px] text-gray-400">Check-out</span>
+            <strong className="text-brand-900">
+              {dateTime(folio.checkOut)}
+            </strong>
           </div>
           <div>
-            <span className="block text-[10px] text-slate-400">Nights</span>
-            <strong>{folio.nights || 1}</strong>
+            <span className="block text-[10px] text-gray-400">Nights</span>
+            <strong className="text-brand-900">{folio.nights || 1}</strong>
           </div>
           <div>
-            <span className="block text-[10px] text-slate-400">
+            <span className="block text-[10px] text-gray-400">
               Booking Reference
             </span>
-            <strong>{folio.bookingNo || folio.bookingId || "—"}</strong>
+            <strong className="text-brand-900">
+              {folio.bookingNo || folio.bookingId || "—"}
+            </strong>
           </div>
           <div>
-            <span className="block text-[10px] text-slate-400">Room Type</span>
-            <strong>{folio.roomType || "Standard"}</strong>
+            <span className="block text-[10px] text-gray-400">Room Type</span>
+            <strong className="text-brand-900">
+              {folio.roomType || "Standard"}
+            </strong>
           </div>
           <div>
-            <span className="block text-[10px] text-slate-400">
+            <span className="block text-[10px] text-gray-400">
               Folio Status
             </span>
-            <StatusPill value={folio.status || "open"} />
+            <StatusChip variant={folio.status || "open"}>
+              {folio.status || "open"}
+            </StatusChip>
           </div>
         </div>
       </div>
@@ -810,33 +841,37 @@ function TabPlaceholder({ tab, payments = [], folio }) {
 
   if (tab === "Corporate") {
     return (
-      <div className="space-y-3 p-4 text-xs">
-        <h2 className="text-sm font-bold text-[#102b5c]">
+      <div className="space-y-3 p-5 text-xs">
+        <h2 className="font-display text-brand-900 text-sm font-semibold">
           Corporate Billing Instructions
         </h2>
         {folio.companyName || folio.companyId ? (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <div>
-              <span className="block text-[10px] text-slate-400">
+              <span className="block text-[10px] text-gray-400">
                 Company Name
               </span>
-              <strong>{folio.companyName}</strong>
+              <strong className="text-brand-900 text-sm">
+                {folio.companyName}
+              </strong>
             </div>
             <div>
-              <span className="block text-[10px] text-slate-400">GSTIN</span>
-              <strong>{folio.companyGstin || "—"}</strong>
+              <span className="block text-[10px] text-gray-400">GSTIN</span>
+              <strong className="text-brand-900">
+                {folio.companyGstin || "—"}
+              </strong>
             </div>
             <div>
-              <span className="block text-[10px] text-slate-400">
+              <span className="block text-[10px] text-gray-400">
                 Billing Routing
               </span>
-              <span>
+              <span className="text-gray-700">
                 {folio.billingInstruction || "Direct Billing (City Ledger)"}
               </span>
             </div>
           </div>
         ) : (
-          <p className="text-slate-400">
+          <p className="text-gray-400">
             Direct guest billing — no corporate contract linked to this folio.
           </p>
         )}
@@ -845,9 +880,11 @@ function TabPlaceholder({ tab, payments = [], folio }) {
   }
 
   return (
-    <div className="p-4 text-xs">
-      <h2 className="mb-2 text-sm font-bold text-[#102b5c]">{tab}</h2>
-      <p className="text-slate-500">
+    <div className="p-5 text-xs">
+      <h2 className="font-display text-brand-900 mb-2 text-sm font-semibold">
+        {tab}
+      </h2>
+      <p className="text-gray-500">
         {folio.remarks ||
           folio.notes ||
           `No additional ${tab.toLowerCase()} logged for this folio.`}
@@ -1060,30 +1097,32 @@ function FolioDrawer({
       )}
       {type === "print" && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-gray-500">
             Print guest folio statement for {folio.guestName || "guest"} (Folio
             #{folio.folioNo || "—"}).
           </p>
-          <button
+          <Button
             type="button"
-            className="w-full rounded-lg bg-[#102b5c] px-4 py-2.5 text-xs font-bold text-white"
+            variant="primary"
+            className="w-full"
             onClick={() => {
               window.print();
               onComplete();
             }}
           >
             Open Browser Print Dialog
-          </button>
+          </Button>
         </div>
       )}
       {type === "download" && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-gray-500">
             Export a digital summary file of this guest folio.
           </p>
-          <button
+          <Button
             type="button"
-            className="w-full rounded-lg bg-[#102b5c] px-4 py-2.5 text-xs font-bold text-white"
+            variant="primary"
+            className="w-full"
             onClick={() => {
               const dataStr =
                 "data:text/json;charset=utf-8," +
@@ -1099,7 +1138,7 @@ function FolioDrawer({
             }}
           >
             Export JSON Statement
-          </button>
+          </Button>
         </div>
       )}
       {error && (

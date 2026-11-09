@@ -5,6 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    ".": "./src/components/index.jsx",
     "./components": "./src/components/index.jsx",
     "./*": "./src/*.jsx"
   },

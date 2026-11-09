@@ -10,11 +10,16 @@ import {
   ShieldCheck,
   ToggleLeft,
 } from "lucide-react";
+import {
+  Button,
+  Header,
+  KpiTile,
+  KpiTileRow,
+  StatusChip,
+} from "@hotelos/ui/components";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, StatusPill, money } from "../billingUi.jsx";
+import { ActionDrawer, Field, money } from "../billingUi.jsx";
 
-const button =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-[#102b5c] shadow-sm hover:border-blue-300";
 const categories = [
   ["room", "Room Charges"],
   ["fnb", "F&B Charges"],
@@ -27,6 +32,7 @@ export default function TaxesChargesPage() {
   const [selected, setSelected] = useState(null);
   const [drawer, setDrawer] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+
   const rulesQuery = useQuery({
     queryKey: ["billing", "tax-rules", category],
     queryFn: () => billingApi.taxRules({ applicable_on: category }),
@@ -53,6 +59,7 @@ export default function TaxesChargesPage() {
     }),
     [allRules],
   );
+
   const refresh = () => {
     rulesQuery.refetch();
     allRulesQuery.refetch();
@@ -60,123 +67,130 @@ export default function TaxesChargesPage() {
     setDrawer("");
     setSelected(null);
   };
+
   return (
-    <div className="min-h-full bg-[#f4f7fb] p-4 text-[#102b5c] sm:p-6">
-      <header className="mb-3 flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
-        <div>
-          <div className="mb-1 text-[11px] font-semibold text-blue-600">
-            Billing &amp; Folio <span className="px-2 text-slate-400">›</span>{" "}
-            Taxes &amp; Charges
+    <div>
+      <Header
+        pageTitle="Taxes, Surcharges & Extra Fees"
+        pageDescription="Configure and manage taxes, service charges and other charges applied to rooms, POS and services."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
+              onClick={() => {
+                setSelected(null);
+                setDrawer("rule");
+              }}
+            >
+              <Plus size={14} /> Add Tax / Charge
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-gray-200 text-gray-700"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings2 size={14} /> Tax Settings
+            </Button>
           </div>
-          <h1 className="text-2xl font-bold">Taxes &amp; Charges</h1>
-          <p className="text-xs text-slate-500">
-            Configure and manage taxes, service charges and other charges
-            applied to rooms, POS and services.
-          </p>
+        }
+      />
+
+      <div className="space-y-6 p-6">
+        <KpiTileRow>
+          <KpiTile
+            title="GST (Total)"
+            value={`${gst || 18}%`}
+            subtitle="CGST 9% + SGST 9%"
+            icon={CheckCircle2}
+          />
+          <KpiTile
+            title="Service Charge"
+            value={`${allRules.find((rule) => rule.type === "service_charge")?.rate || 10}%`}
+            subtitle="Applicable on F&B"
+            icon={ShieldCheck}
+          />
+          <KpiTile
+            title="Luxury Tax"
+            value={`${allRules.find((rule) => /luxury/i.test(rule.name))?.rate || 0}%`}
+            subtitle="Currently disabled"
+            icon={ToggleLeft}
+          />
+          <KpiTile
+            title="Other Charges"
+            value={quick.other.length}
+            subtitle="Active charges"
+            icon={MoreHorizontal}
+          />
+          <KpiTile
+            title="Total Active"
+            value={active}
+            subtitle="Taxes & charges"
+            icon={ShieldCheck}
+          />
+        </KpiTileRow>
+
+        <div className="flex flex-wrap gap-2">
+          {categories.map(([key, label]) => (
+            <button
+              className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors ${
+                category === key
+                  ? "bg-brand-900 text-white"
+                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+              key={key}
+              onClick={() => setCategory(key)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        <div className="flex gap-2">
-          <button
-            className="inline-flex items-center gap-2 rounded-lg bg-[#102b5c] px-4 py-2 text-xs font-bold text-white"
-            onClick={() => {
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,.8fr)]">
+          <RulesTable
+            rules={rules}
+            selected={selected}
+            onSelect={setSelected}
+            onAdd={() => {
               setSelected(null);
               setDrawer("rule");
             }}
-          >
-            <Plus size={14} /> Add Tax / Charge
-          </button>
-          <button className={button} onClick={() => setSettingsOpen(true)}>
-            <Settings2 size={14} /> Tax Settings
-          </button>
+            onToggle={async (rule) => {
+              await billingApi.toggleTaxRule(rule.id, !rule.active);
+              refresh();
+            }}
+          />
+          <EditRule
+            rule={selected}
+            onSave={() => setDrawer("rule")}
+            onClose={() => setSelected(null)}
+          />
         </div>
-      </header>
-      <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        <Kpi
-          label="GST (Total)"
-          value={`${gst || 18}%`}
-          detail="CGST 9% + SGST 9%"
-          tone="green"
-          icon={CheckCircle2}
-        />
-        <Kpi
-          label="Service Charge"
-          value={`${allRules.find((rule) => rule.type === "service_charge")?.rate || 10}%`}
-          detail="Applicable on F&B"
-          tone="blue"
-          icon={ShieldCheck}
-        />
-        <Kpi
-          label="Luxury Tax"
-          value={`${allRules.find((rule) => /luxury/i.test(rule.name))?.rate || 0}%`}
-          detail="Currently disabled"
-          tone="amber"
-          icon={ToggleLeft}
-        />
-        <Kpi
-          label="Other Charges"
-          value={quick.other.length}
-          detail="Active charges"
-          tone="purple"
-          icon={MoreHorizontal}
-        />
-        <Kpi
-          label="Total Active"
-          value={active}
-          detail="Taxes & charges"
-          tone="red"
-          icon={ShieldCheck}
-        />
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <QuickList
+            title="F&B Taxes & Charges"
+            description="Taxes and service charges for restaurant, bar and room service."
+            rows={quick.fnb}
+            onAdd={() => setDrawer("rule")}
+          />
+          <QuickList
+            title="Service Taxes & Charges"
+            description="Taxes for laundry, spa, minibar and other hotel services."
+            rows={quick.service}
+            onAdd={() => setDrawer("rule")}
+          />
+          <QuickList
+            title="Other Charges"
+            description="Additional charges like damage, extra bed, early check-in etc."
+            rows={quick.other}
+            onAdd={() => setDrawer("rule")}
+          />
+        </div>
       </div>
-      <div className="mb-3 flex overflow-x-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
-        {categories.map(([key, label]) => (
-          <button
-            className={`rounded-md px-5 py-2 text-[11px] font-bold whitespace-nowrap ${category === key ? "bg-[#102b5c] text-white" : "text-slate-500"}`}
-            key={key}
-            onClick={() => setCategory(key)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="grid gap-2 lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,.8fr)]">
-        <RulesTable
-          rules={rules}
-          selected={selected}
-          onSelect={setSelected}
-          onAdd={() => {
-            setSelected(null);
-            setDrawer("rule");
-          }}
-          onToggle={async (rule) => {
-            await billingApi.toggleTaxRule(rule.id, !rule.active);
-            refresh();
-          }}
-        />
-        <EditRule
-          rule={selected}
-          onSave={() => setDrawer("rule")}
-          onClose={() => setSelected(null)}
-        />
-      </div>
-      <div className="mt-3 grid gap-2 lg:grid-cols-3">
-        <QuickList
-          title="F&B Taxes & Charges"
-          description="Taxes and service charges for restaurant, bar and room service."
-          rows={quick.fnb}
-          onAdd={() => setDrawer("rule")}
-        />
-        <QuickList
-          title="Service Taxes & Charges"
-          description="Taxes for laundry, spa, minibar and other hotel services."
-          rows={quick.service}
-          onAdd={() => setDrawer("rule")}
-        />
-        <QuickList
-          title="Other Charges"
-          description="Additional charges like damage, extra bed, early check-in etc."
-          rows={quick.other}
-          onAdd={() => setDrawer("rule")}
-        />
-      </div>
+
       {drawer === "rule" && (
         <RuleDrawer
           rule={selected}
@@ -198,50 +212,30 @@ export default function TaxesChargesPage() {
   );
 }
 
-function Kpi({ label, value, detail, tone, icon: Icon }) {
-  const colors = {
-    green: "bg-emerald-50 text-emerald-600",
-    blue: "bg-blue-50 text-blue-600",
-    amber: "bg-amber-50 text-amber-600",
-    purple: "bg-violet-50 text-violet-600",
-    red: "bg-rose-50 text-rose-600",
-  };
-  return (
-    <article className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="flex justify-between">
-        <span
-          className={`grid size-9 place-items-center rounded-lg ${colors[tone]}`}
-        >
-          <Icon size={17} />
-        </span>
-        <div className="text-right">
-          <b className="block text-xl">{value}</b>
-          <span className="text-[10px] text-slate-400">{detail}</span>
-        </div>
-      </div>
-      <p className="mt-3 text-xs font-semibold">{label}</p>
-    </article>
-  );
-}
 function RulesTable({ rules, selected, onSelect, onAdd, onToggle }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 p-3">
+    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-gray-200 p-4">
         <div>
-          <h2 className="border-l-2 border-amber-500 pl-2 text-sm font-bold">
+          <h2 className="text-sm font-bold text-gray-900">
             Room Taxes &amp; Charges
           </h2>
-          <p className="mt-1 text-[10px] text-slate-500">
+          <p className="mt-0.5 text-xs text-gray-500">
             Configure taxes and additional charges applicable to room tariffs.
           </p>
         </div>
-        <button className={button} onClick={onAdd}>
-          <Plus size={13} /> Add Room Tax / Charge
-        </button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 border-gray-200 text-gray-700"
+          onClick={onAdd}
+        >
+          <Plus size={13} /> Add Tax / Charge
+        </Button>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[650px] text-left text-[10px]">
-          <thead className="bg-slate-50 text-slate-500 uppercase">
+        <table className="w-full min-w-[650px] text-left text-xs">
+          <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
             <tr>
               {[
                 "Name",
@@ -252,31 +246,37 @@ function RulesTable({ rules, selected, onSelect, onAdd, onToggle }) {
                 "Status",
                 "Actions",
               ].map((label) => (
-                <th className="px-3 py-3 font-semibold" key={label}>
+                <th className="px-4 py-3" key={label}>
                   {label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-100">
             {rules.map((rule) => (
               <tr
-                className={`border-b border-slate-50 ${selected?.id === rule.id ? "bg-blue-50/50" : ""}`}
+                className={`hover:bg-primary-50/20 cursor-pointer ${selected?.id === rule.id ? "bg-primary-50/30" : ""}`}
                 key={rule.id}
                 onClick={() => onSelect(rule)}
               >
-                <td className="px-3 py-3 font-semibold">{rule.name}</td>
-                <td className="px-3 py-3">{typeLabel(rule.type)}</td>
-                <td className="px-3 py-3">
+                <td className="text-brand-900 px-4 py-3 font-semibold">
+                  {rule.name}
+                </td>
+                <td className="px-4 py-3 text-gray-700">
+                  {typeLabel(rule.type)}
+                </td>
+                <td className="px-4 py-3 font-medium text-gray-900">
                   {rule.type === "fixed_charge"
                     ? money(rule.fixedAmount)
                     : `${rule.rate || 0}%`}
                 </td>
-                <td className="px-3 py-3">{calcLabel(rule.calcMethod)}</td>
-                <td className="px-3 py-3">
+                <td className="px-4 py-3 text-gray-600">
+                  {calcLabel(rule.calcMethod)}
+                </td>
+                <td className="px-4 py-3 text-gray-600">
                   {departmentLabel(rule.applicableOn)}
                 </td>
-                <td className="px-3 py-3">
+                <td className="px-4 py-3">
                   <button
                     onClick={(event) => {
                       event.stopPropagation();
@@ -284,15 +284,15 @@ function RulesTable({ rules, selected, onSelect, onAdd, onToggle }) {
                     }}
                   >
                     <span
-                      className={`inline-flex h-5 w-9 items-center rounded-full p-0.5 ${rule.active ? "justify-end bg-emerald-500" : "justify-start bg-slate-300"}`}
+                      className={`inline-flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${rule.active ? "justify-end bg-emerald-500" : "justify-start bg-gray-300"}`}
                     >
-                      <span className="size-4 rounded-full bg-white" />
+                      <span className="size-4 rounded-full bg-white shadow-sm" />
                     </span>
                   </button>
                 </td>
-                <td className="px-3 py-3">
+                <td className="px-4 py-3">
                   <button
-                    className="rounded border border-slate-200 p-1"
+                    className="rounded border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
                     onClick={(event) => {
                       event.stopPropagation();
                       onSelect(rule);
@@ -306,7 +306,7 @@ function RulesTable({ rules, selected, onSelect, onAdd, onToggle }) {
           </tbody>
         </table>
         {!rules.length && (
-          <p className="p-10 text-center text-xs text-slate-400">
+          <p className="p-10 text-center text-xs text-gray-400">
             No rules configured for this category.
           </p>
         )}
@@ -314,18 +314,24 @@ function RulesTable({ rules, selected, onSelect, onAdd, onToggle }) {
     </section>
   );
 }
+
 function EditRule({ rule, onSave, onClose }) {
   return (
-    <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h2 className="border-l-2 border-amber-500 pl-2 text-sm font-bold">
-          Edit Tax / Charge
-        </h2>
-        {rule && <button onClick={onClose}>×</button>}
+    <aside className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+        <h2 className="text-sm font-bold text-gray-900">Edit Tax / Charge</h2>
+        {rule && (
+          <button
+            className="text-lg leading-none text-gray-400 hover:text-gray-600"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        )}
       </div>
       {rule ? (
         <>
-          <div className="mt-3 space-y-3 text-xs">
+          <div className="mt-4 space-y-3 text-xs">
             <InfoRow label="Name" value={rule.name} />
             <InfoRow label="Type" value={typeLabel(rule.type)} />
             <InfoRow
@@ -343,64 +349,81 @@ function EditRule({ rule, onSave, onClose }) {
             />
             <InfoRow label="Tax Group" value={rule.taxGroup} />
             <InfoRow label="Version" value={`v${rule.version}`} />
-            <StatusPill value={rule.status} />
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-gray-500">Status</span>
+              <StatusChip status={rule.active ? "active" : "inactive"} />
+            </div>
           </div>
-          <button
-            className="mt-4 w-full rounded-lg bg-[#102b5c] py-2 text-xs font-bold text-white"
+          <Button
+            variant="primary"
+            className="bg-brand-900 hover:bg-brand-950 mt-6 w-full text-white"
             onClick={onSave}
           >
-            <Edit3 size={13} className="mr-1 inline" /> Edit Rule
-          </button>
+            <Edit3 size={13} className="mr-1.5 inline" /> Edit Rule
+          </Button>
         </>
       ) : (
-        <p className="py-12 text-center text-xs text-slate-400">
-          Select a rule to edit or add a new tax / charge.
+        <p className="py-14 text-center text-xs text-gray-400">
+          Select a rule to view details or edit.
         </p>
       )}
     </aside>
   );
 }
+
 function InfoRow({ label, value }) {
   return (
-    <div className="flex justify-between border-b border-slate-50 pb-2">
-      <span className="text-slate-500">{label}</span>
-      <b>{value || "—"}</b>
+    <div className="flex justify-between border-b border-gray-50 pb-2">
+      <span className="text-gray-500">{label}</span>
+      <b className="text-gray-900">{value || "—"}</b>
     </div>
   );
 }
+
 function QuickList({ title, description, rows, onAdd }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="flex justify-between">
+    <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between">
         <div>
-          <h3 className="border-l-2 border-amber-500 pl-2 text-sm font-bold">
-            {title}
-          </h3>
-          <p className="mt-1 text-[10px] text-slate-500">{description}</p>
+          <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+          <p className="mt-0.5 text-xs text-gray-500">{description}</p>
         </div>
-        <button className={button} onClick={onAdd}>
-          <Plus size={13} /> Add
-        </button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-2 shrink-0 gap-1 border-gray-200 text-gray-700"
+          onClick={onAdd}
+        >
+          <Plus size={12} /> Add
+        </Button>
       </div>
-      <div className="mt-3">
+      <div className="mt-4 divide-y divide-gray-100">
         {rows.slice(0, 5).map((rule) => (
           <div
-            className="flex items-center justify-between border-b border-slate-50 py-2 text-[10px]"
+            className="flex items-center justify-between py-2 text-xs"
             key={rule.id}
           >
-            <span>{rule.name}</span>
-            <span>
-              {rule.type === "fixed_charge"
-                ? money(rule.fixedAmount)
-                : `${rule.rate || 0}%`}
-            </span>
-            <StatusPill value={rule.status} />
+            <span className="font-medium text-gray-800">{rule.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-600">
+                {rule.type === "fixed_charge"
+                  ? money(rule.fixedAmount)
+                  : `${rule.rate || 0}%`}
+              </span>
+              <StatusChip status={rule.active ? "active" : "inactive"} />
+            </div>
           </div>
         ))}
+        {!rows.length && (
+          <p className="py-4 text-center text-xs text-gray-400">
+            No charges configured.
+          </p>
+        )}
       </div>
     </section>
   );
 }
+
 function RuleDrawer({ rule, onClose, onComplete }) {
   const [error, setError] = useState("");
   const submit = async (event) => {
@@ -424,11 +447,16 @@ function RuleDrawer({ rule, onClose, onComplete }) {
       onSubmit={submit}
       submitLabel="Save Changes"
     >
+      {error && (
+        <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
+          {error}
+        </div>
+      )}
       <Field label="Name" name="name" defaultValue={rule?.name} required />
-      <label className="block text-xs font-semibold text-slate-600">
+      <label className="block text-xs font-semibold text-gray-700">
         Type
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 font-normal"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs font-normal text-gray-800 focus:ring-1 focus:outline-none"
           name="type"
           defaultValue={rule?.type || "tax"}
         >
@@ -454,10 +482,10 @@ function RuleDrawer({ rule, onClose, onComplete }) {
         step="0.01"
         defaultValue={rule?.fixedAmount || 0}
       />
-      <label className="block text-xs font-semibold text-slate-600">
+      <label className="block text-xs font-semibold text-gray-700">
         Calculation Method
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 font-normal"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs font-normal text-gray-800 focus:ring-1 focus:outline-none"
           name="calcMethod"
           defaultValue={rule?.calcMethod || "on_base"}
         >
@@ -468,10 +496,10 @@ function RuleDrawer({ rule, onClose, onComplete }) {
           <option value="flat">Flat</option>
         </select>
       </label>
-      <label className="block text-xs font-semibold text-slate-600">
+      <label className="block text-xs font-semibold text-gray-700">
         Applicable On
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 font-normal"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs font-normal text-gray-800 focus:ring-1 focus:outline-none"
           name="applicableOn"
           defaultValue={rule?.applicableOn || "room"}
         >
@@ -495,32 +523,32 @@ function RuleDrawer({ rule, onClose, onComplete }) {
         name="description"
         defaultValue={rule?.description}
       />
-      <label className="flex gap-2 text-xs">
+      <label className="flex items-center gap-2 text-xs text-gray-700">
         <input
           type="checkbox"
+          className="text-primary-600 focus:ring-primary-500 rounded border-gray-300"
           name="compound"
           defaultChecked={rule?.compound}
         />{" "}
         Apply tax on service charge
       </label>
-      <label className="flex gap-2 text-xs">
+      <label className="flex items-center gap-2 text-xs text-gray-700">
         <input
           type="checkbox"
+          className="text-primary-600 focus:ring-primary-500 rounded border-gray-300"
           name="active"
           defaultChecked={rule?.active ?? true}
         />{" "}
         Active
       </label>
-      <div className="rounded-lg bg-blue-50 p-3 text-[10px] text-blue-700">
-        <Info size={13} className="mr-1 inline" /> This tax will be
+      <div className="bg-primary-50 border-primary-100 text-primary-800 rounded-lg border p-3 text-xs">
+        <Info size={14} className="mr-1.5 inline" /> This tax will be
         automatically applied to future charges for the selected department.
       </div>
-      {error && (
-        <p className="rounded bg-rose-50 p-2 text-xs text-rose-700">{error}</p>
-      )}
     </ActionDrawer>
   );
 }
+
 function SettingsDrawer({ settings, onClose, onComplete }) {
   const submit = async (event) => {
     event.preventDefault();
@@ -538,18 +566,19 @@ function SettingsDrawer({ settings, onClose, onComplete }) {
   };
   return (
     <ActionDrawer title="Tax Settings" onClose={onClose} onSubmit={submit}>
-      <label className="flex gap-2 text-xs">
+      <label className="flex items-center gap-2 text-xs text-gray-700">
         <input
           type="checkbox"
+          className="text-primary-600 focus:ring-primary-500 rounded border-gray-300"
           name="taxInclusivePricing"
           defaultChecked={settings.taxInclusivePricing}
         />{" "}
         Tax-inclusive pricing
       </label>
-      <label className="block text-xs font-semibold text-slate-600">
+      <label className="block text-xs font-semibold text-gray-700">
         Rounding mode
         <select
-          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 font-normal"
+          className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs font-normal text-gray-800 focus:ring-1 focus:outline-none"
           name="roundingMode"
           defaultValue={settings.rounding?.mode || "nearest"}
         >
@@ -564,9 +593,10 @@ function SettingsDrawer({ settings, onClose, onComplete }) {
         name="stateCode"
         defaultValue={settings.stateCode}
       />
-      <label className="flex gap-2 text-xs">
+      <label className="flex items-center gap-2 text-xs text-gray-700">
         <input
           type="checkbox"
+          className="text-primary-600 focus:ring-primary-500 rounded border-gray-300"
           name="eInvoiceEnabled"
           defaultChecked={settings.eInvoiceEnabled}
         />{" "}
@@ -575,6 +605,7 @@ function SettingsDrawer({ settings, onClose, onComplete }) {
     </ActionDrawer>
   );
 }
+
 function typeLabel(type) {
   return (
     {
@@ -584,6 +615,7 @@ function typeLabel(type) {
     }[type] || type
   );
 }
+
 function calcLabel(type) {
   return (
     {
@@ -595,6 +627,7 @@ function calcLabel(type) {
     }[type] || type
   );
 }
+
 function departmentLabel(type) {
   return (
     { room: "Room Tariff", fnb: "F&B", service: "Services", other: "Other" }[

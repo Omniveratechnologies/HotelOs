@@ -23,3 +23,5 @@ export { ConfirmDialog } from "./ConfirmDialog.jsx";
 export { FileCaptureField } from "./FileCaptureField.jsx";
 export { CameraCaptureModal } from "./CameraCaptureModal.jsx";
 export { SignaturePad } from "./SignaturePad.jsx";
+export { ReceiptModal } from "./ReceiptModal.jsx";
+export { DataTable } from "./DataTable.jsx";
