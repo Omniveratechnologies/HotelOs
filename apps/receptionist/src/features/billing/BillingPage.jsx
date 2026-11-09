@@ -3,7 +3,6 @@ import { useQuery } from "@hotelos/query";
 import {
   AlertCircle,
   CheckCircle2,
-  Download,
   Plus,
   RefreshCw,
   Search,
@@ -84,11 +83,9 @@ export default function BillingPage({ section }) {
           variant="primary"
           icon={Plus}
           onClick={() => setActionOpen(true)}
+          disabled={query.isLoading}
         >
           {actionLabel(section)}
-        </Button>
-        <Button variant="secondary" icon={Download}>
-          Export
         </Button>
       </Header>
 

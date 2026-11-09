@@ -22,7 +22,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  money,
+  BillingPageSkeleton,
+} from "../billingUi.jsx";
 
 const buttonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-brand-900 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer";
@@ -100,15 +105,6 @@ export default function InvoicesPage() {
     document.body.removeChild(link);
   };
 
-  if (query.isLoading)
-    return <div className="p-8 text-sm text-gray-500">Loading invoices…</div>;
-  if (query.isError)
-    return (
-      <div className="m-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
-        Invoices could not be loaded.
-      </div>
-    );
-
   return (
     <>
       <Header
@@ -119,243 +115,273 @@ export default function InvoicesPage() {
           variant="primary"
           icon={Plus}
           onClick={() => setDrawer("invoice")}
+          disabled={query.isLoading}
         >
           Generate Invoice
-        </Button>
-        <Button
-          variant="secondary"
-          icon={FileText}
-          onClick={() => setDrawer("proforma")}
-        >
-          Proforma Invoice
-        </Button>
-        <Button
-          variant="secondary"
-          icon={FileCheck2}
-          onClick={() => setDrawer("credit-note")}
-        >
-          Credit Note
-        </Button>
-        <Button variant="secondary" icon={Download} onClick={exportCsv}>
-          Export CSV
         </Button>
       </Header>
 
       <div className="space-y-6 p-6">
-        <KpiTileRow>
-          <KpiTile
-            label="Total Invoiced"
-            value={money(data.metrics?.totalInvoiced)}
-            delta="gross invoiced"
-            icon={FileText}
-            iconClassName="bg-blue-50 text-blue-700"
-          />
-          <KpiTile
-            label="Paid Invoices"
-            value={money(data.metrics?.paidAmount)}
-            delta={`${data.metrics?.paidCount || 0} invoices`}
-            icon={CheckCircle2}
-            iconClassName="bg-emerald-50 text-emerald-700"
-          />
-          <KpiTile
-            label="Pending / Unpaid"
-            value={money(data.metrics?.unpaidAmount)}
-            delta={`${data.metrics?.unpaidCount || 0} unpaid`}
-            icon={CalendarDays}
-            iconClassName="bg-amber-50 text-amber-700"
-          />
-          <KpiTile
-            label="Overdue Invoices"
-            value={money(data.metrics?.overdueAmount)}
-            delta={`${data.metrics?.overdueCount || 0} past due`}
-            deltaTone="down"
-            icon={XCircle}
-            iconClassName="bg-rose-50 text-rose-700"
-          />
-          <KpiTile
-            label="Credit Notes"
-            value={money(data.metrics?.creditNoteAmount)}
-            delta={`${data.metrics?.creditNoteCount || 0} issued`}
-            icon={FileCheck2}
-            iconClassName="bg-purple-50 text-purple-700"
-          />
-        </KpiTileRow>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <section className="min-w-0 rounded-2xl border border-gray-200 bg-white shadow-xs">
-            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/70 p-4">
-              <h2 className="font-display text-brand-900 text-sm font-semibold">
-                All Invoices
-              </h2>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Download}
-                onClick={exportCsv}
-              >
-                Export
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 border-b border-gray-100 p-4">
-              <select
-                className={buttonClass}
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-              >
-                <option>All Invoice Types</option>
-                <option>Tax Invoice</option>
-                <option>Proforma</option>
-                <option>Receipt</option>
-                <option>Credit Note</option>
-                <option>Corporate</option>
-              </select>
-              <select
-                className={buttonClass}
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option>All Status</option>
-                <option>Paid</option>
-                <option>Pending</option>
-                <option>Overdue</option>
-                <option>Cancelled</option>
-              </select>
-              <label className="flex min-w-[200px] flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs text-gray-400">
-                <Search size={14} />
-                <input
-                  className="text-brand-900 min-w-0 flex-1 outline-none placeholder:text-gray-400"
-                  placeholder="Search invoice number, guest, booking..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </label>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/50 text-[10px] tracking-wide text-gray-500 uppercase">
-                    {[
-                      "Invoice No",
-                      "Date",
-                      "Bill To / Guest",
-                      "Booking",
-                      "Type",
-                      "Total Amount",
-                      "Status",
-                      "Actions",
-                    ].map((label) => (
-                      <th className="px-4 py-3 font-semibold" key={label}>
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700">
-                  {paginatedRows.map((row) => (
-                    <tr
-                      key={row._id || row.id || row.invoiceNo}
-                      onClick={() => setSelected(row)}
-                      className={`cursor-pointer transition-colors ${
-                        selected?.id === row.id
-                          ? "bg-brand-50/50"
-                          : "hover:bg-gray-50/50"
-                      }`}
-                    >
-                      <td className="text-brand-900 px-4 py-3 font-semibold">
-                        {row.invoiceNo}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {dateTime(row.createdAt)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <strong className="text-brand-900 block font-medium">
-                          {row.billTo || row.guestName || "Walk-in Guest"}
-                        </strong>
-                        <span className="text-[11px] text-gray-400">
-                          {row.guestPhone || row.companyName || ""}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {row.bookingNo || row.folioId || "—"}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-700">
-                        {typeLabel(row.type)}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-gray-900">
-                        {money(row.amount || row.grandTotal)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusChip variant={row.status}>
-                          {row.status || "Paid"}
-                        </StatusChip>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          className="text-surface-400 hover:text-brand-900 cursor-pointer rounded-lg border border-gray-200 p-1.5 transition-colors hover:bg-gray-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelected(row);
-                            setDrawer("invoice-menu");
-                          }}
-                          aria-label="Invoice options"
-                        >
-                          <MoreHorizontal size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!rows.length && (
-                <p className="p-10 text-center text-xs text-gray-400">
-                  No invoices found matching criteria.
-                </p>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center justify-between border-t border-gray-100 px-4 py-3 text-xs text-gray-500">
-              <span>
-                Showing {rows.length === 0 ? 0 : (page - 1) * pageSize + 1} to{" "}
-                {Math.min(page * pageSize, rows.length)} of {rows.length}{" "}
-                invoices
-              </span>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  ‹ Prev
-                </Button>
-                <span className="text-brand-900 px-2 font-semibold">
-                  Page {page} of {totalPages}
-                </span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  Next ›
-                </Button>
-                <select
-                  className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none"
-                  value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setPage(1);
-                  }}
-                >
-                  <option value={10}>10 per page</option>
-                  <option value={25}>25 per page</option>
-                  <option value={50}>50 per page</option>
-                </select>
-              </div>
-            </div>
-          </section>
-
-          <InvoicePreview invoice={selected} onAction={setDrawer} />
+        {/* Page Top Secondary Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-gray-500">
+            Billing documents, proforma statements, credit notes, and export
+            logs.
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              icon={FileText}
+              onClick={() => setDrawer("proforma")}
+              disabled={query.isLoading}
+            >
+              Proforma Invoice
+            </Button>
+            <Button
+              variant="secondary"
+              icon={FileCheck2}
+              onClick={() => setDrawer("credit-note")}
+              disabled={query.isLoading}
+            >
+              Credit Note
+            </Button>
+            <Button
+              variant="secondary"
+              icon={Download}
+              onClick={exportCsv}
+              disabled={query.isLoading}
+            >
+              Export CSV
+            </Button>
+          </div>
         </div>
+
+        {query.isError ? (
+          <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
+            Invoices could not be loaded.
+          </div>
+        ) : query.isLoading ? (
+          <BillingPageSkeleton kpis={5} tableRows={6} />
+        ) : (
+          <>
+            <KpiTileRow>
+              <KpiTile
+                label="Total Invoiced"
+                value={money(data.metrics?.totalInvoiced)}
+                delta="gross invoiced"
+                icon={FileText}
+                iconClassName="bg-blue-50 text-blue-700"
+              />
+              <KpiTile
+                label="Paid Invoices"
+                value={money(data.metrics?.paidAmount)}
+                delta={`${data.metrics?.paidCount || 0} invoices`}
+                icon={CheckCircle2}
+                iconClassName="bg-emerald-50 text-emerald-700"
+              />
+              <KpiTile
+                label="Pending / Unpaid"
+                value={money(data.metrics?.unpaidAmount)}
+                delta={`${data.metrics?.unpaidCount || 0} unpaid`}
+                icon={CalendarDays}
+                iconClassName="bg-amber-50 text-amber-700"
+              />
+              <KpiTile
+                label="Overdue Invoices"
+                value={money(data.metrics?.overdueAmount)}
+                delta={`${data.metrics?.overdueCount || 0} past due`}
+                deltaTone="down"
+                icon={XCircle}
+                iconClassName="bg-rose-50 text-rose-700"
+              />
+              <KpiTile
+                label="Credit Notes"
+                value={money(data.metrics?.creditNoteAmount)}
+                delta={`${data.metrics?.creditNoteCount || 0} issued`}
+                icon={FileCheck2}
+                iconClassName="bg-purple-50 text-purple-700"
+              />
+            </KpiTileRow>
+
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+              <section className="min-w-0 rounded-2xl border border-gray-200 bg-white shadow-xs">
+                <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/70 p-4">
+                  <h2 className="font-display text-brand-900 text-sm font-semibold">
+                    All Invoices
+                  </h2>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={Download}
+                    onClick={exportCsv}
+                  >
+                    Export
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 border-b border-gray-100 p-4">
+                  <select
+                    className={buttonClass}
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                  >
+                    <option>All Invoice Types</option>
+                    <option>Tax Invoice</option>
+                    <option>Proforma</option>
+                    <option>Receipt</option>
+                    <option>Credit Note</option>
+                    <option>Corporate</option>
+                  </select>
+                  <select
+                    className={buttonClass}
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                  >
+                    <option>All Status</option>
+                    <option>Paid</option>
+                    <option>Pending</option>
+                    <option>Overdue</option>
+                    <option>Cancelled</option>
+                  </select>
+                  <label className="flex min-w-[200px] flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs text-gray-400">
+                    <Search size={14} />
+                    <input
+                      className="text-brand-900 min-w-0 flex-1 outline-none placeholder:text-gray-400"
+                      placeholder="Search invoice number, guest, booking..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/50 text-[10px] tracking-wide text-gray-500 uppercase">
+                        {[
+                          "Invoice No",
+                          "Date",
+                          "Bill To / Guest",
+                          "Booking",
+                          "Type",
+                          "Total Amount",
+                          "Status",
+                          "Actions",
+                        ].map((label) => (
+                          <th className="px-4 py-3 font-semibold" key={label}>
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
+                      {paginatedRows.map((row) => (
+                        <tr
+                          key={row._id || row.id || row.invoiceNo}
+                          onClick={() => setSelected(row)}
+                          className={`cursor-pointer transition-colors ${
+                            selected?.id === row.id
+                              ? "bg-brand-50/50"
+                              : "hover:bg-gray-50/50"
+                          }`}
+                        >
+                          <td className="text-brand-900 px-4 py-3 font-semibold">
+                            {row.invoiceNo}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500">
+                            {dateTime(row.createdAt)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <strong className="text-brand-900 block font-medium">
+                              {row.billTo || row.guestName || "Walk-in Guest"}
+                            </strong>
+                            <span className="text-[11px] text-gray-400">
+                              {row.guestPhone || row.companyName || ""}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {row.bookingNo || row.folioId || "—"}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-700">
+                            {typeLabel(row.type)}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-gray-900">
+                            {money(row.amount || row.grandTotal)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusChip variant={row.status}>
+                              {row.status || "Paid"}
+                            </StatusChip>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              className="text-surface-400 hover:text-brand-900 cursor-pointer rounded-lg border border-gray-200 p-1.5 transition-colors hover:bg-gray-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelected(row);
+                                setDrawer("invoice-menu");
+                              }}
+                              aria-label="Invoice options"
+                            >
+                              <MoreHorizontal size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!rows.length && (
+                    <p className="p-10 text-center text-xs text-gray-400">
+                      No invoices found matching criteria.
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center justify-between border-t border-gray-100 px-4 py-3 text-xs text-gray-500">
+                  <span>
+                    Showing {rows.length === 0 ? 0 : (page - 1) * pageSize + 1}{" "}
+                    to {Math.min(page * pageSize, rows.length)} of {rows.length}{" "}
+                    invoices
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      ‹ Prev
+                    </Button>
+                    <span className="text-brand-900 px-2 font-semibold">
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                    >
+                      Next ›
+                    </Button>
+                    <select
+                      className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none"
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setPage(1);
+                      }}
+                    >
+                      <option value={10}>10 per page</option>
+                      <option value={25}>25 per page</option>
+                      <option value={50}>50 per page</option>
+                    </select>
+                  </div>
+                </div>
+              </section>
+
+              <InvoicePreview invoice={selected} onAction={setDrawer} />
+            </div>
+          </>
+        )}
       </div>
 
       {drawer === "thermal" && selected && (

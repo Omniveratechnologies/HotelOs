@@ -20,7 +20,13 @@ import {
   WalletCards,
 } from "lucide-react";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, Panel, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  Panel,
+  money,
+  BillingPageSkeleton,
+} from "../billingUi.jsx";
 
 const buttonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-brand-900 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer";
@@ -85,15 +91,6 @@ export default function PaymentsPage() {
     link.click();
   };
 
-  if (query.isLoading)
-    return <div className="p-8 text-sm text-gray-500">Loading payments…</div>;
-  if (query.isError)
-    return (
-      <div className="m-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
-        Payments could not be loaded. Please retry.
-      </div>
-    );
-
   return (
     <>
       <Header
@@ -104,202 +101,234 @@ export default function PaymentsPage() {
           variant="primary"
           icon={Plus}
           onClick={() => setDrawer("collect")}
+          disabled={query.isLoading}
         >
           Collect Payment
-        </Button>
-        <Button
-          variant="secondary"
-          icon={FileText}
-          onClick={() => setDrawer("record")}
-        >
-          Record Payment
-        </Button>
-        <Button
-          variant="secondary"
-          icon={RefreshCcw}
-          onClick={() => setDrawer("refund")}
-        >
-          Refund
-        </Button>
-        <Button variant="secondary" icon={Download} onClick={exportCsv}>
-          Export CSV
         </Button>
       </Header>
 
       <div className="space-y-6 p-6">
-        <KpiTileRow>
-          <KpiTile
-            label="Today's Collections"
-            value={money(data.metrics?.todayCollections)}
-            delta={`↑ ${data.metrics?.todayCollectionsChange || 0}% compared to yesterday`}
-            deltaTone="up"
-            icon={WalletCards}
-            iconClassName="bg-emerald-50 text-emerald-700"
-          />
-          <KpiTile
-            label="Pending Payments"
-            value={data.metrics?.pendingPayments || 0}
-            delta="transactions"
-            icon={AlertTriangle}
-            iconClassName="bg-amber-50 text-amber-700"
-          />
-          <KpiTile
-            label="Refunds (Today)"
-            value={money(data.metrics?.refundsToday)}
-            delta="transactions"
-            deltaTone="down"
-            icon={RefreshCcw}
-            iconClassName="bg-rose-50 text-rose-700"
-          />
-          <KpiTile
-            label="Outstanding Balance"
-            value={money(data.metrics?.outstandingBalance)}
-            delta={`${data.metrics?.outstandingFolios || 0} guest folios`}
-            icon={FileText}
-            iconClassName="bg-blue-50 text-blue-700"
-          />
-        </KpiTileRow>
-
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_1.5fr_1fr]">
-          <MethodBreakdown items={data.methodAmounts || []} />
-          <CollectionsTrend items={data.trend || []} />
-          <Reconciliation
-            data={data.reconciliation || {}}
-            onRun={() => setDrawer("reconcile")}
-          />
+        {/* Page Top Secondary Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-gray-500">
+            Payment transactions, manual vouchers, refunds, and settlement
+            reports.
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              icon={FileText}
+              onClick={() => setDrawer("record")}
+              disabled={query.isLoading}
+            >
+              Record Payment
+            </Button>
+            <Button
+              variant="secondary"
+              icon={RefreshCcw}
+              onClick={() => setDrawer("refund")}
+              disabled={query.isLoading}
+            >
+              Refund
+            </Button>
+            <Button
+              variant="secondary"
+              icon={Download}
+              onClick={exportCsv}
+              disabled={query.isLoading}
+            >
+              Export CSV
+            </Button>
+          </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
-          <section className="min-w-0 rounded-2xl border border-gray-200 bg-white shadow-xs">
-            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/70 p-4">
-              <h2 className="font-display text-brand-900 text-sm font-semibold">
-                All Payments
-              </h2>
-              <Button
-                variant="secondary"
-                size="sm"
-                icon={Download}
-                onClick={exportCsv}
-              >
-                Export
-              </Button>
+        {query.isError ? (
+          <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
+            Payments could not be loaded. Please retry.
+          </div>
+        ) : query.isLoading ? (
+          <BillingPageSkeleton kpis={5} tableRows={6} />
+        ) : (
+          <>
+            <KpiTileRow>
+              <KpiTile
+                label="Today's Collections"
+                value={money(data.metrics?.todayCollections)}
+                delta={`↑ ${data.metrics?.todayCollectionsChange || 0}% compared to yesterday`}
+                deltaTone="up"
+                icon={WalletCards}
+                iconClassName="bg-emerald-50 text-emerald-700"
+              />
+              <KpiTile
+                label="Pending Payments"
+                value={data.metrics?.pendingPayments || 0}
+                delta="transactions"
+                icon={AlertTriangle}
+                iconClassName="bg-amber-50 text-amber-700"
+              />
+              <KpiTile
+                label="Refunds (Today)"
+                value={money(data.metrics?.refundsToday)}
+                delta="transactions"
+                deltaTone="down"
+                icon={RefreshCcw}
+                iconClassName="bg-rose-50 text-rose-700"
+              />
+              <KpiTile
+                label="Outstanding Balance"
+                value={money(data.metrics?.outstandingBalance)}
+                delta={`${data.metrics?.outstandingFolios || 0} guest folios`}
+                icon={FileText}
+                iconClassName="bg-blue-50 text-blue-700"
+              />
+            </KpiTileRow>
+
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_1.5fr_1fr]">
+              <MethodBreakdown items={data.methodAmounts || []} />
+              <CollectionsTrend items={data.trend || []} />
+              <Reconciliation
+                data={data.reconciliation || {}}
+                onRun={() => setDrawer("reconcile")}
+              />
             </div>
-            <div className="flex flex-wrap gap-2 border-b border-gray-100 p-4">
-              <select
-                className={buttonClass}
-                value={method}
-                onChange={(event) => setMethod(event.target.value)}
-              >
-                <option>All Payment Methods</option>
-                <option value="upi">UPI</option>
-                <option value="card">Card</option>
-                <option value="cash">Cash</option>
-                <option value="netbanking">Bank Transfer</option>
-                <option value="wallet">Online Gateway</option>
-              </select>
-              <select
-                className={buttonClass}
-                value={status}
-                onChange={(event) => setStatus(event.target.value)}
-              >
-                <option>All Status</option>
-                <option>Successful</option>
-                <option>Pending</option>
-                <option>Failed</option>
-              </select>
-              <label className="flex min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs text-gray-400">
-                <Search size={14} />
-                <input
-                  className="text-brand-900 min-w-0 flex-1 outline-none placeholder:text-gray-400"
-                  placeholder="Search by guest name, reference..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </label>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[790px] text-left text-xs">
-                <thead className="bg-gray-50/50 text-[10px] tracking-wide text-gray-500 uppercase">
-                  <tr>
-                    {[
-                      "Date & Time",
-                      "Guest",
-                      "Booking / Folio",
-                      "Payment Method",
-                      "Reference",
-                      "Amount (₹)",
-                      "Status",
-                      "Actions",
-                    ].map((label) => (
-                      <th className="px-4 py-3 font-semibold" key={label}>
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-gray-700">
-                  {rows.map((row) => (
-                    <tr
-                      className="transition-colors hover:bg-gray-50/50"
-                      key={row._id || row.id}
-                    >
-                      <td className="px-4 py-3 text-gray-500">
-                        {dateTime(row.createdAt)}
-                      </td>
-                      <td className="text-brand-900 px-4 py-3 font-semibold">
-                        {row.guestName}
-                      </td>
-                      <td className="px-4 py-3">
-                        {row.bookingNo}
-                        <br />
-                        <span className="text-gray-400">{row.folioNo}</span>
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        {methodLabel(row.method)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-400">
-                        {row.referenceNo || "—"}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-emerald-600">
-                        {money(row.amount)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusChip variant={row.displayStatus}>
-                          {row.displayStatus || "Successful"}
-                        </StatusChip>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          className="text-surface-400 hover:text-brand-900 cursor-pointer rounded-lg border border-gray-200 p-1.5 transition-colors hover:bg-gray-100"
-                          onClick={() => {
-                            setSelectedPayment(row);
-                            setDrawer("payment-menu");
-                          }}
-                          aria-label="Payment options"
+
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+              <section className="min-w-0 rounded-2xl border border-gray-200 bg-white shadow-xs">
+                <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/70 p-4">
+                  <h2 className="font-display text-brand-900 text-sm font-semibold">
+                    All Payments
+                  </h2>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={Download}
+                    onClick={exportCsv}
+                  >
+                    Export
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 border-b border-gray-100 p-4">
+                  <select
+                    className={buttonClass}
+                    value={method}
+                    onChange={(event) => setMethod(event.target.value)}
+                  >
+                    <option>All Payment Methods</option>
+                    <option value="upi">UPI</option>
+                    <option value="card">Card</option>
+                    <option value="cash">Cash</option>
+                    <option value="netbanking">Bank Transfer</option>
+                    <option value="wallet">Online Gateway</option>
+                  </select>
+                  <select
+                    className={buttonClass}
+                    value={status}
+                    onChange={(event) => setStatus(event.target.value)}
+                  >
+                    <option>All Status</option>
+                    <option>Successful</option>
+                    <option>Pending</option>
+                    <option>Failed</option>
+                  </select>
+                  <label className="flex min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs text-gray-400">
+                    <Search size={14} />
+                    <input
+                      className="text-brand-900 min-w-0 flex-1 outline-none placeholder:text-gray-400"
+                      placeholder="Search by guest name, reference..."
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[790px] text-left text-xs">
+                    <thead className="bg-gray-50/50 text-[10px] tracking-wide text-gray-500 uppercase">
+                      <tr>
+                        {[
+                          "Date & Time",
+                          "Guest",
+                          "Booking / Folio",
+                          "Payment Method",
+                          "Reference",
+                          "Amount (₹)",
+                          "Status",
+                          "Actions",
+                        ].map((label) => (
+                          <th className="px-4 py-3 font-semibold" key={label}>
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-gray-700">
+                      {rows.map((row) => (
+                        <tr
+                          className="transition-colors hover:bg-gray-50/50"
+                          key={row._id || row.id}
                         >
-                          <MoreHorizontal size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!rows.length && (
-                <p className="p-10 text-center text-xs text-gray-400">
-                  No payments match the filters.
-                </p>
-              )}
+                          <td className="px-4 py-3 text-gray-500">
+                            {dateTime(row.createdAt)}
+                          </td>
+                          <td className="text-brand-900 px-4 py-3 font-semibold">
+                            {row.guestName}
+                          </td>
+                          <td className="px-4 py-3">
+                            {row.bookingNo}
+                            <br />
+                            <span className="text-gray-400">{row.folioNo}</span>
+                          </td>
+                          <td className="px-4 py-3 font-medium">
+                            {methodLabel(row.method)}
+                          </td>
+                          <td className="px-4 py-3 text-gray-400">
+                            {row.referenceNo || "—"}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-emerald-600">
+                            {money(row.amount)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusChip variant={row.displayStatus}>
+                              {row.displayStatus || "Successful"}
+                            </StatusChip>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              className="text-surface-400 hover:text-brand-900 cursor-pointer rounded-lg border border-gray-200 p-1.5 transition-colors hover:bg-gray-100"
+                              onClick={() => {
+                                setSelectedPayment(row);
+                                setDrawer("payment-menu");
+                              }}
+                              aria-label="Payment options"
+                            >
+                              <MoreHorizontal size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!rows.length && (
+                    <p className="p-10 text-center text-xs text-gray-400">
+                      No payments match the filters.
+                    </p>
+                  )}
+                </div>
+              </section>
+              <aside className="space-y-4">
+                <SideList
+                  title="Recent Refunds"
+                  rows={data.refunds || []}
+                  refund
+                />
+                <SideList
+                  title="Recent Payment Activity"
+                  rows={data.activity || []}
+                />
+              </aside>
             </div>
-          </section>
-          <aside className="space-y-4">
-            <SideList title="Recent Refunds" rows={data.refunds || []} refund />
-            <SideList
-              title="Recent Payment Activity"
-              rows={data.activity || []}
-            />
-          </aside>
-        </div>
-        <Alerts alerts={data.alerts || []} />
+            <Alerts alerts={data.alerts || []} />
+          </>
+        )}
       </div>
 
       {drawer && (

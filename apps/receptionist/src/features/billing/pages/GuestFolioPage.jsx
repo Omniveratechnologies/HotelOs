@@ -21,7 +21,12 @@ import {
   WalletCards,
 } from "lucide-react";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  money,
+  BillingPageSkeleton,
+} from "../billingUi.jsx";
 
 const tabs = [
   "Folio",
@@ -84,22 +89,8 @@ export default function GuestFolioPage() {
     foliosQuery.refetch();
   };
 
-  if (foliosQuery.isLoading || detailQuery.isLoading)
-    return (
-      <div className="p-8 text-sm text-gray-500">Loading guest folio…</div>
-    );
-  if (foliosQuery.isError || detailQuery.isError)
-    return (
-      <div className="m-6 rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
-        Guest folio could not be loaded. Please retry.
-      </div>
-    );
-  if (!folioId)
-    return (
-      <div className="m-6 rounded-2xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
-        No open guest folios are available.
-      </div>
-    );
+  const isLoading = foliosQuery.isLoading || detailQuery.isLoading;
+  const isError = foliosQuery.isError || detailQuery.isError;
 
   return (
     <>
@@ -107,221 +98,264 @@ export default function GuestFolioPage() {
         pageTitle="Guest Folio"
         pageDescription="View and manage guest charges, payments and invoices."
       >
-        <select
-          className={buttonClass}
-          value={folioId}
-          onChange={(event) => setSelectedId(event.target.value)}
-          aria-label="Select property folio"
-        >
-          {folios.map((item) => (
-            <option value={item.id} key={item.id}>
-              {item.guestName || "Guest"} —{" "}
-              {item.folioNo || `FL-${String(item.id).slice(-6).toUpperCase()}`}
-              {item.roomId ? ` (Room ${item.roomId})` : ""}
-            </option>
-          ))}
-        </select>
         <Button
           variant="primary"
           icon={Plus}
           onClick={() => setDrawer("charge")}
+          disabled={isLoading}
         >
           Add Charge
         </Button>
-        <Button
-          variant="secondary"
-          icon={Split}
-          onClick={() => setDrawer("split")}
-        >
-          Split Folio
-        </Button>
-        <Button
-          variant="secondary"
-          icon={Share2}
-          onClick={() => setDrawer("merge")}
-        >
-          Merge Folio
-        </Button>
-        <Button
-          variant="secondary"
-          icon={MoreHorizontal}
-          onClick={() => setDrawer("menu")}
-          aria-label="More folio actions"
-        />
       </Header>
 
       <div className="space-y-6 p-6">
-        <GuestStrip folio={folio} />
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
-          <main className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
-            <div className="flex overflow-x-auto border-b border-gray-100 px-4">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors ${activeTab === tab ? "border-brand-900 text-brand-900 border-b-2" : "hover:text-brand-900 text-gray-500"}`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-            {activeTab === "Folio" ? (
-              <>
-                {/* Multi-Window Folio Tabs */}
-                <div className="flex items-center gap-1.5 border-b border-gray-100 bg-gray-50/70 px-4 py-2.5 text-xs">
-                  <span className="mr-2 text-[10px] font-bold text-gray-400 uppercase">
-                    Folio Windows:
-                  </span>
-                  {[
-                    ["all", "All Charges"],
-                    ["A", "Folio A (Room / Pkg)"],
-                    ["B", "Folio B (Incidentals)"],
-                    ["C", "Folio C (Direct Bill)"],
-                  ].map(([win, winLabel]) => (
+        {/* Folio Selector & Secondary Actions Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3.5 shadow-xs">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-xs font-medium text-gray-500">
+              Active Folio:
+            </span>
+            <select
+              className={buttonClass}
+              value={folioId}
+              onChange={(event) => setSelectedId(event.target.value)}
+              aria-label="Select property folio"
+              disabled={isLoading}
+            >
+              {isLoading && !folios.length ? (
+                <option value="">Loading folios...</option>
+              ) : (
+                folios.map((item) => (
+                  <option value={item.id} key={item.id}>
+                    {item.guestName || "Guest"} —{" "}
+                    {item.folioNo ||
+                      `FL-${String(item.id).slice(-6).toUpperCase()}`}
+                    {item.roomId ? ` (Room ${item.roomId})` : ""}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Split}
+              onClick={() => setDrawer("split")}
+              disabled={isLoading || !folioId}
+            >
+              Split Folio
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Share2}
+              onClick={() => setDrawer("merge")}
+              disabled={isLoading || !folioId}
+            >
+              Merge Folio
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={MoreHorizontal}
+              onClick={() => setDrawer("menu")}
+              aria-label="More folio actions"
+              disabled={isLoading || !folioId}
+            />
+          </div>
+        </div>
+
+        {isError ? (
+          <div className="rounded-2xl bg-rose-50 p-4 text-sm text-rose-700">
+            Guest folio could not be loaded. Please retry.
+          </div>
+        ) : isLoading ? (
+          <BillingPageSkeleton kpis={4} tableRows={6} />
+        ) : !folioId ? (
+          <div className="rounded-2xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500">
+            No open guest folios are available.
+          </div>
+        ) : (
+          <>
+            <GuestStrip folio={folio} />
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+              <main className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
+                <div className="flex overflow-x-auto border-b border-gray-100 px-4">
+                  {tabs.map((tab) => (
                     <button
-                      key={win}
-                      onClick={() => setActiveWindow(win)}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                        activeWindow === win
-                          ? "bg-brand-900 text-white shadow-2xs"
-                          : "hover:text-brand-900 text-gray-600 hover:bg-gray-100"
-                      }`}
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors ${activeTab === tab ? "border-brand-900 text-brand-900 border-b-2" : "hover:text-brand-900 text-gray-500"}`}
                     >
-                      {winLabel}
+                      {tab}
                     </button>
                   ))}
                 </div>
-
-                <div className="flex flex-wrap gap-2 border-b border-slate-100 p-3">
-                  <label className="flex min-w-[160px] flex-1 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-400">
-                    <Search size={14} />
-                    <input
-                      className="min-w-0 flex-1 outline-none"
-                      placeholder="Search charges..."
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                    />
-                  </label>
-                  <select
-                    className="rounded-lg border border-slate-200 px-3 text-xs"
-                    value={transactionType}
-                    onChange={(event) => setTransactionType(event.target.value)}
-                  >
-                    <option>All Transactions</option>
-                    <option>Charges</option>
-                    <option>Payments</option>
-                    <option>Adjustments</option>
-                    <option>Voids</option>
-                  </select>
-                  <button
-                    className={buttonClass}
-                    onClick={() => setThermalReceipt(true)}
-                  >
-                    <Printer size={13} /> 80mm Slip
-                  </button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[720px] text-left text-[11px]">
-                    <thead className="bg-slate-50 text-[10px] tracking-wide text-slate-500 uppercase">
-                      <tr>
-                        {[
-                          "Date & Time",
-                          "Description",
-                          "Win",
-                          "Department",
-                          "Qty",
-                          "Rate (₹)",
-                          "Amount (₹)",
-                          "Status",
-                          "Actions",
-                        ].map((label) => (
-                          <th className="px-3 py-3 font-semibold" key={label}>
-                            {label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleCharges.map((charge, index) => (
-                        <ChargeRow
-                          charge={charge}
-                          index={index}
-                          key={
-                            charge._id ||
-                            charge.id ||
-                            `${charge.description}-${index}`
-                          }
-                          onAction={(action) => setDrawer(action)}
-                          onTransferWindow={() => {
-                            setSelectedChargeIndex(index);
-                            setDrawer("transfer-window");
-                          }}
-                        />
+                {activeTab === "Folio" ? (
+                  <>
+                    {/* Multi-Window Folio Tabs */}
+                    <div className="flex items-center gap-1.5 border-b border-gray-100 bg-gray-50/70 px-4 py-2.5 text-xs">
+                      <span className="mr-2 text-[10px] font-bold text-gray-400 uppercase">
+                        Folio Windows:
+                      </span>
+                      {[
+                        ["all", "All Charges"],
+                        ["A", "Folio A (Room / Pkg)"],
+                        ["B", "Folio B (Incidentals)"],
+                        ["C", "Folio C (Direct Bill)"],
+                      ].map(([win, winLabel]) => (
+                        <button
+                          key={win}
+                          onClick={() => setActiveWindow(win)}
+                          className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                            activeWindow === win
+                              ? "bg-brand-900 text-white shadow-2xs"
+                              : "hover:text-brand-900 text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {winLabel}
+                        </button>
                       ))}
-                    </tbody>
-                  </table>
-                  {!visibleCharges.length && (
-                    <p className="p-10 text-center text-xs text-slate-400">
-                      No transactions match the selected filters.
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 p-4">
-                  <div className="flex gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      icon={Plus}
-                      onClick={() => setDrawer("charge")}
-                    >
-                      Add Charge
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={WalletCards}
-                      onClick={() => setDrawer("adjust")}
-                    >
-                      Adjust Charge
-                    </Button>
-                  </div>
-                  <button
-                    className="text-brand-700 hover:text-brand-900 text-xs font-semibold transition-colors"
-                    onClick={() => setDrawer("tax")}
-                  >
-                    Show Tax Breakdown{" "}
-                    <ChevronDown size={13} className="inline" />
-                  </button>
-                </div>
-              </>
-            ) : (
-              <TabPlaceholder
-                tab={activeTab}
-                payments={aggregate.payments}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 border-b border-slate-100 p-3">
+                      <label className="flex min-w-[160px] flex-1 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-400">
+                        <Search size={14} />
+                        <input
+                          className="min-w-0 flex-1 outline-none"
+                          placeholder="Search charges..."
+                          value={search}
+                          onChange={(event) => setSearch(event.target.value)}
+                        />
+                      </label>
+                      <select
+                        className="rounded-lg border border-slate-200 px-3 text-xs"
+                        value={transactionType}
+                        onChange={(event) =>
+                          setTransactionType(event.target.value)
+                        }
+                      >
+                        <option>All Transactions</option>
+                        <option>Charges</option>
+                        <option>Payments</option>
+                        <option>Adjustments</option>
+                        <option>Voids</option>
+                      </select>
+                      <button
+                        className={buttonClass}
+                        onClick={() => setThermalReceipt(true)}
+                      >
+                        <Printer size={13} /> 80mm Slip
+                      </button>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[720px] text-left text-[11px]">
+                        <thead className="bg-slate-50 text-[10px] tracking-wide text-slate-500 uppercase">
+                          <tr>
+                            {[
+                              "Date & Time",
+                              "Description",
+                              "Win",
+                              "Department",
+                              "Qty",
+                              "Rate (₹)",
+                              "Amount (₹)",
+                              "Status",
+                              "Actions",
+                            ].map((label) => (
+                              <th
+                                className="px-3 py-3 font-semibold"
+                                key={label}
+                              >
+                                {label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {visibleCharges.map((charge, index) => (
+                            <ChargeRow
+                              charge={charge}
+                              index={index}
+                              key={
+                                charge._id ||
+                                charge.id ||
+                                `${charge.description}-${index}`
+                              }
+                              onAction={(action) => setDrawer(action)}
+                              onTransferWindow={() => {
+                                setSelectedChargeIndex(index);
+                                setDrawer("transfer-window");
+                              }}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                      {!visibleCharges.length && (
+                        <p className="p-10 text-center text-xs text-slate-400">
+                          No transactions match the selected filters.
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 p-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          icon={Plus}
+                          onClick={() => setDrawer("charge")}
+                        >
+                          Add Charge
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={WalletCards}
+                          onClick={() => setDrawer("adjust")}
+                        >
+                          Adjust Charge
+                        </Button>
+                      </div>
+                      <button
+                        className="text-brand-700 hover:text-brand-900 text-xs font-semibold transition-colors"
+                        onClick={() => setDrawer("tax")}
+                      >
+                        Show Tax Breakdown{" "}
+                        <ChevronDown size={13} className="inline" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <TabPlaceholder
+                    tab={activeTab}
+                    payments={aggregate.payments}
+                    folio={folio}
+                  />
+                )}
+              </main>
+              <FolioSummary
                 folio={folio}
+                deposits={aggregate.deposits || []}
+                onAction={setDrawer}
               />
-            )}
-          </main>
-          <FolioSummary
-            folio={folio}
-            deposits={aggregate.deposits || []}
-            onAction={setDrawer}
-          />
-        </div>
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_1.2fr_1.8fr]">
-          <RecentPayments
-            payments={aggregate.payments || []}
-            onViewAll={() => setActiveTab("Payments")}
-          />
-          <Deposits
-            deposits={aggregate.deposits || []}
-            onApply={() => setDrawer("apply-deposit")}
-          />
-          <QuickActions
-            onAction={setDrawer}
-            onPrintThermal={() => setReceiptOpen(true)}
-          />
-        </div>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_1.2fr_1.8fr]">
+              <RecentPayments
+                payments={aggregate.payments || []}
+                onViewAll={() => setActiveTab("Payments")}
+              />
+              <Deposits
+                deposits={aggregate.deposits || []}
+                onApply={() => setDrawer("apply-deposit")}
+              />
+              <QuickActions
+                onAction={setDrawer}
+                onPrintThermal={() => setReceiptOpen(true)}
+              />
+            </div>
+          </>
+        )}
       </div>
       {receiptOpen && (
         <ReceiptModal

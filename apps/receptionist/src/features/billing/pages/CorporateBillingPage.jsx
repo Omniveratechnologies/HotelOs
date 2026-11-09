@@ -19,7 +19,13 @@ import {
   StatusChip,
 } from "@hotelos/ui/components";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, Panel, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  Panel,
+  money,
+  BillingPageSkeleton,
+} from "../billingUi.jsx";
 
 export default function CorporateBillingPage() {
   const query = useQuery({
@@ -89,271 +95,262 @@ export default function CorporateBillingPage() {
     a.click();
   };
 
-  if (query.isLoading)
-    return (
-      <div className="p-8 text-sm text-gray-500">
-        Loading corporate billing…
-      </div>
-    );
-  if (query.isError)
-    return (
-      <div className="m-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
-        Corporate billing could not be loaded.
-      </div>
-    );
-
   return (
     <div>
       <Header
         pageTitle="Corporate Accounts & Direct Billing"
         pageDescription="Manage corporate accounts, contracts, credit limits and city-ledger collections."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
-              onClick={() => setDrawer("company")}
-            >
-              <Plus size={14} /> Add Corporate Account
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 border-gray-200 text-gray-700"
-              onClick={() => setDrawer("invoice")}
-            >
-              <FileText size={14} /> Generate Invoice
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 border-gray-200 text-gray-700"
-              onClick={exportCsv}
-            >
-              <Download size={14} /> Export
-            </Button>
-          </div>
-        }
-      />
+      >
+        <Button
+          variant="primary"
+          size="sm"
+          className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
+          onClick={() => setDrawer("company")}
+          disabled={query.isLoading}
+        >
+          <Plus size={14} /> Add Corporate Account
+        </Button>
+      </Header>
 
       <div className="space-y-6 p-6">
-        <KpiTileRow>
-          <KpiTile
-            title="Total Accounts"
-            value={data.metrics?.totalAccounts || 0}
-            subtitle={`${data.metrics?.newThisMonth || 0} new this month`}
-            icon={Building2}
-          />
-          <KpiTile
-            title="Total Billed This Month"
-            value={money(data.metrics?.totalBilled)}
-            subtitle="Current period"
-            icon={FileText}
-          />
-          <KpiTile
-            title="Outstanding Amount"
-            value={money(data.metrics?.outstanding)}
-            subtitle={`${data.metrics?.outstandingAccounts || 0} companies`}
-            icon={Wallet}
-          />
-          <KpiTile
-            title="Overdue Amount"
-            value={money(data.metrics?.overdue)}
-            subtitle="Needs follow-up"
-            icon={CreditCard}
-          />
-          <KpiTile
-            title="Active Contracts"
-            value={data.metrics?.activeContracts || 0}
-            subtitle="Expiring soon included"
-            icon={CalendarDays}
-          />
-        </KpiTileRow>
-
-        <div className="flex flex-wrap gap-2">
-          {[
-            ["all", "All"],
-            ["active", "Active"],
-            ["outstanding", "With Outstanding"],
-            ["overdue", "Overdue"],
-            ["inactive", "Inactive"],
-          ].map(([value, label]) => (
-            <button
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                tab === value
-                  ? "bg-brand-900 text-white"
-                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-              }`}
-              key={value}
-              onClick={() => setTab(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
-          <Panel title="Corporate Accounts">
-            <div className="mb-4 flex flex-wrap gap-2">
-              <label className="focus-within:ring-primary-500 flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-400 focus-within:ring-1">
-                <Search size={14} />
-                <input
-                  className="min-w-0 flex-1 text-gray-900 placeholder-gray-400 outline-none"
-                  placeholder="Search company, GSTIN or contact..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </label>
-              <select
-                className="focus:ring-primary-500 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700 focus:ring-1 focus:outline-none"
-                value={industryFilter}
-                onChange={(e) => setIndustryFilter(e.target.value)}
-              >
-                <option value="all">All Industries</option>
-                {industries.map((ind) => (
-                  <option value={ind} key={ind}>
-                    {ind}
-                  </option>
-                ))}
-              </select>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 border-gray-200 text-gray-700"
-                onClick={exportCsv}
-              >
-                <Download size={14} /> Export CSV
-              </Button>
-            </div>
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
-              <table className="w-full min-w-[780px] text-left text-xs">
-                <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
-                  <tr>
-                    {[
-                      "Company",
-                      "Industry / Contact",
-                      "Credit Limit",
-                      "Outstanding",
-                      "Status",
-                      "Actions",
-                    ].map((label) => (
-                      <th className="px-4 py-3" key={label}>
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {rows.map((row) => (
-                    <tr
-                      className="hover:bg-primary-50/20 cursor-pointer"
-                      key={row.id}
-                      onClick={() => setSelected(row)}
-                    >
-                      <td className="text-brand-900 px-4 py-3 font-semibold">
-                        {row.name}
-                        <div className="text-[11px] font-normal text-gray-400">
-                          {row.gstin || "GSTIN not added"}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {row.industry || "—"}
-                        <div className="text-[11px] text-gray-400">
-                          {row.email || row.phone || "No contact"}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-800">
-                        {money(row.creditLimit)}
-                      </td>
-                      <td className="px-4 py-3 font-bold text-gray-900">
-                        {money(row.outstanding)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col items-start gap-1">
-                          <StatusChip status={row.status || "active"} />
-                          {row.creditLimit > 0 &&
-                            row.outstanding >= row.creditLimit && (
-                              <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
-                                Credit Locked
-                              </span>
-                            )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          className="rounded border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setDrawer("payment");
-                            setSelected(row);
-                          }}
-                        >
-                          <MoreHorizontal size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!rows.length && (
-                <p className="p-8 text-center text-xs text-gray-400">
-                  No corporate accounts match these filters.
-                </p>
-              )}
-            </div>
-          </Panel>
-
-          <div className="space-y-6">
-            <Panel title="Outstanding by Age">
-              <AgeChart rows={data.aging} />
-            </Panel>
-            <Panel title="Top 5 Outstanding Companies">
-              <div className="space-y-3">
-                {(data.rows || [])
-                  .slice()
-                  .sort((a, b) => b.outstanding - a.outstanding)
-                  .slice(0, 5)
-                  .map((row) => (
-                    <div
-                      className="flex justify-between border-b border-gray-50 py-1 text-xs last:border-0"
-                      key={row.id}
-                    >
-                      <span className="font-medium text-gray-800">
-                        {row.name}
-                      </span>
-                      <b className="text-gray-900">{money(row.outstanding)}</b>
-                    </div>
-                  ))}
-                {!data.rows?.length && (
-                  <p className="py-2 text-xs text-gray-400">
-                    No corporate accounts.
-                  </p>
-                )}
-              </div>
-            </Panel>
-            <Panel title="Contract Expiry">
-              <div className="space-y-2">
-                {(data.contracts || []).map((row) => (
-                  <div
-                    className="flex justify-between border-b border-gray-50 py-1 text-xs last:border-0"
-                    key={row.id}
-                  >
-                    <span className="text-gray-700">{row.name}</span>
-                    <span className="font-medium text-amber-700">
-                      {new Date(row.contractEnd).toLocaleDateString("en-IN")}
-                    </span>
-                  </div>
-                ))}
-                {!data.contracts?.length && (
-                  <p className="py-2 text-xs text-gray-400">
-                    No contract data available.
-                  </p>
-                )}
-              </div>
-            </Panel>
+        {query.isError ? (
+          <div className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+            Corporate billing could not be loaded.
           </div>
-        </div>
+        ) : query.isLoading ? (
+          <BillingPageSkeleton kpis={4} tableRows={6} />
+        ) : (
+          <>
+            <KpiTileRow>
+              <KpiTile
+                title="Total Accounts"
+                value={data.metrics?.totalAccounts || 0}
+                subtitle={`${data.metrics?.newThisMonth || 0} new this month`}
+                icon={Building2}
+              />
+              <KpiTile
+                title="Total Billed This Month"
+                value={money(data.metrics?.totalBilled)}
+                subtitle="Current period"
+                icon={FileText}
+              />
+              <KpiTile
+                title="Outstanding Amount"
+                value={money(data.metrics?.outstanding)}
+                subtitle={`${data.metrics?.outstandingAccounts || 0} companies`}
+                icon={Wallet}
+              />
+              <KpiTile
+                title="Overdue Amount"
+                value={money(data.metrics?.overdue)}
+                subtitle="Needs follow-up"
+                icon={CreditCard}
+              />
+              <KpiTile
+                title="Active Contracts"
+                value={data.metrics?.activeContracts || 0}
+                subtitle="Expiring soon included"
+                icon={CalendarDays}
+              />
+            </KpiTileRow>
+
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["all", "All"],
+                ["active", "Active"],
+                ["outstanding", "With Outstanding"],
+                ["overdue", "Overdue"],
+                ["inactive", "Inactive"],
+              ].map(([value, label]) => (
+                <button
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    tab === value
+                      ? "bg-brand-900 text-white"
+                      : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                  key={value}
+                  onClick={() => setTab(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
+              <Panel title="Corporate Accounts">
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <label className="focus-within:ring-primary-500 flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-400 focus-within:ring-1">
+                    <Search size={14} />
+                    <input
+                      className="min-w-0 flex-1 text-gray-900 placeholder-gray-400 outline-none"
+                      placeholder="Search company, GSTIN or contact..."
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  </label>
+                  <select
+                    className="focus:ring-primary-500 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-700 focus:ring-1 focus:outline-none"
+                    value={industryFilter}
+                    onChange={(e) => setIndustryFilter(e.target.value)}
+                  >
+                    <option value="all">All Industries</option>
+                    {industries.map((ind) => (
+                      <option value={ind} key={ind}>
+                        {ind}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-gray-200 text-gray-700"
+                    onClick={() => setDrawer("invoice")}
+                  >
+                    <FileText size={14} /> Generate Invoice
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-gray-200 text-gray-700"
+                    onClick={exportCsv}
+                  >
+                    <Download size={14} /> Export CSV
+                  </Button>
+                </div>
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="w-full min-w-[780px] text-left text-xs">
+                    <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
+                      <tr>
+                        {[
+                          "Company",
+                          "Industry / Contact",
+                          "Credit Limit",
+                          "Outstanding",
+                          "Status",
+                          "Actions",
+                        ].map((label) => (
+                          <th className="px-4 py-3" key={label}>
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {rows.map((row) => (
+                        <tr
+                          className="hover:bg-primary-50/20 cursor-pointer"
+                          key={row.id}
+                          onClick={() => setSelected(row)}
+                        >
+                          <td className="text-brand-900 px-4 py-3 font-semibold">
+                            {row.name}
+                            <div className="text-[11px] font-normal text-gray-400">
+                              {row.gstin || "GSTIN not added"}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">
+                            {row.industry || "—"}
+                            <div className="text-[11px] text-gray-400">
+                              {row.email || row.phone || "No contact"}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-gray-800">
+                            {money(row.creditLimit)}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-gray-900">
+                            {money(row.outstanding)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col items-start gap-1">
+                              <StatusChip status={row.status || "active"} />
+                              {row.creditLimit > 0 &&
+                                row.outstanding >= row.creditLimit && (
+                                  <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
+                                    Credit Locked
+                                  </span>
+                                )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              className="rounded border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setDrawer("payment");
+                                setSelected(row);
+                              }}
+                            >
+                              <MoreHorizontal size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!rows.length && (
+                    <p className="p-8 text-center text-xs text-gray-400">
+                      No corporate accounts match these filters.
+                    </p>
+                  )}
+                </div>
+              </Panel>
+
+              <div className="space-y-6">
+                <Panel title="Outstanding by Age">
+                  <AgeChart rows={data.aging} />
+                </Panel>
+                <Panel title="Top 5 Outstanding Companies">
+                  <div className="space-y-3">
+                    {(data.rows || [])
+                      .slice()
+                      .sort((a, b) => b.outstanding - a.outstanding)
+                      .slice(0, 5)
+                      .map((row) => (
+                        <div
+                          className="flex justify-between border-b border-gray-50 py-1 text-xs last:border-0"
+                          key={row.id}
+                        >
+                          <span className="font-medium text-gray-800">
+                            {row.name}
+                          </span>
+                          <b className="text-gray-900">
+                            {money(row.outstanding)}
+                          </b>
+                        </div>
+                      ))}
+                    {!data.rows?.length && (
+                      <p className="py-2 text-xs text-gray-400">
+                        No corporate accounts.
+                      </p>
+                    )}
+                  </div>
+                </Panel>
+                <Panel title="Contract Expiry">
+                  <div className="space-y-2">
+                    {(data.contracts || []).map((row) => (
+                      <div
+                        className="flex justify-between border-b border-gray-50 py-1 text-xs last:border-0"
+                        key={row.id}
+                      >
+                        <span className="text-gray-700">{row.name}</span>
+                        <span className="font-medium text-amber-700">
+                          {new Date(row.contractEnd).toLocaleDateString(
+                            "en-IN",
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                    {!data.contracts?.length && (
+                      <p className="py-2 text-xs text-gray-400">
+                        No contract data available.
+                      </p>
+                    )}
+                  </div>
+                </Panel>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {drawer === "company" && (

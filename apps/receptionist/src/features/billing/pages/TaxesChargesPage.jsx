@@ -18,7 +18,12 @@ import {
   StatusChip,
 } from "@hotelos/ui/components";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  money,
+  BillingPageSkeleton,
+} from "../billingUi.jsx";
 
 const categories = [
   ["room", "Room Charges"],
@@ -73,122 +78,131 @@ export default function TaxesChargesPage() {
       <Header
         pageTitle="Taxes, Surcharges & Extra Fees"
         pageDescription="Configure and manage taxes, service charges and other charges applied to rooms, POS and services."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
-              onClick={() => {
-                setSelected(null);
-                setDrawer("rule");
-              }}
-            >
-              <Plus size={14} /> Add Tax / Charge
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 border-gray-200 text-gray-700"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <Settings2 size={14} /> Tax Settings
-            </Button>
-          </div>
-        }
-      />
+      >
+        <Button
+          variant="primary"
+          size="sm"
+          className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
+          onClick={() => {
+            setSelected(null);
+            setDrawer("rule");
+          }}
+          disabled={rulesQuery.isLoading}
+        >
+          <Plus size={14} /> Add Tax / Charge
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 border-gray-200 text-gray-700"
+          onClick={() => setSettingsOpen(true)}
+          disabled={rulesQuery.isLoading}
+        >
+          <Settings2 size={14} /> Tax Settings
+        </Button>
+      </Header>
 
       <div className="space-y-6 p-6">
-        <KpiTileRow>
-          <KpiTile
-            title="GST (Total)"
-            value={`${gst || 18}%`}
-            subtitle="CGST 9% + SGST 9%"
-            icon={CheckCircle2}
-          />
-          <KpiTile
-            title="Service Charge"
-            value={`${allRules.find((rule) => rule.type === "service_charge")?.rate || 10}%`}
-            subtitle="Applicable on F&B"
-            icon={ShieldCheck}
-          />
-          <KpiTile
-            title="Luxury Tax"
-            value={`${allRules.find((rule) => /luxury/i.test(rule.name))?.rate || 0}%`}
-            subtitle="Currently disabled"
-            icon={ToggleLeft}
-          />
-          <KpiTile
-            title="Other Charges"
-            value={quick.other.length}
-            subtitle="Active charges"
-            icon={MoreHorizontal}
-          />
-          <KpiTile
-            title="Total Active"
-            value={active}
-            subtitle="Taxes & charges"
-            icon={ShieldCheck}
-          />
-        </KpiTileRow>
+        {rulesQuery.isError ? (
+          <div className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+            Taxes & charges could not be loaded.
+          </div>
+        ) : rulesQuery.isLoading ? (
+          <BillingPageSkeleton kpis={5} tableRows={5} />
+        ) : (
+          <>
+            <KpiTileRow>
+              <KpiTile
+                title="GST (Total)"
+                value={`${gst || 18}%`}
+                subtitle="CGST 9% + SGST 9%"
+                icon={CheckCircle2}
+              />
+              <KpiTile
+                title="Service Charge"
+                value={`${allRules.find((rule) => rule.type === "service_charge")?.rate || 10}%`}
+                subtitle="Applicable on F&B"
+                icon={ShieldCheck}
+              />
+              <KpiTile
+                title="Luxury Tax"
+                value={`${allRules.find((rule) => /luxury/i.test(rule.name))?.rate || 0}%`}
+                subtitle="Currently disabled"
+                icon={ToggleLeft}
+              />
+              <KpiTile
+                title="Other Charges"
+                value={quick.other.length}
+                subtitle="Active charges"
+                icon={MoreHorizontal}
+              />
+              <KpiTile
+                title="Total Active"
+                value={active}
+                subtitle="Taxes & charges"
+                icon={ShieldCheck}
+              />
+            </KpiTileRow>
 
-        <div className="flex flex-wrap gap-2">
-          {categories.map(([key, label]) => (
-            <button
-              className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors ${
-                category === key
-                  ? "bg-brand-900 text-white"
-                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-              }`}
-              key={key}
-              onClick={() => setCategory(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+            <div className="flex flex-wrap gap-2">
+              {categories.map(([key, label]) => (
+                <button
+                  className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors ${
+                    category === key
+                      ? "bg-brand-900 text-white"
+                      : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                  key={key}
+                  onClick={() => setCategory(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,.8fr)]">
-          <RulesTable
-            rules={rules}
-            selected={selected}
-            onSelect={setSelected}
-            onAdd={() => {
-              setSelected(null);
-              setDrawer("rule");
-            }}
-            onToggle={async (rule) => {
-              await billingApi.toggleTaxRule(rule.id, !rule.active);
-              refresh();
-            }}
-          />
-          <EditRule
-            rule={selected}
-            onSave={() => setDrawer("rule")}
-            onClose={() => setSelected(null)}
-          />
-        </div>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,.8fr)]">
+              <RulesTable
+                rules={rules}
+                selected={selected}
+                onSelect={setSelected}
+                onAdd={() => {
+                  setSelected(null);
+                  setDrawer("rule");
+                }}
+                onToggle={async (rule) => {
+                  await billingApi.toggleTaxRule(rule.id, !rule.active);
+                  refresh();
+                }}
+              />
+              <EditRule
+                rule={selected}
+                onSave={() => setDrawer("rule")}
+                onClose={() => setSelected(null)}
+              />
+            </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <QuickList
-            title="F&B Taxes & Charges"
-            description="Taxes and service charges for restaurant, bar and room service."
-            rows={quick.fnb}
-            onAdd={() => setDrawer("rule")}
-          />
-          <QuickList
-            title="Service Taxes & Charges"
-            description="Taxes for laundry, spa, minibar and other hotel services."
-            rows={quick.service}
-            onAdd={() => setDrawer("rule")}
-          />
-          <QuickList
-            title="Other Charges"
-            description="Additional charges like damage, extra bed, early check-in etc."
-            rows={quick.other}
-            onAdd={() => setDrawer("rule")}
-          />
-        </div>
+            <div className="grid gap-6 lg:grid-cols-3">
+              <QuickList
+                title="F&B Taxes & Charges"
+                description="Taxes and service charges for restaurant, bar and room service."
+                rows={quick.fnb}
+                onAdd={() => setDrawer("rule")}
+              />
+              <QuickList
+                title="Service Taxes & Charges"
+                description="Taxes for laundry, spa, minibar and other hotel services."
+                rows={quick.service}
+                onAdd={() => setDrawer("rule")}
+              />
+              <QuickList
+                title="Other Charges"
+                description="Additional charges like damage, extra bed, early check-in etc."
+                rows={quick.other}
+                onAdd={() => setDrawer("rule")}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {drawer === "rule" && (

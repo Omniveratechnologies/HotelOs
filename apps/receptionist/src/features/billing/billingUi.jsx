@@ -197,3 +197,62 @@ export const icons = {
   more: MoreHorizontal,
   chevron: ChevronDown,
 };
+
+export function KpiSkeletonRow({ count = 4 }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-5 shadow-xs"
+        >
+          <div className="space-y-2">
+            <div className="h-3 w-20 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-28 animate-pulse rounded bg-gray-200" />
+            <div className="h-2.5 w-16 animate-pulse rounded bg-gray-100" />
+          </div>
+          <div className="h-10 w-10 animate-pulse rounded-xl bg-gray-100" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function TableSkeleton({ rows = 5, columns = 5 }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
+      <div className="border-b border-gray-100 bg-gray-50/70 px-6 py-4">
+        <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+      </div>
+      <div className="divide-y divide-gray-100 p-6">
+        <div className="mb-4 flex gap-4">
+          {Array.from({ length: columns }).map((_, i) => (
+            <div
+              key={i}
+              className="h-3.5 flex-1 animate-pulse rounded bg-gray-200"
+            />
+          ))}
+        </div>
+        {Array.from({ length: rows }).map((_, rowIdx) => (
+          <div key={rowIdx} className="flex items-center gap-4 py-3.5">
+            {Array.from({ length: columns }).map((col, colIdx) => (
+              <div
+                key={colIdx}
+                className="h-3 flex-1 animate-pulse rounded bg-gray-100"
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function BillingPageSkeleton({ kpis = 4, tableRows = 5 }) {
+  return (
+    <div className="space-y-6">
+      <KpiSkeletonRow count={kpis} />
+      <TableSkeleton rows={tableRows} />
+    </div>
+  );
+}

@@ -18,7 +18,13 @@ import {
 } from "@hotelos/ui/components";
 import { formatDate as dateText } from "@hotelos/utils";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, Panel, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  Panel,
+  money,
+  BillingPageSkeleton,
+} from "../billingUi.jsx";
 
 export default function NightAuditPage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -111,61 +117,62 @@ export default function NightAuditPage() {
     a.click();
   };
 
-  if (query.isLoading)
-    return (
-      <div className="p-8 text-sm text-gray-500">Loading night audit…</div>
-    );
-  if (query.isError)
-    return (
-      <div className="m-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
-        Night audit data could not be loaded.
-      </div>
-    );
-
   return (
     <div>
       <Header
         pageTitle="Night Audit Automation"
         pageDescription="Close the day, post charges, generate reports and roll over to the next business date."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm">
+      >
+        <Button
+          variant="primary"
+          size="sm"
+          className="bg-brand-900 hover:bg-brand-950 gap-2 text-white disabled:opacity-50"
+          disabled={startingAudit || query.isLoading}
+          onClick={run}
+        >
+          <Moon size={14} />{" "}
+          {startingAudit
+            ? "Starting..."
+            : query.isLoading
+              ? "Checking..."
+              : data.run
+                ? "Audit In Progress"
+                : "Start Night Audit"}
+        </Button>
+      </Header>
+
+      <div className="space-y-6 p-6">
+        {/* Page Top Controls: Business Date Selection & Management Reports */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3.5 shadow-xs">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-xs font-medium text-gray-500">
+              Business Date:
+            </span>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-100">
               <CalendarDays size={14} className="text-gray-500" />
               <input
                 className="w-28 bg-transparent text-xs outline-none"
                 type="date"
                 value={date}
                 onChange={(event) => setDate(event.target.value)}
+                disabled={query.isLoading}
               />
             </label>
+          </div>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               className="gap-2 border-gray-200 text-gray-700"
               onClick={exportMorningBriefing}
               title="Download Morning Management Summary Report"
+              disabled={query.isLoading}
             >
               <Download size={14} /> Morning Briefing (CSV)
             </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="bg-brand-900 hover:bg-brand-950 gap-2 text-white disabled:opacity-50"
-              disabled={startingAudit}
-              onClick={run}
-            >
-              <Moon size={14} />{" "}
-              {startingAudit
-                ? "Starting..."
-                : data.run
-                  ? "Audit In Progress"
-                  : "Start Night Audit"}
-            </Button>
           </div>
-        }
-      />
+        </div>
 
-      <div className="space-y-6 p-6">
         {actionError && (
           <div className="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
             <span>{actionError}</span>
@@ -178,266 +185,288 @@ export default function NightAuditPage() {
           </div>
         )}
 
-        <KpiTileRow>
-          <KpiTile
-            title="Occupied Rooms Tonight"
-            value={`${data.metrics?.occupied || 0} / ${data.metrics?.totalRooms || 0}`}
-            subtitle={`${data.metrics?.occupancy || 0}% occupancy`}
-            icon={BedDouble}
-          />
-          <KpiTile
-            title="Arrivals Today"
-            value={data.metrics?.arrivals || 0}
-            subtitle="Check-ins completed"
-          />
-          <KpiTile
-            title="Departures Today"
-            value={data.metrics?.departures || 0}
-            subtitle="Check-outs completed"
-          />
-          <KpiTile
-            title="Room Revenue Today"
-            value={money(data.metrics?.roomRevenue)}
-            subtitle="From occupied rooms"
-          />
-          <KpiTile
-            title="Total Revenue Today"
-            value={money(data.metrics?.totalRevenue)}
-            subtitle="Room + POS + others"
-          />
-        </KpiTileRow>
-
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr_320px]">
-          <Panel title="Revenue Summary">
-            <Bars rows={data.revenue} />
-          </Panel>
-          <Panel title="Occupancy Overview">
-            <Occupancy rows={data.occupancy} total={data.metrics?.totalRooms} />
-          </Panel>
-          <Panel title={`Night Audit Checklist (${completed}/8)`}>
-            <div className="space-y-2">
-              {(data.steps || []).map((step) => {
-                const isDone =
-                  step.status === "completed" || step.status === "confirmed";
-                return (
-                  <button
-                    className="flex w-full items-center gap-2 rounded-lg border border-transparent p-2 text-left text-xs transition-colors hover:border-gray-200 hover:bg-gray-50"
-                    key={step.stepNo}
-                    onClick={() => execute(step)}
-                  >
-                    <span
-                      className={`grid size-5 place-items-center rounded-full text-[10px] font-bold ${
-                        isDone
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {step.stepNo}
-                    </span>
-                    <span
-                      className={`flex-1 ${isDone ? "font-semibold text-gray-900" : "text-gray-600"}`}
-                    >
-                      {step.name}
-                    </span>
-                    {isDone ? (
-                      <CheckCircle2 size={16} className="text-emerald-600" />
-                    ) : (
-                      <span className="size-3.5 rounded-sm border border-gray-300" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <Button
-              variant="primary"
-              className="bg-brand-900 hover:bg-brand-950 mt-4 w-full text-white disabled:opacity-50"
-              disabled={!data.run || completed < 8}
-              onClick={() => setDrawer("complete")}
-            >
-              <CheckCircle2 size={14} className="mr-1.5 inline" /> Complete
-              Night Audit
-            </Button>
-          </Panel>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Summary
-            title={`Arrivals (${data.metrics?.arrivals || 0})`}
-            rows={data.arrivals}
-            label="status"
-          />
-          <Summary
-            title={`Departures (${data.metrics?.departures || 0})`}
-            rows={data.departures}
-            label="status"
-          />
-          <Summary
-            title={`In-House Guests (${data.inHouse?.length || 0})`}
-            rows={data.inHouse}
-            label="guest"
-          />
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <Panel title={`In-House Guest Folios (${inHouseRows.length})`}>
-            <div className="mb-4 flex gap-2">
-              <input
-                className="focus:ring-primary-500 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:ring-1 focus:outline-none"
-                placeholder="Search guest name, booking or room..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+        {query.isError ? (
+          <div className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+            Night audit data could not be loaded.
+          </div>
+        ) : query.isLoading ? (
+          <BillingPageSkeleton kpis={4} tableRows={6} />
+        ) : (
+          <>
+            <KpiTileRow>
+              <KpiTile
+                title="Occupied Rooms Tonight"
+                value={`${data.metrics?.occupied || 0} / ${data.metrics?.totalRooms || 0}`}
+                subtitle={`${data.metrics?.occupancy || 0}% occupancy`}
+                icon={BedDouble}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 border-gray-200 text-gray-700"
-                onClick={() => {
-                  if (!inHouseRows.length) return;
-                  const headers = [
-                    "Room",
-                    "Guest",
-                    "Booking ID",
-                    "Arrival",
-                    "Departure",
-                    "Status",
-                  ];
-                  const csv = [
-                    headers.join(","),
-                    ...inHouseRows.map((r) =>
-                      [
-                        `"${r.roomId || ""}"`,
-                        `"${r.guestName || "Guest"}"`,
-                        `"${r._id || ""}"`,
-                        `"${dateText(r.checkIn)}"`,
-                        `"${dateText(r.checkOut)}"`,
-                        `"${r.status || ""}"`,
-                      ].join(","),
-                    ),
-                  ].join("\n");
-                  const blob = new Blob([csv], {
-                    type: "text/csv;charset=utf-8;",
-                  });
-                  const a = document.createElement("a");
-                  a.href = URL.createObjectURL(blob);
-                  a.download = `in-house-guests-${date}.csv`;
-                  a.click();
-                }}
-              >
-                <FileText size={14} /> Export
-              </Button>
-            </div>
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
-              <table className="w-full min-w-[700px] text-left text-xs">
-                <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
-                  <tr>
-                    {[
-                      "Room",
-                      "Guest",
-                      "Booking ID",
-                      "Arrival",
-                      "Departure",
-                      "Status",
-                    ].map((label) => (
-                      <th className="px-4 py-3" key={label}>
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {inHouseRows.map((row) => (
-                    <tr className="hover:bg-primary-50/20" key={row._id}>
-                      <td className="text-primary-700 px-4 py-3 font-semibold">
-                        {row.roomId || "—"}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">
-                        {row.guestName || "Guest"}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-[11px] text-gray-500">
-                        {row._id}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {dateText(row.checkIn)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {dateText(row.checkOut)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusChip
-                          status={
-                            row.status === "checked-in" ? "in-house" : "due-out"
-                          }
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!inHouseRows.length && (
-                <p className="p-8 text-center text-xs text-gray-400">
-                  No in-house guests found.
-                </p>
-              )}
-            </div>
-          </Panel>
+              <KpiTile
+                title="Arrivals Today"
+                value={data.metrics?.arrivals || 0}
+                subtitle="Check-ins completed"
+              />
+              <KpiTile
+                title="Departures Today"
+                value={data.metrics?.departures || 0}
+                subtitle="Check-outs completed"
+              />
+              <KpiTile
+                title="Room Revenue Today"
+                value={money(data.metrics?.roomRevenue)}
+                subtitle="From occupied rooms"
+              />
+              <KpiTile
+                title="Total Revenue Today"
+                value={money(data.metrics?.totalRevenue)}
+                subtitle="Room + POS + others"
+              />
+            </KpiTileRow>
 
-          <div className="space-y-6">
-            <Panel title="Important Alerts">
-              {(data.alerts || []).map((alert) => (
-                <div
-                  className="flex gap-2 border-b border-gray-100 py-2.5 text-xs text-gray-700"
-                  key={alert}
-                >
-                  <AlertTriangle
-                    size={15}
-                    className="mt-0.5 shrink-0 text-amber-500"
-                  />
-                  <span>{alert}</span>
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr_320px]">
+              <Panel title="Revenue Summary">
+                <Bars rows={data.revenue} />
+              </Panel>
+              <Panel title="Occupancy Overview">
+                <Occupancy
+                  rows={data.occupancy}
+                  total={data.metrics?.totalRooms}
+                />
+              </Panel>
+              <Panel title={`Night Audit Checklist (${completed}/8)`}>
+                <div className="space-y-2">
+                  {(data.steps || []).map((step) => {
+                    const isDone =
+                      step.status === "completed" ||
+                      step.status === "confirmed";
+                    return (
+                      <button
+                        className="flex w-full items-center gap-2 rounded-lg border border-transparent p-2 text-left text-xs transition-colors hover:border-gray-200 hover:bg-gray-50"
+                        key={step.stepNo}
+                        onClick={() => execute(step)}
+                      >
+                        <span
+                          className={`grid size-5 place-items-center rounded-full text-[10px] font-bold ${
+                            isDone
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {step.stepNo}
+                        </span>
+                        <span
+                          className={`flex-1 ${isDone ? "font-semibold text-gray-900" : "text-gray-600"}`}
+                        >
+                          {step.name}
+                        </span>
+                        {isDone ? (
+                          <CheckCircle2
+                            size={16}
+                            className="text-emerald-600"
+                          />
+                        ) : (
+                          <span className="size-3.5 rounded-sm border border-gray-300" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
-              {!data.alerts?.length && (
-                <p className="text-xs font-medium text-emerald-600">
-                  No blocking alerts.
-                </p>
-              )}
-            </Panel>
+                <Button
+                  variant="primary"
+                  className="bg-brand-900 hover:bg-brand-950 mt-4 w-full text-white disabled:opacity-50"
+                  disabled={!data.run || completed < 8}
+                  onClick={() => setDrawer("complete")}
+                >
+                  <CheckCircle2 size={14} className="mr-1.5 inline" /> Complete
+                  Night Audit
+                </Button>
+              </Panel>
+            </div>
 
-            <Panel title="Reports After Audit">
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  "night-audit",
-                  "arrivals",
-                  "occupancy",
-                  "manager",
-                  "revenue",
-                  "cashier",
-                ].map((type) => (
+            <div className="grid gap-6 lg:grid-cols-3">
+              <Summary
+                title={`Arrivals (${data.metrics?.arrivals || 0})`}
+                rows={data.arrivals}
+                label="status"
+              />
+              <Summary
+                title={`Departures (${data.metrics?.departures || 0})`}
+                rows={data.departures}
+                label="status"
+              />
+              <Summary
+                title={`In-House Guests (${data.inHouse?.length || 0})`}
+                rows={data.inHouse}
+                label="guest"
+              />
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <Panel title={`In-House Guest Folios (${inHouseRows.length})`}>
+                <div className="mb-4 flex gap-2">
+                  <input
+                    className="focus:ring-primary-500 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-900 placeholder-gray-400 focus:ring-1 focus:outline-none"
+                    placeholder="Search guest name, booking or room..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
                   <Button
                     variant="outline"
                     size="sm"
-                    className="justify-start gap-1.5 border-gray-200 text-xs text-gray-700 capitalize"
-                    key={type}
-                    onClick={async () => {
-                      setActionError("");
-                      try {
-                        const rep = await billingApi.nightAuditReport(type, {
-                          date,
-                        });
-                        setReportData({ type, data: rep });
-                      } catch (error) {
-                        setActionError(
-                          error.message || `Report ${type} unavailable`,
-                        );
-                      }
+                    className="gap-2 border-gray-200 text-gray-700"
+                    onClick={() => {
+                      if (!inHouseRows.length) return;
+                      const headers = [
+                        "Room",
+                        "Guest",
+                        "Booking ID",
+                        "Arrival",
+                        "Departure",
+                        "Status",
+                      ];
+                      const csv = [
+                        headers.join(","),
+                        ...inHouseRows.map((r) =>
+                          [
+                            `"${r.roomId || ""}"`,
+                            `"${r.guestName || "Guest"}"`,
+                            `"${r._id || ""}"`,
+                            `"${dateText(r.checkIn)}"`,
+                            `"${dateText(r.checkOut)}"`,
+                            `"${r.status || ""}"`,
+                          ].join(","),
+                        ),
+                      ].join("\n");
+                      const blob = new Blob([csv], {
+                        type: "text/csv;charset=utf-8;",
+                      });
+                      const a = document.createElement("a");
+                      a.href = URL.createObjectURL(blob);
+                      a.download = `in-house-guests-${date}.csv`;
+                      a.click();
                     }}
                   >
-                    <FileText size={13} className="text-gray-400" /> {type}
+                    <FileText size={14} /> Export
                   </Button>
-                ))}
+                </div>
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="w-full min-w-[700px] text-left text-xs">
+                    <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
+                      <tr>
+                        {[
+                          "Room",
+                          "Guest",
+                          "Booking ID",
+                          "Arrival",
+                          "Departure",
+                          "Status",
+                        ].map((label) => (
+                          <th className="px-4 py-3" key={label}>
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {inHouseRows.map((row) => (
+                        <tr className="hover:bg-primary-50/20" key={row._id}>
+                          <td className="text-primary-700 px-4 py-3 font-semibold">
+                            {row.roomId || "—"}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-900">
+                            {row.guestName || "Guest"}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-[11px] text-gray-500">
+                            {row._id}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {dateText(row.checkIn)}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {dateText(row.checkOut)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusChip
+                              status={
+                                row.status === "checked-in"
+                                  ? "in-house"
+                                  : "due-out"
+                              }
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!inHouseRows.length && (
+                    <p className="p-8 text-center text-xs text-gray-400">
+                      No in-house guests found.
+                    </p>
+                  )}
+                </div>
+              </Panel>
+
+              <div className="space-y-6">
+                <Panel title="Important Alerts">
+                  {(data.alerts || []).map((alert) => (
+                    <div
+                      className="flex gap-2 border-b border-gray-100 py-2.5 text-xs text-gray-700"
+                      key={alert}
+                    >
+                      <AlertTriangle
+                        size={15}
+                        className="mt-0.5 shrink-0 text-amber-500"
+                      />
+                      <span>{alert}</span>
+                    </div>
+                  ))}
+                  {!data.alerts?.length && (
+                    <p className="text-xs font-medium text-emerald-600">
+                      No blocking alerts.
+                    </p>
+                  )}
+                </Panel>
+
+                <Panel title="Reports After Audit">
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      "night-audit",
+                      "arrivals",
+                      "occupancy",
+                      "manager",
+                      "revenue",
+                      "cashier",
+                    ].map((type) => (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="justify-start gap-1.5 border-gray-200 text-xs text-gray-700 capitalize"
+                        key={type}
+                        onClick={async () => {
+                          setActionError("");
+                          try {
+                            const rep = await billingApi.nightAuditReport(
+                              type,
+                              {
+                                date,
+                              },
+                            );
+                            setReportData({ type, data: rep });
+                          } catch (error) {
+                            setActionError(
+                              error.message || `Report ${type} unavailable`,
+                            );
+                          }
+                        }}
+                      >
+                        <FileText size={13} className="text-gray-400" /> {type}
+                      </Button>
+                    ))}
+                  </div>
+                </Panel>
               </div>
-            </Panel>
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       {reportData && (

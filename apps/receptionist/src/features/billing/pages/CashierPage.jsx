@@ -20,7 +20,13 @@ import {
   ReceiptModal,
 } from "@hotelos/ui/components";
 import { billingApi } from "../billingApi.js";
-import { ActionDrawer, Field, Panel, money } from "../billingUi.jsx";
+import {
+  ActionDrawer,
+  Field,
+  Panel,
+  money,
+  BillingPageSkeleton,
+} from "../billingUi.jsx";
 
 export default function CashierPage() {
   const query = useQuery({
@@ -102,41 +108,49 @@ export default function CashierPage() {
     setMenuOpen(false);
   };
 
-  if (query.isLoading)
-    return <div className="p-8 text-sm text-gray-500">Loading cashier…</div>;
-  if (query.isError)
-    return (
-      <div className="m-6 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
-        Cashier data could not be loaded.
-      </div>
-    );
-
   return (
     <div>
       <Header
         pageTitle="Cashier Shifts & Float Management"
         pageDescription="Manage front desk payments, cash transactions and daily cashier operations."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {shift ? (
-              <Button
-                variant="primary"
-                size="sm"
-                className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
-                onClick={() => setDrawer("entry")}
-              >
-                <Plus size={14} /> Add Cash Entry
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
-                onClick={() => setDrawer("open")}
-              >
-                <Plus size={14} /> Open Cash Drawer
-              </Button>
+      >
+        {shift ? (
+          <Button
+            variant="primary"
+            size="sm"
+            className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
+            onClick={() => setDrawer("entry")}
+            disabled={query.isLoading}
+          >
+            <Plus size={14} /> Add Cash Entry
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            size="sm"
+            className="bg-brand-900 hover:bg-brand-950 gap-2 text-white"
+            onClick={() => setDrawer("open")}
+            disabled={query.isLoading}
+          >
+            <Plus size={14} /> Open Cash Drawer
+          </Button>
+        )}
+      </Header>
+
+      <div className="space-y-6 p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 shadow-2xs">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-gray-500">Current Shift:</span>
+            <span className="text-brand-900 font-semibold">
+              {shift ? "Drawer Open" : "Drawer Closed"}
+            </span>
+            {shift && (
+              <span className="bg-primary-50 text-primary-700 rounded-full px-2 py-0.5 text-[11px] font-medium">
+                Float: {money(shift.openingFloat)}
+              </span>
             )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -187,212 +201,225 @@ export default function CashierPage() {
               )}
             </div>
           </div>
-        }
-      />
-
-      <div className="space-y-6 p-6">
-        <KpiTileRow>
-          <KpiTile
-            title="Total Collections Today"
-            value={money(data.metrics?.total)}
-            subtitle={`${transactions.length} transactions`}
-            icon={Receipt}
-          />
-          <KpiTile
-            title="Card Payments"
-            value={money(data.metrics?.card)}
-            subtitle="Successful"
-          />
-          <KpiTile
-            title="UPI Payments"
-            value={money(data.metrics?.upi)}
-            subtitle="Successful"
-          />
-          <KpiTile
-            title="Cash Payments"
-            value={money(data.metrics?.cash)}
-            subtitle="Drawer receipts"
-            icon={Banknote}
-          />
-          <KpiTile
-            title="Refunds"
-            value={money(data.metrics?.refunds)}
-            subtitle="Today"
-          />
-        </KpiTileRow>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <Panel title="Today's Transactions">
-            <div className="mb-4 flex flex-wrap gap-2">
-              {[
-                "transactions",
-                "drawer",
-                "summary",
-                "refunds",
-                "settlement",
-              ].map((value) => (
-                <button
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
-                    tab === value
-                      ? "bg-brand-900 text-white"
-                      : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
-                  }`}
-                  key={value}
-                  onClick={() => setTab(value)}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
-            {tab === "transactions" && (
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="w-full min-w-[720px] text-left text-xs">
-                  <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
-                    <tr>
-                      {[
-                        "Time",
-                        "Bill No.",
-                        "Guest / Room",
-                        "Amount",
-                        "Method",
-                        "Status",
-                        "Actions",
-                      ].map((label) => (
-                        <th className="px-4 py-3" key={label}>
-                          {label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {transactions.map((row) => (
-                      <tr className="hover:bg-gray-50/50" key={row._id}>
-                        <td className="px-4 py-3 text-gray-600">
-                          {new Date(row.createdAt).toLocaleTimeString("en-IN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </td>
-                        <td className="text-brand-900 px-4 py-3 font-semibold">
-                          {row.billId || "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-medium text-gray-900">
-                            {row.guestName || "Guest"}
-                          </span>
-                          <small className="block text-gray-400">
-                            {row.roomNo || row.bookingId || "—"}
-                          </small>
-                        </td>
-                        <td className="px-4 py-3 font-bold text-gray-900">
-                          {money(row.amount)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="bg-primary-50 text-primary-700 rounded-full px-2.5 py-1 text-[11px] font-medium">
-                            {row.method}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusChip status={row.status} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <button className="rounded border border-gray-200 p-1 text-gray-500 hover:bg-gray-50">
-                            <MoreHorizontal size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {!transactions.length && (
-                  <p className="p-8 text-center text-xs text-gray-400">
-                    No transactions for this business date.
-                  </p>
-                )}
-              </div>
-            )}
-            {tab === "drawer" && <DrawerSummary shift={shift} />}
-            {tab === "summary" && <MethodSummary methods={data.methods} />}
-            {tab === "refunds" && <Refunds rows={data.refunds} />}
-            {tab === "settlement" && <MethodSummary methods={data.methods} />}
-          </Panel>
-
-          <div className="space-y-6">
-            <Panel
-              title="Cash Drawer"
-              action={<StatusChip status={shift ? "open" : "closed"} />}
-            >
-              {shift ? (
-                <>
-                  <p className="text-center text-xs text-gray-500">
-                    Opened at{" "}
-                    {new Date(shift.createdAt).toLocaleTimeString("en-IN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  <div className="bg-primary-50/60 border-primary-100 my-4 rounded-xl border p-4 text-center">
-                    <p className="text-primary-900 text-xs font-medium">
-                      Current Cash in Drawer
-                    </p>
-                    <b className="text-brand-900 mt-1 block text-2xl font-bold">
-                      {money(shift.currentCash)}
-                    </b>
-                  </div>
-                  <DrawerSummary shift={shift} />
-                  <Button
-                    variant="primary"
-                    className="bg-brand-900 hover:bg-brand-950 mt-4 w-full text-white"
-                    onClick={() => setDrawer("entry")}
-                  >
-                    Add Cash Entry
-                  </Button>
-                </>
-              ) : (
-                <p className="py-8 text-center text-xs text-gray-500">
-                  Open a drawer to begin cashier operations.
-                </p>
-              )}
-            </Panel>
-
-            <Panel title="Quick Actions">
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="justify-start gap-2 border-gray-200"
-                  onClick={() => setDrawer("payment")}
-                >
-                  <Wallet size={14} /> Payment
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="justify-start gap-2 border-gray-200"
-                  onClick={() => setDrawer("refund")}
-                >
-                  <Receipt size={14} /> Refund
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="justify-start gap-2 border-gray-200"
-                  onClick={() => setDrawer("entry")}
-                >
-                  <Banknote size={14} /> Petty Cash
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="justify-start gap-2 border-gray-200"
-                  onClick={() => setDrawer("report")}
-                >
-                  <CalendarDays size={14} /> Shift Report
-                </Button>
-              </div>
-            </Panel>
-          </div>
         </div>
+
+        {query.isError ? (
+          <div className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+            Cashier data could not be loaded.
+          </div>
+        ) : query.isLoading ? (
+          <BillingPageSkeleton kpis={4} tableRows={6} />
+        ) : (
+          <>
+            <KpiTileRow>
+              <KpiTile
+                title="Total Collections Today"
+                value={money(data.metrics?.total)}
+                subtitle={`${transactions.length} transactions`}
+                icon={Receipt}
+              />
+              <KpiTile
+                title="Card Payments"
+                value={money(data.metrics?.card)}
+                subtitle="Successful"
+              />
+              <KpiTile
+                title="UPI Payments"
+                value={money(data.metrics?.upi)}
+                subtitle="Successful"
+              />
+              <KpiTile
+                title="Cash Payments"
+                value={money(data.metrics?.cash)}
+                subtitle="Drawer receipts"
+                icon={Banknote}
+              />
+              <KpiTile
+                title="Refunds"
+                value={money(data.metrics?.refunds)}
+                subtitle="Today"
+              />
+            </KpiTileRow>
+
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <Panel title="Today's Transactions">
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {[
+                    "transactions",
+                    "drawer",
+                    "summary",
+                    "refunds",
+                    "settlement",
+                  ].map((value) => (
+                    <button
+                      className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${
+                        tab === value
+                          ? "bg-brand-900 text-white"
+                          : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      }`}
+                      key={value}
+                      onClick={() => setTab(value)}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+                {tab === "transactions" && (
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="w-full min-w-[720px] text-left text-xs">
+                      <thead className="border-b border-gray-200 bg-gray-50/75 text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
+                        <tr>
+                          {[
+                            "Time",
+                            "Bill No.",
+                            "Guest / Room",
+                            "Amount",
+                            "Method",
+                            "Status",
+                            "Actions",
+                          ].map((label) => (
+                            <th className="px-4 py-3" key={label}>
+                              {label}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {transactions.map((row) => (
+                          <tr className="hover:bg-gray-50/50" key={row._id}>
+                            <td className="px-4 py-3 text-gray-600">
+                              {new Date(row.createdAt).toLocaleTimeString(
+                                "en-IN",
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </td>
+                            <td className="text-brand-900 px-4 py-3 font-semibold">
+                              {row.billId || "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="font-medium text-gray-900">
+                                {row.guestName || "Guest"}
+                              </span>
+                              <small className="block text-gray-400">
+                                {row.roomNo || row.bookingId || "—"}
+                              </small>
+                            </td>
+                            <td className="px-4 py-3 font-bold text-gray-900">
+                              {money(row.amount)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="bg-primary-50 text-primary-700 rounded-full px-2.5 py-1 text-[11px] font-medium">
+                                {row.method}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <StatusChip status={row.status} />
+                            </td>
+                            <td className="px-4 py-3">
+                              <button className="rounded border border-gray-200 p-1 text-gray-500 hover:bg-gray-50">
+                                <MoreHorizontal size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {!transactions.length && (
+                      <p className="p-8 text-center text-xs text-gray-400">
+                        No transactions for this business date.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {tab === "drawer" && <DrawerSummary shift={shift} />}
+                {tab === "summary" && <MethodSummary methods={data.methods} />}
+                {tab === "refunds" && <Refunds rows={data.refunds} />}
+                {tab === "settlement" && (
+                  <MethodSummary methods={data.methods} />
+                )}
+              </Panel>
+
+              <div className="space-y-6">
+                <Panel
+                  title="Cash Drawer"
+                  action={<StatusChip status={shift ? "open" : "closed"} />}
+                >
+                  {shift ? (
+                    <>
+                      <p className="text-center text-xs text-gray-500">
+                        Opened at{" "}
+                        {new Date(shift.createdAt).toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <div className="bg-primary-50/60 border-primary-100 my-4 rounded-xl border p-4 text-center">
+                        <p className="text-primary-900 text-xs font-medium">
+                          Current Cash in Drawer
+                        </p>
+                        <b className="text-brand-900 mt-1 block text-2xl font-bold">
+                          {money(shift.currentCash)}
+                        </b>
+                      </div>
+                      <DrawerSummary shift={shift} />
+                      <Button
+                        variant="primary"
+                        className="bg-brand-900 hover:bg-brand-950 mt-4 w-full text-white"
+                        onClick={() => setDrawer("entry")}
+                      >
+                        Add Cash Entry
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="py-8 text-center text-xs text-gray-500">
+                      Open a drawer to begin cashier operations.
+                    </p>
+                  )}
+                </Panel>
+
+                <Panel title="Quick Actions">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start gap-2 border-gray-200"
+                      onClick={() => setDrawer("payment")}
+                    >
+                      <Wallet size={14} /> Payment
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start gap-2 border-gray-200"
+                      onClick={() => setDrawer("refund")}
+                    >
+                      <Receipt size={14} /> Refund
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start gap-2 border-gray-200"
+                      onClick={() => setDrawer("entry")}
+                    >
+                      <Banknote size={14} /> Petty Cash
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start gap-2 border-gray-200"
+                      onClick={() => setDrawer("report")}
+                    >
+                      <CalendarDays size={14} /> Shift Report
+                    </Button>
+                  </div>
+                </Panel>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {drawer === "open" && (
