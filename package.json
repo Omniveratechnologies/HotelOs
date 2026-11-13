@@ -8,6 +8,7 @@
     "sync:ip": "node scripts/sync-kiosk-ip.mjs",
     "build": "turbo build",
     "preview": "turbo preview",
+    "typecheck": "turbo typecheck",
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",
     "prepare": "husky",
@@ -15,12 +16,14 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
+    "@types/node": "^24.13.3",
     "husky": "^9.1.7",
     "lint-staged": "^17.4.1",
     "oxlint": "^1.81.0",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
-    "turbo": "^2.10.12"
+    "turbo": "^2.10.12",
+    "typescript": "^6.0.3"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs}": "oxlint --fix",
