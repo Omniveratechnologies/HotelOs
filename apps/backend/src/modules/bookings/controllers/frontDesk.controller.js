@@ -6,7 +6,6 @@ import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
 import KeyCard from "#/modules/key-cards/models/KeyCard.js";
 import ServiceRequest from "#/modules/service-requests/models/ServiceRequest.js";
-import Order from "#/modules/orders/models/Order.js";
 import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
 import { getIo } from "#/config/socket.js";
 import { bookingDTO } from "../dto/booking.dto.js";
@@ -14,6 +13,12 @@ import {
   aiosellSyncInventory,
   calculateSyncDateRange,
 } from "#/shared/services/inventory.service.js";
+import {
+  ensureFolioForBooking,
+  recordFolioPayment,
+  settleAndCloseFolio,
+} from "#/modules/billing/services/folioLifecycle.service.js";
+import Payment from "#/modules/billing/models/Payment.js";
 import logger from "#/utils/logger.js";
 
 // =====================================================
@@ -576,6 +581,25 @@ export const checkInBooking = async (req, res) => {
 
     await booking.save();
 
+    // Ensure canonical Master Folio is synchronized and record check-in advance deposit
+    try {
+      const bill = await ensureFolioForBooking(booking);
+      if (depositAmount > 0 && bill) {
+        await recordFolioPayment(bill._id, {
+          amount: Number(depositAmount),
+          method: paymentMode ? String(paymentMode).toLowerCase() : "cash",
+          referenceNo: `DEP-${booking.reservationNo}`,
+          userId: req.user._id,
+          source: "desk",
+        });
+      }
+    } catch (folioErr) {
+      logger.warn(
+        { err: folioErr, bookingId: booking._id },
+        "Failed to sync Master Folio on check-in",
+      );
+    }
+
     // Assign Key Card(s) if provided
     const rawCardInput = keyCardNumbers || keyCardNumber;
     if (rawCardInput) {
@@ -754,6 +778,22 @@ export const checkOutBooking = async (req, res) => {
     });
     await booking.save();
 
+    // Settle and close canonical Master Folio in billing ledger
+    try {
+      await settleAndCloseFolio(booking._id, {
+        settlementMode: settlementMode
+          ? String(settlementMode).toLowerCase()
+          : "cash",
+        userId: req.user._id,
+        notes,
+      });
+    } catch (folioErr) {
+      logger.warn(
+        { err: folioErr, bookingId: booking._id },
+        "Failed to settle Master Folio on checkout",
+      );
+    }
+
     // Release Room to cleaning state
     if (roomId) {
       const room = await Room.findById(roomId);
@@ -872,69 +912,97 @@ export const getBookingFolio = async (req, res) => {
         .json({ success: false, message: "Booking not found" });
     }
 
-    // Stay charges
+    const bill = await ensureFolioForBooking(booking);
+
+    // Fetch all recorded payments for this folio
+    const payments = await Payment.find({
+      billId: bill._id,
+      hotelId,
+      status: "success",
+    }).lean();
+
+    const totalPaid = payments.reduce(
+      (sum, p) => sum + Number(p.amount || 0),
+      0,
+    );
+    const grandTotal = Number(bill.totalAmount || 0);
+    const balanceDue = Math.max(0, grandTotal - totalPaid);
+
+    const checkInDate = new Date(booking.checkIn);
+    const checkOutDate = new Date(booking.checkOut);
     const nights =
       Math.max(
         1,
         Math.round(
-          (new Date(booking.checkOut) - new Date(booking.checkIn)) / 86400000,
+          (checkOutDate.getTime() - checkInDate.getTime()) /
+            (1000 * 60 * 60 * 24),
         ),
       ) || 1;
-    const nightlyRate =
-      booking.pricing?.nightlyRate || booking.roomId?.rate || 2999;
-    const stayTariffTotal = nightlyRate * nights;
 
-    // Restaurant orders during stay
-    const orders = await Order.find({
-      hotelId,
-      bookingId: booking._id,
-      status: { $ne: "cancelled" },
-    }).lean();
+    // Separate stay charges and other (F&B / incidentals) charges from bill.items
+    const stayCharges = (bill.items || [])
+      .filter(
+        (i) =>
+          !i.foodItemId &&
+          !String(i.name || "")
+            .toLowerCase()
+            .includes("f&b"),
+      )
+      .map((item) => ({
+        date: new Date(bill.createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        desc: item.name,
+        qty: `${item.quantity || 1} Unit(s)`,
+        rate: item.price,
+        amount: Number(item.price || 0) * Number(item.quantity || 1),
+      }));
 
-    const otherCharges = orders.map((o) => ({
-      date: new Date(o.createdAt).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-      desc: `F&B Order #${o.orderNumber || o._id.toString().slice(-4)}`,
-      qty: `${o.items?.length || 1} Item(s)`,
-      rate: o.totalAmount || 0,
-      amount: o.totalAmount || 0,
-    }));
+    const otherCharges = (bill.items || [])
+      .filter(
+        (i) =>
+          i.foodItemId ||
+          String(i.name || "")
+            .toLowerCase()
+            .includes("f&b"),
+      )
+      .map((item) => ({
+        date: new Date(bill.createdAt).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        desc: item.name,
+        qty: `${item.quantity || 1} Unit(s)`,
+        rate: item.price,
+        amount: Number(item.price || 0) * Number(item.quantity || 1),
+      }));
 
-    const ordersTotal = otherCharges.reduce((acc, c) => acc + c.amount, 0);
-    const taxes = Math.round((stayTariffTotal + ordersTotal) * 0.12);
-    const grandTotal = stayTariffTotal + ordersTotal + taxes;
+    const taxes = Number(bill.cgst || 0) + Number(bill.sgst || 0);
 
     return res.status(200).json({
       success: true,
       message: "Booking folio fetched",
       data: {
         bookingId: booking._id,
+        folioId: bill._id,
+        folioNo: bill.billNo,
         reservationNo: booking.reservationNo,
-        guestName: booking.guestId?.name,
-        roomNumber: booking.roomId?.roomNumber,
+        guestName: bill.guestName || booking.guestId?.name || "Guest",
+        roomNumber:
+          bill.roomId?.roomNumber || booking.roomId?.roomNumber || "101",
         nights,
-        nightlyRate,
-        stayTariffTotal,
-        stayCharges: [
-          {
-            date: new Date(booking.checkIn).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }),
-            desc: `${booking.roomId?.type || "Room"} Tariff (${nights} Nights)`,
-            qty: `${nights} Night(s)`,
-            rate: nightlyRate,
-            amount: stayTariffTotal,
-          },
-        ],
+        nightlyRate: booking.pricing?.nightlyRate || 2999,
+        stayTariffTotal: bill.subtotal,
+        stayCharges,
         otherCharges,
         taxes,
         grandTotal,
-        paymentStatus: booking.paymentStatus,
+        totalPaid,
+        balanceDue,
+        paymentStatus: bill.paymentStatus || booking.paymentStatus,
       },
     });
   } catch (error) {

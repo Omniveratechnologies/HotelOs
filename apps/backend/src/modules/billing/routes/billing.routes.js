@@ -39,6 +39,7 @@ import {
   generateFolioInvoice,
   collectFolioPayment,
   shareFolio,
+  streamFolioPdf,
   correctFolioCharge,
   applyDepositToFolio,
   transferChargeWindow,
@@ -61,6 +62,7 @@ import {
   createProforma,
   createCreditNote,
   sendInvoice,
+  streamInvoicePdf,
   cancelInvoice,
 } from "../controllers/invoice.controller.js";
 import {
@@ -152,6 +154,7 @@ router.get("/payments/summary", getPaymentsDashboard);
 router.get("/invoices", listInvoices);
 router.get("/invoices/summary", invoiceSummary);
 router.get("/invoices/:id", getInvoice);
+router.get("/invoices/:id/pdf", streamInvoicePdf);
 router.post("/invoices", createInvoice);
 router.post("/invoices/proforma", createProforma);
 router.post("/invoices/:id/credit-note", createCreditNote);
@@ -200,6 +203,7 @@ router.get("/receivables/:account/statement", listReceivables);
 router.get("/folios", listFolios);
 router.get("/folios/by-booking/:bookingId", getFolioByBooking);
 router.get("/folios/:id", getFolio);
+router.get("/folios/:id/pdf", streamFolioPdf);
 router.post("/folios/:id/charges", (req, res) => {
   req.body.billId = req.params.id;
   return addFolioCharge(req, res);

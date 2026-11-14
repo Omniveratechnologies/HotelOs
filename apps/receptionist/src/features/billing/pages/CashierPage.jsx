@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@hotelos/query";
 import {
   Banknote,
@@ -22,6 +22,8 @@ import {
 import { formatCurrency as money } from "@hotelos/utils";
 import { billingApi } from "../api/billingApi.js";
 import { ActionDrawer, Field, Panel, BillingPageSkeleton } from "../components";
+
+const EMPTY_ARRAY = [];
 
 export default function CashierPage() {
   const query = useQuery({
@@ -208,31 +210,31 @@ export default function CashierPage() {
           <>
             <KpiTileRow>
               <KpiTile
-                title="Total Collections Today"
+                label="Total Collections Today"
                 value={money(data.metrics?.total)}
-                subtitle={`${transactions.length} transactions`}
+                delta={`${transactions.length} transactions`}
                 icon={Receipt}
               />
               <KpiTile
-                title="Card Payments"
+                label="Card Payments"
                 value={money(data.metrics?.card)}
-                subtitle="Successful"
+                delta="Successful"
               />
               <KpiTile
-                title="UPI Payments"
+                label="UPI Payments"
                 value={money(data.metrics?.upi)}
-                subtitle="Successful"
+                delta="Successful"
               />
               <KpiTile
-                title="Cash Payments"
+                label="Cash Payments"
                 value={money(data.metrics?.cash)}
-                subtitle="Drawer receipts"
+                delta="Drawer receipts"
                 icon={Banknote}
               />
               <KpiTile
-                title="Refunds"
+                label="Refunds"
                 value={money(data.metrics?.refunds)}
-                subtitle="Today"
+                delta="Today"
               />
             </KpiTileRow>
 
@@ -311,7 +313,15 @@ export default function CashierPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3">
-                              <StatusChip status={row.status} />
+                              <StatusChip
+                                variant={
+                                  row.status === "completed"
+                                    ? "successful"
+                                    : "pending"
+                                }
+                              >
+                                {row.status}
+                              </StatusChip>
                             </td>
                             <td className="px-4 py-3">
                               <button className="rounded border border-gray-200 p-1 text-gray-500 hover:bg-gray-50">
@@ -340,7 +350,11 @@ export default function CashierPage() {
               <div className="space-y-6">
                 <Panel
                   title="Cash Drawer"
-                  action={<StatusChip status={shift ? "open" : "closed"} />}
+                  action={
+                    <StatusChip variant={shift ? "active" : "neutral"}>
+                      {shift ? "Open" : "Closed"}
+                    </StatusChip>
+                  }
                 >
                   {shift ? (
                     <>
@@ -450,6 +464,7 @@ export default function CashierPage() {
       )}
       {drawer === "refund" && (
         <CashierRefundDrawer
+          transactions={transactions}
           onClose={() => setDrawer("")}
           onComplete={reload}
         />
@@ -490,7 +505,7 @@ function DrawerSummary({ shift }) {
   ) : null;
 }
 
-function MethodSummary({ methods = [] }) {
+function MethodSummary({ methods = EMPTY_ARRAY }) {
   return (
     <div className="space-y-3">
       {methods.map((row) => (
@@ -506,7 +521,7 @@ function MethodSummary({ methods = [] }) {
   );
 }
 
-function Refunds({ rows = [] }) {
+function Refunds({ rows = EMPTY_ARRAY }) {
   return (
     <div className="space-y-3">
       {rows.map((row) => (
@@ -768,6 +783,45 @@ function CountDrawer({ shift, onClose, onComplete }) {
 function CashierPaymentDrawer({ shift, onClose, onComplete }) {
   const [form, setForm] = useState({ method: "cash" });
   const [error, setError] = useState("");
+  const [folios, setFolios] = useState([]);
+  const [loadingFolios, setLoadingFolios] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    billingApi
+      .folio({ status: "open" })
+      .then((res) => {
+        if (!active) return;
+        const list = Array.isArray(res) ? res : res?.data || [];
+        setFolios(list);
+        setForm((prev) => {
+          if (prev.billId || list.length === 0) return prev;
+          return {
+            ...prev,
+            billId: list[0]._id || list[0].id,
+            amount: list[0].balanceDue || list[0].totalAmount || "",
+          };
+        });
+        setLoadingFolios(false);
+      })
+      .catch(() => {
+        if (active) setLoadingFolios(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleFolioChange = (e) => {
+    const billId = e.target.value;
+    const found = folios.find((f) => (f._id || f.id) === billId);
+    setForm((prev) => ({
+      ...prev,
+      billId,
+      amount: found ? found.balanceDue || found.totalAmount || "" : prev.amount,
+    }));
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     setError("");
@@ -790,15 +844,36 @@ function CashierPaymentDrawer({ shift, onClose, onComplete }) {
       onSubmit={submit}
       submitLabel="Record Payment"
     >
+      <label className="text-surface-700 block text-xs font-medium">
+        Select Guest Folio / Bill <span className="text-rose-500">*</span>
+        <select
+          value={form.billId || ""}
+          onChange={handleFolioChange}
+          required
+          className="border-surface-300 focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-xs text-gray-800 shadow-2xs focus:outline-hidden"
+        >
+          {folios.length === 0 && (
+            <option value="">
+              {loadingFolios
+                ? "Loading open folios..."
+                : "No open folios available"}
+            </option>
+          )}
+          {folios.map((f) => (
+            <option key={f._id || f.id} value={f._id || f.id}>
+              {f.folioNo || f.billNo} — {f.guestName} (Room{" "}
+              {f.roomNumber || "-"}
+              {" | "}
+              Balance: ₹{f.balanceDue ?? f.totalAmount ?? 0})
+            </option>
+          ))}
+        </select>
+      </label>
       <Field
-        label="Bill / folio ID"
-        required
-        value={form.billId || ""}
-        onChange={(event) => setForm({ ...form, billId: event.target.value })}
-      />
-      <Field
-        label="Amount"
+        label="Amount (INR)"
         type="number"
+        min="0"
+        step="0.01"
         required
         value={form.amount || ""}
         onChange={(event) => setForm({ ...form, amount: event.target.value })}
@@ -816,7 +891,7 @@ function CashierPaymentDrawer({ shift, onClose, onComplete }) {
         </select>
       </Field>
       <Field
-        label="Reference"
+        label="Reference / UTR"
         value={form.referenceNo || ""}
         onChange={(event) =>
           setForm({ ...form, referenceNo: event.target.value })
@@ -829,9 +904,25 @@ function CashierPaymentDrawer({ shift, onClose, onComplete }) {
   );
 }
 
-function CashierRefundDrawer({ onClose, onComplete }) {
+function CashierRefundDrawer({
+  transactions = EMPTY_ARRAY,
+  onClose,
+  onComplete,
+}) {
   const [form, setForm] = useState({});
   const [error, setError] = useState("");
+
+  const handleTxChange = (e) => {
+    const txId = e.target.value;
+    const found = transactions.find((t) => (t.transactionId || t._id) === txId);
+    setForm((prev) => ({
+      ...prev,
+      paymentId: txId,
+      billId: found?.billId || "",
+      amount: found?.amount || prev.amount || "",
+    }));
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     setError("");
@@ -853,17 +944,42 @@ function CashierRefundDrawer({ onClose, onComplete }) {
       onSubmit={submit}
       submitLabel="Create Refund"
     >
+      {transactions.length > 0 ? (
+        <label className="text-surface-700 block text-xs font-medium">
+          Select Shift Transaction <span className="text-rose-500">*</span>
+          <select
+            value={form.paymentId || ""}
+            onChange={handleTxChange}
+            required
+            className="border-surface-300 focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-xs text-gray-800 shadow-2xs focus:outline-hidden"
+          >
+            <option value="">-- Choose Transaction --</option>
+            {transactions.map((t) => (
+              <option
+                key={t.transactionId || t._id}
+                value={t.transactionId || t._id}
+              >
+                {t.guestName || "Guest"} — ₹{t.amount} ({t.method || "Cash"}) [
+                {t.transactionId?.slice(-8) || t._id?.slice(-8)}]
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <Field
+          label="Original payment ID"
+          required
+          value={form.paymentId || ""}
+          onChange={(event) =>
+            setForm({ ...form, paymentId: event.target.value })
+          }
+        />
+      )}
       <Field
-        label="Original payment ID"
-        required
-        value={form.paymentId || ""}
-        onChange={(event) =>
-          setForm({ ...form, paymentId: event.target.value })
-        }
-      />
-      <Field
-        label="Refund amount"
+        label="Refund amount (INR)"
         type="number"
+        min="0"
+        step="0.01"
         required
         value={form.amount || ""}
         onChange={(event) => setForm({ ...form, amount: event.target.value })}
@@ -871,6 +987,7 @@ function CashierRefundDrawer({ onClose, onComplete }) {
       <Field
         label="Reason"
         required
+        placeholder="e.g. Guest checkout adjustment or double charge"
         value={form.reason || ""}
         onChange={(event) => setForm({ ...form, reason: event.target.value })}
       />

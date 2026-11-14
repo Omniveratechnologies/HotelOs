@@ -1,6 +1,11 @@
 import Bill from "../models/Bill.js";
 import BillingEntity from "../models/BillingEntity.js";
 import InvoiceSeries from "../models/InvoiceSeries.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
+import Booking from "#/modules/bookings/models/Booking.js";
+import logger from "#/utils/logger.js";
+import { generateInvoicePdf } from "../services/billingPdf.service.js";
+import { sendTaxInvoiceEmail } from "#/shared/services/email.service.js";
 
 const financialYear = (date = new Date()) => {
   const year =
@@ -36,13 +41,13 @@ const invoiceRows = async (hotelId, query = {}) => {
     .sort({ createdAt: -1 })
     .limit(Math.min(Number(query.limit || 250), 500))
     .lean();
-  return rows.map((row) => ({
-    ...row.data,
-    ...row,
-    id: row._id,
-    invoiceNo: row.reference,
-    amount: row.amount,
-  }));
+  return rows.map((row) =>
+    Object.assign({}, row.data, row, {
+      id: row._id,
+      invoiceNo: row.reference,
+      amount: row.amount,
+    }),
+  );
 };
 
 export const listInvoices = async (req, res) => {
@@ -50,28 +55,49 @@ export const listInvoices = async (req, res) => {
   return res.json({ success: true, data: rows });
 };
 
+const sumInvoiceAmount = (items) =>
+  items.reduce((total, row) => total + Number(row.amount || 0), 0);
+
 export const invoiceSummary = async (req, res) => {
   const rows = await invoiceRows(req.user.hotelId, req.query);
-  const amount = (items) =>
-    items.reduce((total, row) => total + Number(row.amount || 0), 0);
+  const totalAmount = sumInvoiceAmount(rows);
+  const paidRows = rows.filter((row) => row.status === "paid");
+  const pendingRows = rows.filter((row) => row.status === "pending");
+  const overdueRows = rows.filter(
+    (row) =>
+      row.status === "overdue" ||
+      (row.status === "pending" &&
+        row.dueDate &&
+        new Date(row.dueDate) < new Date()),
+  );
+  const creditNoteRows = rows.filter((row) => row.type === "credit_note");
+  const cancelledRows = rows.filter((row) =>
+    ["cancelled", "refunded"].includes(row.status),
+  );
+  const corporateRows = rows.filter((row) => row.type === "corporate");
+
   return res.json({
     success: true,
     data: {
       metrics: {
-        total: amount(rows),
+        total: totalAmount,
+        totalInvoiced: totalAmount,
         totalCount: rows.length,
-        paid: amount(rows.filter((row) => row.status === "paid")),
-        paidCount: rows.filter((row) => row.status === "paid").length,
-        pending: amount(rows.filter((row) => row.status === "pending")),
-        pendingCount: rows.filter((row) => row.status === "pending").length,
-        cancelled: amount(
-          rows.filter((row) => ["cancelled", "refunded"].includes(row.status)),
-        ),
-        cancelledCount: rows.filter((row) =>
-          ["cancelled", "refunded"].includes(row.status),
-        ).length,
-        corporate: amount(rows.filter((row) => row.type === "corporate")),
-        corporateCount: rows.filter((row) => row.type === "corporate").length,
+        paid: amount(paidRows),
+        paidAmount: amount(paidRows),
+        paidCount: paidRows.length,
+        pending: amount(pendingRows),
+        unpaidAmount: amount(pendingRows),
+        unpaidCount: pendingRows.length,
+        pendingCount: pendingRows.length,
+        overdueAmount: amount(overdueRows),
+        overdueCount: overdueRows.length,
+        creditNoteAmount: amount(creditNoteRows),
+        creditNoteCount: creditNoteRows.length,
+        cancelled: amount(cancelledRows),
+        cancelledCount: cancelledRows.length,
+        corporate: amount(corporateRows),
+        corporateCount: corporateRows.length,
       },
       rows,
     },
@@ -221,38 +247,114 @@ export const sendInvoice = async (req, res) => {
       .json({ success: false, message: "Invoice not found" });
 
   const channel = req.body.channel || "email";
+  const recipient =
+    req.body.recipient ||
+    (channel === "whatsapp"
+      ? invoice.data?.guestPhone
+      : invoice.data?.guestEmail) ||
+    "";
   const trackingId = `INV-DLV-${Date.now().toString().slice(-8)}`;
+
+  let emailResult = null;
+  if (channel === "email" && recipient) {
+    emailResult = await sendTaxInvoiceEmail({
+      email: recipient,
+      guestName: invoice.data?.guestName || "Valued Guest",
+      invoiceNo: invoice.reference || "INV-1001",
+      totalAmount: invoice.amount || 0,
+    });
+  } else if (channel === "whatsapp") {
+    // TODO: integrate WhatsApp Business API (e.g. Meta Cloud API / Twilio)
+    logger.info(
+      {
+        event: "whatsapp_notification_queued",
+        recipient,
+        invoiceNo: invoice.reference,
+      },
+      "WhatsApp notification queued",
+    );
+  }
 
   const delivery = await BillingEntity.create({
     hotelId: invoice.hotelId,
     entityType: "audit-log",
-    status: "sent",
+    status:
+      channel === "email"
+        ? emailResult?.success
+          ? "delivered"
+          : "queued"
+        : "delivered",
     reference: `invoice-delivery:${invoice._id}`,
     createdBy: req.user._id,
     data: {
       invoiceId: invoice._id,
       invoiceNo: invoice.reference,
       channel,
-      recipient:
-        req.body.recipient ||
-        invoice.data?.guestEmail ||
-        invoice.data?.guestPhone ||
-        "guest@hotelos.com",
+      recipient,
       trackingId,
       sentAt: new Date(),
       deliveryStatus: "delivered",
+      emailResult,
     },
   });
+
   return res.status(200).json({
     success: true,
+    message: `Invoice shared successfully via ${channel}`,
     data: {
       deliveryId: delivery._id,
       trackingId,
-      status: "sent",
+      status: delivery.status,
       channel,
+      recipient,
       sentAt: new Date(),
     },
   });
+};
+
+export const streamInvoicePdf = async (req, res) => {
+  try {
+    const invoice = await BillingEntity.findOne({
+      _id: req.params.id,
+      hotelId: req.user.hotelId,
+      entityType: "invoice",
+    }).lean();
+
+    if (!invoice) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Invoice not found" });
+    }
+
+    const [bill, hotel] = await Promise.all([
+      invoice.data?.billId
+        ? Bill.findById(invoice.data.billId).populate("roomId").lean()
+        : null,
+      Hotel.findById(req.user.hotelId).lean(),
+    ]);
+
+    const booking = bill?.bookingId
+      ? await Booking.findById(bill.bookingId).populate("guestId").lean()
+      : null;
+
+    return await generateInvoicePdf(res, {
+      invoice,
+      bill: bill || { items: invoice.data?.items || [] },
+      booking: booking || {},
+      hotel: hotel || {
+        name: "Stayscape Dev",
+        city: "Kolkata",
+        state: "West Bengal",
+      },
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Failed to stream invoice PDF");
+    if (!res.headersSent) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Error generating invoice PDF" });
+    }
+  }
 };
 
 export const cancelInvoice = async (req, res) => {

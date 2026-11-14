@@ -8,6 +8,7 @@ import {
   Download,
   FileText,
   Moon,
+  Printer,
 } from "lucide-react";
 import {
   Button,
@@ -192,30 +193,30 @@ export default function NightAuditPage() {
           <>
             <KpiTileRow>
               <KpiTile
-                title="Occupied Rooms Tonight"
+                label="Occupied Rooms Tonight"
                 value={`${data.metrics?.occupied || 0} / ${data.metrics?.totalRooms || 0}`}
-                subtitle={`${data.metrics?.occupancy || 0}% occupancy`}
+                delta={`${data.metrics?.occupancy || 0}% occupancy`}
                 icon={BedDouble}
               />
               <KpiTile
-                title="Arrivals Today"
+                label="Arrivals Today"
                 value={data.metrics?.arrivals || 0}
-                subtitle="Check-ins completed"
+                delta="Check-ins completed"
               />
               <KpiTile
-                title="Departures Today"
+                label="Departures Today"
                 value={data.metrics?.departures || 0}
-                subtitle="Check-outs completed"
+                delta="Check-outs completed"
               />
               <KpiTile
-                title="Room Revenue Today"
+                label="Room Revenue Today"
                 value={money(data.metrics?.roomRevenue)}
-                subtitle="From occupied rooms"
+                delta="From occupied rooms"
               />
               <KpiTile
-                title="Total Revenue Today"
+                label="Total Revenue Today"
                 value={money(data.metrics?.totalRevenue)}
-                subtitle="Room + POS + others"
+                delta="Room + POS + others"
               />
             </KpiTileRow>
 
@@ -383,12 +384,16 @@ export default function NightAuditPage() {
                           </td>
                           <td className="px-4 py-3">
                             <StatusChip
-                              status={
+                              variant={
                                 row.status === "checked-in"
-                                  ? "in-house"
-                                  : "due-out"
+                                  ? "checked-in"
+                                  : "neutral"
                               }
-                            />
+                            >
+                              {row.status === "checked-in"
+                                ? "In-House"
+                                : "Due-Out"}
+                            </StatusChip>
                           </td>
                         </tr>
                       ))}
@@ -467,25 +472,11 @@ export default function NightAuditPage() {
       </div>
 
       {reportData && (
-        <ActionDrawer
-          title={`Audit Report: ${reportData.type}`}
+        <AuditReportDrawer
+          reportData={reportData}
+          date={date}
           onClose={() => setReportData(null)}
-          onSubmit={(e) => {
-            e.preventDefault();
-            const dataStr =
-              "data:text/json;charset=utf-8," +
-              encodeURIComponent(JSON.stringify(reportData.data, null, 2));
-            const dl = document.createElement("a");
-            dl.setAttribute("href", dataStr);
-            dl.setAttribute("download", `${reportData.type}-${date}.json`);
-            dl.click();
-          }}
-          submitLabel="Download JSON"
-        >
-          <div className="max-h-96 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3 font-mono text-[11px] text-gray-700">
-            <pre>{JSON.stringify(reportData.data, null, 2)}</pre>
-          </div>
-        </ActionDrawer>
+        />
       )}
 
       {drawer === "complete" && (
@@ -499,7 +490,9 @@ export default function NightAuditPage() {
   );
 }
 
-function Bars({ rows = [] }) {
+const EMPTY_ROWS = [];
+
+function Bars({ rows = EMPTY_ROWS }) {
   const max = Math.max(...rows.map((row) => row.value), 1);
   return (
     <div className="flex h-36 items-end gap-3 pt-4">
@@ -522,7 +515,7 @@ function Bars({ rows = [] }) {
   );
 }
 
-function Occupancy({ rows = [], total = 0 }) {
+function Occupancy({ rows = EMPTY_ROWS, total = 0 }) {
   const occupied = rows.find((row) => row.label === "Occupied")?.value || 0;
   const colors = ["#10b981", "#cbd5e1", "#f59e0b", "#ef4444", "#3b82f6"];
   const totalVal =
@@ -574,7 +567,7 @@ function Occupancy({ rows = [], total = 0 }) {
   );
 }
 
-function Summary({ title, rows = [], label }) {
+function Summary({ title, rows = EMPTY_ROWS, label }) {
   return (
     <Panel title={title}>
       <div className="space-y-2 text-xs">
@@ -587,8 +580,16 @@ function Summary({ title, rows = [], label }) {
               {row.guestName || row._id}
             </span>
             <StatusChip
-              status={label === "guest" ? "in-house" : row.status || "pending"}
-            />
+              variant={
+                label === "guest" || row.status === "checked-in"
+                  ? "checked-in"
+                  : row.status === "completed"
+                    ? "successful"
+                    : "pending"
+              }
+            >
+              {label === "guest" ? "In-House" : row.status || "Pending"}
+            </StatusChip>
           </div>
         ))}
         {!rows.length && (
@@ -644,5 +645,406 @@ function CompleteDrawer({ run, onClose, onComplete }) {
         onChange={(event) => setReason(event.target.value)}
       />
     </ActionDrawer>
+  );
+}
+
+function AuditReportDrawer({ reportData, date, onClose }) {
+  if (!reportData) return null;
+  const rawReport =
+    reportData.data?.report?.data ||
+    reportData.data?.report ||
+    reportData.data ||
+    {};
+  const metrics = rawReport.metrics || {};
+  const revenue = rawReport.revenue || [];
+  const occupancy = rawReport.occupancy || [];
+  const arrivals = rawReport.arrivals || [];
+  const departures = rawReport.departures || [];
+  const type = reportData.type || "audit";
+
+  const downloadCsv = () => {
+    let csv = "";
+    if (type === "revenue") {
+      csv =
+        "Department,Amount (INR)\n" +
+        revenue.map((r) => `"${r.label}","${r.value}"`).join("\n");
+    } else if (type === "occupancy") {
+      csv =
+        "Category,Rooms\n" +
+        occupancy.map((o) => `"${o.label}","${o.value}"`).join("\n");
+    } else if (type === "arrivals") {
+      csv =
+        "Booking ID,Guest Name,Status,Check-In\n" +
+        arrivals
+          .map(
+            (a) =>
+              `"${a.bookingNumber || a._id}","${a.guestName || "Guest"}","${a.status || ""}","${a.checkIn?.slice(0, 10) || ""}"`,
+          )
+          .join("\n");
+    } else if (type === "departures") {
+      csv =
+        "Booking ID,Guest Name,Status,Check-Out\n" +
+        departures
+          .map(
+            (d) =>
+              `"${d.bookingNumber || d._id}","${d.guestName || "Guest"}","${d.status || ""}","${d.checkOut?.slice(0, 10) || ""}"`,
+          )
+          .join("\n");
+    } else {
+      csv =
+        "Metric,Value\n" +
+        [
+          `"Report Type","${type.toUpperCase()}"`,
+          `"Business Date","${date}"`,
+          `"Generated At","${new Date().toLocaleString("en-IN")}"`,
+          `"Total Revenue (INR)","${metrics.totalRevenue || 0}"`,
+          `"Room Revenue (INR)","${metrics.roomRevenue || 0}"`,
+          `"Occupied Rooms","${metrics.occupied || 0}"`,
+          `"Total Rooms","${metrics.totalRooms || 0}"`,
+          `"Occupancy Rate","${metrics.occupancy || 0}%"`,
+          `"Arrivals","${metrics.arrivals || 0}"`,
+          `"Departures","${metrics.departures || 0}"`,
+        ].join("\n");
+    }
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Audit-Report-${type}-${date}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadJson = () => {
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(JSON.stringify(reportData.data, null, 2));
+    const dl = document.createElement("a");
+    dl.setAttribute("href", dataStr);
+    dl.setAttribute("download", `${type}-${date}.json`);
+    dl.click();
+  };
+
+  return (
+    <div
+      className="backdrop-blur-2xs fixed inset-0 z-40 flex justify-end bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="h-full w-full max-w-2xl overflow-y-auto border-l border-gray-200 bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="bg-brand-50 text-brand-800 rounded px-2 py-0.5 text-xs font-semibold tracking-wider uppercase">
+                HotelOS Audit
+              </span>
+              <span className="text-xs text-gray-500">{date}</span>
+            </div>
+            <h2 className="font-display text-brand-900 mt-1 text-lg font-bold capitalize">
+              {type.replace("-", " ")} Report
+            </h2>
+          </div>
+          <button
+            className="text-surface-400 hover:text-brand-900 rounded-lg p-1.5 transition-colors hover:bg-gray-100"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Quick KPI Strip */}
+        <div className="mb-6 grid grid-cols-4 gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 text-center">
+          <div>
+            <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+              Occupancy
+            </p>
+            <p className="text-base font-bold text-gray-900">
+              {metrics.occupancy ?? 0}%
+            </p>
+            <p className="text-[10px] text-gray-400">
+              {metrics.occupied ?? 0}/{metrics.totalRooms ?? 0} rooms
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+              Total Revenue
+            </p>
+            <p className="text-base font-bold text-emerald-600">
+              {money(metrics.totalRevenue || 0)}
+            </p>
+            <p className="text-[10px] text-gray-400">
+              Room: {money(metrics.roomRevenue || 0)}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+              Arrivals
+            </p>
+            <p className="text-base font-bold text-blue-600">
+              {metrics.arrivals ?? 0}
+            </p>
+            <p className="text-[10px] text-gray-400">Scheduled</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+              Departures
+            </p>
+            <p className="text-base font-bold text-amber-600">
+              {metrics.departures ?? 0}
+            </p>
+            <p className="text-[10px] text-gray-400">Scheduled</p>
+          </div>
+        </div>
+
+        {/* Report Content */}
+        {type === "revenue" && (
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
+              Revenue Breakdown by Department
+            </h3>
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-gray-200 bg-gray-50 font-semibold text-gray-500">
+                  <tr>
+                    <th className="px-4 py-2.5">Department</th>
+                    <th className="px-4 py-2.5 text-right">Amount (INR)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {revenue.map((r) => (
+                    <tr
+                      key={r.label || `rev-${r.value || 0}`}
+                      className={
+                        r.label === "Total Revenue"
+                          ? "bg-gray-50 font-bold"
+                          : ""
+                      }
+                    >
+                      <td className="px-4 py-2 text-gray-800">{r.label}</td>
+                      <td className="px-4 py-2 text-right text-gray-900">
+                        {money(r.value || 0)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {type === "occupancy" && (
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
+              Room Status & Inventory
+            </h3>
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-gray-200 bg-gray-50 font-semibold text-gray-500">
+                  <tr>
+                    <th className="px-4 py-2.5">Status Category</th>
+                    <th className="px-4 py-2.5 text-right">Rooms</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {occupancy.map((o) => (
+                    <tr key={o.label || `occ-${o.value || 0}`}>
+                      <td className="px-4 py-2 text-gray-800">{o.label}</td>
+                      <td className="px-4 py-2 text-right font-medium text-gray-900">
+                        {o.value}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {(type === "arrivals" || type === "departures") && (
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
+              {type === "arrivals"
+                ? "Arrivals Schedule"
+                : "Departures Schedule"}
+            </h3>
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-gray-200 bg-gray-50 font-semibold text-gray-500">
+                  <tr>
+                    <th className="px-3 py-2.5">Booking</th>
+                    <th className="px-3 py-2.5">Guest</th>
+                    <th className="px-3 py-2.5">Room</th>
+                    <th className="px-3 py-2.5 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {(type === "arrivals" ? arrivals : departures).map((row) => (
+                    <tr
+                      key={
+                        row._id ||
+                        row.id ||
+                        row.bookingNumber ||
+                        `sch-${row.roomNumber || "0"}`
+                      }
+                    >
+                      <td className="px-3 py-2 font-mono text-gray-600">
+                        {row.bookingNumber || row._id?.slice(-6)}
+                      </td>
+                      <td className="px-3 py-2 font-medium text-gray-900">
+                        {row.guestName || "Guest"}
+                      </td>
+                      <td className="px-3 py-2 text-gray-700">
+                        {row.roomNumber || "-"}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <StatusChip
+                          variant={
+                            row.status === "checked-in" ||
+                            row.status === "completed"
+                              ? "successful"
+                              : "pending"
+                          }
+                        >
+                          {row.status || "Pending"}
+                        </StatusChip>
+                      </td>
+                    </tr>
+                  ))}
+                  {!(type === "arrivals" ? arrivals : departures).length && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-3 py-6 text-center text-gray-400"
+                      >
+                        No records found for today.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {["night-audit", "manager", "cashier"].includes(type) && (
+          <div className="space-y-4">
+            <h3 className="text-xs font-semibold tracking-wider text-gray-600 uppercase">
+              Audit Summary Overview
+            </h3>
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-gray-200 bg-gray-50 font-semibold text-gray-500">
+                  <tr>
+                    <th className="px-4 py-2.5">Audit Item</th>
+                    <th className="px-4 py-2.5 text-right">Recorded Value</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr>
+                    <td className="px-4 py-2 text-gray-800">
+                      Business Date Closed
+                    </td>
+                    <td className="px-4 py-2 text-right font-medium text-gray-900">
+                      {date}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-gray-800">
+                      Total Hotel Revenue
+                    </td>
+                    <td className="px-4 py-2 text-right font-bold text-emerald-700">
+                      {money(metrics.totalRevenue || 0)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-gray-800">
+                      Room Revenue Posted
+                    </td>
+                    <td className="px-4 py-2 text-right font-medium text-gray-900">
+                      {money(metrics.roomRevenue || 0)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-gray-800">Occupancy Ratio</td>
+                    <td className="px-4 py-2 text-right font-medium text-gray-900">
+                      {metrics.occupancy ?? 0}%
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-gray-800">
+                      Arrivals Processed
+                    </td>
+                    <td className="px-4 py-2 text-right font-medium text-gray-900">
+                      {metrics.arrivals ?? 0}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-gray-800">
+                      Departures Processed
+                    </td>
+                    <td className="px-4 py-2 text-right font-medium text-gray-900">
+                      {metrics.departures ?? 0}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadCsv}
+              className="flex items-center gap-1.5 text-xs"
+            >
+              <Download size={13} /> Download CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 text-xs"
+            >
+              <Printer size={13} /> Print Report
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={downloadJson}
+              className="text-[11px] text-gray-400 underline hover:text-gray-600"
+            >
+              Raw JSON
+            </button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onClose}
+              className="text-xs"
+            >
+              Done
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

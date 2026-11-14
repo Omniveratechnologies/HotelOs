@@ -157,30 +157,30 @@ export default function ReconciliationPage() {
           <>
             <KpiTileRow>
               <KpiTile
-                title="Total System Revenue"
+                label="Total System Revenue"
                 value={money(data.metrics?.systemRevenue)}
-                subtitle="Successful payments"
+                delta="Successful payments"
                 icon={FileCheck2}
               />
               <KpiTile
-                title="Bank Deposits"
+                label="Bank Deposits"
                 value={money(data.metrics?.bankDeposits)}
-                subtitle="Imported external lines"
+                delta="Imported external lines"
               />
               <KpiTile
-                title="Expected Deposits"
+                label="Expected Deposits"
                 value={money(data.metrics?.expectedDeposits)}
-                subtitle="Based on closed payments"
+                delta="Based on closed payments"
               />
               <KpiTile
-                title="Variance"
+                label="Variance"
                 value={money(data.metrics?.variance)}
-                subtitle="Needs attention"
+                delta="Needs attention"
               />
               <KpiTile
-                title="Reconciled"
+                label="Reconciled"
                 value={`${data.metrics?.reconciledPercent || 0}%`}
-                subtitle={`${data.metrics?.reconciled || 0} / ${data.metrics?.total || 0} transactions`}
+                delta={`${data.metrics?.reconciled || 0} / ${data.metrics?.total || 0} transactions`}
                 icon={CheckCircle2}
               />
             </KpiTileRow>
@@ -459,7 +459,10 @@ export default function ReconciliationPage() {
   );
 }
 
-function Bars({ rows = [] }) {
+const EMPTY_ROWS = [];
+const EMPTY_STATUS = {};
+
+function Bars({ rows = EMPTY_ROWS }) {
   const max = Math.max(...rows.map((row) => Math.max(row.system, row.bank)), 1);
   return (
     <div className="flex h-36 items-end gap-4 pt-4">
@@ -489,7 +492,7 @@ function Bars({ rows = [] }) {
   );
 }
 
-function StatusSummary({ status = {} }) {
+function StatusSummary({ status = EMPTY_STATUS }) {
   const matched = Number(status.matched || 0);
   const pending = Number(status.pending || 0);
   const discrepancy = Number(status.discrepancy || 0);

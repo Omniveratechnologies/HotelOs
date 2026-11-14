@@ -105,6 +105,18 @@ export default function CorporateBillingPage() {
         >
           <Plus size={14} /> Add Corporate Account
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 border-gray-200 text-gray-700"
+          onClick={() => {
+            setSelected(rows[0] || null);
+            setDrawer("invoice");
+          }}
+          disabled={query.isLoading || !rows.length}
+        >
+          <FileText size={14} /> Generate Invoice
+        </Button>
       </Header>
 
       <div className="space-y-6 p-6">
@@ -118,33 +130,33 @@ export default function CorporateBillingPage() {
           <>
             <KpiTileRow>
               <KpiTile
-                title="Total Accounts"
+                label="Total Accounts"
                 value={data.metrics?.totalAccounts || 0}
-                subtitle={`${data.metrics?.newThisMonth || 0} new this month`}
+                delta={`${data.metrics?.newThisMonth || 0} new this month`}
                 icon={Building2}
               />
               <KpiTile
-                title="Total Billed This Month"
+                label="Total Billed This Month"
                 value={money(data.metrics?.totalBilled)}
-                subtitle="Current period"
+                delta="Current period"
                 icon={FileText}
               />
               <KpiTile
-                title="Outstanding Amount"
+                label="Outstanding Amount"
                 value={money(data.metrics?.outstanding)}
-                subtitle={`${data.metrics?.outstandingAccounts || 0} companies`}
+                delta={`${data.metrics?.outstandingAccounts || 0} companies`}
                 icon={Wallet}
               />
               <KpiTile
-                title="Overdue Amount"
+                label="Overdue Amount"
                 value={money(data.metrics?.overdue)}
-                subtitle="Needs follow-up"
+                delta="Needs follow-up"
                 icon={CreditCard}
               />
               <KpiTile
-                title="Active Contracts"
+                label="Active Contracts"
                 value={data.metrics?.activeContracts || 0}
-                subtitle="Expiring soon included"
+                delta="Expiring soon included"
                 icon={CalendarDays}
               />
             </KpiTileRow>
@@ -257,7 +269,13 @@ export default function CorporateBillingPage() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col items-start gap-1">
-                              <StatusChip status={row.status || "active"} />
+                              <StatusChip
+                                variant={
+                                  row.status === "active" ? "active" : "neutral"
+                                }
+                              >
+                                {row.status || "active"}
+                              </StatusChip>
                               {row.creditLimit > 0 &&
                                 row.outstanding >= row.creditLimit && (
                                   <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
@@ -297,8 +315,7 @@ export default function CorporateBillingPage() {
                 <Panel title="Top 5 Outstanding Companies">
                   <div className="space-y-3">
                     {(data.rows || [])
-                      .slice()
-                      .sort((a, b) => b.outstanding - a.outstanding)
+                      .toSorted((a, b) => b.outstanding - a.outstanding)
                       .slice(0, 5)
                       .map((row) => (
                         <div
@@ -381,7 +398,9 @@ export default function CorporateBillingPage() {
   );
 }
 
-function AgeChart({ rows = [] }) {
+const EMPTY_ROWS = [];
+
+function AgeChart({ rows = EMPTY_ROWS }) {
   const max = Math.max(...rows.map((row) => Number(row.amount || 0)), 1);
   return (
     <div className="flex h-36 items-end gap-3 pt-4">
@@ -410,6 +429,17 @@ function CompanyDrawer({ onClose, onComplete }) {
   const save = async (event) => {
     event.preventDefault();
     setError("");
+    if (
+      form.gstin &&
+      !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
+        form.gstin.trim(),
+      )
+    ) {
+      setError(
+        "Invalid GSTIN format (must be 15 alphanumeric characters, e.g. 19ABCDE1234F1Z5)",
+      );
+      return;
+    }
     try {
       await billingApi.createCompany(form);
       onComplete();
@@ -432,7 +462,12 @@ function CompanyDrawer({ onClose, onComplete }) {
         value={form.name || ""}
         onChange={set("name")}
       />
-      <Field label="GSTIN" value={form.gstin || ""} onChange={set("gstin")} />
+      <Field
+        label="GSTIN (15-digit)"
+        value={form.gstin || ""}
+        placeholder="e.g. 19ABCDE1234F1Z5"
+        onChange={set("gstin")}
+      />
       <Field label="PAN" value={form.pan || ""} onChange={set("pan")} />
       <Field
         label="Industry"

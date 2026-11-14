@@ -140,10 +140,12 @@ export const billingApi = {
   splitFolio: (id, body) =>
     mutate("post", `/api/v1/billing/folios/${id}/split`, {
       ...body,
-      itemIndexes: String(body.itemIndexes || "")
-        .split(",")
-        .map((value) => Number(value.trim()))
-        .filter(Number.isInteger),
+      itemIndexes: Array.isArray(body.itemIndexes)
+        ? body.itemIndexes
+        : String(body.itemIndexes || "")
+            .split(",")
+            .map((value) => Number(value.trim()))
+            .filter(Number.isInteger),
     }),
   mergeFolio: (id, body) =>
     mutate("post", `/api/v1/billing/folios/${id}/merge`, body),
@@ -153,6 +155,32 @@ export const billingApi = {
     mutate("post", `/api/v1/billing/folios/${id}/payments`, body),
   shareFolio: (id, body) =>
     mutate("post", `/api/v1/billing/folios/${id}/share`, body),
+  downloadFolioPdf: async (id, filename = `Folio-${id}.pdf`) => {
+    const blob = await api.blob(`/api/v1/billing/folios/${id}/pdf`, {
+      auth: true,
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
+  downloadInvoicePdf: async (id, filename = `Invoice-${id}.pdf`) => {
+    const blob = await api.blob(`/api/v1/billing/invoices/${id}/pdf`, {
+      auth: true,
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
   folioTaxBreakdown: (id) =>
     request(`/api/v1/billing/folios/${id}/tax-breakdown`),
   applyDeposit: (id, body) =>

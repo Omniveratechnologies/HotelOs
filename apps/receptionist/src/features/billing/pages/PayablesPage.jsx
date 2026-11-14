@@ -140,27 +140,27 @@ export default function PayablesPage() {
           <>
             <KpiTileRow>
               <KpiTile
-                title="Total Payables"
+                label="Total Payables"
                 value={money(data.metrics?.totalPayables)}
-                subtitle={`Across ${data.metrics?.supplierCount || 0} suppliers`}
+                delta={`Across ${data.metrics?.supplierCount || 0} suppliers`}
                 icon={Receipt}
               />
               <KpiTile
-                title="Pending Payments"
+                label="Pending Payments"
                 value={money(data.metrics?.pendingPayments)}
-                subtitle="Bills awaiting payment"
+                delta="Bills awaiting payment"
                 icon={CalendarClock}
               />
               <KpiTile
-                title="Paid This Month"
+                label="Paid This Month"
                 value={money(data.metrics?.paidThisMonth)}
-                subtitle="Vendor payments"
+                delta="Vendor payments"
                 icon={CheckCircle2}
               />
               <KpiTile
-                title="Overdue Amount"
+                label="Overdue Amount"
                 value={money(data.metrics?.overdueAmount)}
-                subtitle={`${data.metrics?.overdueCount || 0} bills overdue`}
+                delta={`${data.metrics?.overdueCount || 0} bills overdue`}
                 icon={CalendarClock}
               />
             </KpiTileRow>
@@ -296,7 +296,17 @@ export default function PayablesPage() {
                             {money(row.balance)}
                           </td>
                           <td className="px-4 py-3">
-                            <StatusChip status={row.status} />
+                            <StatusChip
+                              variant={
+                                row.status === "paid"
+                                  ? "paid"
+                                  : row.status === "pending"
+                                    ? "pending"
+                                    : "overdue"
+                              }
+                            >
+                              {row.status}
+                            </StatusChip>
                           </td>
                           <td className="px-4 py-3">
                             <button
@@ -410,7 +420,9 @@ export default function PayablesPage() {
   );
 }
 
-function Donut({ rows = [] }) {
+const EMPTY_ROWS = [];
+
+function Donut({ rows = EMPTY_ROWS }) {
   const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const colors = [
     "#2563eb",
@@ -468,7 +480,7 @@ function Donut({ rows = [] }) {
   );
 }
 
-function Trend({ rows = [] }) {
+function Trend({ rows = EMPTY_ROWS }) {
   const max = Math.max(...rows.map((row) => row.bills), 1);
   return (
     <div className="flex h-32 items-end gap-2 pt-4">
@@ -490,7 +502,7 @@ function Trend({ rows = [] }) {
   );
 }
 
-function StatusChart({ rows = [] }) {
+function StatusChart({ rows = EMPTY_ROWS }) {
   return (
     <div className="space-y-3">
       {rows.map((row) => (
@@ -597,6 +609,12 @@ function BillDrawer({ onClose, onComplete }) {
         value={form.amount || ""}
         onChange={set("amount")}
       />
+      <Field
+        label="Attachment URL / Scan ref"
+        value={form.attachmentUrl || ""}
+        placeholder="https://... or Scan ref"
+        onChange={set("attachmentUrl")}
+      />
       <Field label="Save as">
         <select
           className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs text-gray-800 focus:ring-1 focus:outline-none"
@@ -611,8 +629,20 @@ function BillDrawer({ onClose, onComplete }) {
   );
 }
 
-function PaymentDrawer({ ids = [], rows = [], bulk, onClose, onComplete }) {
-  const selected = rows.filter((row) => ids.includes(row.id));
+function PaymentDrawer({
+  ids = EMPTY_ROWS,
+  rows = EMPTY_ROWS,
+  bulk,
+  onClose,
+  onComplete,
+}) {
+  const [chosenId, setChosenId] = useState(
+    ids[0] || rows.find((r) => r.balance > 0)?.id || "",
+  );
+  const selected = ids.length
+    ? rows.filter((row) => ids.includes(row.id))
+    : rows.filter((row) => row.id === chosenId);
+
   const defaultTotal = selected.reduce(
     (sum, r) => sum + (Number(r.balance) || Number(r.amount) || 0),
     0,
@@ -629,7 +659,10 @@ function PaymentDrawer({ ids = [], rows = [], bulk, onClose, onComplete }) {
     event.preventDefault();
     setError("");
     setLoading(true);
-    const allocations = selected
+    const targetBills = selected.length
+      ? selected
+      : rows.filter((row) => row.id === chosenId);
+    const allocations = targetBills
       .map((row) => ({
         billId: row.id,
         amount: Math.min(
@@ -662,6 +695,32 @@ function PaymentDrawer({ ids = [], rows = [], bulk, onClose, onComplete }) {
         <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
           {error}
         </div>
+      )}
+      {!ids.length && (
+        <label className="mb-3 block text-xs font-semibold text-gray-700">
+          Select Vendor Bill to Pay
+          <select
+            className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs text-gray-800 focus:ring-1 focus:outline-none"
+            value={chosenId}
+            onChange={(e) => {
+              setChosenId(e.target.value);
+              const b = rows.find((r) => r.id === e.target.value);
+              if (b)
+                setForm((prev) => ({
+                  ...prev,
+                  amount: b.balance || b.amount || "",
+                }));
+            }}
+          >
+            {rows
+              .filter((r) => r.balance > 0)
+              .map((r) => (
+                <option value={r.id} key={r.id}>
+                  {r.vendorName} — Bill #{r.billNo} ({money(r.balance)} due)
+                </option>
+              ))}
+          </select>
+        </label>
       )}
       <Field
         label="Amount (₹)"
