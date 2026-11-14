@@ -10,11 +10,18 @@
   "files": [
     "src"
   ],
+  "scripts": {
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
+  },
   "dependencies": {
     "@tanstack/react-query": "^5.101.1"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@hotelos/oxlint-config": "workspace:*"
   }
 }

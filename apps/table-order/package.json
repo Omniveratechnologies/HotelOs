@@ -7,6 +7,7 @@
     "dev": "vite --port 5179 --host",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
     "preview": "vite preview",
     "typecheck": "tsc -b"
   },
@@ -19,6 +20,7 @@
     "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
+    "@hotelos/oxlint-config": "workspace:*",
     "@types/jspdf": "^2.0.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

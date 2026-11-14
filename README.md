@@ -204,8 +204,8 @@ All scripts run from the repository root:
 | `pnpm sync:ip`                                  | Auto-detect physical LAN IPv4 and sync across all .env files          |
 | `pnpm build`                                    | Build all apps for production (Turbo, cached)                         |
 | `pnpm preview`                                  | Preview production builds locally                                     |
-| `pnpm lint`                                     | Lint the whole repo with oxlint                                       |
-| `pnpm lint:fix`                                 | Lint and auto-fix with oxlint                                         |
+| `pnpm lint`                                     | Lint all workspaces with Turbo (oxlint; kiosk uses ESLint)            |
+| `pnpm lint:fix`                                 | Lint and auto-fix all workspaces                                      |
 | `pnpm format`                                   | Format all source files with Prettier                                 |
 | `pnpm format:check`                             | Check formatting without writing                                      |
 | `pnpm --filter receptionist dev:electron`       | Run Receptionist in Electron desktop development mode                 |
@@ -347,13 +347,15 @@ EMAIL_PASSWORD, SUPER_ADMIN_PASSWORD, VITE_API_URL
 
 ## Tooling & git hooks
 
-- **oxlint** — configured at the root in `oxlint.config.ts`. Runs via
-  `pnpm lint`.
+- **oxlint** — configured per app/package in `<workspace>/oxlint.config.ts`.
+  Shared presets live in `packages/oxlint-config`. Runs via `pnpm lint`
+  (Turbo).
+- **ESLint** — used only by the kiosk app (`expo lint`).
 - **Prettier** — configured in `.prettierrc.json` (semi-colons, double
   quotes, trailing commas, `printWidth: 80`, Tailwind plugin). Runs via
   `pnpm format`.
-- **Husky + lint-staged** — a `pre-commit` hook runs Prettier on staged
-  files. Configured in `package.json`.
+- **Husky + lint-staged** — a `pre-commit` hook runs oxlint and Prettier
+  on staged files. Configured in `lint-staged.config.mjs`.
 
 ---
 

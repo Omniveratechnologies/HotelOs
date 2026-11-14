@@ -10,6 +10,10 @@
   "files": [
     "src"
   ],
+  "scripts": {
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
+  },
   "dependencies": {
     "@hotelos/query": "workspace:*",
     "@hotelos/utils": "workspace:*",
@@ -17,5 +21,8 @@
   },
   "peerDependencies": {
     "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@hotelos/oxlint-config": "workspace:*"
   }
 }
