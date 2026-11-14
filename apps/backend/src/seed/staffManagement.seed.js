@@ -396,9 +396,6 @@ export const buildSeedData = (now = new Date()) => {
   };
 };
 
-const fakeEmbedding = (rand) =>
-  Array.from({ length: 128 }, () => Number((rand() * 2 - 1).toFixed(5)));
-
 const main = async () => {
   const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
   const hotelValue = defaultHotelId();

@@ -642,7 +642,7 @@ export const registerStaffFace = async (req, res) => {
       });
     }
 
-    const face = await FaceEmbedding.findOneAndUpdate(
+    await FaceEmbedding.findOneAndUpdate(
       { hotelId, staffId: staff._id },
       { $set: { embeddingRef: embeddingRef.trim() } },
       { new: true, upsert: true, runValidators: true },

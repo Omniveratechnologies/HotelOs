@@ -29,9 +29,8 @@ const getPublicDiscounts = async (req, res) => {
 };
 
 // PUBLIC — accessed by guest table-order app without staff credentials
-router.get("/discounts/public/:hotelId", (req, res, next) =>
-  Promise.resolve(getPublicDiscounts(req, res, next)).catch(next),
-);
+// oxlint-disable-next-line oxc/no-async-endpoint-handlers -- Express 5 forwards async errors
+router.get("/discounts/public/:hotelId", getPublicDiscounts);
 
 // Staff-managed routes
 router.use(authenticate, authorize("SUB_ADMIN", "KITCHEN", "RECEPTIONIST"));

@@ -18,8 +18,6 @@ const MonthCalendar = ({
   loading,
   large = false,
 }) => {
-  const byDate = new Map((calendar?.days || []).map((day) => [day.date, day]));
-
   const cells = [];
   if (calendar) {
     for (let i = calendar.firstWeekday; i > 0; i -= 1)
