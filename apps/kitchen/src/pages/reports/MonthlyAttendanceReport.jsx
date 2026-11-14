@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FiBarChart2, FiDownload, FiLock } from "react-icons/fi";
 
 import Navbar from "../../components/ui/Navbar.jsx";

@@ -46,6 +46,7 @@ import {
   scheduleCheckInReminder,
   cancelCheckInReminder,
 } from "#/modules/check-ins/queues/checkInEmail.queue.js";
+import { ensureFolioForBooking } from "#/modules/billing/services/folioLifecycle.service.js";
 
 // =====================================================
 // HELPERS
@@ -716,6 +717,18 @@ export const createReservation = async (req, res) => {
 
     // Schedule automated check-in reminder email via BullMQ
     await scheduleCheckInReminder(createdBooking);
+
+    // Synchronize canonical Master Folio in billing ledger
+    if (bookingStatus !== "draft" && bookingStatus !== "cancelled") {
+      try {
+        await ensureFolioForBooking(createdBooking);
+      } catch (folioErr) {
+        logger.warn(
+          { err: folioErr, bookingId: createdBooking._id },
+          "Failed to auto-create folio for reservation",
+        );
+      }
+    }
 
     const populated = await Booking.findById(createdBooking._id)
       .populate("guestId")

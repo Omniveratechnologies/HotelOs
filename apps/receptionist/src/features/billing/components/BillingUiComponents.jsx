@@ -28,7 +28,7 @@ export function ActionDrawer({
 }) {
   return (
     <div
-      className="backdrop-blur-2xs fixed inset-0 z-40 flex justify-end bg-black/40"
+      className="backdrop-blur-2xs no-print action-drawer fixed inset-0 z-40 flex justify-end bg-black/40"
       onClick={onClose}
     >
       <div
@@ -60,11 +60,13 @@ export function ActionDrawer({
         </div>
         <form className="space-y-4" onSubmit={onSubmit}>
           {children}
-          <div className="pt-2">
-            <Button type="submit" variant="primary" className="w-full">
-              {submitLabel}
-            </Button>
-          </div>
+          {submitLabel ? (
+            <div className="pt-2">
+              <Button type="submit" variant="primary" className="w-full">
+                {submitLabel}
+              </Button>
+            </div>
+          ) : null}
         </form>
       </div>
     </div>
@@ -126,12 +128,17 @@ export function Field({ label, children, ...props }) {
   );
 }
 
+const STATIC_SLOTS = Array.from({ length: 20 }, (_, idx) => `slot-${idx}`);
+
 export function MiniBars({ values = EMPTY_VALUES }) {
   const max = Math.max(...values, 1);
   return (
     <div className="flex h-28 items-end gap-2">
       {values.map((value, index) => (
-        <div className="flex flex-1 flex-col items-center gap-1" key={index}>
+        <div
+          className="flex flex-1 flex-col items-center gap-1"
+          key={STATIC_SLOTS[index] || `val-${index}`}
+        >
           <div
             className="bg-primary-500 w-full rounded-t transition-all"
             style={{ height: `${Math.max((value / max) * 88, 4)}px` }}
@@ -144,11 +151,12 @@ export function MiniBars({ values = EMPTY_VALUES }) {
 }
 
 export function KpiSkeletonRow({ count = 4 }) {
+  const slots = STATIC_SLOTS.slice(0, count);
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: count }).map((_, i) => (
+      {slots.map((slotKey) => (
         <div
-          key={i}
+          key={slotKey}
           className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-5 shadow-xs"
         >
           <div className="space-y-2">
@@ -164,6 +172,8 @@ export function KpiSkeletonRow({ count = 4 }) {
 }
 
 export function TableSkeleton({ rows = 5, columns = 5 }) {
+  const colSlots = STATIC_SLOTS.slice(0, columns);
+  const rowSlots = STATIC_SLOTS.slice(0, rows);
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs">
       <div className="border-b border-gray-100 bg-gray-50/70 px-6 py-4">
@@ -171,18 +181,18 @@ export function TableSkeleton({ rows = 5, columns = 5 }) {
       </div>
       <div className="divide-y divide-gray-100 p-6">
         <div className="mb-4 flex gap-4">
-          {Array.from({ length: columns }).map((_, i) => (
+          {colSlots.map((colKey) => (
             <div
-              key={i}
+              key={colKey}
               className="h-3.5 flex-1 animate-pulse rounded bg-gray-200"
             />
           ))}
         </div>
-        {Array.from({ length: rows }).map((_, rowIdx) => (
-          <div key={rowIdx} className="flex items-center gap-4 py-3.5">
-            {Array.from({ length: columns }).map((col, colIdx) => (
+        {rowSlots.map((rowKey) => (
+          <div key={rowKey} className="flex items-center gap-4 py-3.5">
+            {colSlots.map((colKey) => (
               <div
-                key={colIdx}
+                key={`${rowKey}-${colKey}`}
                 className="h-3 flex-1 animate-pulse rounded bg-gray-100"
               />
             ))}

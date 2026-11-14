@@ -109,33 +109,33 @@ export default function TaxesChargesPage() {
           <>
             <KpiTileRow>
               <KpiTile
-                title="GST (Total)"
+                label="GST (Total)"
                 value={`${gst || 18}%`}
-                subtitle="CGST 9% + SGST 9%"
+                delta="CGST 9% + SGST 9%"
                 icon={CheckCircle2}
               />
               <KpiTile
-                title="Service Charge"
+                label="Service Charge"
                 value={`${allRules.find((rule) => rule.type === "service_charge")?.rate || 10}%`}
-                subtitle="Applicable on F&B"
+                delta="Applicable on F&B"
                 icon={ShieldCheck}
               />
               <KpiTile
-                title="Luxury Tax"
+                label="Luxury Tax"
                 value={`${allRules.find((rule) => /luxury/i.test(rule.name))?.rate || 0}%`}
-                subtitle="Currently disabled"
+                delta="Currently disabled"
                 icon={ToggleLeft}
               />
               <KpiTile
-                title="Other Charges"
+                label="Other Charges"
                 value={quick.other.length}
-                subtitle="Active charges"
+                delta="Active charges"
                 icon={MoreHorizontal}
               />
               <KpiTile
-                title="Total Active"
+                label="Total Active"
                 value={active}
-                subtitle="Taxes & charges"
+                delta="Taxes & charges"
                 icon={ShieldCheck}
               />
             </KpiTileRow>
@@ -361,7 +361,9 @@ function EditRule({ rule, onSave, onClose }) {
             <InfoRow label="Version" value={`v${rule.version}`} />
             <div className="flex items-center justify-between pt-1">
               <span className="text-gray-500">Status</span>
-              <StatusChip status={rule.active ? "active" : "inactive"} />
+              <StatusChip variant={rule.active ? "active" : "neutral"}>
+                {rule.active ? "Active" : "Inactive"}
+              </StatusChip>
             </div>
           </div>
           <Button
@@ -420,7 +422,9 @@ function QuickList({ title, description, rows, onAdd }) {
                   ? money(rule.fixedAmount)
                   : `${rule.rate || 0}%`}
               </span>
-              <StatusChip status={rule.active ? "active" : "inactive"} />
+              <StatusChip variant={rule.active ? "active" : "neutral"}>
+                {rule.active ? "Active" : "Inactive"}
+              </StatusChip>
             </div>
           </div>
         ))}
@@ -436,6 +440,28 @@ function QuickList({ title, description, rows, onAdd }) {
 
 function RuleDrawer({ rule, onClose, onComplete }) {
   const [error, setError] = useState("");
+  const [testAmount, setTestAmount] = useState("1000");
+  const [testRate, setTestRate] = useState(rule?.rate ?? 18);
+  const [testFixed, setTestFixed] = useState(rule?.fixedAmount ?? 0);
+  const [testType, setTestType] = useState(rule?.type ?? "tax");
+  const [testCompound, setTestCompound] = useState(rule?.compound ?? false);
+
+  const testResult = useMemo(() => {
+    const amt = Number(testAmount) || 0;
+    const rate = Number(testRate) || 0;
+    const fixed = Number(testFixed) || 0;
+    const service =
+      testType === "service_charge" ? Math.round(amt * rate) / 100 : 0;
+    const base = testCompound ? amt + service : amt;
+    const tax =
+      testType === "fixed_charge" ? fixed : Math.round(base * rate) / 100;
+    return {
+      base: amt,
+      tax,
+      total: amt + tax,
+    };
+  }, [testAmount, testRate, testFixed, testType, testCompound]);
+
   const submit = async (event) => {
     event.preventDefault();
     const body = Object.fromEntries(
@@ -469,6 +495,7 @@ function RuleDrawer({ rule, onClose, onComplete }) {
           className="focus:ring-primary-500 mt-1 w-full rounded-lg border border-gray-200 px-3 py-2.5 text-xs font-normal text-gray-800 focus:ring-1 focus:outline-none"
           name="type"
           defaultValue={rule?.type || "tax"}
+          onChange={(e) => setTestType(e.target.value)}
         >
           <option value="tax">Tax</option>
           <option value="service_charge">Service Charge</option>
@@ -483,6 +510,7 @@ function RuleDrawer({ rule, onClose, onComplete }) {
         max="100"
         step="0.01"
         defaultValue={rule?.rate || 0}
+        onChange={(e) => setTestRate(e.target.value)}
       />
       <Field
         label="Fixed amount"
@@ -491,6 +519,7 @@ function RuleDrawer({ rule, onClose, onComplete }) {
         min="0"
         step="0.01"
         defaultValue={rule?.fixedAmount || 0}
+        onChange={(e) => setTestFixed(e.target.value)}
       />
       <label className="block text-xs font-semibold text-gray-700">
         Calculation Method
@@ -539,6 +568,7 @@ function RuleDrawer({ rule, onClose, onComplete }) {
           className="text-primary-600 focus:ring-primary-500 rounded border-gray-300"
           name="compound"
           defaultChecked={rule?.compound}
+          onChange={(e) => setTestCompound(e.target.checked)}
         />{" "}
         Apply tax on service charge
       </label>
@@ -551,6 +581,33 @@ function RuleDrawer({ rule, onClose, onComplete }) {
         />{" "}
         Active
       </label>
+
+      {/* Live Test Tax Calculator widget */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-xs">
+        <span className="font-bold text-gray-900">
+          ⚡ Test Tax Calculator (Simulation)
+        </span>
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-gray-500">Sample Base (₹):</span>
+          <input
+            type="number"
+            className="w-24 rounded border border-gray-200 bg-white px-2 py-1 text-right text-xs"
+            value={testAmount}
+            onChange={(e) => setTestAmount(e.target.value)}
+          />
+        </div>
+        <div className="mt-2 space-y-1 text-[11px] text-gray-600">
+          <div className="flex justify-between">
+            <span>Calculated Tax:</span>
+            <b className="text-brand-900">{money(testResult.tax)}</b>
+          </div>
+          <div className="flex justify-between font-bold text-gray-900">
+            <span>Resulting Total:</span>
+            <b className="text-emerald-700">{money(testResult.total)}</b>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-primary-50 border-primary-100 text-primary-800 rounded-lg border p-3 text-xs">
         <Info size={14} className="mr-1.5 inline" /> This tax will be
         automatically applied to future charges for the selected department.

@@ -70,7 +70,17 @@
     background: transparent !important;
   }
 
-  .no-print {
+  .no-print,
+  .action-drawer,
+  [role="dialog"],
+  [aria-modal="true"],
+  .fixed.inset-0,
+  aside,
+  nav,
+  header,
+  [role="navigation"],
+  .app-sidebar,
+  [aria-label="Sidebar"] {
     display: none !important;
   }
 

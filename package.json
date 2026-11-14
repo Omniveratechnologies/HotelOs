@@ -9,8 +9,8 @@
     "build": "turbo build",
     "preview": "turbo preview",
     "typecheck": "turbo typecheck",
-    "lint": "oxlint .",
-    "lint:fix": "oxlint --fix .",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
     "prepare": "husky",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
@@ -24,10 +24,6 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "turbo": "^2.10.12",
     "typescript": "^6.0.3"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx,mjs}": "oxlint --fix",
-    "*.{ts,tsx,js,jsx,mjs,json,md,css}": "prettier --write"
   },
   "packageManager": "pnpm@11.1.1",
   "engines": {

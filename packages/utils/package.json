@@ -10,8 +10,15 @@
   "files": [
     "src"
   ],
+  "scripts": {
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
+  },
   "dependencies": {
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@hotelos/oxlint-config": "workspace:*"
   }
 }

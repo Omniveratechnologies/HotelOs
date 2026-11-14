@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@hotelos/query";
 import {
   Header,
@@ -321,7 +321,16 @@ export default function PaymentsPage() {
                 />
               </aside>
             </div>
-            <Alerts alerts={data.alerts || []} />
+            <Alerts
+              alerts={data.alerts || []}
+              onSelectAlert={(targetStatus) => {
+                if (targetStatus === "folio") {
+                  window.location.href = "/billing/folio";
+                } else {
+                  setStatus(targetStatus);
+                }
+              }}
+            />
           </>
         )}
       </div>
@@ -330,6 +339,7 @@ export default function PaymentsPage() {
         <PaymentDrawer
           type={drawer}
           selected={selectedPayment}
+          payments={data.rows || []}
           onOpenThermal={(p) => setReceiptPayment(p)}
           onClose={() => {
             setDrawer("");
@@ -536,7 +546,7 @@ function SideList({ title, rows, refund }) {
   );
 }
 
-function Alerts({ alerts }) {
+function Alerts({ alerts, onSelectAlert }) {
   return (
     <section className="flex flex-wrap items-center gap-4 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 text-xs shadow-xs">
       <strong className="font-semibold text-amber-800">
@@ -549,7 +559,17 @@ function Alerts({ alerts }) {
         >
           <b className="text-amber-900">{alert.count ?? money(alert.amount)}</b>
           <span className="ml-1 text-amber-800/80">{alert.label}</span>
-          <button className="text-brand-900 hover:text-brand-700 ml-2 font-semibold">
+          <button
+            type="button"
+            className="text-brand-900 hover:text-brand-700 ml-2 cursor-pointer font-semibold hover:underline"
+            onClick={() => {
+              const lbl = (alert.label || "").toLowerCase();
+              if (lbl.includes("failed")) onSelectAlert?.("Failed");
+              else if (lbl.includes("pending")) onSelectAlert?.("Pending");
+              else if (lbl.includes("folio")) onSelectAlert?.("folio");
+              else onSelectAlert?.(alert.action);
+            }}
+          >
             {alert.action} →
           </button>
         </div>
@@ -589,8 +609,72 @@ function dateTime(value) {
     : "—";
 }
 
-function PaymentDrawer({ type, selected, onOpenThermal, onClose, onComplete }) {
+const EMPTY_ARRAY = [];
+
+function PaymentDrawer({
+  type,
+  selected,
+  payments = EMPTY_ARRAY,
+  onOpenThermal,
+  onClose,
+  onComplete,
+}) {
   const [error, setError] = useState("");
+  const [folios, setFolios] = useState([]);
+  const [loadingFolios, setLoadingFolios] = useState(false);
+  const [selectedBillId, setSelectedBillId] = useState("");
+  const [amountValue, setAmountValue] = useState("");
+  const [selectedRefundPaymentId, setSelectedRefundPaymentId] = useState(
+    selected?.id || "",
+  );
+
+  useEffect(() => {
+    let active = true;
+    if (["collect", "record"].includes(type)) {
+      billingApi
+        .folio({ status: "open" })
+        .then((res) => {
+          if (!active) return;
+          const list = Array.isArray(res) ? res : res?.data || [];
+          setFolios(list);
+          setSelectedBillId((prev) => {
+            if (prev || list.length === 0) return prev;
+            setAmountValue(list[0].balanceDue || list[0].totalAmount || "");
+            return list[0]._id || list[0].id;
+          });
+          setLoadingFolios(false);
+        })
+        .catch(() => {
+          if (active) setLoadingFolios(false);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [type]);
+
+  const handleFolioChange = (e) => {
+    const billId = e.target.value;
+    setSelectedBillId(billId);
+    const found = folios.find((f) => (f._id || f.id) === billId);
+    if (found) {
+      setAmountValue(found.balanceDue || found.totalAmount || "");
+    }
+  };
+
+  const handleRefundPaymentChange = (e) => {
+    const pId = e.target.value;
+    setSelectedRefundPaymentId(pId);
+    const found = payments.find((p) => p.id === pId || p._id === pId);
+    if (found) {
+      setAmountValue(found.amount || "");
+    }
+  };
+
+  const chosenRefundPayment =
+    selected ||
+    payments.find((p) => (p.id || p._id) === selectedRefundPaymentId);
+
   const submit = async (event) => {
     event.preventDefault();
     const body = Object.fromEntries(
@@ -675,13 +759,39 @@ function PaymentDrawer({ type, selected, onOpenThermal, onClose, onComplete }) {
       )}
       {(type === "collect" || type === "record") && (
         <>
-          <Field label="Bill / Folio ID" name="billId" required />
+          <label className="text-surface-700 block text-xs font-medium">
+            Select Guest Folio / Bill <span className="text-rose-500">*</span>
+            <select
+              name="billId"
+              value={selectedBillId}
+              onChange={handleFolioChange}
+              required
+              className="border-surface-300 focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-xs text-gray-800 shadow-2xs focus:outline-hidden"
+            >
+              {folios.length === 0 && (
+                <option value="">
+                  {loadingFolios
+                    ? "Loading open folios..."
+                    : "No open folios available"}
+                </option>
+              )}
+              {folios.map((f) => (
+                <option key={f._id || f.id} value={f._id || f.id}>
+                  {f.folioNo || f.billNo} — {f.guestName} (Room{" "}
+                  {f.roomNumber || "-"} | Balance: ₹
+                  {f.balanceDue ?? f.totalAmount ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
           <Field
-            label="Amount"
+            label="Amount (INR)"
             name="amount"
             type="number"
             min="0"
             step="0.01"
+            value={amountValue}
+            onChange={(e) => setAmountValue(e.target.value)}
             required
           />
           <label className="text-brand-900 block text-xs font-semibold">
@@ -707,19 +817,74 @@ function PaymentDrawer({ type, selected, onOpenThermal, onClose, onComplete }) {
       )}
       {type === "refund" && (
         <>
-          <Field label="Payment ID" name="paymentId" required />
-          <Field label="Bill ID" name="billId" required />
+          {selected ? (
+            <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3 text-xs">
+              <p className="text-brand-900 font-semibold">
+                {selected.guestName || "Guest Payment"}
+              </p>
+              <p className="text-gray-500">
+                Ref: {selected.referenceNo || selected.id} · Folio:{" "}
+                {selected.folioNo || "-"}
+              </p>
+              <p className="mt-1 font-bold text-gray-800">
+                Paid: {money(selected.amount)}
+              </p>
+              <input type="hidden" name="paymentId" value={selected.id} />
+              <input
+                type="hidden"
+                name="billId"
+                value={selected.billId || selected.folioId || ""}
+              />
+            </div>
+          ) : (
+            <>
+              <label className="text-surface-700 block text-xs font-medium">
+                Select Payment to Refund{" "}
+                <span className="text-rose-500">*</span>
+                <select
+                  name="paymentId"
+                  value={selectedRefundPaymentId}
+                  onChange={handleRefundPaymentChange}
+                  required
+                  className="border-surface-300 focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-xs text-gray-800 shadow-2xs focus:outline-hidden"
+                >
+                  <option value="">-- Choose Payment --</option>
+                  {payments.map((p) => (
+                    <option key={p.id || p._id} value={p.id || p._id}>
+                      {p.referenceNo || (p.id || p._id)?.slice(-8)} —{" "}
+                      {p.guestName || "Guest"} (₹{p.amount} · {p.method})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <input
+                type="hidden"
+                name="billId"
+                value={
+                  chosenRefundPayment?.billId ||
+                  chosenRefundPayment?.folioId ||
+                  ""
+                }
+              />
+            </>
+          )}
           <Field
-            label="Amount"
+            label="Refund Amount (INR)"
             name="amount"
             type="number"
             min="0"
             step="0.01"
+            defaultValue={selected?.amount || chosenRefundPayment?.amount || ""}
             required
           />
-          <Field label="Reason" name="reason" required />
           <Field
-            label="Refund mode"
+            label="Refund Reason"
+            name="reason"
+            placeholder="e.g. Guest checkout adjustment or double charge"
+            required
+          />
+          <Field
+            label="Refund Mode"
             name="paymentMethod"
             defaultValue="original"
           />

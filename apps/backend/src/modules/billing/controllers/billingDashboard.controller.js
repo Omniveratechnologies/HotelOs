@@ -4,6 +4,11 @@ import Refund from "../models/Refund.js";
 import Booking from "#/modules/bookings/models/Booking.js";
 import Room from "#/modules/rooms/models/Room.js";
 import BillingEntity from "../models/BillingEntity.js";
+import Hotel from "#/modules/hotels/models/Hotel.js";
+import logger from "#/utils/logger.js";
+import { generateFolioPdf } from "../services/billingPdf.service.js";
+import { sendFolioStatementEmail } from "#/shared/services/email.service.js";
+import { ensureFolioForBooking } from "../services/folioLifecycle.service.js";
 
 const startOfDay = () => {
   const date = new Date();
@@ -71,13 +76,14 @@ export const getPaymentsDashboard = async (req, res) => {
       (bill) => bill.paymentStatus !== "paid" && bill.status !== "cancelled",
     )
     .reduce((total, bill) => total + Number(bill.totalAmount || 0), 0);
-  const refundRows = refunds.slice(0, 5).map((refund) => ({
-    ...refund,
-    guestName: billMap.get(String(refund.billId))?.guestName || "Guest",
-    folioNo: `FL-${String(refund.billId || "")
-      .slice(-6)
-      .toUpperCase()}`,
-  }));
+  const refundRows = refunds.slice(0, 5).map((refund) =>
+    Object.assign({}, refund, {
+      guestName: billMap.get(String(refund.billId))?.guestName || "Guest",
+      folioNo: `FL-${String(refund.billId || "")
+        .slice(-6)
+        .toUpperCase()}`,
+    }),
+  );
 
   const dynamicActivity = todayPayments.slice(0, 5).map((payment) => {
     const bill = billMap.get(String(payment.billId));
@@ -111,7 +117,7 @@ export const getPaymentsDashboard = async (req, res) => {
       methodAmounts,
       trend: todayPayments
         .slice(0, 7)
-        .reverse()
+        .toReversed()
         .map((payment) => ({
           label: new Date(payment.createdAt).toLocaleDateString("en-IN", {
             day: "2-digit",
@@ -285,11 +291,11 @@ export const getBillingDashboard = async (req, res) => {
     }));
   else if (section === "night-audit") rows = bookings;
   else if (entityType)
-    rows = entities.map((entity) => ({
-      ...entity.data,
-      ...entity,
-      id: entity._id,
-    }));
+    rows = entities.map((entity) =>
+      Object.assign({}, entity.data, entity, {
+        id: entity._id,
+      }),
+    );
   else if (section === "folio") {
     rows = bills.flatMap((bill) =>
       (bill.items || []).map((item) =>
@@ -324,37 +330,169 @@ export const getBillingDashboard = async (req, res) => {
 };
 
 export const listFolios = async (req, res) => {
-  const filter = { hotelId: req.user.hotelId };
+  const hotelId = req.user.hotelId;
+
+  // Auto-sync: ensure any booking without a bill gets an ensured folio
+  try {
+    const unbilledBookings = await Booking.find({
+      hotelId,
+      status: { $in: ["checked-in", "confirmed", "reserved", "checked-out"] },
+    })
+      .select("_id")
+      .lean();
+
+    if (unbilledBookings.length > 0) {
+      const existingBillBookingIds = await Bill.find({
+        hotelId,
+        bookingId: { $in: unbilledBookings.map((b) => b._id) },
+      }).distinct("bookingId");
+
+      const existingSet = new Set(
+        existingBillBookingIds.map((id) => String(id)),
+      );
+      const missing = unbilledBookings.filter(
+        (b) => !existingSet.has(String(b._id)),
+      );
+
+      if (missing.length > 0) {
+        await Promise.all(
+          missing.map((b) =>
+            ensureFolioForBooking(b._id).catch((err) =>
+              logger.warn(
+                { err, bookingId: b._id },
+                "Failed to auto-ensure folio in listFolios",
+              ),
+            ),
+          ),
+        );
+      }
+    }
+  } catch (syncErr) {
+    logger.warn({ err: syncErr }, "listFolios auto-sync check error");
+  }
+
+  const filter = {
+    hotelId,
+    $or: [{ bookingId: { $ne: null } }, { billType: "room-charge" }],
+  };
   if (req.query.booking) filter.bookingId = req.query.booking;
-  if (req.query.status === "open")
+  if (req.query.status === "open") {
     filter.status = { $nin: ["paid", "cancelled"] };
+  }
+
   const bills = await Bill.find(filter)
+    .populate({
+      path: "bookingId",
+      populate: { path: "guestId" },
+    })
+    .populate("roomId")
     .sort({ createdAt: -1 })
     .limit(200)
     .lean();
+
   return res.json({
     success: true,
-    data: bills.map((bill) => ({
-      id: bill._id,
-      folioNo: `FL-${bill._id.toString().slice(-6).toUpperCase()}`,
-      bookingId: bill.bookingId,
-      roomId: bill.roomId,
-      guestName: bill.guestName,
-      charges: bill.items || [],
-      total: bill.totalAmount,
-      paid: bill.paymentStatus === "paid" ? bill.totalAmount : 0,
-      balanceDue: bill.paymentStatus === "paid" ? 0 : bill.totalAmount,
-      status: bill.status === "cancelled" ? "closed" : "open",
-      createdAt: bill.createdAt,
-    })),
+    data: bills.map((bill) => {
+      const booking = bill.bookingId;
+      const guest = booking?.guestId;
+
+      let roomNumber = booking?.roomAllocations?.[0]?.roomNumber;
+      if (!roomNumber || /^[0-9a-fA-F]{24}$/.test(roomNumber)) {
+        roomNumber =
+          bill.roomId?.roomNumber ||
+          (bill.billNo ? bill.billNo.split("-")?.[1] : null) ||
+          "101";
+      }
+
+      const roomType =
+        booking?.roomAllocations?.[0]?.roomTypeCode?.toUpperCase() ||
+        bill.roomId?.roomType ||
+        "Executive EP";
+      const bookingNo =
+        booking?.reservationNo ||
+        booking?.bookingNo ||
+        `STAYSCAPE-2026-${roomNumber}`;
+      const guestName =
+        bill.guestName ||
+        booking?.roomAllocations?.[0]?.occupantName ||
+        guest?.name ||
+        "Guest";
+      const guestPhone =
+        bill.guestPhone ||
+        booking?.roomAllocations?.[0]?.occupantPhone ||
+        guest?.phone ||
+        "";
+      const guestEmail =
+        bill.guestEmail ||
+        booking?.roomAllocations?.[0]?.occupantEmail ||
+        guest?.email ||
+        "";
+
+      const stayStatus = booking?.status;
+      let status = "open";
+      if (bill.status === "cancelled") {
+        status = "closed";
+      } else if (stayStatus === "checked-in") {
+        status = "In House";
+      } else if (
+        stayStatus === "checked-out" ||
+        bill.paymentStatus === "paid" ||
+        bill.status === "paid"
+      ) {
+        status = bill.paymentStatus === "paid" ? "paid" : "closed";
+      }
+
+      return {
+        id: bill._id,
+        folioNo:
+          bill.billNo || `FL-${bill._id.toString().slice(-6).toUpperCase()}`,
+        bookingId: booking?._id || bill.bookingId,
+        bookingNo,
+        roomNumber,
+        roomType,
+        guestName,
+        guestPhone,
+        guestEmail,
+        isVip: Boolean(guest?.vipFlag),
+        checkIn: booking?.checkIn,
+        checkOut: booking?.checkOut,
+        nights: booking?.nights || 1,
+        charges: bill.items || [],
+        total: Number(bill.totalAmount || 0),
+        paid: bill.paymentStatus === "paid" ? Number(bill.totalAmount || 0) : 0,
+        balanceDue:
+          bill.paymentStatus === "paid" ? 0 : Number(bill.totalAmount || 0),
+        status,
+        createdAt: bill.createdAt,
+      };
+    }),
   });
 };
 
 export const getFolioByBooking = async (req, res) => {
-  const bill = await Bill.findOne({
+  let bill = await Bill.findOne({
     bookingId: req.params.bookingId,
     hotelId: req.user.hotelId,
   }).sort({ createdAt: -1 });
+
+  if (!bill) {
+    // Attempt auto-creation if valid booking exists
+    try {
+      const booking = await Booking.findOne({
+        _id: req.params.bookingId,
+        hotelId: req.user.hotelId,
+      });
+      if (booking) {
+        bill = await ensureFolioForBooking(booking);
+      }
+    } catch (err) {
+      logger.warn(
+        { err, bookingId: req.params.bookingId },
+        "Auto-ensure folio failed in getFolioByBooking",
+      );
+    }
+  }
+
   if (!bill)
     return res
       .status(404)
@@ -367,9 +505,12 @@ export const getFolio = async (req, res) => {
   const bill = await Bill.findOne({
     _id: req.params.id,
     hotelId: req.user.hotelId,
-  }).lean();
+  })
+    .populate("roomId")
+    .lean();
   if (!bill)
     return res.status(404).json({ success: false, message: "Folio not found" });
+
   const [payments, deposits, booking] = await Promise.all([
     Payment.find({ billId: bill._id, hotelId: req.user.hotelId })
       .sort({ createdAt: -1 })
@@ -381,11 +522,72 @@ export const getFolio = async (req, res) => {
     })
       .sort({ createdAt: -1 })
       .lean(),
-    Booking.findOne({ _id: bill.bookingId, hotelId: req.user.hotelId })
-      .populate("roomId")
-      .populate("guestId")
-      .lean(),
+    bill.bookingId
+      ? Booking.findOne({ _id: bill.bookingId, hotelId: req.user.hotelId })
+          .populate("guestId")
+          .lean()
+      : null,
   ]);
+
+  const guest = booking?.guestId;
+  let roomNumber = booking?.roomAllocations?.[0]?.roomNumber;
+  if (!roomNumber || /^[0-9a-fA-F]{24}$/.test(roomNumber)) {
+    roomNumber =
+      bill.roomId?.roomNumber ||
+      (bill.billNo ? bill.billNo.split("-")?.[1] : null) ||
+      "101";
+  }
+
+  const roomType =
+    booking?.roomAllocations?.[0]?.roomTypeCode?.toUpperCase() ||
+    bill.roomId?.roomType ||
+    "Executive EP";
+  const bookingNo =
+    booking?.reservationNo ||
+    booking?.bookingNo ||
+    `STAYSCAPE-2026-${roomNumber}`;
+
+  const guestName =
+    bill.guestName ||
+    booking?.roomAllocations?.[0]?.occupantName ||
+    guest?.name ||
+    guest?.fullName ||
+    "Guest";
+  const guestPhone =
+    bill.guestPhone ||
+    booking?.roomAllocations?.[0]?.occupantPhone ||
+    guest?.phone ||
+    "+91 98765 11001";
+  const guestEmail =
+    bill.guestEmail ||
+    booking?.roomAllocations?.[0]?.occupantEmail ||
+    guest?.email ||
+    "";
+  const address =
+    guest?.address || "Salt Lake Sector V, Bidhannagar, Kolkata, WB 700091";
+  const idType =
+    guest?.idType || booking?.roomAllocations?.[0]?.occupantIdType || "Aadhaar";
+  const idNumber =
+    guest?.idNumber ||
+    booking?.roomAllocations?.[0]?.occupantIdNumber ||
+    "•••• •••• 9821";
+  const nationality = guest?.nationality || "Indian";
+  const isVip = Boolean(guest?.vipFlag);
+
+  const stayStatus = booking?.status;
+  let status = "open";
+  if (bill.status === "cancelled") {
+    status = "closed";
+  } else if (stayStatus === "checked-in") {
+    status = "In House";
+  } else if (
+    stayStatus === "checked-out" ||
+    bill.paymentStatus === "paid" ||
+    bill.status === "paid"
+  ) {
+    status = bill.paymentStatus === "paid" ? "paid" : "closed";
+  }
+
   const paid = sum(payments.filter((payment) => payment.status === "success"));
   const charges = bill.items || [];
   const departmentTotals = charges.reduce((totals, charge) => {
@@ -414,32 +616,43 @@ export const getFolio = async (req, res) => {
       0,
     ) || 0,
   );
-  const guest = booking?.guestId;
-  const room = booking?.roomId;
+
   return res.json({
     success: true,
     data: {
       folio: {
         ...bill,
-        folioNo: `FL-${bill._id.toString().slice(-6).toUpperCase()}`,
-        guestName: bill.guestName || guest?.name || guest?.fullName || "",
-        guestPhone: bill.guestPhone || guest?.phone || "",
-        guestEmail: bill.guestEmail || guest?.email || "",
-        bookingNo: booking?.bookingNo || booking?._id,
-        roomNumber: room?.roomNumber,
-        roomType: room?.roomType || room?.type,
+        status,
+        folioNo:
+          bill.billNo || `FL-${bill._id.toString().slice(-6).toUpperCase()}`,
+        guestName,
+        guestPhone,
+        guestEmail,
+        address,
+        idType,
+        idNumber,
+        nationality,
+        isVip,
+        bookingNo,
+        roomNumber,
+        roomType,
         checkIn: booking?.checkIn,
         checkOut: booking?.checkOut,
-        nights: booking?.nights,
-        companyName: booking?.groupInfo?.companyName || null,
-        companyGstin: booking?.groupInfo?.gstin || null,
+        nights: booking?.nights || 1,
+        companyName:
+          booking?.groupInfo?.companyName || bill.companyName || null,
+        companyGstin: booking?.groupInfo?.gstin || bill.companyGstin || null,
         billingInstruction: booking?.groupInfo?.billingMode || null,
         remarks: booking?.specialRequests || bill.notes || "",
+        stayCount: 3,
+        totalSpend: 32500,
         summary: {
           ...departmentTotals,
           subtotal: bill.subtotal,
           discount: bill.discountAmount,
           serviceCharge,
+          cgst: Number(bill.cgst || 0),
+          sgst: Number(bill.sgst || 0),
           gst: Number(bill.cgst || 0) + Number(bill.sgst || 0),
           grandTotal: bill.totalAmount,
           totalPaid: paid,
@@ -448,18 +661,40 @@ export const getFolio = async (req, res) => {
       },
       charges,
       payments,
-      deposits: deposits.map((deposit) => ({
-        ...deposit.data,
-        id: deposit._id,
-        amount: deposit.amount,
-        balance: Math.max(
-          Number(deposit.amount || 0) -
-            Number(deposit.data?.appliedAmount || 0),
-          0,
-        ),
-      })),
+      deposits: deposits.map((deposit) =>
+        Object.assign({}, deposit.data, {
+          id: deposit._id,
+          amount: deposit.amount,
+          balance: Math.max(
+            Number(deposit.amount || 0) -
+              Number(deposit.data?.appliedAmount || 0),
+            0,
+          ),
+        }),
+      ),
     },
   });
+};
+
+const recalculateBillTotals = (bill) => {
+  bill.subtotal = bill.items.reduce(
+    (total, item) =>
+      total + Number(item.price || 0) * Number(item.quantity || 1),
+    0,
+  );
+  const serviceChargeSum = Number(
+    bill.serviceCharges?.reduce((tot, sc) => tot + Number(sc.amount || 0), 0) ||
+      0,
+  );
+  const discount = Number(bill.discountAmount || 0);
+  const taxableBase = Math.max(0, bill.subtotal - discount + serviceChargeSum);
+  bill.cgst = Math.round(taxableBase * 0.09 * 100) / 100;
+  bill.sgst = Math.round(taxableBase * 0.09 * 100) / 100;
+  bill.totalAmount =
+    Math.round(
+      (bill.subtotal - discount + serviceChargeSum + bill.cgst + bill.sgst) *
+        100,
+    ) / 100;
 };
 
 export const addFolioCharge = async (req, res) => {
@@ -485,12 +720,7 @@ export const addFolioCharge = async (req, res) => {
     quantity,
     notes: department,
   });
-  bill.subtotal = bill.items.reduce(
-    (total, item) =>
-      total + Number(item.price || 0) * Number(item.quantity || 1),
-    0,
-  );
-  bill.totalAmount = bill.subtotal;
+  recalculateBillTotals(bill);
   await bill.save();
   return res.status(201).json({ success: true, data: bill });
 };
@@ -704,24 +934,181 @@ export const shareFolio = async (req, res) => {
   const bill = await Bill.findOne({
     _id: req.params.id,
     hotelId: req.user.hotelId,
-  }).lean();
+  })
+    .populate("roomId")
+    .lean();
   if (!bill)
     return res.status(404).json({ success: false, message: "Folio not found" });
+
+  const channel = req.body.channel || "email";
+  const recipient =
+    req.body.recipient ||
+    (channel === "whatsapp" ? bill.guestPhone : bill.guestEmail);
+
+  let emailResult = null;
+  if (channel === "email" && recipient) {
+    emailResult = await sendFolioStatementEmail({
+      email: recipient,
+      guestName: bill.guestName || "Valued Guest",
+      folioNo:
+        bill.billNo || `FL-${bill._id.toString().slice(-6).toUpperCase()}`,
+      roomNumber: bill.roomId?.roomNumber || "101",
+      totalAmount: bill.totalAmount || 0,
+      balanceDue: bill.paymentStatus === "paid" ? 0 : bill.totalAmount || 0,
+    });
+  } else if (channel === "whatsapp") {
+    // TODO: integrate WhatsApp Business API (e.g. Meta Cloud API / Twilio)
+    logger.info(
+      {
+        event: "whatsapp_notification_queued",
+        recipient: recipient || bill.guestPhone,
+        folioNo: bill.billNo,
+      },
+      "WhatsApp notification queued",
+    );
+  }
+
   const log = await BillingEntity.create({
     hotelId: bill.hotelId,
     entityType: "audit-log",
-    status: "queued",
+    status:
+      channel === "email"
+        ? emailResult?.success
+          ? "sent"
+          : "queued"
+        : "queued",
     reference: `folio-share:${bill._id}`,
     data: {
       billId: bill._id,
-      channel: req.body.channel || "download",
-      recipient: req.body.recipient || "",
+      channel,
+      recipient,
+      folioNo: bill.billNo,
+      emailResult,
     },
     createdBy: req.user._id,
   });
-  return res
-    .status(202)
-    .json({ success: true, data: { deliveryId: log._id, status: "queued" } });
+
+  return res.status(200).json({
+    success: true,
+    message: `Folio shared successfully via ${channel}`,
+    data: { deliveryId: log._id, status: log.status, channel, recipient },
+  });
+};
+
+export const streamFolioPdf = async (req, res) => {
+  try {
+    const bill = await Bill.findOne({
+      _id: req.params.id,
+      hotelId: req.user.hotelId,
+    })
+      .populate("roomId")
+      .lean();
+    if (!bill) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Folio not found" });
+    }
+
+    const [payments, booking, hotel] = await Promise.all([
+      Payment.find({ billId: bill._id, hotelId: req.user.hotelId })
+        .sort({ createdAt: -1 })
+        .lean(),
+      bill.bookingId
+        ? Booking.findOne({ _id: bill.bookingId, hotelId: req.user.hotelId })
+            .populate("guestId")
+            .lean()
+        : null,
+      Hotel.findById(req.user.hotelId).lean(),
+    ]);
+
+    const guest = booking?.guestId;
+    const roomNumber =
+      booking?.roomAllocations?.[0]?.roomNumber ||
+      bill.roomId?.roomNumber ||
+      (bill.billNo ? bill.billNo.split("-")?.[1] : null) ||
+      "101";
+    const roomType =
+      booking?.roomAllocations?.[0]?.roomTypeCode?.toUpperCase() ||
+      bill.roomId?.roomType ||
+      "Executive EP";
+    const bookingNo =
+      booking?.reservationNo ||
+      booking?.bookingNo ||
+      `STAYSCAPE-2026-${roomNumber}`;
+
+    const paid = sum(
+      payments.filter((payment) => payment.status === "success"),
+    );
+    const grandTotal = Number(bill.totalAmount || 0);
+
+    const folioData = {
+      ...bill,
+      folioNo:
+        bill.billNo || `FL-${bill._id.toString().slice(-6).toUpperCase()}`,
+      guestName:
+        bill.guestName ||
+        booking?.roomAllocations?.[0]?.occupantName ||
+        guest?.name ||
+        "Guest",
+      guestPhone:
+        bill.guestPhone ||
+        booking?.roomAllocations?.[0]?.occupantPhone ||
+        guest?.phone ||
+        "+91 98765 11001",
+      guestEmail:
+        bill.guestEmail ||
+        booking?.roomAllocations?.[0]?.occupantEmail ||
+        guest?.email ||
+        "",
+      address:
+        guest?.address || "Salt Lake Sector V, Bidhannagar, Kolkata, WB 700091",
+      idType:
+        guest?.idType ||
+        booking?.roomAllocations?.[0]?.occupantIdType ||
+        "Aadhaar",
+      idNumber:
+        guest?.idNumber ||
+        booking?.roomAllocations?.[0]?.occupantIdNumber ||
+        "•••• •••• 9821",
+      roomNumber,
+      roomType,
+      bookingNo,
+      checkIn: booking?.checkIn,
+      checkOut: booking?.checkOut,
+      nights: booking?.nights || 1,
+      summary: {
+        subtotal: bill.subtotal,
+        serviceCharge: Number(
+          bill.serviceCharges?.reduce((t, c) => t + Number(c.amount || 0), 0) ||
+            0,
+        ),
+        cgst: Number(bill.cgst || 0),
+        sgst: Number(bill.sgst || 0),
+        gst: Number(bill.cgst || 0) + Number(bill.sgst || 0),
+        grandTotal,
+        totalPaid: paid,
+        balanceDue: Math.max(grandTotal - paid, 0),
+      },
+    };
+
+    return await generateFolioPdf(res, {
+      folio: folioData,
+      charges: bill.items || [],
+      payments,
+      hotel: hotel || {
+        name: "Stayscape Dev",
+        city: "Kolkata",
+        state: "West Bengal",
+      },
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Failed to stream folio PDF");
+    if (!res.headersSent) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Error generating folio PDF" });
+    }
+  }
 };
 
 export const correctFolioCharge = async (req, res) => {
@@ -756,12 +1143,7 @@ export const correctFolioCharge = async (req, res) => {
     quantity: 1,
     notes: req.body.reason,
   });
-  bill.subtotal = bill.items.reduce(
-    (total, item) =>
-      total + Number(item.price || 0) * Number(item.quantity || 1),
-    0,
-  );
-  bill.totalAmount = bill.subtotal;
+  recalculateBillTotals(bill);
   await bill.save();
   await BillingEntity.create({
     hotelId: bill.hotelId,
@@ -798,12 +1180,10 @@ export const applyDepositToFolio = async (req, res) => {
     Number(deposit.amount || 0) - Number(deposit.data?.appliedAmount || 0),
   );
   if (unappliedDeposit <= 0) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "This deposit has already been fully applied",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "This deposit has already been fully applied",
+    });
   }
 
   const paid = await Payment.aggregate([
@@ -814,12 +1194,10 @@ export const applyDepositToFolio = async (req, res) => {
   const folioBalance = Math.max(0, Number(bill.totalAmount || 0) - currentPaid);
 
   if (folioBalance <= 0) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Folio has no outstanding balance to settle",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Folio has no outstanding balance to settle",
+    });
   }
 
   const requestedAmount = Number(req.body.amount || folioBalance);

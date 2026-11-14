@@ -150,30 +150,30 @@ export default function ReceivablesPage() {
           <>
             <KpiTileRow>
               <KpiTile
-                title="Total Outstanding"
+                label="Total Outstanding"
                 value={money(data.metrics?.outstanding)}
-                subtitle="All open receivables"
+                delta="All open receivables"
                 icon={Wallet}
               />
               <KpiTile
-                title="0–30 Days"
+                label="0–30 Days"
                 value={money(data.metrics?.["0-30"])}
-                subtitle="Current"
+                delta="Current"
               />
               <KpiTile
-                title="31–60 Days"
+                label="31–60 Days"
                 value={money(data.metrics?.["31-60"])}
-                subtitle="Monitor"
+                delta="Monitor"
               />
               <KpiTile
-                title="61–90 Days"
+                label="61–90 Days"
                 value={money(data.metrics?.["61-90"])}
-                subtitle="Follow up"
+                delta="Follow up"
               />
               <KpiTile
-                title="90+ Days"
+                label="90+ Days"
                 value={money(data.metrics?.["90+"])}
-                subtitle="Critical ageing"
+                delta="Critical ageing"
                 icon={AlertCircle}
               />
             </KpiTileRow>
@@ -315,7 +315,17 @@ export default function ReceivablesPage() {
                             {row.ageingDays || 0} days
                           </td>
                           <td className="px-4 py-3">
-                            <StatusChip status={row.status} />
+                            <StatusChip
+                              variant={
+                                row.status === "paid"
+                                  ? "paid"
+                                  : row.status === "pending"
+                                    ? "pending"
+                                    : "overdue"
+                              }
+                            >
+                              {row.status}
+                            </StatusChip>
                           </td>
                           <td className="px-4 py-3">
                             <button
@@ -440,6 +450,37 @@ export default function ReceivablesPage() {
             <Button
               variant="outline"
               className="w-full justify-start border-gray-200 text-xs"
+              onClick={() => setDrawer("payment")}
+            >
+              Record payment for this account
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start border-gray-200 text-xs"
+              onClick={() => {
+                const target = rows.find((r) => r.id === selected[0]);
+                if (!target) return;
+                const csv = [
+                  `"STATEMENT OF ACCOUNT - ${target.accountName || "Account"}"`,
+                  `"Invoice: ${target.invoiceNo || target.reference || ""} | Due Date: ${target.dueDate || ""}"`,
+                  `"Total Billed,Paid,Outstanding,Ageing Days"`,
+                  `"${target.amount || target.grandTotal || 0}","${target.paidAmount || target.paid || 0}","${target.balance || 0}","${target.ageingDays || 0}"`,
+                ].join("\n");
+                const blob = new Blob([csv], {
+                  type: "text/csv;charset=utf-8;",
+                });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = `statement-${target.accountName || "account"}-${new Date().toISOString().slice(0, 10)}.csv`;
+                a.click();
+                setDrawer("");
+              }}
+            >
+              <Download size={13} className="mr-1.5" /> Download Statement (CSV)
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start border-gray-200 text-xs"
               onClick={() => setDrawer("dispute")}
             >
               Mark disputed
@@ -469,7 +510,9 @@ export default function ReceivablesPage() {
   );
 }
 
-function Aging({ rows = [] }) {
+const EMPTY_ROWS = [];
+
+function Aging({ rows = EMPTY_ROWS }) {
   const max = Math.max(...rows.map((row) => row.amount), 1);
   return (
     <div className="flex h-36 items-end gap-4 pt-4">
@@ -669,7 +712,7 @@ function ReminderDrawer({ ids, onClose, onComplete }) {
   );
 }
 
-function PaymentDrawer({ selectedId, rows = [], onClose, onComplete }) {
+function PaymentDrawer({ selectedId, rows = EMPTY_ROWS, onClose, onComplete }) {
   const selectedRow = rows.find((r) => r.id === selectedId);
   const [form, setForm] = useState({
     receivableId: selectedId || "",

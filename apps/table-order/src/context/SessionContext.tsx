@@ -343,13 +343,8 @@ export function SessionProvider({
     // B. QR Guest mode:
     // If we already have a session, fetch fresh coordinates for the request header and return
     if (sessionToken) {
-      try {
-        await acquireFreshCoordinates();
-        return sessionToken;
-      } catch (err: any) {
-        // If location is denied or unavailable on subsequent request, notify caller
-        throw err;
-      }
+      await acquireFreshCoordinates();
+      return sessionToken;
     }
 
     // No session exists yet: acquire GPS coordinates first

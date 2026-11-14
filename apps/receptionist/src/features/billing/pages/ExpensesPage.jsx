@@ -131,31 +131,32 @@ export default function ExpensesPage() {
           <>
             <KpiTileRow>
               <KpiTile
-                title="Total Expenses This Month"
+                label="Total Expenses This Month"
                 value={money(data.metrics?.total)}
-                subtitle="vs last month"
+                delta="vs last month"
                 icon={Receipt}
               />
               <KpiTile
-                title="Paid Expenses"
+                label="Paid Expenses"
                 value={money(data.metrics?.paid)}
-                subtitle="Recorded payments"
+                delta="Recorded payments"
                 icon={Wallet}
               />
               <KpiTile
-                title="Pending Payments"
+                label="Pending Payments"
                 value={money(data.metrics?.pending)}
-                subtitle="Also in Payables"
+                delta="Also in Payables"
+                icon={Receipt}
               />
               <KpiTile
-                title="Total Vendors"
+                label="Total Vendors"
                 value={data.metrics?.vendors || 0}
-                subtitle="Active vendors"
+                delta="Active vendors"
               />
               <KpiTile
-                title="Average Monthly Expense"
+                label="Average Monthly Expense"
                 value={money(data.metrics?.average)}
-                subtitle="Last 6 months"
+                delta="Last 6 months"
               />
             </KpiTileRow>
 
@@ -351,7 +352,9 @@ export default function ExpensesPage() {
   );
 }
 
-function Trend({ rows = [] }) {
+const EMPTY_ROWS = [];
+
+function Trend({ rows = EMPTY_ROWS }) {
   const max = Math.max(...rows.map((row) => row.amount), 1);
   return (
     <div className="flex h-32 items-end gap-2 pt-4">
@@ -373,7 +376,7 @@ function Trend({ rows = [] }) {
   );
 }
 
-function Donut({ rows = [] }) {
+function Donut({ rows = EMPTY_ROWS }) {
   const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   const colors = [
     "#2563eb",
@@ -431,7 +434,7 @@ function Donut({ rows = [] }) {
   );
 }
 
-function Bars({ rows = [] }) {
+function Bars({ rows = EMPTY_ROWS }) {
   const max = Math.max(...rows.map((row) => row.amount), 1);
   return (
     <div className="space-y-3">

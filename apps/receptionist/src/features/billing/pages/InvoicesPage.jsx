@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@hotelos/query";
 import {
   Header,
@@ -533,10 +533,18 @@ function InvoicePreview({ invoice, onAction }) {
           Thank you for staying with us!
         </p>
         <div className="mt-3 grid grid-cols-5 gap-1.5">
-          <button className={buttonClass} onClick={() => onAction("download")}>
+          <button
+            className={buttonClass}
+            onClick={() =>
+              billingApi.downloadInvoicePdf(
+                invoice.id || invoice._id,
+                `TaxInvoice-${invoice.invoiceNo || "INV"}.pdf`,
+              )
+            }
+          >
             <Download size={12} /> PDF
           </button>
-          <button className={buttonClass} onClick={() => onAction("print")}>
+          <button className={buttonClass} onClick={() => window.print()}>
             <Printer size={12} /> Print
           </button>
           <button className={buttonClass} onClick={() => onAction("thermal")}>
@@ -587,6 +595,33 @@ function typeLabel(type) {
 
 function InvoiceDrawer({ type, selected, onClose, onComplete }) {
   const [error, setError] = useState("");
+  const [folios, setFolios] = useState([]);
+  const [loadingFolios, setLoadingFolios] = useState(false);
+  const [selectedFolioId, setSelectedFolioId] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (["invoice", "proforma"].includes(type)) {
+      billingApi
+        .folio({ status: "open" })
+        .then((res) => {
+          if (!active) return;
+          const list = Array.isArray(res) ? res : res?.data || [];
+          setFolios(list);
+          setSelectedFolioId(
+            (prev) => prev || list[0]?._id || list[0]?.id || "",
+          );
+          setLoadingFolios(false);
+        })
+        .catch(() => {
+          if (active) setLoadingFolios(false);
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [type]);
+
   const requiresSelected = [
     "credit-note",
     "cancel",
@@ -633,16 +668,37 @@ function InvoiceDrawer({ type, selected, onClose, onComplete }) {
       else if (type === "print") {
         window.print();
       } else if (type === "download") {
-        const dataStr =
-          "data:text/json;charset=utf-8," +
-          encodeURIComponent(JSON.stringify(selected, null, 2));
-        const downloadAnchor = document.createElement("a");
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute(
-          "download",
-          `invoice-${selected.invoiceNo || selected.id}.json`,
-        );
-        downloadAnchor.click();
+        const items = selected.items || [];
+        const lines = [
+          `"Invoice No","${selected.invoiceNo || selected.id}"`,
+          `"Date","${selected.createdAt ? new Date(selected.createdAt).toLocaleDateString("en-IN") : new Date().toLocaleDateString("en-IN")}"`,
+          `"Guest","${selected.guestName || selected.customerName || "Guest"}"`,
+          `"GSTIN","${selected.gstin || "Unregistered"}"`,
+          `"Place of Supply","${selected.placeOfSupply || "West Bengal (19)"}"`,
+          `"Status","${selected.status || "Paid"}"`,
+          "",
+          "Item Description,Qty,Rate,Amount",
+          ...items.map(
+            (it) =>
+              `"${it.description || it.name || "Charge"}","${it.qty || 1}","${it.rate || it.amount || 0}","${it.amount || (it.qty || 1) * (it.rate || 0)}"`,
+          ),
+          "",
+          `"Subtotal (INR)","${selected.subtotal || selected.amount || 0}"`,
+          `"CGST 9% (INR)","${selected.cgst || Math.round((selected.subtotal || selected.amount || 0) * 0.09)}"`,
+          `"SGST 9% (INR)","${selected.sgst || Math.round((selected.subtotal || selected.amount || 0) * 0.09)}"`,
+          `"Grand Total (INR)","${selected.grandTotal || selected.amount || 0}"`,
+          `"Amount Paid (INR)","${selected.paidAmount || 0}"`,
+          `"Balance Due (INR)","${selected.balanceDue || 0}"`,
+        ];
+        const blob = new Blob([lines.join("\n")], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Invoice-${selected.invoiceNo || selected.id}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
       }
       onComplete();
     } catch (requestError) {
@@ -659,7 +715,7 @@ function InvoiceDrawer({ type, selected, onClose, onComplete }) {
         type === "print"
           ? "Print Invoice"
           : type === "download"
-            ? "Download File"
+            ? "Download CSV"
             : type === "invoice-menu"
               ? "Done"
               : "Save"
@@ -685,17 +741,26 @@ function InvoiceDrawer({ type, selected, onClose, onComplete }) {
               type="button"
               variant="secondary"
               onClick={() => {
-                const dataStr =
-                  "data:text/json;charset=utf-8," +
-                  encodeURIComponent(JSON.stringify(selected, null, 2));
+                const lines = [
+                  `"Invoice No","${selected.invoiceNo || selected.id}"`,
+                  `"Date","${selected.createdAt ? new Date(selected.createdAt).toLocaleDateString("en-IN") : new Date().toLocaleDateString("en-IN")}"`,
+                  `"Guest","${selected.guestName || selected.customerName || "Guest"}"`,
+                  `"Subtotal (INR)","${selected.subtotal || selected.amount || 0}"`,
+                  `"Grand Total (INR)","${selected.grandTotal || selected.amount || 0}"`,
+                ];
+                const blob = new Blob([lines.join("\n")], {
+                  type: "text/csv;charset=utf-8;",
+                });
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
-                a.href = dataStr;
-                a.download = `invoice-${selected.invoiceNo}.json`;
+                a.href = url;
+                a.download = `Invoice-${selected.invoiceNo}.csv`;
                 a.click();
+                URL.revokeObjectURL(url);
                 onClose();
               }}
             >
-              Download JSON
+              Download CSV
             </Button>
           </div>
         </div>
@@ -708,15 +773,51 @@ function InvoiceDrawer({ type, selected, onClose, onComplete }) {
       )}
       {type === "download" && (
         <p className="text-xs text-gray-600">
-          Click below to export invoice data for {selected?.invoiceNo}.
+          Click below to export structured CSV invoice data for{" "}
+          {selected?.invoiceNo}.
         </p>
       )}
       {["invoice", "proforma"].includes(type) && (
         <>
-          <Field label="Folio ID" name="folioId" required />
-          <Field label="Bill to" name="billTo" />
-          <Field label="GSTIN" name="gstin" />
-          <Field label="Place of supply" name="placeOfSupply" />
+          <label className="text-surface-700 block text-xs font-medium">
+            Select Guest Folio / Bill <span className="text-rose-500">*</span>
+            <select
+              name="folioId"
+              value={selectedFolioId}
+              onChange={(e) => setSelectedFolioId(e.target.value)}
+              required
+              className="border-surface-300 focus:border-brand-500 focus:ring-brand-500 mt-1 block w-full rounded-lg border bg-white px-3 py-2 text-xs text-gray-800 shadow-2xs focus:outline-hidden"
+            >
+              {folios.length === 0 && (
+                <option value="">
+                  {loadingFolios
+                    ? "Loading open folios..."
+                    : "No open folios found"}
+                </option>
+              )}
+              {folios.map((f) => (
+                <option key={f._id || f.id} value={f._id || f.id}>
+                  {f.folioNo || f.billNo} — {f.guestName} (Room{" "}
+                  {f.roomNumber || "-"} | ₹{f.balanceDue ?? f.totalAmount ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
+          <Field
+            label="Bill to"
+            name="billTo"
+            placeholder="Guest or Company Name"
+          />
+          <Field
+            label="GSTIN"
+            name="gstin"
+            placeholder="15-character GSTIN (optional)"
+          />
+          <Field
+            label="Place of supply"
+            name="placeOfSupply"
+            defaultValue="West Bengal (19)"
+          />
         </>
       )}
       {type === "credit-note" && (

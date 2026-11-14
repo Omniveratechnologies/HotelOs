@@ -32,7 +32,6 @@ const AttendanceTrendCard = ({ month, trend }) => {
   const band = INNER_W / n;
   const barW = Math.min(band * 0.62, 18);
   const x = (i) => M.l + band * (i + 0.5);
-  const yLeft = (v) => M.t + INNER_H - (v / maxLeft) * INNER_H;
   const yRight = (p) => M.t + INNER_H - (p / 100) * INNER_H;
 
   let path = "";

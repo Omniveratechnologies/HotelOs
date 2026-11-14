@@ -1,3 +1,4 @@
+/* oxlint-disable unicorn/no-thenable -- MongoDB $switch branches use "then" */
 import mongoose from "mongoose";
 
 import { AttendanceRecord } from "../../attendance/models/attendanceRecord.js";
@@ -17,7 +18,7 @@ const EXCLUDE_APPROVED_LEAVE_FROM_WORKING_DAYS = false;
 const BANDS = { good: 90, warning: 75 };
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const STATUS_FILTERS = ["PRESENT", "LATE", "HALF_DAY", "ABSENT", "ON_LEAVE"];
-const SORTS = [
+const SORTS = new Set([
   "name",
   "staffCode",
   "attendancePercent",
@@ -26,7 +27,7 @@ const SORTS = [
   "late",
   "leave",
   "halfDay",
-];
+]);
 
 const BUCKET_KEY = {
   PRESENT: "present",
@@ -110,7 +111,7 @@ export const parseQuery = (query = {}, today = time.todayKey()) => {
       .toLowerCase(),
     page: Math.max(1, Number(query.page) || 1),
     limit: Math.min(100, Math.max(1, Number(query.limit) || 10)),
-    sort: SORTS.includes(query.sort) ? query.sort : "name",
+    sort: SORTS.has(query.sort) ? query.sort : "name",
     direction: String(query.direction).toLowerCase() === "desc" ? -1 : 1,
   };
 };

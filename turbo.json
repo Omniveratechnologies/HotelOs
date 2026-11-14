@@ -48,6 +48,12 @@
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "lint:fix": {
+      "cache": false
     }
   }
 }

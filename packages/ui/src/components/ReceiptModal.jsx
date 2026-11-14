@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { formatCurrency, formatDate } from "@hotelos/utils";
 
+const EMPTY_DATA = {};
+
 /**
  * 80mm POS Thermal Receipt preview modal with browser print support (@media print).
  *
@@ -10,7 +12,11 @@ import { formatCurrency, formatDate } from "@hotelos/utils";
  * @param {() => void} props.onClose - Modal close handler
  * @returns {React.ReactElement | null}
  */
-export function ReceiptModal({ title = "Receipt", data = {}, onClose }) {
+export function ReceiptModal({
+  title = "Receipt",
+  data = EMPTY_DATA,
+  onClose,
+}) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose?.();
@@ -22,7 +28,81 @@ export function ReceiptModal({ title = "Receipt", data = {}, onClose }) {
   if (!data) return null;
   const items = data.items || data.charges || [];
   const handlePrint = () => {
-    window.print();
+    const receiptElement = document.getElementById("printable-receipt");
+    if (!receiptElement) {
+      window.print();
+      return;
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (!doc) {
+      window.print();
+      return;
+    }
+
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title || "POS Receipt"}</title>
+          <style>
+            @page {
+              size: 80mm auto;
+              margin: 3mm;
+            }
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+            }
+            body {
+              width: 74mm;
+              margin: 0 auto;
+              font-family: 'Courier New', Courier, monospace;
+              font-size: 11px;
+              line-height: 1.25;
+              color: #000;
+              background: #fff;
+              padding: 4px;
+            }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .font-bold { font-weight: bold; }
+            .block { display: block; }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
+            table { width: 100%; border-collapse: collapse; margin: 4px 0; }
+            th, td { padding: 2px 0; font-size: 10px; }
+            .border-dashed { border-bottom: 1px dashed #666; margin: 6px 0; }
+            .border-t-dashed { border-top: 1px dashed #666; padding-top: 4px; }
+          </style>
+        </head>
+        <body>
+          ${receiptElement.innerHTML}
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(iframe);
+        } catch {}
+      }, 1500);
+    }, 250);
   };
 
   const receiptNo =
@@ -126,7 +206,14 @@ export function ReceiptModal({ title = "Receipt", data = {}, onClose }) {
             </thead>
             <tbody>
               {items.map((it, idx) => (
-                <tr key={idx} className="border-b border-gray-100">
+                <tr
+                  key={
+                    it.id ||
+                    it._id ||
+                    `${it.name || it.description || "line"}-${it.price || it.amount || idx}`
+                  }
+                  className="border-b border-gray-100"
+                >
                   <td className="py-1">{it.name || it.description}</td>
                   <td className="py-1 text-center">
                     {it.quantity || it.qty || 1}

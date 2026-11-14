@@ -1020,8 +1020,7 @@ export const autoSchedule = async (hotelId, body = {}, actor = null) => {
       if (entry.explicit && !body.overwrite) return;
 
       const offToday = rotate
-        ? offDays.length > 0 &&
-          offDays.some((_, k) => (index + k) % 7 === weekday)
+        ? offDays.some((_, k) => (index + k) % 7 === weekday)
         : defaultOff.has(weekday);
 
       if (offToday) {
