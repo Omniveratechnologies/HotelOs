@@ -17,7 +17,8 @@ export const baseConfig = {
   },
   rules: {
     // Code quality rules that are not enabled by default.
-    "no-console": "warn",
+    // console.error is legitimate diagnostics; console.log/warn stay flagged.
+    "no-console": ["warn", { allow: ["error"] }],
     "no-var": "error",
     "prefer-const": "warn",
     eqeqeq: ["warn", "smart"],
