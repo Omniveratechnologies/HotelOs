@@ -134,12 +134,10 @@ export const createCashEntry = async (req, res) => {
       .status(409)
       .json({ success: false, message: "An open cashier shift is required" });
   if (amount(req.body.amount) <= 0)
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Cash entry amount must be greater than zero",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Cash entry amount must be greater than zero",
+    });
   const row = await BillingEntity.create({
     hotelId: req.user.hotelId,
     entityType: "cash-movement",
@@ -277,15 +275,123 @@ export const importReconciliation = async (req, res) => {
 };
 
 export const runReconciliationJob = async (req, res) => {
+  const hotelId = req.user.hotelId;
+  const externals = await BillingEntity.find({
+    hotelId,
+    entityType: "external-transaction",
+    status: "pending",
+  });
+  const payments = await Payment.find({ hotelId }).lean();
+
+  let matchedCount = 0;
+  let discrepancyCount = 0;
+
+  for (const ext of externals) {
+    const extRef = String(
+      ext.reference || ext.data?.reference || ext.data?.utr || "",
+    )
+      .trim()
+      .toLowerCase();
+    const extAmt = amount(ext.amount);
+
+    const matchByRef = extRef
+      ? payments.find(
+          (p) =>
+            String(p.referenceNo || p.reference || "")
+              .trim()
+              .toLowerCase() === extRef,
+        )
+      : null;
+
+    if (matchByRef) {
+      const payAmt = amount(matchByRef.amount);
+      if (Math.abs(payAmt - extAmt) < 0.01) {
+        ext.status = "matched";
+        ext.data = {
+          ...ext.data,
+          matchedPaymentId: matchByRef._id,
+          matchedAt: new Date(),
+        };
+        await ext.save();
+        matchedCount++;
+      } else {
+        ext.status = "discrepancy";
+        await ext.save();
+        await BillingEntity.create({
+          hotelId,
+          entityType: "reconciliation-discrepancy",
+          status: "pending",
+          amount: Math.abs(payAmt - extAmt),
+          reference: ext.reference,
+          data: {
+            externalTxnId: ext._id,
+            paymentId: matchByRef._id,
+            reason: `Amount mismatch: Bank ₹${extAmt} vs PMS ₹${payAmt}`,
+            systemAmount: payAmt,
+            bankAmount: extAmt,
+            variance: payAmt - extAmt,
+          },
+          createdBy: req.user._id,
+        });
+        discrepancyCount++;
+      }
+    } else {
+      const matchByAmt = payments.find(
+        (p) =>
+          amount(p.amount) === extAmt &&
+          p.method === (ext.data?.method || p.method),
+      );
+      if (matchByAmt) {
+        ext.status = "matched";
+        ext.data = {
+          ...ext.data,
+          matchedPaymentId: matchByAmt._id,
+          matchedAt: new Date(),
+          matchNote: "Matched on amount",
+        };
+        await ext.save();
+        matchedCount++;
+      } else {
+        ext.status = "discrepancy";
+        await ext.save();
+        await BillingEntity.create({
+          hotelId,
+          entityType: "reconciliation-discrepancy",
+          status: "pending",
+          amount: extAmt,
+          reference: ext.reference,
+          data: {
+            externalTxnId: ext._id,
+            reason: `External transaction ₹${extAmt} not found in PMS records`,
+            bankAmount: extAmt,
+            systemAmount: 0,
+            variance: -extAmt,
+          },
+          createdBy: req.user._id,
+        });
+        discrepancyCount++;
+      }
+    }
+  }
+
   const run = await BillingWorkflow.create({
-    hotelId: req.user.hotelId,
+    hotelId,
     type: "reconciliation",
     status: "completed",
     businessDate: req.body.businessDate || new Date(),
-    payload: { ...req.body, completedAt: new Date() },
+    payload: {
+      ...req.body,
+      matchedCount,
+      discrepancyCount,
+      totalProcessed: externals.length,
+      completedAt: new Date(),
+    },
     openedBy: req.user._id,
   });
-  return res.status(201).json({ success: true, data: run });
+  return res.status(201).json({
+    success: true,
+    data: { run, matchedCount, discrepancyCount, processed: externals.length },
+  });
 };
 
 export const resolveDiscrepancy = async (req, res) => {

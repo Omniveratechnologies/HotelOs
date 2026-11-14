@@ -12,6 +12,20 @@ const VARIANTS = {
   draft: "border-gray-300 bg-white text-gray-600",
   info: "bg-blue-50 text-blue-700 border-blue-200",
   neutral: "border-gray-200 bg-gray-50 text-gray-600",
+
+  // Billing and Financial variants
+  paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  successful: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  posted: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  matched: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  partial: "bg-amber-50 text-amber-700 border-amber-200",
+  overdue: "bg-rose-50 text-rose-600 border-rose-200",
+  failed: "bg-rose-50 text-rose-600 border-rose-200",
+  discrepancy: "bg-rose-50 text-rose-600 border-rose-200",
+  reversed: "border-gray-200 bg-gray-50 text-gray-600",
+  voided: "border-gray-200 bg-gray-50 text-gray-600",
+  refunded: "bg-purple-50 text-purple-700 border-purple-200",
 };
 
 /**
@@ -31,11 +45,17 @@ export function StatusChip({
   dot = true,
   className = "",
 }) {
+  const normalized = String(variant || "neutral").toLowerCase();
+  const variantClass =
+    VARIANTS[normalized] ||
+    VARIANTS[normalized.replace(/_/g, "-")] ||
+    VARIANTS.neutral;
+
   return (
     <span
       className={cn(
         "inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap",
-        VARIANTS[variant] || VARIANTS.neutral,
+        variantClass,
         className,
       )}
     >

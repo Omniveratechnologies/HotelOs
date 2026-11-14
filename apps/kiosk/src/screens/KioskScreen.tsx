@@ -42,6 +42,7 @@ export function KioskScreen() {
   // Acquire a single-use handoff code whenever base URL or credentials change
   useEffect(() => {
     if (!url || !auth?.serverUrl || !auth?.token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWebViewUri(url);
       setHandoffCode(null);
       return;
@@ -373,7 +374,7 @@ export function KioskScreen() {
       {error && (
         <View style={styles.errorOverlay}>
           <Text style={styles.errorTitle}>
-            Couldn't load terminal dashboard
+            Couldn&apos;t load terminal dashboard
           </Text>
           <Text style={styles.errorUrl}>{url}</Text>
           <Text style={styles.errorDetail}>{error}</Text>

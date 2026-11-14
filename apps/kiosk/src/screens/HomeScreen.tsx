@@ -35,7 +35,7 @@ export function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAuth();
   }, [loadAuth]);
 

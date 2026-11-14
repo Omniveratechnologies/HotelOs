@@ -9,7 +9,7 @@
     "android": "expo run:android",
     "prebuild": "expo prebuild --platform android --clean",
     "android:release": "expo run:android --variant release",
-    "lint": "oxlint .",
+    "lint": "expo lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -36,9 +36,7 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
-    "expo-dev-client": "~57.0.20",
-    "oxlint": "^1.81.0",
-    "typescript": "~6.0.3"
+    "expo-dev-client": "~57.0.20"
   },
   "private": true
 }

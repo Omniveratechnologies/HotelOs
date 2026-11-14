@@ -8,7 +8,8 @@
     "dev": "vite dev --port 5177 --host",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hotelos/utils": "workspace:*",
@@ -67,12 +68,10 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
     "nitro": "3.0.260603-beta",
-    "typescript": "^5.8.3",
     "vite": "^8.1.5"
   }
 }

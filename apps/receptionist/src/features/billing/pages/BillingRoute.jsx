@@ -1,4 +1,4 @@
-import BillingPage from "../BillingPage.jsx";
+import BillingPage from "./BillingPage.jsx";
 import GuestFolioPage from "./GuestFolioPage.jsx";
 import PaymentsPage from "./PaymentsPage.jsx";
 import InvoicesPage from "./InvoicesPage.jsx";

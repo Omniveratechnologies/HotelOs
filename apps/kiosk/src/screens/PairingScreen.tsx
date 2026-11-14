@@ -168,7 +168,7 @@ export function PairingScreen() {
             <View style={styles.successBox}>
               <ActivityIndicator color="#4ADE80" />
               <Text style={styles.successText}>
-                Paired as "{pairedTerminalName}"! Opening kiosk…
+                Paired as &quot;{pairedTerminalName}&quot;! Opening kiosk…
               </Text>
             </View>
           ) : (
