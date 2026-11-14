@@ -462,19 +462,21 @@ export const checkInBooking = async (req, res) => {
       _id: { $ne: booking._id },
     });
 
-    for (const stale of staleBookings) {
-      stale.status = "checked-out";
-      stale.paymentStatus = "paid";
-      stale.auditTrail.push({
-        at: new Date(),
-        by: req.user._id,
-        action: "checked-out",
-        from: "checked-in",
-        to: "checked-out",
-        note: `Auto checked-out: room reassigned/checked in to new reservation ${booking.reservationNo}`,
-      });
-      await stale.save();
-    }
+    await Promise.all(
+      staleBookings.map(async (stale) => {
+        stale.status = "checked-out";
+        stale.paymentStatus = "paid";
+        stale.auditTrail.push({
+          at: new Date(),
+          by: req.user._id,
+          action: "checked-out",
+          from: "checked-in",
+          to: "checked-out",
+          note: `Auto checked-out: room reassigned/checked in to new reservation ${booking.reservationNo}`,
+        });
+        await stale.save();
+      }),
+    );
 
     const guestUser = await User.findById(booking.guestId).select("name phone");
     const guestName = guestUser?.name || "Valued Guest";
@@ -603,39 +605,47 @@ export const checkInBooking = async (req, res) => {
     // Assign Key Card(s) if provided
     const rawCardInput = keyCardNumbers || keyCardNumber;
     if (rawCardInput) {
-      const cardList = (
-        Array.isArray(rawCardInput)
-          ? rawCardInput
-          : String(rawCardInput).split(",")
-      )
-        .map((c) => String(c).trim().toUpperCase())
-        .filter(Boolean);
+      // Dedupe so the same card number is not created twice in one request.
+      const cardList = [
+        ...new Set(
+          (Array.isArray(rawCardInput)
+            ? rawCardInput
+            : String(rawCardInput).split(",")
+          )
+            .map((c) => String(c).trim().toUpperCase())
+            .filter(Boolean),
+        ),
+      ];
 
-      for (let idx = 0; idx < cardList.length; idx++) {
-        const cleanCardNo = cardList[idx];
-        const assignedRoomForCard = targetRoomIds[idx] || primaryRoom._id;
-        const rmObj = rooms.find(
-          (r) => String(r._id) === String(assignedRoomForCard),
-        );
+      await Promise.all(
+        cardList.map(async (cleanCardNo, idx) => {
+          const assignedRoomForCard = targetRoomIds[idx] || primaryRoom._id;
+          const rmObj = rooms.find(
+            (r) => String(r._id) === String(assignedRoomForCard),
+          );
 
-        let card = await KeyCard.findOne({ hotelId, cardNumber: cleanCardNo });
-        if (!card) {
-          card = new KeyCard({ hotelId, cardNumber: cleanCardNo });
-        }
-        card.status = "ACTIVE";
-        card.currentBookingId = booking._id;
-        card.assignedRoomId = assignedRoomForCard;
-        card.assignedGuestId = booking.guestId;
-        card.issuedAt = new Date();
-        card.expiresAt = booking.checkOut;
-        card.auditLog.push({
-          action: "ASSIGNED",
-          performedBy: req.user._id,
-          bookingId: booking._id,
-          note: `Issued at Front Desk Check-in for Room ${rmObj?.roomNumber || assignedRoomForCard}`,
-        });
-        await card.save();
-      }
+          let card = await KeyCard.findOne({
+            hotelId,
+            cardNumber: cleanCardNo,
+          });
+          if (!card) {
+            card = new KeyCard({ hotelId, cardNumber: cleanCardNo });
+          }
+          card.status = "ACTIVE";
+          card.currentBookingId = booking._id;
+          card.assignedRoomId = assignedRoomForCard;
+          card.assignedGuestId = booking.guestId;
+          card.issuedAt = new Date();
+          card.expiresAt = booking.checkOut;
+          card.auditLog.push({
+            action: "ASSIGNED",
+            performedBy: req.user._id,
+            bookingId: booking._id,
+            note: `Issued at Front Desk Check-in for Room ${rmObj?.roomNumber || assignedRoomForCard}`,
+          });
+          await card.save();
+        }),
+      );
     }
 
     // Trigger Aiosell Inventory sync

@@ -344,7 +344,7 @@ const rowView = (ctx, date, { member, entry, record, status }) => ({
 });
 
 const sortRows = (rows) =>
-  [...rows].sort((a, b) => {
+  [...rows].toSorted((a, b) => {
     const rank = STATUS_RANK[a.status] - STATUS_RANK[b.status];
     if (rank) return rank;
     const start =
@@ -705,6 +705,7 @@ const persist = async (hotelId, ops, { source, actor }) => {
     },
   }));
   for (let i = 0; i < writes.length; i += 500)
+    // oxlint-disable-next-line no-await-in-loop -- bounded batches keep memory and DB load predictable
     await ShiftAssignment.bulkWrite(writes.slice(i, i + 500), {
       ordered: false,
     });
@@ -1058,7 +1059,7 @@ export const autoSchedule = async (hotelId, body = {}, actor = null) => {
             fits(member, date, target)
           );
         })
-        .sort(
+        .toSorted(
           (a, b) =>
             Number(sid(b.shiftId) === rule.shiftId) -
             Number(sid(a.shiftId) === rule.shiftId),

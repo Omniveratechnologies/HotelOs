@@ -35,11 +35,12 @@ const payableStatus = (row) => {
 };
 
 const payableRows = async (hotelId) =>
-  (await list(hotelId, "payable")).map(unwrap).map((row) => ({
-    ...row,
-    balance: Math.max(0, value(row.amount || row.total) - value(row.paid)),
-    status: payableStatus(row),
-  }));
+  (await list(hotelId, "payable")).map(unwrap).map((row) =>
+    Object.assign({}, row, {
+      balance: Math.max(0, value(row.amount || row.total) - value(row.paid)),
+      status: payableStatus(row),
+    }),
+  );
 
 export const listPayables = async (req, res) => {
   const q = String(req.query.q || "").toLowerCase();
@@ -131,7 +132,7 @@ export const payablesSummary = async (req, res) => {
             daysUntil(row.dueDate) >= 0 &&
             daysUntil(row.dueDate) <= 15,
         )
-        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+        .toSorted((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
         .slice(0, 8),
       recentPayments: rows.filter((row) => value(row.paid) > 0).slice(0, 8),
       rows,
@@ -216,20 +217,34 @@ export const createVendorPayment = async (req, res) => {
   const allocations =
     req.body.allocations ||
     (req.body.billId ? [{ billId: req.body.billId, amount }] : []);
+  // Combine allocations per bill so two entries for the same bill cannot
+  // each pass the balance check against the same starting amount.
+  const perBill = new Map();
   for (const allocation of allocations) {
-    const bill = await BillingEntity.findOne({
-      _id: allocation.billId,
-      hotelId: req.user.hotelId,
-      entityType: "payable",
-    });
+    const key = String(allocation.billId);
+    perBill.set(key, (perBill.get(key) || 0) + value(allocation.amount));
+  }
+  const billIds = [...perBill.keys()];
+  const bills = await Promise.all(
+    billIds.map((billId) =>
+      BillingEntity.findOne({
+        _id: billId,
+        hotelId: req.user.hotelId,
+        entityType: "payable",
+      }),
+    ),
+  );
+  for (let index = 0; index < billIds.length; index += 1) {
+    const bill = bills[index];
     if (!bill) continue;
+    const allocationAmount = perBill.get(billIds[index]);
     const balance = Math.max(0, value(bill.amount) - value(bill.data?.paid));
-    if (value(allocation.amount) > balance)
+    if (allocationAmount > balance)
       return res.status(400).json({
         success: false,
         message: "Payment cannot exceed bill balance",
       });
-    const paid = value(bill.data?.paid) + value(allocation.amount);
+    const paid = value(bill.data?.paid) + allocationAmount;
     bill.data = {
       ...bill.data,
       paid,
@@ -239,8 +254,8 @@ export const createVendorPayment = async (req, res) => {
       paymentReference: req.body.reference,
     };
     bill.status = paid >= value(bill.amount) ? "paid" : "partial";
-    await bill.save();
   }
+  await Promise.all(bills.filter(Boolean).map((bill) => bill.save()));
   const payment = await BillingEntity.create({
     hotelId: req.user.hotelId,
     entityType: "vendor-payment",

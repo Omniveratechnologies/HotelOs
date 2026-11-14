@@ -58,6 +58,19 @@ export function total(rows, key) {
   return rows.reduce((sum, row) => sum + Number(row[key] || 0), 0);
 }
 
+const metricDelta = (current, prior) =>
+  prior ? `${(((current - prior) / Math.abs(prior)) * 100).toFixed(1)}%` : "—";
+
+const avgForecast = (rows, key) => {
+  const values = rows.map((row) => Number(row[key])).filter(Number.isFinite);
+  return values.length
+    ? values.reduce((sum, value) => sum + value, 0) / values.length
+    : null;
+};
+
+const sumForecast = (rows, key) =>
+  rows.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
+
 /** Date windows for a given range, anchored to "now". Shared by live queries and the demo generator. */
 export function computeWindows(range, now = new Date()) {
   const days = rangeSize[range] || 30;
@@ -359,10 +372,11 @@ export function computeDashboardPayload({
   }));
   const bookingLeadTimeTotal =
     bookingLeadTime.reduce((sum, row) => sum + row.count, 0) || 1;
-  const leadTime = bookingLeadTime.map((row) => ({
-    ...row,
-    value: (row.count / bookingLeadTimeTotal) * 100,
-  }));
+  const leadTime = bookingLeadTime.map((row) =>
+    Object.assign({}, row, {
+      value: (row.count / bookingLeadTimeTotal) * 100,
+    }),
+  );
 
   const stayDurationTotal =
     stayDurationRows.reduce((sum, row) => sum + Number(row.count || 0), 0) || 1;
@@ -591,10 +605,6 @@ export function computeDashboardPayload({
       forecast: forecastSelectedMetrics,
     }[id] || {};
 
-  const metricDelta = (current, prior) =>
-    prior
-      ? `${(((current - prior) / Math.abs(prior)) * 100).toFixed(1)}%`
-      : "—";
   const changes = {
     "Total Revenue": metricDelta(selectedRevenue, previousRevenue),
     "Room Revenue": metricDelta(selectedRoomRevenue, total(previous, "room")),
@@ -740,15 +750,6 @@ export function computeDashboardPayload({
   const forecastSeries = [...actuals, ...projections];
   const forecast7 = projections.slice(0, 7);
   const forecast30 = projections.slice(0, 30);
-
-  const avgForecast = (rows, key) => {
-    const values = rows.map((row) => Number(row[key])).filter(Number.isFinite);
-    return values.length
-      ? values.reduce((sum, value) => sum + value, 0) / values.length
-      : null;
-  };
-  const sumForecast = (rows, key) =>
-    rows.reduce((sum, row) => sum + (Number(row[key]) || 0), 0);
 
   const selectedForecast = {
     occupancy: avgForecast(projections, "occupancyForecast"),

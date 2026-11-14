@@ -70,23 +70,24 @@ export function kmeans(points, k = 4, iterations = 50) {
 }
 
 /** guests: [{ id, spend, stays, avgNights, avgLead }] -> [{ id, segment }] with readable names. */
+const clusterName = (c) => {
+  const [spend, stays, nights, lead] = c;
+  if (spend > 0.5 && stays > 0.3) return "High-value repeat guests";
+  if (stays > 0.3) return "Loyal repeat guests";
+  if (nights > 0.5) return "Long-stay guests";
+  if (lead > 0.5) return "Early planners";
+  if (spend < -0.3) return "Budget / occasional guests";
+  return "Short-break guests";
+};
+
 export function segmentGuests(guests, k = 4) {
   if (guests.length < k * 5) return [];
   const raw = guests.map((g) => [g.spend, g.stays, g.avgNights, g.avgLead]);
   const { z } = zscore(raw);
   const { labels, centroids } = kmeans(z, k);
-  const name = (c) => {
-    const [spend, stays, nights, lead] = c;
-    if (spend > 0.5 && stays > 0.3) return "High-value repeat guests";
-    if (stays > 0.3) return "Loyal repeat guests";
-    if (nights > 0.5) return "Long-stay guests";
-    if (lead > 0.5) return "Early planners";
-    if (spend < -0.3) return "Budget / occasional guests";
-    return "Short-break guests";
-  };
   const used = new Map();
   const names = centroids.map((c) => {
-    const base = name(c);
+    const base = clusterName(c);
     const n = (used.get(base) || 0) + 1;
     used.set(base, n);
     return n > 1 ? `${base} ${n}` : base;

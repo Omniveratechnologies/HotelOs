@@ -7,7 +7,10 @@ import {
   AttendanceDevice,
   DEVICE_STATUSES,
 } from "../../attendance/models/attendanceDevice.js";
-import { LeaveRequest, LEAVE_STATUSES } from "../../leaveManagement/models/leaveRequest.js";
+import {
+  LeaveRequest,
+  LEAVE_STATUSES,
+} from "../../leaveManagement/models/leaveRequest.js";
 import { ShiftAssignment } from "../../shift-schedule/models/staffAssignment.js";
 import { Staff } from "../../staff-management/models/staffManagement.js";
 
@@ -372,7 +375,10 @@ export async function fetchReport(
       `Too many records (${total}). Narrow the filters (max ${MAX_ROWS}).`,
     );
 
-  let q = def.model.find(query).sort(def.sort).populate(def.populate).lean();
+  let q = def.model
+    .find(query, undefined, { sort: def.sort })
+    .populate(def.populate)
+    .lean();
   if (limit) q = q.limit(limit);
   const docs = await q;
   const ctx = def.context ? await def.context(docs) : {};

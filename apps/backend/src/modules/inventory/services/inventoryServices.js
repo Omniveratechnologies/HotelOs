@@ -124,6 +124,7 @@ const receivePurchaseOrderStock = async (purchaseOrderId, data, userId) => {
 
     const receiptLines = []; // <- for Receiving History
 
+    /* oxlint-disable no-await-in-loop -- Mongo transaction steps must stay ordered */
     for (const receivedItem of data.items) {
       const {
         inventoryItemId,
@@ -219,6 +220,7 @@ const receivePurchaseOrderStock = async (purchaseOrderId, data, userId) => {
         stockBatch: stockBatch._id,
       });
     }
+    /* oxlint-enable no-await-in-loop */
 
     // NEW: save this delivery in history
     purchaseOrder.receipts.push({

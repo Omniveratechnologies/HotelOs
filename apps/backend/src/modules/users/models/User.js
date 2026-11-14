@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 
 import { ROLES } from "#/shared/constants/roles.js";
 import { GUEST_ID_TYPES } from "#/shared/constants/guest.js";
@@ -141,11 +141,11 @@ userSchema.pre("save", async function () {
     return;
   }
 
-  this.password = await bcrypt.hash(this.password, 12);
+  this.password = await hash(this.password, 12);
 });
 
 userSchema.methods.comparePassword = function (password) {
-  return bcrypt.compare(password, this.password);
+  return compare(password, this.password);
 };
 
 export default mongoose.model("User", userSchema);

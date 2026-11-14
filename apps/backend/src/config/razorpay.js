@@ -1,5 +1,5 @@
 import Razorpay from "razorpay";
-import "dotenv/config";
+import { env } from "#/config/env.js";
 
 // Lazily build the Razorpay client only when credentials are present. Without
 // them the rest of the backend still boots (e.g. COD-only orders); ONLINE
@@ -8,8 +8,8 @@ let razorpay = null;
 
 export function getRazorpay() {
   if (!razorpay) {
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const keyId = env.razorpayKeyId;
+    const keySecret = env.razorpayKeySecret;
 
     if (
       !keyId ||

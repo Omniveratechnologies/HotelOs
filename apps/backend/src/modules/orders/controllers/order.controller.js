@@ -5,7 +5,7 @@ import Room from "#/modules/rooms/models/Room.js";
 import Booking from "#/modules/bookings/models/Booking.js";
 import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import User from "#/modules/users/models/User.js";
-import getRazorpay from "#/config/razorpay.js";
+import { getRazorpay } from "#/config/razorpay.js";
 import { orderDTO, staffOrderDTO } from "../dto/order.dto.js";
 import { emitToHotel, emitToGuest } from "#/shared/services/socket.service.js";
 import { SOCKET_EVENTS } from "#/config/socket-events.js";

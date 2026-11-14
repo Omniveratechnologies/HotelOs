@@ -5,7 +5,7 @@ import CheckInSession, { CHECKIN_STATUSES } from "../models/CheckInSession.js";
 import { checkInSessionDTO } from "../dto/checkIn.dto.js";
 import { createSessionToken, hashToken } from "../services/token.service.js";
 import { sendCheckInEmail } from "#/shared/services/email.service.js";
-import env from "#/config/env.js";
+import { env } from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 // Receptionist-facing digital check-in link management + review.

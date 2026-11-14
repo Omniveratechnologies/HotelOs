@@ -347,19 +347,21 @@ export const updateRoom = async (req, res) => {
           status: "checked-in",
         });
 
-        for (const stale of staleBookings) {
-          stale.status = "checked-out";
-          stale.paymentStatus = "paid";
-          stale.auditTrail.push({
-            at: new Date(),
-            by: req.user._id,
-            action: "checked-out",
-            from: "checked-in",
-            to: "checked-out",
-            note: `Auto checked-out: Room ${room.roomNumber} status updated to ${allowedUpdates.status}`,
-          });
-          await stale.save();
-        }
+        await Promise.all(
+          staleBookings.map(async (stale) => {
+            stale.status = "checked-out";
+            stale.paymentStatus = "paid";
+            stale.auditTrail.push({
+              at: new Date(),
+              by: req.user._id,
+              action: "checked-out",
+              from: "checked-in",
+              to: "checked-out",
+              note: `Auto checked-out: Room ${room.roomNumber} status updated to ${allowedUpdates.status}`,
+            });
+            await stale.save();
+          }),
+        );
       } catch (autoCheckoutErr) {
         logger.warn(
           autoCheckoutErr,
@@ -452,59 +454,61 @@ export const checkOutRoom = async (req, res) => {
       status: "checked-in",
     }).sort({ createdAt: -1 });
 
-    const checkedOutBookingIds = [];
-    for (const booking of activeBookings) {
-      const prevStatus = booking.status;
-      booking.status = "checked-out";
-      booking.paymentStatus = "paid";
-      booking.auditTrail.push({
-        at: new Date(),
-        by: req.user._id,
-        action: "checked-out",
-        from: prevStatus,
-        to: "checked-out",
-        note: `Front desk check-out from Room Grid (${room.roomNumber}). Settlement: ${settlementMode}. ${notes}`,
-      });
-      await booking.save();
-      checkedOutBookingIds.push(booking._id);
+    const checkedOutBookingIds = await Promise.all(
+      activeBookings.map(async (booking) => {
+        const prevStatus = booking.status;
+        booking.status = "checked-out";
+        booking.paymentStatus = "paid";
+        booking.auditTrail.push({
+          at: new Date(),
+          by: req.user._id,
+          action: "checked-out",
+          from: prevStatus,
+          to: "checked-out",
+          note: `Front desk check-out from Room Grid (${room.roomNumber}). Settlement: ${settlementMode}. ${notes}`,
+        });
+        await booking.save();
 
-      // Return & deactivate assigned key cards
-      await KeyCard.updateMany(
-        { hotelId, currentBookingId: booking._id, status: "ACTIVE" },
-        {
-          $set: {
-            status: "AVAILABLE",
-            currentBookingId: null,
-            assignedRoomId: null,
-            assignedGuestId: null,
-            issuedAt: null,
-            expiresAt: null,
-          },
-          $push: {
-            auditLog: {
-              action: "RETURNED",
-              performedBy: req.user._id,
-              performedAt: new Date(),
-              bookingId: booking._id,
-              note: "Key card returned on room checkout via Room Grid",
+        // Return & deactivate assigned key cards
+        await KeyCard.updateMany(
+          { hotelId, currentBookingId: booking._id, status: "ACTIVE" },
+          {
+            $set: {
+              status: "AVAILABLE",
+              currentBookingId: null,
+              assignedRoomId: null,
+              assignedGuestId: null,
+              issuedAt: null,
+              expiresAt: null,
+            },
+            $push: {
+              auditLog: {
+                action: "RETURNED",
+                performedBy: req.user._id,
+                performedAt: new Date(),
+                bookingId: booking._id,
+                note: "Key card returned on room checkout via Room Grid",
+              },
             },
           },
-        },
-      );
+        );
 
-      // Emit stay status updated to guest
-      if (booking.guestId) {
-        try {
-          const io = getIo();
-          io.to(`guest:${booking.guestId}`).emit("stay:status-updated", {
-            status: "checked-out",
-            roomId,
-          });
-        } catch {
-          // ignore socket error
+        // Emit stay status updated to guest
+        if (booking.guestId) {
+          try {
+            const io = getIo();
+            io.to(`guest:${booking.guestId}`).emit("stay:status-updated", {
+              status: "checked-out",
+              roomId,
+            });
+          } catch {
+            // ignore socket error
+          }
         }
-      }
-    }
+
+        return booking._id;
+      }),
+    );
 
     // 2. Release room to cleaning state
     room.status = "cleaning";

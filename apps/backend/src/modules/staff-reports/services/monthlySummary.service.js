@@ -118,14 +118,15 @@ export const ensureFresh = async (hotelId, month) => {
 };
 
 export const refreshRecentMonths = async (hotelId, today = time.todayKey()) => {
-  const done = [];
-  for (const month of [today.slice(0, 7), previousMonth(today.slice(0, 7))]) {
-    if (!(await isMonthLocked(hotelId, month))) {
+  const months = [today.slice(0, 7), previousMonth(today.slice(0, 7))];
+  const done = await Promise.all(
+    months.map(async (month) => {
+      if (await isMonthLocked(hotelId, month)) return null;
       await refreshMonth(hotelId, month);
-      done.push(month);
-    }
-  }
-  return done;
+      return month;
+    }),
+  );
+  return done.filter(Boolean);
 };
 
 export const getLockInfo = async (hotelId, month, { departmentId } = {}) => {
@@ -256,10 +257,11 @@ const summaryItems = async (hotelId, f) => {
 
   const stored = new Map(docs.map((d) => [String(d.staffId), d]));
   const staffMap = byId(
-    staff.map((s) => ({
-      ...s,
-      departmentId: stored.get(String(s._id))?.departmentId,
-    })),
+    staff.map((s) =>
+      Object.assign({}, s, {
+        departmentId: stored.get(String(s._id))?.departmentId,
+      }),
+    ),
   );
 
   const KEYS = [
@@ -367,7 +369,7 @@ export const payrollExport = async (hotelId, query = {}) => {
       payableDays: d.present + d.late + 0.5 * d.halfDay,
       attendancePercent: d.attendancePercent ?? null,
     }))
-    .sort((a, b) => a.staffCode.localeCompare(b.staffCode));
+    .toSorted((a, b) => a.staffCode.localeCompare(b.staffCode));
 
   const checksum = crypto
     .createHash("sha256")

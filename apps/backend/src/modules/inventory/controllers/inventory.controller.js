@@ -46,15 +46,13 @@ export const getInventoryItems = async (req, res) => {
           status = "LOW STOCK";
         }
 
-        return {
-          ...item.toObject(),
-
+        return Object.assign({}, item.toObject(), {
           supplierName: latestPurchaseOrder?.supplier?.supplierName || "-",
 
           expiryDate: item.expiryDate || null,
 
           status,
-        };
+        });
       }),
     );
 

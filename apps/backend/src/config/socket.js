@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { socketAuth } from "#/shared/middleware/socket-auth.middleware.js";
 import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
 import { resolveKioskAssignedUrl } from "#/modules/kiosks/config/kioskDashboards.js";
+import logger from "#/utils/logger.js";
 
 let io;
 
@@ -56,9 +57,10 @@ export function initSocket(httpServer) {
               assignedUrl: resolveKioskAssignedUrl(kiosk),
             });
           }
+          return kiosk;
         })
         .catch((err) => {
-          console.warn(
+          logger.warn(
             "[socket] Failed to push initial config to connected kiosk:",
             err?.message,
           );

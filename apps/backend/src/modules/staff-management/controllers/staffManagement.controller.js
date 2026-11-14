@@ -175,12 +175,13 @@ export const listStaff = async (req, res) => {
 
     res.json({
       success: true,
-      data: items.map((s) => ({
-        ...s,
-        department: s.departmentId?.name || "-",
-        designation: s.designationId?.name || "-",
-        faceStatus: set.has(String(s._id)) ? "REGISTERED" : "NOT_REGISTERED",
-      })),
+      data: items.map((s) =>
+        Object.assign({}, s, {
+          department: s.departmentId?.name || "-",
+          designation: s.designationId?.name || "-",
+          faceStatus: set.has(String(s._id)) ? "REGISTERED" : "NOT_REGISTERED",
+        }),
+      ),
       pagination: {
         page,
         limit,
@@ -1170,7 +1171,7 @@ export const departmentDesignations = route(async (req, res) => {
   if (status === "ACTIVE") query.isActive = true;
   if (status === "INACTIVE") query.isActive = false;
 
-  const designations = await StaffDesignation.find(query)
+  const designationDocs = await StaffDesignation.find(query)
     .sort({ name: 1 })
     .collation(COLLATION)
     .lean();
@@ -1185,7 +1186,7 @@ export const departmentDesignations = route(async (req, res) => {
 
   res.json({
     success: true,
-    data: designations.map((item) => ({
+    data: designationDocs.map((item) => ({
       _id: item._id,
       name: item.name,
       isActive: item.isActive,
@@ -1210,12 +1211,12 @@ export const deleteDepartment = route(async (req, res) => {
     );
   }
 
-  const [designations, archivedStaff] = await Promise.all([
+  const [designationCount, archivedStaff] = await Promise.all([
     StaffDesignation.countDocuments({ hotelId, departmentId: department._id }),
     Staff.countDocuments({ hotelId, departmentId: department._id }),
   ]);
 
-  if (designations > 0 || archivedStaff > 0) {
+  if (designationCount > 0 || archivedStaff > 0) {
     department.isActive = false;
     await department.save();
     return res.json({

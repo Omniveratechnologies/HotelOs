@@ -18,7 +18,10 @@ export const OFFLINE_AFTER_MS = 3 * 60 * 1000; // no heartbeat for 3 minutes -> 
 export const WARNING_SYNC_ERRORS = 3; // this many failed syncs in a row -> WARNING
 export const COMMAND_TIMEOUT_MS = 60 * 1000; // a command not acked by then -> TIMEOUT
 // Alert rule: a device that stays OFFLINE this long raises one ALERT (the UI shows a toast)
-export const alertAfterMs = () => Math.max(1, Number(process.env.DEVICE_ALERT_OFFLINE_MINUTES) || 5) * 60 * 1000;
+export const alertAfterMs = () =>
+  Math.max(1, Number(process.env.DEVICE_ALERT_OFFLINE_MINUTES) || 5) *
+  60 *
+  1000;
 
 // Everything that happens to a device is announced here. deviceSocket.service.js listens and
 // pushes it to the kiosks / the admin screens in real time. Nothing else depends on it.
@@ -26,28 +29,46 @@ export const alertAfterMs = () => Math.max(1, Number(process.env.DEVICE_ALERT_OF
 //   "command" -> { hotelId, deviceId, command }
 export const deviceBus = new EventEmitter();
 
-const SORT_KEYS = ["name", "deviceCode", "type", "location", "status", "lastSyncAt", "createdAt"];
+const SORT_KEYS = new Set([
+  "name",
+  "deviceCode",
+  "type",
+  "location",
+  "status",
+  "lastSyncAt",
+  "createdAt",
+]);
 const MAX_LIMIT = 200;
 const STATUS_ORDER = { ONLINE: 0, WARNING: 1, OFFLINE: 2 };
 
-const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegex = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const toId = (value) => new mongoose.Types.ObjectId(String(value));
-const hashToken = (token) => crypto.createHash("sha256").update(String(token)).digest("hex");
+const hashToken = (token) =>
+  crypto.createHash("sha256").update(String(token)).digest("hex");
 
 // The status right now, from the last heartbeat. Works without the monitor running.
 export const computeDeviceStatus = (device, now = new Date()) => {
   if (!device.lastSeenAt) return "OFFLINE"; // never connected
   const age = now.getTime() - new Date(device.lastSeenAt).getTime();
   if (age >= OFFLINE_AFTER_MS) return "OFFLINE";
-  if (age >= LATE_AFTER_MS || (device.consecutiveSyncErrors || 0) >= WARNING_SYNC_ERRORS) return "WARNING";
+  if (
+    age >= LATE_AFTER_MS ||
+    (device.consecutiveSyncErrors || 0) >= WARNING_SYNC_ERRORS
+  )
+    return "WARNING";
   return "ONLINE";
 };
 
 // ------------------------------------------------------------------ reading input
 
 const readType = (value) => {
-  const type = String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_");
-  if (!DEVICE_TYPES.includes(type)) throw new ApiError(400, `Type must be one of ${DEVICE_TYPES.join(", ")}.`);
+  const type = String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+  if (!DEVICE_TYPES.includes(type))
+    throw new ApiError(400, `Type must be one of ${DEVICE_TYPES.join(", ")}.`);
   return type;
 };
 
@@ -55,7 +76,11 @@ const readConfig = (value) => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new ApiError(400, "Settings must be a JSON object.");
   }
-  if (JSON.stringify(value).length > 5000) throw new ApiError(400, "Settings are too large (5000 characters at most).");
+  if (JSON.stringify(value).length > 5000)
+    throw new ApiError(
+      400,
+      "Settings are too large (5000 characters at most).",
+    );
   return value;
 };
 
@@ -64,8 +89,18 @@ const readPin = (body) => {
   if (clear) return { mapX: null, mapY: null };
 
   const [x, y] = [Number(body.mapX), Number(body.mapY)];
-  if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 100 || y < 0 || y > 100) {
-    throw new ApiError(400, "Pin position must be two numbers between 0 and 100.");
+  if (
+    !Number.isFinite(x) ||
+    !Number.isFinite(y) ||
+    x < 0 ||
+    x > 100 ||
+    y < 0 ||
+    y > 100
+  ) {
+    throw new ApiError(
+      400,
+      "Pin position must be two numbers between 0 and 100.",
+    );
   }
   return { mapX: x, mapY: y };
 };
@@ -76,34 +111,46 @@ export const readDeviceBody = (body = {}, { partial = false } = {}) => {
   const has = (key) => body[key] !== undefined;
 
   if (!partial || has("name")) {
-    const name = String(body.name ?? "").trim().replace(/\s+/g, " ");
-    if (name.length < 2 || name.length > 80) throw new ApiError(400, "Device name must be 2-80 characters.");
+    const name = String(body.name ?? "")
+      .trim()
+      .replace(/\s+/g, " ");
+    if (name.length < 2 || name.length > 80)
+      throw new ApiError(400, "Device name must be 2-80 characters.");
     value.name = name;
   }
 
   if (has("deviceCode") && String(body.deviceCode).trim() !== "") {
     const code = String(body.deviceCode).trim().toUpperCase();
-    if (!/^[A-Z0-9-]{3,20}$/.test(code)) throw new ApiError(400, "Device ID must be 3-20 letters, digits or dashes (e.g. ADV-FD-001).");
+    if (!/^[A-Z0-9-]{3,20}$/.test(code))
+      throw new ApiError(
+        400,
+        "Device ID must be 3-20 letters, digits or dashes (e.g. ADV-FD-001).",
+      );
     value.deviceCode = code;
   }
 
   if (!partial || has("type")) value.type = readType(body.type);
 
   if (!partial || has("location")) {
-    const location = String(body.location ?? "").trim().replace(/\s+/g, " ");
-    if (location.length < 2 || location.length > 80) throw new ApiError(400, "Location must be 2-80 characters.");
+    const location = String(body.location ?? "")
+      .trim()
+      .replace(/\s+/g, " ");
+    if (location.length < 2 || location.length > 80)
+      throw new ApiError(400, "Location must be 2-80 characters.");
     value.location = location;
   }
 
   if (has("ipAddress")) {
     const ip = String(body.ipAddress ?? "").trim();
-    if (ip && !net.isIP(ip)) throw new ApiError(400, "IP address is not valid (e.g. 192.168.1.10).");
+    if (ip && !net.isIP(ip))
+      throw new ApiError(400, "IP address is not valid (e.g. 192.168.1.10).");
     value.ipAddress = ip;
   }
 
   if (has("firmwareVersion")) {
     const version = String(body.firmwareVersion ?? "").trim();
-    if (version.length > 30) throw new ApiError(400, "Firmware version is too long.");
+    if (version.length > 30)
+      throw new ApiError(400, "Firmware version is too long.");
     value.firmwareVersion = version;
   }
 
@@ -133,12 +180,16 @@ export const toRow = (device, now = new Date()) => ({
   createdAt: device.createdAt,
 });
 
-const textCompare = (a, b) => String(a ?? "").localeCompare(String(b ?? ""), "en", { sensitivity: "base" });
+const textCompare = (a, b) =>
+  String(a ?? "").localeCompare(String(b ?? ""), "en", {
+    sensitivity: "base",
+  });
+
+const timeToMs = (value) => (value ? new Date(value).getTime() : 0);
 
 export const sortRows = (rows, sort = "name", direction = "asc") => {
-  const key = SORT_KEYS.includes(sort) ? sort : "name";
+  const key = SORT_KEYS.has(sort) ? sort : "name";
   const sign = direction === "desc" ? -1 : 1;
-  const time = (value) => (value ? new Date(value).getTime() : 0);
 
   const compare = {
     name: (a, b) => textCompare(a.name, b.name),
@@ -146,54 +197,93 @@ export const sortRows = (rows, sort = "name", direction = "asc") => {
     type: (a, b) => textCompare(a.type, b.type),
     location: (a, b) => textCompare(a.location, b.location),
     status: (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status],
-    lastSyncAt: (a, b) => time(a.lastSyncAt) - time(b.lastSyncAt),
-    createdAt: (a, b) => time(a.createdAt) - time(b.createdAt),
+    lastSyncAt: (a, b) => timeToMs(a.lastSyncAt) - timeToMs(b.lastSyncAt),
+    createdAt: (a, b) => timeToMs(a.createdAt) - timeToMs(b.createdAt),
   }[key];
 
-  return [...rows].sort((a, b) => sign * compare(a, b) || textCompare(a.deviceCode, b.deviceCode));
+  return [...rows].toSorted(
+    (a, b) => sign * compare(a, b) || textCompare(a.deviceCode, b.deviceCode),
+  );
 };
 
 // ------------------------------------------------------------------ helpers
 
-const liveDevices = (hotelId) => AttendanceDevice.find({ hotelId, deletedAt: null });
+const liveDevices = (hotelId) =>
+  AttendanceDevice.find({ hotelId, deletedAt: null });
 
 const logEvent = async (device, type, message, at = new Date()) => {
-  const event = await DeviceEvent.create({ hotelId: device.hotelId, deviceId: device._id, type, message, createdAt: at });
+  const event = await DeviceEvent.create({
+    hotelId: device.hotelId,
+    deviceId: device._id,
+    type,
+    message,
+    createdAt: at,
+  });
   deviceBus.emit("event", {
     hotelId: String(device.hotelId),
     deviceId: String(device._id),
     type,
     message,
     at,
-    device: { _id: device._id, name: device.name, deviceCode: device.deviceCode, status: computeDeviceStatus(device, at) },
+    device: {
+      _id: device._id,
+      name: device.name,
+      deviceCode: device.deviceCode,
+      status: computeDeviceStatus(device, at),
+    },
   });
   return event;
 };
 
 const announceCommand = (device, command) =>
-  deviceBus.emit("command", { hotelId: String(device.hotelId), deviceId: String(device._id), command: commandRow(command) });
+  deviceBus.emit("command", {
+    hotelId: String(device.hotelId),
+    deviceId: String(device._id),
+    command: commandRow(command),
+  });
 
 // :id may be the Mongo id OR the device code (ADV-FD-001)
 const findDevice = async (hotelId, key) => {
   const value = String(key ?? "").trim();
-  const filter = isObjectId(value) ? { _id: value } : { deviceCode: value.toUpperCase() };
+  const filter = isObjectId(value)
+    ? { _id: value }
+    : { deviceCode: value.toUpperCase() };
 
-  const device = await AttendanceDevice.findOne({ hotelId, deletedAt: null, ...filter });
+  const device = await AttendanceDevice.findOne({
+    hotelId,
+    deletedAt: null,
+    ...filter,
+  });
   if (!device) throw new ApiError(404, "Device not found.");
   return device;
 };
 
 const duplicateCode = (error) =>
-  error?.code === 11000 ? new ApiError(409, "This device ID is already used.") : error;
+  error?.code === 11000
+    ? new ApiError(409, "This device ID is already used.")
+    : error;
 
 // "Front Desk Kiosk" -> ADV-FD-001, "Kitchen Entry" -> ADV-KE-002 (next free number)
 const nextDeviceCode = async (hotelId, name) => {
-  const words = name.toUpperCase().replace(/[^A-Z0-9 ]/g, "").split(/\s+/).filter(Boolean);
-  const prefix = (words.length > 1 ? words[0][0] + words[1][0] : (words[0] || "DV").slice(0, 2)).padEnd(2, "X");
+  const words = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  const prefix = (
+    words.length > 1
+      ? words[0][0] + words[1][0]
+      : (words[0] || "DV").slice(0, 2)
+  ).padEnd(2, "X");
 
-  const all = await AttendanceDevice.find({ hotelId }).select("deviceCode").lean();
+  const all = await AttendanceDevice.find({ hotelId })
+    .select("deviceCode")
+    .lean();
   const used = new Set(all.map((item) => item.deviceCode));
-  const highest = all.reduce((max, item) => Math.max(max, Number(item.deviceCode.split("-").pop()) || 0), 0);
+  const highest = all.reduce(
+    (max, item) => Math.max(max, Number(item.deviceCode.split("-").pop()) || 0),
+    0,
+  );
 
   for (let n = highest + 1; n < highest + 1000; n += 1) {
     const code = `ADV-${prefix}-${String(n).padStart(3, "0")}`;
@@ -213,11 +303,17 @@ export const listDevices = async (hotelId, query = {}, now = new Date()) => {
     throw new ApiError(400, "Status must be ALL, ONLINE, OFFLINE or WARNING.");
   }
 
-  const type = String(query.type || "ALL").toUpperCase().replace(/[\s-]+/g, "_");
-  if (type !== "ALL" && !DEVICE_TYPES.includes(type)) throw new ApiError(400, "Unknown device type.");
+  const type = String(query.type || "ALL")
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+  if (type !== "ALL" && !DEVICE_TYPES.includes(type))
+    throw new ApiError(400, "Unknown device type.");
 
   const page = Math.max(1, Number(query.page) || 1);
-  const limit = Math.min(MAX_LIMIT, Math.max(1, Number(query.limit) || MAX_LIMIT));
+  const limit = Math.min(
+    MAX_LIMIT,
+    Math.max(1, Number(query.limit) || MAX_LIMIT),
+  );
 
   const devices = await liveDevices(hotelId).lean();
   const term = String(query.search || query.q || "").trim();
@@ -229,34 +325,63 @@ export const listDevices = async (hotelId, query = {}, now = new Date()) => {
       (row) =>
         (status === "ALL" || row.status === status) &&
         (type === "ALL" || row.type === type) &&
-        (!pattern || [row.name, row.deviceCode, row.location, row.ipAddress].some((field) => pattern.test(field))),
+        (!pattern ||
+          [row.name, row.deviceCode, row.location, row.ipAddress].some(
+            (field) => pattern.test(field),
+          )),
     );
 
-  const rows = sortRows(filtered, query.sort, String(query.direction).toLowerCase() === "desc" ? "desc" : "asc");
+  const rows = sortRows(
+    filtered,
+    query.sort,
+    String(query.direction).toLowerCase() === "desc" ? "desc" : "asc",
+  );
 
   return {
     rows: rows.slice((page - 1) * limit, page * limit),
-    pagination: { page, limit, total: rows.length, totalPages: Math.max(1, Math.ceil(rows.length / limit)) },
+    pagination: {
+      page,
+      limit,
+      total: rows.length,
+      totalPages: Math.max(1, Math.ceil(rows.length / limit)),
+    },
   };
 };
 
-const percentOf = (part, total) => (total > 0 ? Math.round((part / total) * 100) : 0);
+const percentOf = (part, total) =>
+  total > 0 ? Math.round((part / total) * 100) : 0;
 
 // GET /devices/stats  -> the four cards, the status donut and the device-type bars
 export const deviceStats = async (hotelId, now = new Date()) => {
-  const rows = (await liveDevices(hotelId).lean()).map((device) => toRow(device, now));
+  const rows = (await liveDevices(hotelId).lean()).map((device) =>
+    toRow(device, now),
+  );
   const total = rows.length;
   const count = (status) => rows.filter((row) => row.status === status).length;
 
-  const counts = { online: count("ONLINE"), offline: count("OFFLINE"), warning: count("WARNING") };
+  const counts = {
+    online: count("ONLINE"),
+    offline: count("OFFLINE"),
+    warning: count("WARNING"),
+  };
 
   return {
     total,
     ...counts,
     needsAttention: counts.offline + counts.warning,
     locations: new Set(rows.map((row) => row.location.toLowerCase())).size,
-    percent: Object.fromEntries(Object.entries(counts).map(([key, value]) => [key, percentOf(value, total)])),
-    types: Object.fromEntries(DEVICE_TYPES.map((type) => [type, rows.filter((row) => row.type === type).length])),
+    percent: Object.fromEntries(
+      Object.entries(counts).map(([key, value]) => [
+        key,
+        percentOf(value, total),
+      ]),
+    ),
+    types: Object.fromEntries(
+      DEVICE_TYPES.map((type) => [
+        type,
+        rows.filter((row) => row.type === type).length,
+      ]),
+    ),
   };
 };
 
@@ -270,25 +395,55 @@ export const deviceSummary = async (hotelId, query = {}, now = new Date()) => {
     deviceMap(hotelId, now, { all: true }),
     deviceActivity(hotelId, { limit: query.activityLimit }, now),
   ]);
-  return { stats, devices: list.rows, pagination: list.pagination, map, activity };
+  return {
+    stats,
+    devices: list.rows,
+    pagination: list.pagination,
+    map,
+    activity,
+  };
 };
 
 // GET /devices/map  -> pins for the floor plan (only devices that were placed)
 // { all: true } also returns the devices that are not placed yet (mapX / mapY null): the edit
 // mode of the floor plan needs them for its "Not placed" tray.
-export const deviceMap = async (hotelId, now = new Date(), { all = false } = {}) => {
-  const rows = (await liveDevices(hotelId).lean()).map((device) => toRow(device, now));
+export const deviceMap = async (
+  hotelId,
+  now = new Date(),
+  { all = false } = {},
+) => {
+  const rows = (await liveDevices(hotelId).lean()).map((device) =>
+    toRow(device, now),
+  );
   return rows
     .filter((row) => all || (row.mapX !== null && row.mapY !== null))
-    .map(({ _id, name, deviceCode, location, status, mapX, mapY }) => ({ _id, name, deviceCode, location, status, mapX, mapY }));
+    .map(({ _id, name, deviceCode, location, status, mapX, mapY }) => ({
+      _id,
+      name,
+      deviceCode,
+      location,
+      status,
+      mapX,
+      mapY,
+    }));
 };
 
 // GET /devices/activity?limit=5  -> "Recent Device Activity"
 export const deviceActivity = async (hotelId, query = {}, now = new Date()) => {
   const limit = Math.min(50, Math.max(1, Number(query.limit) || 5));
-  const events = await DeviceEvent.find({ hotelId }).sort({ createdAt: -1, _id: -1 }).limit(limit).lean();
+  const events = await DeviceEvent.find({ hotelId })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit)
+    .lean();
 
-  const devices = await AttendanceDevice.find({ hotelId, _id: { $in: [...new Set(events.map((event) => String(event.deviceId)))].map(toId) } }).lean();
+  const devices = await AttendanceDevice.find({
+    hotelId,
+    _id: {
+      $in: [...new Set(events.map((event) => String(event.deviceId)))].map(
+        toId,
+      ),
+    },
+  }).lean();
   const byId = new Map(devices.map((device) => [String(device._id), device]));
 
   return events.map((event) => {
@@ -298,7 +453,14 @@ export const deviceActivity = async (hotelId, query = {}, now = new Date()) => {
       type: event.type,
       message: event.message,
       at: event.createdAt,
-      device: device ? { _id: device._id, name: device.name, deviceCode: device.deviceCode, status: computeDeviceStatus(device, now) } : null,
+      device: device
+        ? {
+            _id: device._id,
+            name: device.name,
+            deviceCode: device.deviceCode,
+            status: computeDeviceStatus(device, now),
+          }
+        : null,
     };
   });
 };
@@ -306,7 +468,10 @@ export const deviceActivity = async (hotelId, query = {}, now = new Date()) => {
 // GET /devices/:id  -> the row + its latest events
 export const getDevice = async (hotelId, key, now = new Date()) => {
   const device = await findDevice(hotelId, key);
-  const events = await DeviceEvent.find({ hotelId, deviceId: device._id }).sort({ createdAt: -1, _id: -1 }).limit(20).lean();
+  const events = await DeviceEvent.find({ hotelId, deviceId: device._id })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(20)
+    .lean();
 
   return { ...toRow(device.toObject(), now), events };
 };
@@ -316,7 +481,8 @@ export const getDevice = async (hotelId, key, now = new Date()) => {
 // POST /devices  -> the row + `deviceToken` (shown ONCE: it goes into the kiosk's settings)
 export const createDevice = async (hotelId, body = {}, now = new Date()) => {
   const value = readDeviceBody(body);
-  const deviceCode = value.deviceCode || (await nextDeviceCode(hotelId, value.name));
+  const deviceCode =
+    value.deviceCode || (await nextDeviceCode(hotelId, value.name));
   const token = newToken();
 
   let device;
@@ -340,14 +506,24 @@ export const createDevice = async (hotelId, body = {}, now = new Date()) => {
 };
 
 // PUT /devices/:id   (also used to place a pin: { mapX, mapY })
-export const updateDevice = async (hotelId, key, body = {}, now = new Date()) => {
+export const updateDevice = async (
+  hotelId,
+  key,
+  body = {},
+  now = new Date(),
+) => {
   const device = await findDevice(hotelId, key);
   const value = readDeviceBody(body, { partial: true });
 
-  if (Object.keys(value).length === 0) throw new ApiError(400, "Nothing to update.");
+  if (Object.keys(value).length === 0)
+    throw new ApiError(400, "Nothing to update.");
 
   if (value.deviceCode && value.deviceCode !== device.deviceCode) {
-    const clash = await AttendanceDevice.findOne({ hotelId, deviceCode: value.deviceCode, deletedAt: null }).select("_id");
+    const clash = await AttendanceDevice.findOne({
+      hotelId,
+      deviceCode: value.deviceCode,
+      deletedAt: null,
+    }).select("_id");
     if (clash) throw new ApiError(409, "This device ID is already used.");
   }
 
@@ -359,8 +535,11 @@ export const updateDevice = async (hotelId, key, body = {}, now = new Date()) =>
     throw duplicateCode(error);
   }
 
-  const onlyPin = Object.keys(value).every((field) => field === "mapX" || field === "mapY");
-  if (!onlyPin) await logEvent(device, "UPDATED", "Device settings updated", now);
+  const onlyPin = Object.keys(value).every(
+    (field) => field === "mapX" || field === "mapY",
+  );
+  if (!onlyPin)
+    await logEvent(device, "UPDATED", "Device settings updated", now);
 
   return toRow(device.toObject(), now);
 };
@@ -395,7 +574,10 @@ const deviceByToken = async (token) => {
   const value = String(token ?? "").trim();
   if (!value) throw new ApiError(401, "Device token is missing.");
 
-  const device = await AttendanceDevice.findOne({ tokenHash: hashToken(value), deletedAt: null });
+  const device = await AttendanceDevice.findOne({
+    tokenHash: hashToken(value),
+    deletedAt: null,
+  });
   if (!device) throw new ApiError(401, "Device token is not valid.");
   return device;
 };
@@ -410,7 +592,11 @@ const settleStatus = async (device, now) => {
   if (next === "ONLINE") device.alertedAt = null; // the next outage may alert again
   await device.save();
 
-  const messages = { ONLINE: "Device is online", WARNING: "Connection unstable", OFFLINE: "Device offline" };
+  const messages = {
+    ONLINE: "Device is online",
+    WARNING: "Connection unstable",
+    OFFLINE: "Device offline",
+  };
   await logEvent(device, next, messages[next], now);
   return true;
 };
@@ -427,13 +613,17 @@ export const heartbeat = async (token, body = {}, now = new Date()) => {
     if (ip && !net.isIP(ip)) throw new ApiError(400, "ipAddress is not valid.");
     device.ipAddress = ip;
   }
-  if (body.firmwareVersion !== undefined) device.firmwareVersion = String(body.firmwareVersion).trim().slice(0, 30);
+  if (body.firmwareVersion !== undefined)
+    device.firmwareVersion = String(body.firmwareVersion).trim().slice(0, 30);
 
   let syncEvent = null;
   if (body.sync && typeof body.sync === "object") {
     if (body.sync.ok === false) {
       device.consecutiveSyncErrors = (device.consecutiveSyncErrors || 0) + 1;
-      syncEvent = ["SYNC_FAILED", String(body.sync.error || "Sync failed").slice(0, 200)];
+      syncEvent = [
+        "SYNC_FAILED",
+        String(body.sync.error || "Sync failed").slice(0, 200),
+      ];
     } else {
       device.lastSyncAt = now;
       device.consecutiveSyncErrors = 0;
@@ -453,24 +643,32 @@ export const heartbeat = async (token, body = {}, now = new Date()) => {
     .sort({ createdAt: 1 })
     .limit(10);
 
-  for (const command of pending) {
-    if (command.status === "PENDING") {
-      command.status = "SENT";
-      command.sentAt = now;
-      await command.save();
-    }
-  }
+  await Promise.all(
+    pending
+      .filter((command) => command.status === "PENDING")
+      .map((command) => {
+        command.status = "SENT";
+        command.sentAt = now;
+        return command.save();
+      }),
+  );
 
   return {
     serverTime: now,
     intervalSeconds: HEARTBEAT_SECONDS,
-    commands: pending.map((command) => ({ _id: command._id, type: command.type })),
+    commands: pending.map((command) => ({
+      _id: command._id,
+      type: command.type,
+    })),
   };
 };
 
 // Called by the socket layer right after it pushed a command to the kiosk
 export const markCommandSent = async (commandId, now = new Date()) => {
-  const command = await DeviceCommand.findOne({ _id: commandId, status: "PENDING" });
+  const command = await DeviceCommand.findOne({
+    _id: commandId,
+    status: "PENDING",
+  });
   if (!command) return null;
   command.status = "SENT";
   command.sentAt = now;
@@ -494,13 +692,28 @@ const commandRow = (command) => ({
 });
 
 // POST /devices/:id/commands   { type: TEST_CONNECTION | SYNC_NOW | RESTART }
-export const createCommand = async (hotelId, key, body = {}, actor = {}, now = new Date()) => {
+export const createCommand = async (
+  hotelId,
+  key,
+  body = {},
+  actor = {},
+  now = new Date(),
+) => {
   const device = await findDevice(hotelId, key);
-  const type = String(body.type ?? "").trim().toUpperCase();
+  const type = String(body.type ?? "")
+    .trim()
+    .toUpperCase();
 
-  if (!COMMAND_TYPES.includes(type)) throw new ApiError(400, `Command must be one of ${COMMAND_TYPES.join(", ")}.`);
+  if (!COMMAND_TYPES.includes(type))
+    throw new ApiError(
+      400,
+      `Command must be one of ${COMMAND_TYPES.join(", ")}.`,
+    );
   if (computeDeviceStatus(device, now) === "OFFLINE") {
-    throw new ApiError(409, `${device.name} is offline, so it cannot receive commands.`);
+    throw new ApiError(
+      409,
+      `${device.name} is offline, so it cannot receive commands.`,
+    );
   }
 
   const command = await DeviceCommand.create({
@@ -512,7 +725,12 @@ export const createCommand = async (hotelId, key, body = {}, actor = {}, now = n
     expiresAt: new Date(now.getTime() + COMMAND_TIMEOUT_MS),
   });
 
-  await logEvent(device, "COMMAND", `${type.replace("_", " ").toLowerCase()} requested`, now);
+  await logEvent(
+    device,
+    "COMMAND",
+    `${type.replace("_", " ").toLowerCase()} requested`,
+    now,
+  );
   announceCommand(device, command);
 
   return commandRow(command);
@@ -523,14 +741,29 @@ export const getCommand = async (hotelId, key, commandId, now = new Date()) => {
   const device = await findDevice(hotelId, key);
   if (!isObjectId(commandId)) throw new ApiError(400, "Invalid command ID.");
 
-  const command = await DeviceCommand.findOne({ _id: commandId, hotelId, deviceId: device._id });
+  const command = await DeviceCommand.findOne({
+    _id: commandId,
+    hotelId,
+    deviceId: device._id,
+  });
   if (!command) throw new ApiError(404, "Command not found.");
 
-  if (["PENDING", "SENT"].includes(command.status) && new Date(command.expiresAt) <= now) {
+  if (
+    ["PENDING", "SENT"].includes(command.status) &&
+    new Date(command.expiresAt) <= now
+  ) {
     command.status = "TIMEOUT";
-    command.result = { ok: false, message: "The device did not answer in time." };
+    command.result = {
+      ok: false,
+      message: "The device did not answer in time.",
+    };
     await command.save();
-    await logEvent(device, "COMMAND", `${command.type.replace("_", " ").toLowerCase()} timed out`, now);
+    await logEvent(
+      device,
+      "COMMAND",
+      `${command.type.replace("_", " ").toLowerCase()} timed out`,
+      now,
+    );
     announceCommand(device, command);
   }
 
@@ -538,13 +771,22 @@ export const getCommand = async (hotelId, key, commandId, now = new Date()) => {
 };
 
 // POST /devices/commands/:commandId/ack   header x-device-token   body: { ok, message?, latencyMs? }
-export const ackCommand = async (token, commandId, body = {}, now = new Date()) => {
+export const ackCommand = async (
+  token,
+  commandId,
+  body = {},
+  now = new Date(),
+) => {
   const device = await deviceByToken(token);
   if (!isObjectId(commandId)) throw new ApiError(400, "Invalid command ID.");
 
-  const command = await DeviceCommand.findOne({ _id: commandId, deviceId: device._id });
+  const command = await DeviceCommand.findOne({
+    _id: commandId,
+    deviceId: device._id,
+  });
   if (!command) throw new ApiError(404, "Command not found.");
-  if (["ACKED", "FAILED", "TIMEOUT"].includes(command.status)) throw new ApiError(409, "This command is already closed.");
+  if (["ACKED", "FAILED", "TIMEOUT"].includes(command.status))
+    throw new ApiError(409, "This command is already closed.");
 
   const ok = body.ok !== false;
   command.status = ok ? "ACKED" : "FAILED";
@@ -552,7 +794,9 @@ export const ackCommand = async (token, commandId, body = {}, now = new Date()) 
   command.result = {
     ok,
     message: String(body.message ?? (ok ? "Done" : "Failed")).slice(0, 200),
-    ...(Number.isFinite(Number(body.latencyMs)) ? { latencyMs: Number(body.latencyMs) } : {}),
+    ...(Number.isFinite(Number(body.latencyMs))
+      ? { latencyMs: Number(body.latencyMs) }
+      : {}),
   };
   await command.save();
 
@@ -574,27 +818,29 @@ export const ackCommand = async (token, commandId, body = {}, now = new Date()) 
 // POST /devices/sync-all  -> a SYNC_NOW for every device that is not offline
 export const syncAll = async (hotelId, actor = {}, now = new Date()) => {
   const devices = await liveDevices(hotelId);
-  let queued = 0;
-  let skipped = 0;
 
-  for (const device of devices) {
-    if (computeDeviceStatus(device, now) === "OFFLINE") {
-      skipped += 1;
-      continue;
-    }
-    const command = await DeviceCommand.create({
-      hotelId,
-      deviceId: device._id,
-      type: "SYNC_NOW",
-      status: "PENDING",
-      requestedBy: actor.name || "",
-      expiresAt: new Date(now.getTime() + COMMAND_TIMEOUT_MS),
-    });
-    announceCommand(device, command);
-    queued += 1;
-  }
+  const targets = devices.filter(
+    (device) => computeDeviceStatus(device, now) !== "OFFLINE",
+  );
+  const skipped = devices.length - targets.length;
 
-  return { queued, skippedOffline: skipped };
+  const commands = await Promise.all(
+    targets.map((device) =>
+      DeviceCommand.create({
+        hotelId,
+        deviceId: device._id,
+        type: "SYNC_NOW",
+        status: "PENDING",
+        requestedBy: actor.name || "",
+        expiresAt: new Date(now.getTime() + COMMAND_TIMEOUT_MS),
+      }),
+    ),
+  );
+  commands.forEach((command, index) =>
+    announceCommand(targets[index], command),
+  );
+
+  return { queued: commands.length, skippedOffline: skipped };
 };
 
 // ------------------------------------------------------------------ monitor
@@ -603,34 +849,52 @@ export const syncAll = async (hotelId, actor = {}, now = new Date()) => {
 // heartbeat stops, and writes one event per change. Safe to run twice.
 export const checkDevices = async (now = new Date()) => {
   const devices = await AttendanceDevice.find({ deletedAt: null });
-  let changed = 0;
 
-  let alerts = 0;
+  const outcomes = await Promise.all(
+    devices.map(async (device) => {
+      const changed = (await settleStatus(device, now)) ? 1 : 0;
+      let alerted = 0;
 
-  for (const device of devices) {
-    if (await settleStatus(device, now)) changed += 1;
-
-    // Alert rule: offline for N minutes -> one ALERT per outage
-    if (device.status === "OFFLINE" && !device.alertedAt) {
-      const since = device.lastSeenAt || device.statusChangedAt;
-      if (since && now.getTime() - new Date(since).getTime() >= alertAfterMs()) {
-        const minutes = Math.round((now.getTime() - new Date(since).getTime()) / 60000);
-        device.alertedAt = now;
-        await device.save();
-        await logEvent(device, "ALERT", `${device.name} has been offline for ${minutes} minutes`, now);
-        alerts += 1;
+      // Alert rule: offline for N minutes -> one ALERT per outage
+      if (device.status === "OFFLINE" && !device.alertedAt) {
+        const since = device.lastSeenAt || device.statusChangedAt;
+        if (
+          since &&
+          now.getTime() - new Date(since).getTime() >= alertAfterMs()
+        ) {
+          const minutes = Math.round(
+            (now.getTime() - new Date(since).getTime()) / 60000,
+          );
+          device.alertedAt = now;
+          await device.save();
+          await logEvent(
+            device,
+            "ALERT",
+            `${device.name} has been offline for ${minutes} minutes`,
+            now,
+          );
+          alerted = 1;
+        }
       }
-    }
-  }
 
-  return { checked: devices.length, changed, alerts };
+      return { changed, alerted };
+    }),
+  );
+
+  return {
+    checked: devices.length,
+    changed: outcomes.reduce((sum, outcome) => sum + outcome.changed, 0),
+    alerts: outcomes.reduce((sum, outcome) => sum + outcome.alerted, 0),
+  };
 };
 
 // Call once after the database is connected, e.g. in server.js:
 //   startDeviceMonitor();
 export const startDeviceMonitor = ({ intervalMs = 60 * 1000 } = {}) => {
   const timer = setInterval(() => {
-    checkDevices().catch((error) => console.error("Device monitor failed:", error));
+    checkDevices().catch((error) =>
+      console.error("Device monitor failed:", error),
+    );
   }, intervalMs);
 
   timer.unref?.(); // never keeps the process alive on its own

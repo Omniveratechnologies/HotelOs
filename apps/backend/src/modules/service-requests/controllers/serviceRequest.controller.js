@@ -138,7 +138,7 @@ export const getHotelRequests = async (req, res) => {
       ),
     ];
 
-    let guestBookingRoomMap = new Map();
+    const guestBookingRoomMap = new Map();
     if (missingRoomGuestIds.length) {
       const activeBookings = await Booking.find({
         hotelId: req.user.hotelId,

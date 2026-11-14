@@ -6,7 +6,7 @@ import RatePlan from "#/modules/rate-plans/models/RatePlan.js";
 import RoomType from "#/modules/room-types/models/RoomType.js";
 import ChannelApproval from "#/modules/channel-manager/approvals/models/ChannelApproval.js";
 import ChannelManagerConfig from "#/modules/channel-manager/config/models/ChannelManagerConfig.js";
-import aiosell from "#/shared/services/aiosell.service.js";
+import { fetchPropertyDetails } from "#/shared/services/aiosell.service.js";
 import {
   aiosellSyncInventory,
   aiosellSyncRates,
@@ -92,7 +92,7 @@ export async function syncChannelFromAiosell(hotelId) {
     return { ok: false, error: "Hotel is not mapped to an Aiosell property" };
   }
 
-  const fetched = await aiosell.fetchPropertyDetails(hotel.aiosellHotelCode);
+  const fetched = await fetchPropertyDetails(hotel.aiosellHotelCode);
   if (!fetched.ok) {
     const detail = fetched.error
       ? typeof fetched.error === "string"

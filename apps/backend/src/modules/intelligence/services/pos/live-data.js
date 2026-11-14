@@ -2078,7 +2078,7 @@ async function loadUpselling({ hid, windows, c }) {
   for (const bill of multiItemBills) {
     const names = [
       ...new Set((bill.items || []).map((item) => item?.name).filter(Boolean)),
-    ].sort();
+    ].toSorted();
 
     for (let i = 0; i < names.length; i += 1) {
       for (let j = i + 1; j < names.length; j += 1) {
@@ -2101,7 +2101,7 @@ async function loadUpselling({ hid, windows, c }) {
   }
 
   const comboRows = [...pairMap.values()]
-    .sort((a, b) => b.orders - a.orders)
+    .toSorted((a, b) => b.orders - a.orders)
     .slice(0, 5);
 
   return {

@@ -18,6 +18,41 @@ const rowsFor = (hotelId, entityType) =>
     .limit(1000)
     .lean();
 
+// Combine allocations per invoice so two entries for the same invoice are
+// applied against one starting balance instead of racing on separate saves.
+const applyInvoiceAllocations = async (hotelId, allocations) => {
+  const perInvoice = new Map();
+  for (const allocation of allocations) {
+    const key = String(allocation.invoiceId);
+    perInvoice.set(
+      key,
+      (perInvoice.get(key) || 0) + Number(allocation.amount || 0),
+    );
+  }
+  const invoiceIds = [...perInvoice.keys()];
+  const invoices = await Promise.all(
+    invoiceIds.map((invoiceId) =>
+      BillingEntity.findOne({
+        _id: invoiceId,
+        hotelId,
+        entityType: "invoice",
+      }),
+    ),
+  );
+  await Promise.all(
+    invoices.map((invoice, index) => {
+      if (!invoice) return null;
+      const paidAmount =
+        Number(invoice.data?.paidAmount || 0) +
+        perInvoice.get(invoiceIds[index]);
+      invoice.data = { ...invoice.data, paidAmount };
+      invoice.status =
+        paidAmount >= Number(invoice.amount || 0) ? "paid" : "partial";
+      return invoice.save();
+    }),
+  );
+};
+
 export const listCompanies = async (req, res) => {
   const companies = (await rowsFor(req.user.hotelId, "company")).map(dataOf);
   const q = String(req.query.q || "").toLowerCase();
@@ -73,14 +108,13 @@ export const companySummary = async (req, res) => {
         (sum, entry) => sum + money(entry.debit) - money(entry.credit),
         0,
       );
-    return {
-      ...company,
+    return Object.assign({}, company, {
       outstanding,
       creditUsed: outstanding,
       creditUsage: company.creditLimit
         ? Math.round((outstanding / company.creditLimit) * 100)
         : 0,
-    };
+    });
   });
   const outstanding = companyRows.reduce(
     (sum, row) => sum + row.outstanding,
@@ -121,7 +155,7 @@ export const companySummary = async (req, res) => {
       creditUsage: companyRows.filter((row) => row.creditLimit).slice(0, 8),
       contracts: companyRows
         .filter((row) => row.contractEnd)
-        .sort((a, b) => new Date(a.contractEnd) - new Date(b.contractEnd))
+        .toSorted((a, b) => new Date(a.contractEnd) - new Date(b.contractEnd))
         .slice(0, 6),
     },
   });
@@ -319,21 +353,7 @@ export const createCompanyPayment = async (req, res) => {
       })
       .filter(Boolean);
   }
-  for (const allocation of allocations) {
-    const invoice = await BillingEntity.findOne({
-      _id: allocation.invoiceId,
-      hotelId: req.user.hotelId,
-      entityType: "invoice",
-    });
-    if (invoice) {
-      const paidAmount =
-        Number(invoice.data?.paidAmount || 0) + Number(allocation.amount || 0);
-      invoice.data = { ...invoice.data, paidAmount };
-      invoice.status =
-        paidAmount >= Number(invoice.amount || 0) ? "paid" : "partial";
-      await invoice.save();
-    }
-  }
+  await applyInvoiceAllocations(req.user.hotelId, allocations);
   const payment = await BillingEntity.create({
     hotelId: req.user.hotelId,
     entityType: "company-payment",
@@ -363,15 +383,16 @@ const receivableRows = async (hotelId) => {
             money(invoice.paidAmount) >
           0,
       )
-      .map((invoice) => ({
-        ...invoice,
-        accountType: invoice.companyId ? "corporate" : "direct_guest",
-        accountName: invoice.billTo || invoice.guestName || "Guest",
-        balance:
-          money(invoice.amount || invoice.grandTotal) -
-          money(invoice.paidAmount),
-        dueDate: invoice.dueDate || invoice.issueDate,
-      })),
+      .map((invoice) =>
+        Object.assign({}, invoice, {
+          accountType: invoice.companyId ? "corporate" : "direct_guest",
+          accountName: invoice.billTo || invoice.guestName || "Guest",
+          balance:
+            money(invoice.amount || invoice.grandTotal) -
+            money(invoice.paidAmount),
+          dueDate: invoice.dueDate || invoice.issueDate,
+        }),
+      ),
   ];
 };
 
@@ -380,8 +401,7 @@ export const listReceivables = async (req, res) => {
   const rows = (await receivableRows(req.user.hotelId))
     .map((row) => {
       const ageingDays = daysSince(row.dueDate);
-      return {
-        ...row,
+      return Object.assign({}, row, {
         ageingDays,
         ageingBucket: ageingBucket(ageingDays),
         status: row.disputeFlag
@@ -389,7 +409,7 @@ export const listReceivables = async (req, res) => {
           : ageingDays > 30
             ? "overdue"
             : "due_soon",
-      };
+      });
     })
     .filter(
       (row) =>
@@ -406,15 +426,16 @@ export const listReceivables = async (req, res) => {
 
 export const receivableSummary = async (req, res) => {
   const rows = await receivableRows(req.user.hotelId);
-  const normalized = rows.map((row) => ({
-    ...row,
-    balance: money(
-      row.balance ?? (row.amount || row.grandTotal) - row.paidAmount,
-    ),
-    ageingDays: daysSince(row.dueDate),
-    accountType:
-      row.accountType || (row.companyId ? "corporate" : "direct_guest"),
-  }));
+  const normalized = rows.map((row) =>
+    Object.assign({}, row, {
+      balance: money(
+        row.balance ?? (row.amount || row.grandTotal) - row.paidAmount,
+      ),
+      ageingDays: daysSince(row.dueDate),
+      accountType:
+        row.accountType || (row.companyId ? "corporate" : "direct_guest"),
+    }),
+  );
   const aging = ["0-30", "31-60", "61-90", "90+"].map((bucket) => ({
     bucket,
     amount: normalized
@@ -440,7 +461,7 @@ export const receivableSummary = async (req, res) => {
             .reduce((sum, row) => sum + row.balance, 0),
         }),
       ),
-      rows: normalized.sort((a, b) => b.balance - a.balance).slice(0, 10),
+      rows: normalized.toSorted((a, b) => b.balance - a.balance).slice(0, 10),
     },
   });
 };
@@ -500,21 +521,7 @@ export const recordReceivablePayment = async (req, res) => {
       })
       .filter(Boolean);
   }
-  for (const allocation of allocations) {
-    const invoice = await BillingEntity.findOne({
-      _id: allocation.invoiceId,
-      hotelId: req.user.hotelId,
-      entityType: "invoice",
-    });
-    if (invoice) {
-      const paidAmount =
-        Number(invoice.data?.paidAmount || 0) + Number(allocation.amount || 0);
-      invoice.data = { ...invoice.data, paidAmount };
-      invoice.status =
-        paidAmount >= Number(invoice.amount || 0) ? "paid" : "partial";
-      await invoice.save();
-    }
-  }
+  await applyInvoiceAllocations(req.user.hotelId, allocations);
   const row = await BillingEntity.create({
     hotelId: req.user.hotelId,
     entityType: "receivable-payment",

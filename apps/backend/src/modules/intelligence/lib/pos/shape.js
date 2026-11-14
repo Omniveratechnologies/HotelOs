@@ -231,10 +231,10 @@ export function computeProducts({ days, selectedStart }, raw) {
   const series = Array.from(byDay.values());
 
   const revenue = allItemRows.reduce((s, r) => s + r.revenue, 0);
-  const sorted = [...allItemRows].sort((a, b) => b.quantity - a.quantity);
+  const sorted = allItemRows.toSorted((a, b) => b.quantity - a.quantity);
   const top = sorted.slice(0, 5);
   const cutoff = Math.max(1, Math.round(sorted.length * 0.2));
-  const low = sorted.slice(-cutoff).reverse();
+  const low = sorted.slice(-cutoff).toReversed();
   const topProduct = sorted[0];
 
   const metrics = [
@@ -578,10 +578,11 @@ export function computeUpselling({ days, selectedStart }, raw) {
       b.orders = row.orders;
     }
   }
-  const series = Array.from(byDay.values()).map((d) => ({
-    ...d,
-    conversionRate: null,
-  }));
+  const series = Array.from(byDay.values()).map((d) =>
+    Object.assign({}, d, {
+      conversionRate: null,
+    }),
+  );
 
   const conversionRate = totalOrders ? (upsellOrders / totalOrders) * 100 : 0;
   const avgOrderValueWithUpsell = raw.avgOrderValueWithUpsell || 0;

@@ -1,3 +1,3 @@
-import corporateCompanyRouter from "./routes/corporateCompany.routes.js";
+import { corporateCompanyRouter } from "./routes/corporateCompany.routes.js";
 
 export default corporateCompanyRouter;

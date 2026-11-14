@@ -20,10 +20,11 @@ import {
 } from "./faceRules.js";
 import * as engine from "./faceEngine.service.js";
 import * as storage from "./faceStorage.service.js";
+import logger from "#/utils/logger.js";
 
 const MAX_LIMIT = 100;
-const SORT_KEYS = ["staffCode", "name", "joinedOn"];
-const FACE_STATUSES = ["REGISTERED", "NOT_REGISTERED"];
+const SORT_KEYS = new Set(["staffCode", "name", "joinedOn"]);
+const FACE_STATUSES = new Set(["REGISTERED", "NOT_REGISTERED"]);
 
 const escapeRegex = (value) =>
   String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -45,7 +46,7 @@ const audit = async (hotelId, staffId, action, actor, note = "", meta = {}) => {
       meta,
     });
   } catch (error) {
-    console.warn(`[face] audit write failed: ${error.message}`); // never block the real work
+    logger.warn(`[face] audit write failed: ${error.message}`); // never block the real work
   }
 };
 
@@ -63,6 +64,7 @@ const loadDeviceService = async () => {
   if (deviceService !== undefined) return deviceService;
   for (const path of DEVICE_SERVICE_PATHS) {
     try {
+      // oxlint-disable-next-line no-await-in-loop -- try each candidate path until one resolves
       deviceService = await import(path);
       return deviceService;
     } catch (error) {
@@ -70,7 +72,7 @@ const loadDeviceService = async () => {
     }
   }
   deviceService = null;
-  console.warn(
+  logger.warn(
     "[face] attendanceDevice.service.js not found: kiosks are not told about changes. Set FACE_DEVICE_SERVICE in .env.",
   );
   return null;
@@ -82,7 +84,7 @@ const notifyKiosks = async (hotelId, actor) => {
     if (devices && typeof devices.syncAll === "function")
       return await devices.syncAll(hotelId, actor || {});
   } catch (error) {
-    console.warn(`[face] kiosk sync request failed: ${error.message}`);
+    logger.warn(`[face] kiosk sync request failed: ${error.message}`);
   }
   return null;
 };
@@ -189,7 +191,7 @@ const staffQuery = async (hotelId, query = {}) => {
 
   const status = String(query.face_status || "").toUpperCase();
   if (status) {
-    if (!FACE_STATUSES.includes(status))
+    if (!FACE_STATUSES.has(status))
       throw new ApiError(
         400,
         "Face status must be REGISTERED or NOT_REGISTERED.",
@@ -209,7 +211,7 @@ export const listStaff = async (hotelId, query = {}) => {
     MAX_LIMIT,
     Math.max(1, Math.floor(Number(query.limit)) || 10),
   );
-  const sort = SORT_KEYS.includes(query.sort) ? query.sort : "staffCode";
+  const sort = SORT_KEYS.has(query.sort) ? query.sort : "staffCode";
   const direction = query.direction === "desc" ? -1 : 1;
   const q = await staffQuery(hotelId, query);
 
@@ -508,21 +510,37 @@ export const enroll = async (hotelId, body = {}, files = [], actor = {}) => {
   let samples;
 
   try {
-    const prepared = [];
-    for (let i = 0; i < images.length; i += 1) {
+    const plans = images.map((image, i) => {
       const result = analysis.results[i];
       let angle = given[i] || poseToAngle(result.pose);
       if (!given[i] && used.has(angle))
         angle = ANGLE_ORDER.find((a) => !used.has(a)) || angle; // pose gave nothing new
       used.add(angle);
-      const { key } = await storage.saveImage({
-        hotelId: String(hotelId),
-        staffId: String(staff._id),
-        buffer: images[i].buffer,
-        ext: images[i].ext,
-      });
-      savedKeys.push(key);
-      prepared.push({
+      return { image, result, angle };
+    });
+
+    // allSettled so every image that did reach storage is tracked for cleanup,
+    // even when another save in the same batch fails.
+    const settled = await Promise.allSettled(
+      plans.map(({ image }) =>
+        storage.saveImage({
+          hotelId: String(hotelId),
+          staffId: String(staff._id),
+          buffer: image.buffer,
+          ext: image.ext,
+        }),
+      ),
+    );
+
+    const failure = settled.find((outcome) => outcome.status === "rejected");
+    for (const outcome of settled) {
+      if (outcome.status === "fulfilled") savedKeys.push(outcome.value.key);
+    }
+    if (failure) throw failure.reason;
+
+    const prepared = plans.map(({ image, result, angle }, i) => {
+      const { key } = settled[i].value;
+      return {
         hotelId,
         staffId: staff._id,
         batchId,
@@ -532,10 +550,10 @@ export const enroll = async (hotelId, body = {}, files = [], actor = {}) => {
         livenessScore: result.liveness?.score ?? null,
         pose: result.pose,
         imageKey: key,
-        mimeType: images[i].mime,
-        sizeBytes: images[i].buffer.length,
-      });
-    }
+        mimeType: image.mime,
+        sizeBytes: image.buffer.length,
+      };
+    });
     samples = await FaceSample.insertMany(prepared);
   } catch (error) {
     await storage.removeImages(savedKeys);
@@ -810,64 +828,75 @@ export const applyRetention = async (now = new Date()) => {
   const cutoff = new Date(now.getTime() - config.retentionDays * 86400000);
   const touched = new Set();
 
-  for (const profile of profiles) {
-    const member = staffById.get(String(profile.staffId));
-    const left =
-      !member || Boolean(member.deletedAt) || member.status !== "ACTIVE";
+  const outcomes = await Promise.all(
+    profiles.map(async (profile) => {
+      const member = staffById.get(String(profile.staffId));
+      const left =
+        !member || Boolean(member.deletedAt) || member.status !== "ACTIVE";
 
-    if (!left && profile.status === "SUSPENDED") {
-      await FaceProfile.updateOne(
-        { _id: profile._id },
-        {
-          $set: { status: "REGISTERED", suspendedAt: null, syncedAt: now },
-          $inc: { version: 1 },
-        },
-      );
-      await audit(
-        profile.hotelId,
-        profile.staffId,
-        "RESTORE",
-        null,
-        "Staff active again",
-      );
-      result.restored += 1;
-      touched.add(String(profile.hotelId));
-    } else if (left && profile.status === "REGISTERED") {
-      await FaceProfile.updateOne(
-        { _id: profile._id },
-        {
-          $set: { status: "SUSPENDED", suspendedAt: now, syncedAt: now },
-          $inc: { version: 1 },
-        },
-      );
-      await audit(
-        profile.hotelId,
-        profile.staffId,
-        "SUSPEND",
-        null,
-        "Staff left",
-      );
-      result.suspended += 1;
-      touched.add(String(profile.hotelId));
-    } else if (
-      left &&
-      profile.status === "SUSPENDED" &&
-      profile.suspendedAt &&
-      profile.suspendedAt <= cutoff
-    ) {
-      if (
-        await purgeProfile(profile.hotelId, profile.staffId, {
-          reason: `Retention period of ${config.retentionDays} days ended`,
-          action: "PURGE",
-          notify: false,
-        })
-      ) {
-        result.purged += 1;
-        touched.add(String(profile.hotelId));
+      if (!left && profile.status === "SUSPENDED") {
+        await FaceProfile.updateOne(
+          { _id: profile._id },
+          {
+            $set: { status: "REGISTERED", suspendedAt: null, syncedAt: now },
+            $inc: { version: 1 },
+          },
+        );
+        await audit(
+          profile.hotelId,
+          profile.staffId,
+          "RESTORE",
+          null,
+          "Staff active again",
+        );
+        return { action: "restored", hotelId: String(profile.hotelId) };
       }
-    }
+
+      if (left && profile.status === "REGISTERED") {
+        await FaceProfile.updateOne(
+          { _id: profile._id },
+          {
+            $set: { status: "SUSPENDED", suspendedAt: now, syncedAt: now },
+            $inc: { version: 1 },
+          },
+        );
+        await audit(
+          profile.hotelId,
+          profile.staffId,
+          "SUSPEND",
+          null,
+          "Staff left",
+        );
+        return { action: "suspended", hotelId: String(profile.hotelId) };
+      }
+
+      if (
+        left &&
+        profile.status === "SUSPENDED" &&
+        profile.suspendedAt &&
+        profile.suspendedAt <= cutoff
+      ) {
+        if (
+          await purgeProfile(profile.hotelId, profile.staffId, {
+            reason: `Retention period of ${config.retentionDays} days ended`,
+            action: "PURGE",
+            notify: false,
+          })
+        ) {
+          return { action: "purged", hotelId: String(profile.hotelId) };
+        }
+      }
+
+      return null;
+    }),
+  );
+
+  for (const outcome of outcomes) {
+    if (!outcome) continue;
+    result[outcome.action] += 1;
+    touched.add(outcome.hotelId);
   }
 
-  for (const hotel of touched) await notifyKiosks(toId(hotel), {});
+  await Promise.all([...touched].map((hotel) => notifyKiosks(toId(hotel), {})));
   return result;
 };

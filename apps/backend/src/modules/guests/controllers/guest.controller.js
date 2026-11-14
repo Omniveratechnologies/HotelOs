@@ -654,7 +654,7 @@ export const getGuests = async (req, res) => {
       bookingMap.get(gid).push(b);
     }
 
-    let data = await Promise.all(
+    const data = await Promise.all(
       guests.map(async (guest) => {
         const guestBookings = bookingMap.get(String(guest._id)) || [];
 

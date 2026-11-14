@@ -283,38 +283,37 @@ export const runReconciliationJob = async (req, res) => {
   });
   const payments = await Payment.find({ hotelId }).lean();
 
-  let matchedCount = 0;
-  let discrepancyCount = 0;
+  const outcomes = await Promise.all(
+    externals.map(async (ext) => {
+      const extRef = String(
+        ext.reference || ext.data?.reference || ext.data?.utr || "",
+      )
+        .trim()
+        .toLowerCase();
+      const extAmt = amount(ext.amount);
 
-  for (const ext of externals) {
-    const extRef = String(
-      ext.reference || ext.data?.reference || ext.data?.utr || "",
-    )
-      .trim()
-      .toLowerCase();
-    const extAmt = amount(ext.amount);
+      const matchByRef = extRef
+        ? payments.find(
+            (p) =>
+              String(p.referenceNo || p.reference || "")
+                .trim()
+                .toLowerCase() === extRef,
+          )
+        : null;
 
-    const matchByRef = extRef
-      ? payments.find(
-          (p) =>
-            String(p.referenceNo || p.reference || "")
-              .trim()
-              .toLowerCase() === extRef,
-        )
-      : null;
+      if (matchByRef) {
+        const payAmt = amount(matchByRef.amount);
+        if (Math.abs(payAmt - extAmt) < 0.01) {
+          ext.status = "matched";
+          ext.data = {
+            ...ext.data,
+            matchedPaymentId: matchByRef._id,
+            matchedAt: new Date(),
+          };
+          await ext.save();
+          return "matched";
+        }
 
-    if (matchByRef) {
-      const payAmt = amount(matchByRef.amount);
-      if (Math.abs(payAmt - extAmt) < 0.01) {
-        ext.status = "matched";
-        ext.data = {
-          ...ext.data,
-          matchedPaymentId: matchByRef._id,
-          matchedAt: new Date(),
-        };
-        await ext.save();
-        matchedCount++;
-      } else {
         ext.status = "discrepancy";
         await ext.save();
         await BillingEntity.create({
@@ -333,9 +332,9 @@ export const runReconciliationJob = async (req, res) => {
           },
           createdBy: req.user._id,
         });
-        discrepancyCount++;
+        return "discrepancy";
       }
-    } else {
+
       const matchByAmt = payments.find(
         (p) =>
           amount(p.amount) === extAmt &&
@@ -350,29 +349,36 @@ export const runReconciliationJob = async (req, res) => {
           matchNote: "Matched on amount",
         };
         await ext.save();
-        matchedCount++;
-      } else {
-        ext.status = "discrepancy";
-        await ext.save();
-        await BillingEntity.create({
-          hotelId,
-          entityType: "reconciliation-discrepancy",
-          status: "pending",
-          amount: extAmt,
-          reference: ext.reference,
-          data: {
-            externalTxnId: ext._id,
-            reason: `External transaction ₹${extAmt} not found in PMS records`,
-            bankAmount: extAmt,
-            systemAmount: 0,
-            variance: -extAmt,
-          },
-          createdBy: req.user._id,
-        });
-        discrepancyCount++;
+        return "matched";
       }
-    }
-  }
+
+      ext.status = "discrepancy";
+      await ext.save();
+      await BillingEntity.create({
+        hotelId,
+        entityType: "reconciliation-discrepancy",
+        status: "pending",
+        amount: extAmt,
+        reference: ext.reference,
+        data: {
+          externalTxnId: ext._id,
+          reason: `External transaction ₹${extAmt} not found in PMS records`,
+          bankAmount: extAmt,
+          systemAmount: 0,
+          variance: -extAmt,
+        },
+        createdBy: req.user._id,
+      });
+      return "discrepancy";
+    }),
+  );
+
+  const matchedCount = outcomes.filter(
+    (outcome) => outcome === "matched",
+  ).length;
+  const discrepancyCount = outcomes.filter(
+    (outcome) => outcome === "discrepancy",
+  ).length;
 
   const run = await BillingWorkflow.create({
     hotelId,

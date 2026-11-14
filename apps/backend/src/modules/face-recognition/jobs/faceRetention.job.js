@@ -1,13 +1,14 @@
 import { applyRetention } from "../services/face.service.js";
+import logger from "#/utils/logger.js";
 
 export const runFaceRetention = async () => {
   try {
     const result = await applyRetention();
     if (result.suspended || result.restored || result.purged)
-      console.log(`[face] retention: ${JSON.stringify(result)}`);
+      logger.info(`[face] retention: ${JSON.stringify(result)}`);
     return result;
   } catch (error) {
-    console.error(`[face] retention failed: ${error.message}`);
+    logger.error(`[face] retention failed: ${error.message}`);
     return null;
   }
 };

@@ -14,7 +14,13 @@ import * as time from "../../../utils/attendanceTime.js";
 
 const MAX_RANGE_DAYS = 366;
 const MAX_LIMIT = 100;
-const SORT_KEYS = ["appliedAt", "fromDate", "toDate", "days", "status"];
+const SORT_KEYS = new Set([
+  "appliedAt",
+  "fromDate",
+  "toDate",
+  "days",
+  "status",
+]);
 const DAY_MS = 86400000;
 
 const escapeRegex = (value) =>
@@ -100,7 +106,7 @@ const splitByYear = (dates) => {
 
 const ensureBalance = async (hotelId, staffId, type, year) => {
   const key = { staffId, leaveTypeId: type._id, year };
-  let balance = await LeaveBalance.findOne(key);
+  const balance = await LeaveBalance.findOne(key);
   if (balance) return balance;
 
   try {
@@ -169,18 +175,22 @@ export const staffLeaveBalance = async (
   const types = await LeaveType.find({ hotelId, active: true })
     .sort({ sortOrder: 1, name: 1 })
     .lean();
-  const balances = [];
-  for (const type of types) {
-    balances.push({
-      leaveType: {
-        _id: type._id,
-        name: type.name,
-        color: type.color,
-        isPaid: type.isPaid,
-      },
-      ...(await figures(hotelId, staffId, type, year)),
-    });
-  }
+  const balances = await Promise.all(
+    types.map(async (type) => {
+      const stats = await figures(hotelId, staffId, type, year);
+      return Object.assign(
+        {
+          leaveType: {
+            _id: type._id,
+            name: type.name,
+            color: type.color,
+            isPaid: type.isPaid,
+          },
+        },
+        stats,
+      );
+    }),
+  );
 
   return {
     staff: { _id: staff._id, name: staff.name, staffCode: staff.staffCode },
@@ -206,6 +216,7 @@ const writeLeaveRows = async (hotelId, request, staff, type, now) => {
 
   const result = { created: 0, converted: 0, skipped: 0, conflicts: [] };
   const docs = [];
+  const toSave = [];
 
   for (const date of dates) {
     const record = byDate.get(date);
@@ -230,7 +241,7 @@ const writeLeaveRows = async (hotelId, request, staff, type, now) => {
         remarks: leaveTag(type),
         lastEventAt: now,
       });
-      await record.save();
+      toSave.push(record);
       result.converted += 1;
     } else if (record.status === "ON_LEAVE") {
       result.skipped += 1;
@@ -238,6 +249,8 @@ const writeLeaveRows = async (hotelId, request, staff, type, now) => {
       result.conflicts.push(date);
     }
   }
+
+  await Promise.all(toSave.map((record) => record.save()));
 
   if (docs.length > 0) {
     try {
@@ -268,6 +281,8 @@ const removeLeaveRows = async (request, type, fromDate) => {
   return result.deletedCount ?? 0;
 };
 
+const indexById = (rows) => new Map(rows.map((row) => [String(row._id), row]));
+
 const hydrate = async (hotelId, requests) => {
   const unique = (field) =>
     [
@@ -294,12 +309,11 @@ const hydrate = async (hotelId, requests) => {
       .lean(),
   ]);
 
-  const index = (rows) => new Map(rows.map((row) => [String(row._id), row]));
   return {
-    staff: index(staff),
-    departments: index(departments),
-    designations: index(designations),
-    types: index(types),
+    staff: indexById(staff),
+    departments: indexById(departments),
+    designations: indexById(designations),
+    types: indexById(types),
   };
 };
 
@@ -434,7 +448,7 @@ export const listLeaves = async (hotelId, query = {}) => {
 
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(MAX_LIMIT, Math.max(1, Number(query.limit) || 10));
-  const key = SORT_KEYS.includes(query.sort) ? query.sort : "appliedAt";
+  const key = SORT_KEYS.has(query.sort) ? query.sort : "appliedAt";
   const sign = String(query.direction).toLowerCase() === "asc" ? 1 : -1;
 
   const [rows, total] = await Promise.all([
@@ -641,15 +655,17 @@ export const applyLeave = async (
 
   const byYear = splitByYear(workingDates);
   if (type.annualQuota > 0) {
-    for (const part of byYear) {
-      const balance = await figures(hotelId, staff._id, type, part.year);
-      if (part.days > balance.remaining) {
-        throw new ApiError(
-          400,
-          `Not enough ${type.name} balance for ${part.year}: ${balance.remaining} day${balance.remaining === 1 ? "" : "s"} available, ${part.days} asked.`,
-        );
-      }
-    }
+    await Promise.all(
+      byYear.map(async (part) => {
+        const balance = await figures(hotelId, staff._id, type, part.year);
+        if (part.days > balance.remaining) {
+          throw new ApiError(
+            400,
+            `Not enough ${type.name} balance for ${part.year}: ${balance.remaining} day${balance.remaining === 1 ? "" : "s"} available, ${part.days} asked.`,
+          );
+        }
+      }),
+    );
   }
 
   const request = await LeaveRequest.create({
@@ -764,6 +780,7 @@ export const approveLeave = async (
   );
 
   const taken = [];
+  /* oxlint-disable no-await-in-loop -- balance increments run in order so a failed part can be rolled back */
   try {
     for (const part of claimed.workingDaysByYear) {
       const balance = await ensureBalance(hotelId, staff._id, type, part.year);
@@ -805,6 +822,7 @@ export const approveLeave = async (
     );
     throw error;
   }
+  /* oxlint-enable no-await-in-loop */
 
   const attendance = await writeLeaveRows(hotelId, claimed, staff, type, now);
   await quietly(() =>
@@ -890,13 +908,20 @@ export const cancelLeave = async (
     throw new ApiError(409, "This request just changed. Refresh the list.");
 
   if (wasApproved) {
-    for (const part of claimed.workingDaysByYear) {
-      const balance = await ensureBalance(hotelId, staff._id, type, part.year);
-      await LeaveBalance.findOneAndUpdate(
-        { _id: balance._id },
-        { $inc: { used: -part.days } },
-      );
-    }
+    await Promise.all(
+      claimed.workingDaysByYear.map(async (part) => {
+        const balance = await ensureBalance(
+          hotelId,
+          staff._id,
+          type,
+          part.year,
+        );
+        await LeaveBalance.findOneAndUpdate(
+          { _id: balance._id },
+          { $inc: { used: -part.days } },
+        );
+      }),
+    );
     await removeLeaveRows(claimed, type, claimed.fromDate);
   }
 

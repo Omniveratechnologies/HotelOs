@@ -60,18 +60,20 @@ const deliver = async ({
     ref,
   });
 
-  for (const channel of enabledChannels()) {
-    const to = channel === "EMAIL" ? contact.email : contact.phone;
-    if (!to) continue;
-    await NotificationQueue.create({
-      hotelId,
-      channel,
-      to: String(to).trim(),
-      subject: channel === "EMAIL" ? title : "",
-      body: `${title}. ${message}`.slice(0, 1000),
-      ref,
-    });
-  }
+  await Promise.all(
+    enabledChannels().map(async (channel) => {
+      const to = channel === "EMAIL" ? contact.email : contact.phone;
+      if (!to) return;
+      await NotificationQueue.create({
+        hotelId,
+        channel,
+        to: String(to).trim(),
+        subject: channel === "EMAIL" ? title : "",
+        body: `${title}. ${message}`.slice(0, 1000),
+        ref,
+      });
+    }),
+  );
 };
 export const leaveApplied = async ({ hotelId, request, staff, type }) => {
   const manager = staff.managerId
@@ -177,6 +179,7 @@ export const processQueue = async (
 
   const result = { sent: 0, retried: 0, failed: 0 };
 
+  /* oxlint-disable no-await-in-loop -- queue rows are claimed and delivered one at a time */
   for (const row of due) {
     // claim it, so a second worker does not send the same message
     const claimed = await NotificationQueue.findOneAndUpdate(
@@ -218,6 +221,7 @@ export const processQueue = async (
       result[giveUp ? "failed" : "retried"] += 1;
     }
   }
+  /* oxlint-enable no-await-in-loop */
 
   return result;
 };

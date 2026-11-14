@@ -121,6 +121,7 @@ export const createKeyCard = async (req, res) => {
     // Batch creation
     if (count > 1) {
       const createdCards = [];
+      /* oxlint-disable no-await-in-loop -- each generated card number must be checked for uniqueness */
       for (let i = 0; i < count; i++) {
         const randomNum = Math.floor(1000 + Math.random() * 9000);
         const cardNo = `${prefix}${randomNum}`;
@@ -144,6 +145,7 @@ export const createKeyCard = async (req, res) => {
           });
         }
       }
+      /* oxlint-enable no-await-in-loop */
       if (createdCards.length > 0) {
         await KeyCard.insertMany(createdCards);
       }

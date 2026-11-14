@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import redisConnection from "#/config/redis.js";
+import { redisConnection } from "#/config/redis.js";
 import { CHECK_IN_EMAIL_QUEUE_NAME } from "#/modules/check-ins/queues/checkInEmail.queue.js";
 // Pre-register referenced models required by Booking.populate("guestId").populate("hotelId")
 import "#/modules/users/models/User.js";
@@ -8,7 +8,7 @@ import Booking from "#/modules/bookings/models/Booking.js";
 import CheckInSession from "#/modules/check-ins/models/CheckInSession.js";
 import { createSessionToken } from "#/modules/check-ins/services/token.service.js";
 import { sendCheckInEmail } from "#/shared/services/email.service.js";
-import env from "#/config/env.js";
+import { env } from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 function expiresAtFor(reservation) {

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import ExcelJS from "exceljs";
-import PDFDocument from "pdfkit";
+import { PDFDocument } from "pdfkit";
 
 export const FORMATS = {
   XLSX: { ext: "xlsx" },

@@ -19,7 +19,7 @@ const RETENTION_DAYS = 30;
 const PREVIEW_DEFAULT = 10;
 const PREVIEW_MAX = 1000;
 
-const DATE_TYPES = ["ATTENDANCE", "LEAVE", "SHIFT"];
+const DATE_TYPES = new Set(["ATTENDANCE", "LEAVE", "SHIFT"]);
 const TYPE_LABEL = {
   ATTENDANCE: "Attendance",
   LEAVE: "Leave",
@@ -73,7 +73,7 @@ const toDto = (job) => {
     type: job.type,
     format: job.format,
     dateRange:
-      DATE_TYPES.includes(job.type) && f.from && f.to
+      DATE_TYPES.has(job.type) && f.from && f.to
         ? { from: f.from, to: f.to }
         : null,
     records: job.records,

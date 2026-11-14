@@ -1,5 +1,5 @@
 import { Queue } from "bullmq";
-import redisConnection from "#/config/redis.js";
+import { redisConnection } from "#/config/redis.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Booking from "#/modules/bookings/models/Booking.js";
 import logger from "#/utils/logger.js";

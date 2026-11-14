@@ -7,7 +7,7 @@ import {
   sendUsernameReminderEmail,
   sendPasswordResetEmail,
 } from "#/shared/services/email.service.js";
-import env from "#/config/env.js";
+import { env } from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 export const login = async (req, res) => {

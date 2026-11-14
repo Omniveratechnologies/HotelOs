@@ -247,18 +247,17 @@ export const executeNightAuditStep = async (req, res) => {
       .populate("roomId")
       .lean();
 
-    let postedCount = 0;
-    let totalTariffPosted = 0;
+    const posted = await Promise.all(
+      inHouseBookings.map(async (b) => {
+        const existing = await Bill.findOne({
+          hotelId: req.user.hotelId,
+          bookingId: b._id,
+          billType: "room-charge",
+          createdAt: { $gte: run.businessDate },
+        });
 
-    for (const b of inHouseBookings) {
-      const existing = await Bill.findOne({
-        hotelId: req.user.hotelId,
-        bookingId: b._id,
-        billType: "room-charge",
-        createdAt: { $gte: run.businessDate },
-      });
+        if (existing) return null;
 
-      if (!existing) {
         const nightlyRate = Number(
           b.pricing?.totalRoomRate ||
             b.pricing?.baseRate ||
@@ -293,10 +292,15 @@ export const executeNightAuditStep = async (req, res) => {
             },
           ],
         });
-        postedCount++;
-        totalTariffPosted += totalRoomCharge;
-      }
-    }
+        return totalRoomCharge;
+      }),
+    );
+
+    const postedCount = posted.filter((charge) => charge !== null).length;
+    const totalTariffPosted = posted.reduce(
+      (sum, charge) => sum + (charge ?? 0),
+      0,
+    );
 
     stepResult = {
       ...stepResult,
@@ -314,14 +318,13 @@ export const executeNightAuditStep = async (req, res) => {
       status: "active",
     });
 
-    let recurringCount = 0;
-    let recurringAmount = 0;
+    const postedRecurring = await Promise.all(
+      recurring.map(async (rec) => {
+        const nextDate = rec.data?.nextDate
+          ? new Date(rec.data.nextDate)
+          : new Date();
+        if (nextDate > new Date(run.businessDate)) return null;
 
-    for (const rec of recurring) {
-      const nextDate = rec.data?.nextDate
-        ? new Date(rec.data.nextDate)
-        : new Date();
-      if (nextDate <= new Date(run.businessDate)) {
         await BillingEntity.create({
           hotelId: req.user.hotelId,
           entityType: "expense",
@@ -345,10 +348,17 @@ export const executeNightAuditStep = async (req, res) => {
         rec.data = { ...rec.data, nextDate: updatedDate };
         await rec.save();
 
-        recurringCount++;
-        recurringAmount += Number(rec.amount || 0);
-      }
-    }
+        return Number(rec.amount || 0);
+      }),
+    );
+
+    const recurringCount = postedRecurring.filter(
+      (posted) => posted !== null,
+    ).length;
+    const recurringAmount = postedRecurring.reduce(
+      (sum, posted) => sum + (posted ?? 0),
+      0,
+    );
 
     stepResult = {
       ...stepResult,
@@ -385,33 +395,36 @@ export const executeNightAuditStep = async (req, res) => {
       checkIn: { $lt: run.businessDate },
     });
 
-    let noShowCount = 0;
-    for (const b of noShowBookings) {
-      b.status = "no-show";
-      await b.save();
+    const noShowCount = (
+      await Promise.all(
+        noShowBookings.map(async (b) => {
+          b.status = "no-show";
+          await b.save();
 
-      const retentionFee = Number(b.pricing?.baseRate || 1500);
-      await Bill.create({
-        billNo: `NOSHOW-${Date.now().toString().slice(-6)}`,
-        hotelId: req.user.hotelId,
-        bookingId: b._id,
-        guestName: b.guestDetails?.primaryGuest?.name || "No-Show Guest",
-        billType: "room-charge",
-        subtotal: retentionFee,
-        totalAmount: retentionFee,
-        paymentStatus: "unpaid",
-        status: "saved",
-        items: [
-          {
-            name: "No-Show Retention Charge (1 Night)",
-            price: retentionFee,
-            quantity: 1,
-            notes: "Reservation did not arrive prior to night audit cutoff",
-          },
-        ],
-      });
-      noShowCount++;
-    }
+          const retentionFee = Number(b.pricing?.baseRate || 1500);
+          await Bill.create({
+            billNo: `NOSHOW-${Date.now().toString().slice(-6)}`,
+            hotelId: req.user.hotelId,
+            bookingId: b._id,
+            guestName: b.guestDetails?.primaryGuest?.name || "No-Show Guest",
+            billType: "room-charge",
+            subtotal: retentionFee,
+            totalAmount: retentionFee,
+            paymentStatus: "unpaid",
+            status: "saved",
+            items: [
+              {
+                name: "No-Show Retention Charge (1 Night)",
+                price: retentionFee,
+                quantity: 1,
+                notes: "Reservation did not arrive prior to night audit cutoff",
+              },
+            ],
+          });
+          return b._id;
+        }),
+      )
+    ).length;
 
     stepResult = {
       ...stepResult,

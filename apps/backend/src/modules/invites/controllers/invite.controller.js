@@ -12,7 +12,7 @@ import {
 import { sendInvitationEmail } from "#/shared/services/email.service.js";
 
 import { ROLES } from "#/shared/constants/roles.js";
-import env from "#/config/env.js";
+import { env } from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 // =====================================================
