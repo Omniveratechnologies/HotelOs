@@ -50,16 +50,16 @@ export const webFile = {
           .join(",");
       }
 
-      input.onchange = () => {
+      input.addEventListener("change", () => {
         const file = input.files?.[0];
         if (!file) {
           resolve(null);
           return;
         }
         resolve(file.name);
-      };
+      });
 
-      input.oncancel = () => resolve(null);
+      input.addEventListener("cancel", () => resolve(null));
       input.click();
     });
   },

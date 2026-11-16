@@ -13,12 +13,12 @@ export const webNotification = {
       }
 
       if (permission === "granted") {
-        new Notification(options.title, {
+        const notification = new Notification(options.title, {
           body: options.body,
           icon: options.icon,
           silent: options.silent,
         });
-        return true;
+        return Boolean(notification);
       }
       return false;
     } catch (err) {

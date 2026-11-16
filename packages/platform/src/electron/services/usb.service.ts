@@ -41,17 +41,19 @@ async function listMacUsbDevices(): Promise<UsbDeviceInfo[]> {
 
     const walk = (items: any[]) => {
       for (const item of items) {
-        if (item._name) {
+        const itemName = item["_name"];
+        if (itemName) {
           devices.push({
             vendorId: item.vendor_id || "0x0000",
             productId: item.product_id || "0x0000",
-            name: item._name,
+            name: itemName,
             manufacturer: item.manufacturer,
             serialNumber: item.serial_num,
           });
         }
-        if (item._items && Array.isArray(item._items)) {
-          walk(item._items);
+        const childItems = item["_items"];
+        if (childItems && Array.isArray(childItems)) {
+          walk(childItems);
         }
       }
     };
