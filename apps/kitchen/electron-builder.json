@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/electron-builder.json",
+  "appId": "com.omniveratechnologies.hotelos.kitchen",
+  "productName": "HotelOS Kitchen",
+  "electronVersion": "45.0.0",
+  "npmRebuild": false,
+  "nodeGypRebuild": false,
+  "directories": {
+    "output": "release"
+  },
+  "files": ["out/**/*", "package.json", "!**/node_modules/**/*"],
+  "win": {
+    "forceCodeSigning": false,
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      },
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "differentialPackage": false
+  },
+  "mac": {
+    "category": "public.app-category.business",
+    "target": ["dmg", "zip"]
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "category": "Office"
+  }
+}

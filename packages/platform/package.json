@@ -1,0 +1,30 @@
+{
+  "name": "@hotelos/platform",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types/index.ts",
+    "./preload": "./src/preload/index.ts",
+    "./electron": "./src/electron/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@electron-toolkit/utils": "^4.0.0"
+  },
+  "peerDependencies": {
+    "electron": "*"
+  },
+  "peerDependenciesMeta": {
+    "electron": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@hotelos/oxlint-config": "workspace:*"
+  }
+}

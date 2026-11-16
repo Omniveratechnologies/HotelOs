@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
 
-import type { PlatformAPI } from "./platform/types.ts";
+import type { DesktopAPI } from "@hotelos/platform/types";
 
 declare global {
   interface Window {
-    desktop?: PlatformAPI;
+    desktop?: DesktopAPI;
   }
 }
