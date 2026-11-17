@@ -28,7 +28,7 @@
 
     /* Path aliases */
     "paths": {
-      "@/*": ["./src/features/intelligence/legacy/*", "./src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]

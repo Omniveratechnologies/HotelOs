@@ -8,15 +8,15 @@ import { AppProviders } from "../providers/AppProviders.jsx";
 import {
   DASHBOARD_IDS,
   DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/intelligence-data.js";
+} from "@/features/intelligence/pms/data/pmsData";
 import {
   POS_DASHBOARD_IDS,
   POS_DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/pos/intelligence-data.js";
+} from "@/features/intelligence/pos/data/posData";
 import {
   BI_DASHBOARD_IDS,
   BI_DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/bi/intelligence-data.js";
+} from "@/features/intelligence/bi/data/biData";
 
 const icon = (paths) => (
   <svg
