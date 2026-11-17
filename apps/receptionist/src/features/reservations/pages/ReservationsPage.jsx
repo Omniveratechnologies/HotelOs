@@ -25,7 +25,7 @@ import { formatCurrency, formatDate } from "@hotelos/utils";
 import { useAllReservations } from "../hooks/useAllReservations.js";
 import { useReservationStats } from "../hooks/useReservationStats.js";
 import { useRoomTypes } from "../../room-types/hooks/useRoomTypes.js";
-import ReservationDetailPane from "../components/ReservationDetailPane.jsx";
+import { ReservationDetailPane } from "../components/ReservationDetailPane.jsx";
 import {
   STATUS_VARIANT,
   STATUS_LABEL,

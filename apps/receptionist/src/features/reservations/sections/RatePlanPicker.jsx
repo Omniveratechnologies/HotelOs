@@ -83,5 +83,3 @@ export function RatePlanPicker({
     </div>
   );
 }
-
-export default RatePlanPicker;

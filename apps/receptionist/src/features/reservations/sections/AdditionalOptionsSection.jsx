@@ -238,5 +238,3 @@ export function AdditionalOptionsSection({
     </SectionCard>
   );
 }
-
-export default AdditionalOptionsSection;

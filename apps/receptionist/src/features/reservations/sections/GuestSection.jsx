@@ -248,5 +248,3 @@ export function GuestSection({
     </SectionCard>
   );
 }
-
-export default GuestSection;

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Calendar } from "lucide-react";
 import { SectionCard, QuantityStepper } from "@hotelos/ui/components";
 import { cn } from "@hotelos/utils";
@@ -31,7 +31,7 @@ export function StayDetailsSection({
   onEdit,
   lockedSource,
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const [today] = useState(() => new Date().toISOString().slice(0, 10));
 
   const nights = useMemo(() => {
     if (!value.checkIn || !value.checkOut) return 0;
@@ -299,5 +299,3 @@ export function StayDetailsSection({
     </SectionCard>
   );
 }
-
-export default StayDetailsSection;

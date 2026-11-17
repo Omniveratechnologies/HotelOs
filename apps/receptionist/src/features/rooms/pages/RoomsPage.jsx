@@ -104,7 +104,7 @@ export default function RoomsPage() {
     rooms.forEach((r) => {
       if (r.type) set.add(r.type);
     });
-    return Array.from(set).sort();
+    return Array.from(set).toSorted();
   }, [rooms]);
 
   // Available floors
@@ -118,7 +118,7 @@ export default function RoomsPage() {
         set.add(isNaN(parsed) ? 1 : parsed);
       }
     });
-    const arr = Array.from(set).sort((a, b) => a - b);
+    const arr = Array.from(set).toSorted((a, b) => a - b);
     return arr.length > 0 ? arr : [1];
   }, [rooms]);
 

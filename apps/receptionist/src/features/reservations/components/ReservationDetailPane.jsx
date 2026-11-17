@@ -33,10 +33,10 @@ import {
   useReservation,
   useUpdateReservation,
 } from "../hooks/useReservations.js";
-import { useReservationHistory } from "../hooks/useAllReservations.js";
 import { useAvailableRooms } from "../hooks/useAvailableRooms.js";
 import { useRoomTypes } from "../../room-types/hooks/useRoomTypes.js";
 import {
+  useReservationHistory,
   useCancelReservation,
   useReconfirmReservation,
   useChangeReservationRoom,
@@ -616,6 +616,7 @@ export function ReservationDetailPane({
   onChanged,
 }) {
   const navigate = useNavigate();
+  const [now] = useState(() => new Date());
   const [tab, setTab] = useState("overview");
 
   // Dialog & modal states
@@ -743,8 +744,7 @@ export function ReservationDetailPane({
           )}
           {isOta && booking.otaInfo?.cancellationPolicy?.freeUntil && (
             <InlineBanner variant="info">
-              {new Date() <
-              new Date(booking.otaInfo.cancellationPolicy.freeUntil)
+              {now < new Date(booking.otaInfo.cancellationPolicy.freeUntil)
                 ? "Free cancellation until " +
                   formatDate(booking.otaInfo.cancellationPolicy.freeUntil)
                 : booking.otaInfo.cancellationPolicy.penalty ||
@@ -1271,8 +1271,7 @@ export function ReservationDetailPane({
           isOta ? (
             <InlineBanner variant="warning">
               {booking.otaInfo?.cancellationPolicy?.freeUntil &&
-              new Date() <
-                new Date(booking.otaInfo.cancellationPolicy.freeUntil)
+              now < new Date(booking.otaInfo.cancellationPolicy.freeUntil)
                 ? "Within the free-cancellation window — no charge."
                 : "This OTA booking is past its free-cancellation window — a one-night charge applies."}
             </InlineBanner>
@@ -1361,5 +1360,3 @@ export function ReservationDetailPane({
     </DetailDrawer>
   );
 }
-
-export default ReservationDetailPane;

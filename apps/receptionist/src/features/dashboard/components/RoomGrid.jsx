@@ -44,7 +44,9 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function RoomGrid({ rooms = [], onSelectRoom }) {
+const EMPTY_ARRAY = Object.freeze([]);
+
+export default function RoomGrid({ rooms = EMPTY_ARRAY, onSelectRoom }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [floorFilter, setFloorFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -60,7 +62,7 @@ export default function RoomGrid({ rooms = [], onSelectRoom }) {
         set.add(isNaN(parsed) ? 1 : parsed);
       }
     });
-    const arr = Array.from(set).sort((a, b) => a - b);
+    const arr = Array.from(set).toSorted((a, b) => a - b);
     return arr.length > 0 ? arr : [1];
   }, [rooms]);
 
@@ -120,7 +122,7 @@ export default function RoomGrid({ rooms = [], onSelectRoom }) {
           : parseInt(String(r.roomNumber)[0], 10) || 1;
       set.add(roomFloor);
     });
-    const arr = Array.from(set).sort((a, b) => a - b);
+    const arr = Array.from(set).toSorted((a, b) => a - b);
     return arr.length > 0 ? arr : floors;
   }, [filteredRooms, floorFilter, floors]);
 

@@ -434,18 +434,18 @@ function Donut({ rows = EMPTY_ROWS }) {
     "#64748b",
   ];
   let currentPercent = 0;
-  const gradientParts =
-    rows.length && total > 0
-      ? rows
-          .map((row, idx) => {
-            const pct = ((Number(row.amount) || 0) / total) * 100;
-            const start = currentPercent;
-            currentPercent += pct;
-            const color = colors[idx % colors.length];
-            return `${color} ${start.toFixed(1)}% ${currentPercent.toFixed(1)}%`;
-          })
-          .join(", ")
-      : "#cbd5e1 0% 100%";
+  const parts = [];
+  if (rows.length && total > 0) {
+    for (let idx = 0; idx < rows.length; idx++) {
+      const row = rows[idx];
+      const pct = ((Number(row.amount) || 0) / total) * 100;
+      const start = currentPercent;
+      currentPercent += pct;
+      const color = colors[idx % colors.length];
+      parts.push(`${color} ${start.toFixed(1)}% ${currentPercent.toFixed(1)}%`);
+    }
+  }
+  const gradientParts = parts.length ? parts.join(", ") : "#cbd5e1 0% 100%";
 
   return (
     <div className="flex items-center gap-6">

@@ -151,5 +151,3 @@ export function BookingSummary({
     </div>
   );
 }
-
-export default BookingSummary;

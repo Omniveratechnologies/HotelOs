@@ -601,7 +601,9 @@ function ImportDrawer({ onClose, onComplete }) {
 }
 
 function LockDrawer({ onClose, onComplete }) {
-  const [dateVal, setDateVal] = useState(new Date().toISOString().slice(0, 10));
+  const [dateVal, setDateVal] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 

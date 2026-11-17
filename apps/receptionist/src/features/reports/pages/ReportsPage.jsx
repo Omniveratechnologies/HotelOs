@@ -26,6 +26,7 @@ import {
 const formatCurrency = (val) => `₹${(val || 0).toLocaleString("en-IN")}`;
 
 const PeriodSelector = ({ currentPeriod, onPeriodChange }) => {
+  const [maxDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [showCustomDates, setShowCustomDates] = useState(false);
@@ -86,7 +87,7 @@ const PeriodSelector = ({ currentPeriod, onPeriodChange }) => {
               type="date"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              max={format(new Date(), "yyyy-MM-dd")}
+              max={maxDate}
               className="focus:ring-brand-900 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:outline-none"
               required
             />
@@ -103,7 +104,7 @@ const PeriodSelector = ({ currentPeriod, onPeriodChange }) => {
               type="date"
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
-              max={format(new Date(), "yyyy-MM-dd")}
+              max={maxDate}
               className="focus:ring-brand-900 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:outline-none"
               required
             />

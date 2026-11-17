@@ -87,6 +87,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function DigitalCheckInDashboardPage() {
+  const [todayFormatted] = useState(() => formatDate(new Date()));
   const [filters, setFilters] = useState({
     dateRange: "today",
     source: "all",
@@ -461,7 +462,7 @@ export default function DigitalCheckInDashboardPage() {
 
           <FilterBar
             dateRange={{
-              from: filters.dateRange === "today" ? formatDate(new Date()) : "",
+              from: filters.dateRange === "today" ? todayFormatted : "",
               to: "",
             }}
             onDateRangeChange={handleDateRangeChange}
