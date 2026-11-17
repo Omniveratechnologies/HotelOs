@@ -6,6 +6,9 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   main: {
     build: {
+      externalizeDeps: {
+        exclude: ["@hotelos/platform"],
+      },
       lib: {
         entry: resolve(__dirname, "electron/main/index.ts"),
       },
@@ -13,6 +16,9 @@ export default defineConfig({
   },
   preload: {
     build: {
+      externalizeDeps: {
+        exclude: ["@hotelos/platform"],
+      },
       lib: {
         entry: resolve(__dirname, "electron/preload/index.ts"),
       },

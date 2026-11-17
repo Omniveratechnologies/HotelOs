@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Hamburger from "../Hamburger/Hamburger";
+import Hamburger from "../hamburger/Hamburger";
 import SearchBar from "./SearchBar";
 
 const Navbar = ({
@@ -15,7 +15,7 @@ const Navbar = ({
   setIsMenuOpen,
   searchTerm,
   setSearchTerm,
-  placeholder
+  placeholder,
 }) => {
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
