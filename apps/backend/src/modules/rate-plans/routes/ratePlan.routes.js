@@ -9,6 +9,13 @@ import {
 } from "../controllers/ratePlan.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
+import { validate } from "#/shared/middleware/validate.middleware.js";
+import {
+  createRatePlanBodySchema,
+  updateRatePlanBodySchema,
+  syncAllRatesBodySchema,
+  ratePlanIdParamsSchema,
+} from "../schemas.js";
 
 const router = express.Router();
 
@@ -16,12 +23,20 @@ const router = express.Router();
 router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
 
 // Sync all rates to Aiosell (before parameterized routes)
-router.post("/sync", syncAllRates);
+router.post("/sync", validate({ body: syncAllRatesBodySchema }), syncAllRates);
 
 // Read + write (create/update/delete)
 router.get("/", getRatePlans);
-router.post("/", createRatePlan);
-router.patch("/:id", updateRatePlan);
-router.delete("/:id", deleteRatePlan);
+router.post("/", validate({ body: createRatePlanBodySchema }), createRatePlan);
+router.patch(
+  "/:id",
+  validate({ params: ratePlanIdParamsSchema, body: updateRatePlanBodySchema }),
+  updateRatePlan,
+);
+router.delete(
+  "/:id",
+  validate({ params: ratePlanIdParamsSchema }),
+  deleteRatePlan,
+);
 
 export default router;

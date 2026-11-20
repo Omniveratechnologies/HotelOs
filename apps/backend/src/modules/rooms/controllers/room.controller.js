@@ -19,13 +19,6 @@ import {
   CHANNEL_ROOM_FIELDS,
 } from "#/modules/channel-manager/approvals/approval-helpers.js";
 
-const ROOM_STATUSES = new Set([
-  "available",
-  "occupied",
-  "reserved",
-  "cleaning",
-]);
-
 // =====================================================
 // GET ALL ROOMS (hotel-scoped, optional status filtering)
 // =====================================================
@@ -37,19 +30,21 @@ const ROOM_STATUSES = new Set([
  */
 export const getRooms = async (req, res) => {
   try {
-    const hotelId = req.query.hotelId || req.user.hotelId;
-    if (!hotelId) {
+    const { hotelId, status } = req.validated.query;
+    const effectiveHotelId = hotelId || req.user.hotelId;
+
+    if (!effectiveHotelId) {
       return res.status(400).json({
         success: false,
         message: "hotelId is required",
       });
     }
 
-    const filter = { hotelId };
+    const filter = { hotelId: effectiveHotelId };
 
     // Apply status filter if explicitly provided and valid
-    if (req.query.status && ROOM_STATUSES.has(req.query.status)) {
-      filter.status = req.query.status;
+    if (status) {
+      filter.status = status;
     }
 
     const rooms = await Room.find(filter).sort({ roomNumber: 1 });
@@ -75,8 +70,9 @@ export const getRooms = async (req, res) => {
 
 export const getRoomById = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const room = await Room.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 
@@ -108,27 +104,7 @@ export const getRoomById = async (req, res) => {
 
 export const createRoom = async (req, res) => {
   try {
-    const { roomNumber, type, rate, floor, roomCode } = req.body;
-
-    if (
-      !roomNumber?.trim() ||
-      rate === undefined ||
-      rate === null ||
-      floor === undefined ||
-      floor === null
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "roomNumber, rate and floor are required",
-      });
-    }
-
-    if (rate < 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Rate must be a positive number",
-      });
-    }
+    const { roomNumber, type, rate, floor, roomCode } = req.validated.body;
 
     const code = roomCode?.trim() || null;
 
@@ -220,8 +196,7 @@ export const createRoom = async (req, res) => {
 
 export const updateRoom = async (req, res) => {
   try {
-    const allowedUpdates = {};
-
+    const { id } = req.validated.params;
     const {
       status,
       type,
@@ -231,38 +206,19 @@ export const updateRoom = async (req, res) => {
       checkIn,
       checkOut,
       roomCode,
-    } = req.body;
+    } = req.validated.body;
+
+    const allowedUpdates = {};
 
     if (status !== undefined) {
-      if (!ROOM_STATUSES.has(status)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid room status",
-        });
-      }
-
       allowedUpdates.status = status;
     }
 
     if (type !== undefined) {
-      if (typeof type !== "string" || !type.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid room type",
-        });
-      }
-
       allowedUpdates.type = type;
     }
 
     if (rate !== undefined) {
-      if (typeof rate !== "number" || rate < 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Rate must be a positive number",
-        });
-      }
-
       allowedUpdates.rate = rate;
     }
 
@@ -302,21 +258,14 @@ export const updateRoom = async (req, res) => {
       allowedUpdates.checkOut = checkOut ? new Date(checkOut) : null;
     }
 
-    if (Object.keys(allowedUpdates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid fields to update",
-      });
-    }
-
     const previousRoom = await Room.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 
     const room = await Room.findOneAndUpdate(
       {
-        _id: req.params.id,
+        _id: id,
         hotelId: req.user.hotelId,
       },
       allowedUpdates,
@@ -343,7 +292,7 @@ export const updateRoom = async (req, res) => {
       try {
         const staleBookings = await Booking.find({
           hotelId: req.user.hotelId,
-          roomId: req.params.id,
+          roomId: id,
           status: "checked-in",
         });
 
@@ -435,9 +384,9 @@ export const updateRoom = async (req, res) => {
 // =====================================================
 export const checkOutRoom = async (req, res) => {
   try {
-    const roomId = req.params.id;
+    const { id: roomId } = req.validated.params;
     const hotelId = req.user.hotelId;
-    const { settlementMode = "CASH", notes = "" } = req.body || {};
+    const { settlementMode = "CASH", notes = "" } = req.validated.body;
 
     const room = await Room.findOne({ _id: roomId, hotelId });
     if (!room) {
@@ -598,8 +547,9 @@ export const checkOutRoom = async (req, res) => {
 
 export const deleteRoom = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const room = await Room.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 

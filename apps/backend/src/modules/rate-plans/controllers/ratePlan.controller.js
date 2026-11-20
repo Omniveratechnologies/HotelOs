@@ -51,27 +51,7 @@ export const getRatePlans = async (req, res) => {
 export const createRatePlan = async (req, res) => {
   try {
     const { name, ratePlanCode, roomCode, rate, occupancy, mealPlan } =
-      req.body;
-
-    if (
-      !name?.trim() ||
-      !roomCode?.trim() ||
-      rate === undefined ||
-      rate === null ||
-      !occupancy
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "name, roomCode, rate and occupancy are required",
-      });
-    }
-
-    if (typeof rate !== "number" || rate < 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Rate must be a positive number",
-      });
-    }
+      req.validated.body;
 
     const roomCodeValue = roomCode.trim().toLowerCase();
     // The room code identifies the room TYPE — every rate plan belongs to a
@@ -163,8 +143,7 @@ export const createRatePlan = async (req, res) => {
 
 export const updateRatePlan = async (req, res) => {
   try {
-    const allowedUpdates = {};
-
+    const { id } = req.validated.params;
     const {
       name,
       ratePlanCode,
@@ -174,25 +153,15 @@ export const updateRatePlan = async (req, res) => {
       occupancy,
       mealPlan,
       isActive,
-    } = req.body;
+    } = req.validated.body;
+
+    const allowedUpdates = {};
 
     if (name !== undefined) {
-      if (!name.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Name cannot be empty",
-        });
-      }
       allowedUpdates.name = name.trim();
     }
 
     if (ratePlanCode !== undefined) {
-      if (!ratePlanCode.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Rate plan code cannot be empty",
-        });
-      }
       allowedUpdates.ratePlanCode = ratePlanCode.trim().toLowerCase();
     }
 
@@ -207,7 +176,7 @@ export const updateRatePlan = async (req, res) => {
       }
 
       const current = await RatePlan.findOne({
-        _id: req.params.id,
+        _id: id,
         hotelId: req.user.hotelId,
       });
 
@@ -235,12 +204,6 @@ export const updateRatePlan = async (req, res) => {
     }
 
     if (rate !== undefined) {
-      if (typeof rate !== "number" || rate < 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Rate must be a positive number",
-        });
-      }
       allowedUpdates.rate = rate;
     }
 
@@ -256,25 +219,18 @@ export const updateRatePlan = async (req, res) => {
       allowedUpdates.isActive = Boolean(isActive);
     }
 
-    if (Object.keys(allowedUpdates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid fields to update",
-      });
-    }
-
     const previousPlan = CHANNEL_RATE_PLAN_FIELDS.some(
       (field) => allowedUpdates[field] !== undefined,
     )
       ? await RatePlan.findOne({
-          _id: req.params.id,
+          _id: id,
           hotelId: req.user.hotelId,
         })
       : null;
 
     const ratePlan = await RatePlan.findOneAndUpdate(
       {
-        _id: req.params.id,
+        _id: id,
         hotelId: req.user.hotelId,
       },
       allowedUpdates,
@@ -345,8 +301,9 @@ export const updateRatePlan = async (req, res) => {
 
 export const deleteRatePlan = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const ratePlan = await RatePlan.findOneAndDelete({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 
@@ -387,8 +344,7 @@ export const deleteRatePlan = async (req, res) => {
 
 export const syncAllRates = async (req, res) => {
   try {
-    const startDate = req.body?.startDate || req.query?.startDate;
-    const endDate = req.body?.endDate || req.query?.endDate;
+    const { startDate, endDate } = req.validated.body || {};
 
     const result = await aiosellSyncRates(req.user.hotelId, startDate, endDate);
 

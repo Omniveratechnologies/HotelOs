@@ -142,48 +142,7 @@ export const createHotel = async (req, res) => {
       subscriptionStartDate,
       subscriptionEndDate,
       aiosellHotelCode,
-    } = req.body;
-
-    // =================================================
-    // VALIDATION
-    // =================================================
-
-    if (!name || !email || !subscriptionStartDate || !subscriptionEndDate) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Hotel name, email, subscription start date and subscription end date are required",
-      });
-    }
-
-    const parsedTax = Number(taxPercent);
-    if (
-      taxPercent === undefined ||
-      taxPercent === null ||
-      taxPercent === "" ||
-      Number.isNaN(parsedTax) ||
-      parsedTax < 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "A valid tax percentage (e.g. 12 or 18) is required for hotel billing and reservations.",
-      });
-    }
-
-    if (!checkInTime?.trim() || !checkOutTime?.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Both check-in time and check-out time are required.",
-      });
-    }
-
-    if (checkInTime.trim() === checkOutTime.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Check-out time must differ from check-in time.",
-      });
-    }
+    } = req.validated.body;
 
     // =================================================
     // NORMALIZE EMAIL
@@ -192,26 +151,11 @@ export const createHotel = async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
 
     // =================================================
-    // VALIDATE DATES
+    // PARSE DATES (already validated by Zod)
     // =================================================
 
     const startDate = new Date(subscriptionStartDate);
-
     const endDate = new Date(subscriptionEndDate);
-
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid subscription dates",
-      });
-    }
-
-    if (endDate <= startDate) {
-      return res.status(400).json({
-        success: false,
-        message: "Subscription end date must be after the start date",
-      });
-    }
 
     // =================================================
     // CHECK EXISTING HOTEL EMAIL
@@ -261,7 +205,7 @@ export const createHotel = async (req, res) => {
 
       gstin: gstin?.trim().toUpperCase() || "",
 
-      taxPercent: parsedTax,
+      taxPercent,
 
       checkInTime: checkInTime.trim(),
 
@@ -378,7 +322,7 @@ export const getHotels = async (req, res) => {
 
 export const getHotelById = async (req, res) => {
   try {
-    const { hotelId } = req.params;
+    const { hotelId } = req.validated.params;
 
     const hotel = await Hotel.findById(hotelId);
 
@@ -410,24 +354,13 @@ export const getHotelById = async (req, res) => {
 
 export const updateHotelStatus = async (req, res) => {
   try {
-    const { hotelId } = req.params;
-    const { status } = req.body;
-
-    const normalizedStatus = String(status || "")
-      .trim()
-      .toUpperCase();
-
-    if (!["ACTIVE", "INACTIVE"].includes(normalizedStatus)) {
-      return res.status(400).json({
-        success: false,
-        message: "Status must be ACTIVE or INACTIVE",
-      });
-    }
+    const { hotelId } = req.validated.params;
+    const { status } = req.validated.body;
 
     const hotel = await Hotel.findByIdAndUpdate(
       hotelId,
       {
-        status: normalizedStatus,
+        status,
       },
       {
         new: true,
@@ -445,7 +378,7 @@ export const updateHotelStatus = async (req, res) => {
     return res.status(200).json({
       success: true,
       message:
-        normalizedStatus === "ACTIVE"
+        status === "ACTIVE"
           ? "Hotel activated successfully"
           : "Hotel deactivated successfully",
       data: hotel,
@@ -466,8 +399,7 @@ export const updateHotelStatus = async (req, res) => {
 
 export const updateHotel = async (req, res) => {
   try {
-    const { hotelId } = req.params;
-
+    const { hotelId } = req.validated.params;
     const {
       name,
       email,
@@ -489,7 +421,7 @@ export const updateHotel = async (req, res) => {
       subscriptionStartDate,
       subscriptionEndDate,
       aiosellHotelCode,
-    } = req.body;
+    } = req.validated.body;
 
     const hotel = await Hotel.findById(hotelId);
 
@@ -521,200 +453,48 @@ export const updateHotel = async (req, res) => {
       aiosellHotelCode: hotel.aiosellHotelCode,
     };
 
-    // =================================================
-    // UPDATE NAME
-    // =================================================
-
-    if (name !== undefined) {
-      if (!name.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Hotel name cannot be empty",
-        });
-      }
-
-      hotel.name = name.trim();
-    }
-
-    // =================================================
-    // UPDATE EMAIL
-    // =================================================
-
+    // Apply updates from validated body (only fields that are provided)
+    if (name !== undefined) hotel.name = name.trim();
     if (email !== undefined) {
       const normalizedEmail = email.toLowerCase().trim();
-
       const existingHotel = await Hotel.findOne({
         email: normalizedEmail,
-        _id: {
-          $ne: hotelId,
-        },
+        _id: { $ne: hotelId },
       });
-
       if (existingHotel) {
         return res.status(409).json({
           success: false,
           message: "Another hotel already uses this email",
         });
       }
-
       hotel.email = normalizedEmail;
     }
-
-    // =================================================
-    // UPDATE PHONE & LOCATION
-    // =================================================
-
-    if (phone !== undefined) {
-      hotel.phone = phone?.trim() || "";
-    }
-
-    if (address !== undefined) {
-      hotel.address = address?.trim() || "";
-    }
-
-    if (city !== undefined) {
-      hotel.city = city?.trim() || "";
-    }
-
-    if (state !== undefined) {
-      hotel.state = state?.trim() || "";
-    }
-
-    if (pincode !== undefined) {
-      hotel.pincode = pincode?.trim() || "";
-    }
-
-    if (country !== undefined) {
-      hotel.country = country?.trim() || "India";
-    }
-
-    if (currency !== undefined) {
-      hotel.currency = currency?.trim() || "INR";
-    }
-
-    if (gstin !== undefined) {
-      hotel.gstin = gstin?.trim().toUpperCase() || "";
-    }
-
-    if (taxPercent !== undefined && taxPercent !== null && taxPercent !== "") {
-      const parsedTax = Number(taxPercent);
-      if (Number.isNaN(parsedTax) || parsedTax < 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Tax percentage must be a valid non-negative number",
-        });
-      }
-      hotel.taxPercent = parsedTax;
-    }
-
-    if (checkInTime !== undefined) {
-      if (!checkInTime.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Check-in time cannot be empty",
-        });
-      }
-      hotel.checkInTime = checkInTime.trim();
-    }
-
-    if (checkOutTime !== undefined) {
-      if (!checkOutTime.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Check-out time cannot be empty",
-        });
-      }
-      hotel.checkOutTime = checkOutTime.trim();
-    }
-
-    if (
-      hotel.checkInTime &&
-      hotel.checkOutTime &&
-      hotel.checkInTime === hotel.checkOutTime
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Check-out time must differ from check-in time",
-      });
-    }
-
-    if (cancellationPolicy !== undefined) {
+    if (phone !== undefined) hotel.phone = phone?.trim() || "";
+    if (address !== undefined) hotel.address = address?.trim() || "";
+    if (city !== undefined) hotel.city = city?.trim() || "";
+    if (state !== undefined) hotel.state = state?.trim() || "";
+    if (pincode !== undefined) hotel.pincode = pincode?.trim() || "";
+    if (country !== undefined) hotel.country = country?.trim() || "India";
+    if (currency !== undefined) hotel.currency = currency?.trim() || "INR";
+    if (gstin !== undefined) hotel.gstin = gstin?.trim().toUpperCase() || "";
+    if (taxPercent !== undefined) hotel.taxPercent = taxPercent;
+    if (checkInTime !== undefined) hotel.checkInTime = checkInTime.trim();
+    if (checkOutTime !== undefined) hotel.checkOutTime = checkOutTime.trim();
+    if (cancellationPolicy !== undefined)
       hotel.cancellationPolicy = cancellationPolicy?.trim() || "";
-    }
-
-    if (termsAndConditions !== undefined) {
+    if (termsAndConditions !== undefined)
       hotel.termsAndConditions = termsAndConditions?.trim() || "";
-    }
-
-    if (wifiNetworkName !== undefined) {
+    if (wifiNetworkName !== undefined)
       hotel.wifiNetworkName = wifiNetworkName?.trim() || "";
-    }
-
-    if (wifiPassword !== undefined) {
+    if (wifiPassword !== undefined)
       hotel.wifiPassword = wifiPassword?.trim() || "";
-    }
-
-    // =================================================
-    // UPDATE SUBSCRIPTION START DATE
-    // =================================================
-
-    if (subscriptionStartDate !== undefined) {
-      const startDate = new Date(subscriptionStartDate);
-
-      if (Number.isNaN(startDate.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid subscription start date",
-        });
-      }
-
-      hotel.subscriptionStartDate = startDate;
-    }
-
-    // =================================================
-    // UPDATE SUBSCRIPTION END DATE
-    // =================================================
-
-    if (subscriptionEndDate !== undefined) {
-      const endDate = new Date(subscriptionEndDate);
-
-      if (Number.isNaN(endDate.getTime())) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid subscription end date",
-        });
-      }
-
-      hotel.subscriptionEndDate = endDate;
-    }
-
-    // =================================================
-    // VALIDATE SUBSCRIPTION DATE RANGE
-    // =================================================
-
-    if (
-      hotel.subscriptionStartDate &&
-      hotel.subscriptionEndDate &&
-      hotel.subscriptionEndDate <= hotel.subscriptionStartDate
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Subscription end date must be after the start date",
-      });
-    }
-
-    // =================================================
-    // UPDATE AIOSELL HOTEL CODE
-    // =================================================
-
-    if (aiosellHotelCode !== undefined) {
+    if (subscriptionStartDate !== undefined)
+      hotel.subscriptionStartDate = new Date(subscriptionStartDate);
+    if (subscriptionEndDate !== undefined)
+      hotel.subscriptionEndDate = new Date(subscriptionEndDate);
+    if (aiosellHotelCode !== undefined)
       hotel.aiosellHotelCode =
         aiosellHotelCode === "" ? null : aiosellHotelCode.trim();
-    }
-
-    // =================================================
-    // SAVE HOTEL
-    // =================================================
 
     await hotel.save();
 
@@ -904,7 +684,7 @@ export const updateMyHotel = async (req, res) => {
       checkOutTime,
       wifiNetworkName,
       wifiPassword,
-    } = req.body;
+    } = req.validated.body;
 
     const beforeSnapshot = {
       name: hotel.name,
@@ -925,125 +705,35 @@ export const updateMyHotel = async (req, res) => {
       wifiPassword: hotel.wifiPassword,
     };
 
-    // =================================================
-    // UPDATE NAME
-    // =================================================
-
-    if (name !== undefined) {
-      if (!String(name).trim()) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Hotel name cannot be empty" });
-      }
-      hotel.name = String(name).trim();
-    }
-
-    // =================================================
-    // UPDATE PHONE
-    // =================================================
-
-    if (phone !== undefined) {
-      hotel.phone = String(phone || "").trim();
-    }
-
-    // =================================================
-    // UPDATE ADDRESS
-    // =================================================
-
-    if (address !== undefined) {
-      hotel.address = String(address || "").trim();
-    }
-
-    // =================================================
-    // UPDATE CITY
-    // =================================================
-
-    if (city !== undefined) {
-      hotel.city = String(city || "").trim();
-    }
-
-    // =================================================
-    // UPDATE STATE & PINCODE
-    // =================================================
-
-    if (state !== undefined) {
-      hotel.state = String(state || "").trim();
-    }
-
-    if (pincode !== undefined) {
-      hotel.pincode = String(pincode || "").trim();
-    }
-
-    if (country !== undefined) {
-      hotel.country = String(country || "").trim();
-    }
-
-    if (currency !== undefined) {
+    // Apply updates from validated body (only fields that are provided)
+    if (name !== undefined) hotel.name = String(name).trim();
+    if (phone !== undefined) hotel.phone = String(phone || "").trim();
+    if (address !== undefined) hotel.address = String(address || "").trim();
+    if (city !== undefined) hotel.city = String(city || "").trim();
+    if (state !== undefined) hotel.state = String(state || "").trim();
+    if (pincode !== undefined) hotel.pincode = String(pincode || "").trim();
+    if (country !== undefined) hotel.country = String(country || "").trim();
+    if (currency !== undefined)
       hotel.currency = String(currency || "")
         .trim()
         .toUpperCase();
-    }
-
-    // =================================================
-    // UPDATE GSTIN & TAX
-    // =================================================
-
-    if (gstin !== undefined) {
+    if (gstin !== undefined)
       hotel.gstin = String(gstin || "")
         .trim()
         .toUpperCase();
-    }
-
-    if (taxPercent !== undefined) {
-      const parsedTax = Number(taxPercent);
-      if (Number.isNaN(parsedTax) || parsedTax < 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Tax percentage must be a non-negative number",
-        });
-      }
-      hotel.taxPercent = parsedTax;
-    }
-
-    // =================================================
-    // UPDATE POLICIES
-    // =================================================
-
-    if (cancellationPolicy !== undefined) {
+    if (taxPercent !== undefined) hotel.taxPercent = taxPercent;
+    if (cancellationPolicy !== undefined)
       hotel.cancellationPolicy = String(cancellationPolicy || "").trim();
-    }
-
-    if (termsAndConditions !== undefined) {
+    if (termsAndConditions !== undefined)
       hotel.termsAndConditions = String(termsAndConditions || "").trim();
-    }
-
-    // =================================================
-    // UPDATE CHECK-IN TIME
-    // =================================================
-
-    if (checkInTime !== undefined) {
+    if (checkInTime !== undefined)
       hotel.checkInTime = String(checkInTime || "").trim();
-    }
-
-    // =================================================
-    // UPDATE CHECK-OUT TIME
-    // =================================================
-
-    if (checkOutTime !== undefined) {
+    if (checkOutTime !== undefined)
       hotel.checkOutTime = String(checkOutTime || "").trim();
-    }
-
-    // =================================================
-    // UPDATE WIFI
-    // =================================================
-
-    if (wifiNetworkName !== undefined) {
+    if (wifiNetworkName !== undefined)
       hotel.wifiNetworkName = String(wifiNetworkName || "").trim() || null;
-    }
-
-    if (wifiPassword !== undefined) {
+    if (wifiPassword !== undefined)
       hotel.wifiPassword = String(wifiPassword || "").trim() || null;
-    }
 
     await hotel.save();
 
@@ -1094,7 +784,7 @@ export const updateMyHotel = async (req, res) => {
 
 export const deleteHotel = async (req, res) => {
   try {
-    const { hotelId } = req.params;
+    const { hotelId } = req.validated.params;
 
     const hotel = await Hotel.findById(hotelId);
 
@@ -1163,22 +853,10 @@ export const getChannelManagerConfig = async (req, res) => {
 
 export const updateChannelManagerConfig = async (req, res) => {
   try {
-    const { pmsSlug, username, password, baseUrl, isEnabled } = req.body;
+    const { pmsSlug, username, password, baseUrl, isEnabled } =
+      req.validated.body;
 
     let config = await ChannelManagerConfig.findOne();
-
-    if (
-      pmsSlug === undefined &&
-      username === undefined &&
-      password === undefined &&
-      baseUrl === undefined &&
-      isEnabled === undefined
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "No fields to update",
-      });
-    }
 
     if (config) {
       if (pmsSlug !== undefined) config.pmsSlug = pmsSlug;
@@ -1230,7 +908,7 @@ export const updateChannelManagerConfig = async (req, res) => {
 
 export const getHotelAiosellCode = async (req, res) => {
   try {
-    const { hotelId } = req.params;
+    const { hotelId } = req.validated.params;
 
     const hotel = await Hotel.findById(hotelId);
 
@@ -1261,8 +939,8 @@ export const getHotelAiosellCode = async (req, res) => {
 
 export const setHotelAiosellCode = async (req, res) => {
   try {
-    const { hotelId } = req.params;
-    const { aiosellHotelCode } = req.body;
+    const { hotelId } = req.validated.params;
+    const { aiosellHotelCode } = req.validated.body;
 
     const hotel = await Hotel.findById(hotelId);
 
@@ -1310,7 +988,7 @@ export const setHotelAiosellCode = async (req, res) => {
 
 export const getChannelApprovals = async (req, res) => {
   try {
-    const { kind, status } = req.query;
+    const { kind, status } = req.validated.query;
 
     const match = {};
     if (kind) match.kind = kind;
@@ -1406,7 +1084,7 @@ export const getChannelApprovals = async (req, res) => {
 
 export const verifyChannelApproval = async (req, res) => {
   try {
-    const { approvalId } = req.params;
+    const { approvalId } = req.validated.params;
 
     const approval = await ChannelApproval.findById(approvalId);
     if (!approval) {
@@ -1465,7 +1143,7 @@ export const verifyChannelApproval = async (req, res) => {
 
 export const syncFromAiosell = async (req, res) => {
   try {
-    const { hotelId } = req.params;
+    const { hotelId } = req.validated.params;
 
     const hotel = await Hotel.findById(hotelId);
     if (!hotel) {
