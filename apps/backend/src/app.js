@@ -9,6 +9,14 @@ import { env } from "#/config/env.js";
 import { getConnectionStatus } from "#/config/db.js";
 import { redisConnection } from "#/config/redis.js";
 import { sanitizeRequest } from "#/shared/middleware/sanitize.middleware.js";
+import {
+  correlationMiddleware,
+  requestLoggingMiddleware,
+} from "#/shared/middleware/correlation.middleware.js";
+import {
+  apiVersionMiddleware,
+  getVersionInfo,
+} from "#/shared/middleware/version.middleware.js";
 
 import hotelRoutes from "#/modules/hotels/index.js";
 import authRoutes from "#/modules/auth/index.js";
@@ -50,6 +58,15 @@ import manageStaffDashboardRoutes from "./modules/managestaff-dashboard/index.js
 
 const app = express();
 
+// API Version middleware (early - before auth)
+app.use(apiVersionMiddleware());
+
+// Correlation ID middleware (for request tracing)
+app.use(correlationMiddleware());
+
+// Request logging middleware
+app.use(requestLoggingMiddleware());
+
 // Security headers
 app.use(
   helmet({
@@ -85,6 +102,7 @@ app.use(
         url: req.url,
         query: req.query,
         headers: { "user-agent": req.headers["user-agent"] },
+        correlationId: req.correlationId,
       }),
       res: (res) => ({ statusCode: res.statusCode }),
     },
@@ -141,6 +159,7 @@ const healthCheckHandler = (req, res, next) => {
         ? "HotelOS backend is healthy"
         : "HotelOS backend has degraded dependencies",
       timestamp: new Date().toISOString(),
+      version: getVersionInfo(),
       dependencies: {
         mongodb: mongoStatus,
         redis: redisStatus,
@@ -152,6 +171,15 @@ const healthCheckHandler = (req, res, next) => {
 };
 
 app.get("/api/v1/health", healthCheckHandler);
+
+// Version endpoint
+app.get("/api/v1/version", (req, res) => {
+  res.json({
+    success: true,
+    message: "API version information",
+    data: getVersionInfo(),
+  });
+});
 
 app.use("/api/v1/hotels", hotelRoutes);
 app.use("/api/v1/auth", authRoutes);
