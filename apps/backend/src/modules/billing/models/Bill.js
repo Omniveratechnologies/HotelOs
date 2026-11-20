@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { encrypt, decrypt } from "#/shared/services/encryption.service.js";
 
 const billItemSchema = new mongoose.Schema(
   {
@@ -44,9 +45,10 @@ const billSchema = new mongoose.Schema(
       ref: "Booking",
       default: null,
     },
-    guestName: { type: String, default: "" },
-    guestPhone: { type: String, default: "" },
-    guestEmail: { type: String, default: "" },
+    // Encrypted sensitive guest fields
+    guestNameEncrypted: { type: String, default: "", select: false },
+    guestPhoneEncrypted: { type: String, default: "", select: false },
+    guestEmailEncrypted: { type: String, default: "", select: false },
     linkedOrderIds: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: "Order",
@@ -83,6 +85,53 @@ const billSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+// Virtual getters/setters for encrypted fields
+billSchema
+  .virtual("guestName")
+  .get(function () {
+    if (!this.guestNameEncrypted) return "";
+    try {
+      return decrypt(this.guestNameEncrypted);
+    } catch {
+      return this.guestNameEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.guestNameEncrypted = value ? encrypt(String(value)) : "";
+  });
+
+billSchema
+  .virtual("guestPhone")
+  .get(function () {
+    if (!this.guestPhoneEncrypted) return "";
+    try {
+      return decrypt(this.guestPhoneEncrypted);
+    } catch {
+      return this.guestPhoneEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.guestPhoneEncrypted = value ? encrypt(String(value)) : "";
+  });
+
+billSchema
+  .virtual("guestEmail")
+  .get(function () {
+    if (!this.guestEmailEncrypted) return "";
+    try {
+      return decrypt(this.guestEmailEncrypted);
+    } catch {
+      return this.guestEmailEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.guestEmailEncrypted = value ? encrypt(String(value)) : "";
+  });
+
+// Ensure virtuals are included in JSON
+billSchema.set("toJSON", { virtuals: true });
+billSchema.set("toObject", { virtuals: true });
 
 billSchema.index({ hotelId: 1, billNo: 1 }, { unique: true });
 

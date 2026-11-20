@@ -16,25 +16,29 @@ import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
 import Session from "../models/Session.js";
 import KioskHandoff from "../models/KioskHandoff.js";
 import logger from "#/utils/logger.js";
+import { env } from "#/config/env.js";
 
 const EIGHT_HOURS_MS =
   SESSION_POLICIES.ABSOLUTE_LIFETIME_HOURS * 60 * 60 * 1000;
 
 function setSessionCookie(res, rawToken) {
+  const isProduction = process.env.NODE_ENV === "production";
   res.cookie("hotelos_session", rawToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     maxAge: EIGHT_HOURS_MS,
     path: "/",
+    // Domain not set - allows cookie on all subdomains
   });
 }
 
 function clearSessionCookie(res) {
+  const isProduction = process.env.NODE_ENV === "production";
   res.clearCookie("hotelos_session", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
   });
 }
@@ -332,7 +336,7 @@ export const exchangeKioskHandoff = async (req, res) => {
           roomId: targetRoomId,
           kioskId: kiosk._id,
         },
-        process.env.JWT_SECRET || "default_jwt_secret",
+        env.jwtSecret,
         { expiresIn: "8h" },
       );
     } else {
@@ -347,7 +351,7 @@ export const exchangeKioskHandoff = async (req, res) => {
           hotelId: handoff.hotelId,
           roomId: targetRoomId,
         },
-        process.env.JWT_SECRET || "default_jwt_secret",
+        env.jwtSecret,
         { expiresIn: "8h" },
       );
     }
@@ -506,7 +510,7 @@ export const getKioskRoomStatus = async (req, res) => {
           roomId,
           kioskId,
         },
-        process.env.JWT_SECRET || "default_jwt_secret",
+        env.jwtSecret,
         { expiresIn: "8h" },
       );
 

@@ -6,6 +6,7 @@ import {
   OTA_CHANNELS,
   PAYMENT_STATUSES,
 } from "../constants.js";
+import { encrypt, decrypt } from "#/shared/services/encryption.service.js";
 
 const addOnSchema = new mongoose.Schema(
   {
@@ -131,30 +132,36 @@ const roomAllocationSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    occupantName: {
+    // Encrypted sensitive occupant fields
+    occupantNameEncrypted: {
       type: String,
       trim: true,
       default: null,
+      select: false,
     },
-    occupantPhone: {
+    occupantPhoneEncrypted: {
       type: String,
       trim: true,
       default: null,
+      select: false,
     },
-    occupantEmail: {
+    occupantEmailEncrypted: {
       type: String,
       trim: true,
       default: null,
+      select: false,
     },
-    occupantIdType: {
+    occupantIdTypeEncrypted: {
       type: String,
       trim: true,
       default: null,
+      select: false,
     },
-    occupantIdNumber: {
+    occupantIdNumberEncrypted: {
       type: String,
       trim: true,
       default: null,
+      select: false,
     },
     status: {
       type: String,
@@ -175,6 +182,81 @@ const roomAllocationSchema = new mongoose.Schema(
   },
   { _id: true },
 );
+
+// Virtual getters/setters for encrypted fields
+roomAllocationSchema
+  .virtual("occupantName")
+  .get(function () {
+    if (!this.occupantNameEncrypted) return null;
+    try {
+      return decrypt(this.occupantNameEncrypted);
+    } catch {
+      return this.occupantNameEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantNameEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+roomAllocationSchema
+  .virtual("occupantPhone")
+  .get(function () {
+    if (!this.occupantPhoneEncrypted) return null;
+    try {
+      return decrypt(this.occupantPhoneEncrypted);
+    } catch {
+      return this.occupantPhoneEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantPhoneEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+roomAllocationSchema
+  .virtual("occupantEmail")
+  .get(function () {
+    if (!this.occupantEmailEncrypted) return null;
+    try {
+      return decrypt(this.occupantEmailEncrypted);
+    } catch {
+      return this.occupantEmailEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantEmailEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+roomAllocationSchema
+  .virtual("occupantIdType")
+  .get(function () {
+    if (!this.occupantIdTypeEncrypted) return null;
+    try {
+      return decrypt(this.occupantIdTypeEncrypted);
+    } catch {
+      return this.occupantIdTypeEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantIdTypeEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+roomAllocationSchema
+  .virtual("occupantIdNumber")
+  .get(function () {
+    if (!this.occupantIdNumberEncrypted) return null;
+    try {
+      return decrypt(this.occupantIdNumberEncrypted);
+    } catch {
+      return this.occupantIdNumberEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantIdNumberEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+// Ensure virtuals are included in JSON
+roomAllocationSchema.set("toJSON", { virtuals: true });
+roomAllocationSchema.set("toObject", { virtuals: true });
 
 const roomRequirementSchema = new mongoose.Schema(
   {

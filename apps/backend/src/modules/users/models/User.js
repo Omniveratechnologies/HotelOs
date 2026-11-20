@@ -3,6 +3,7 @@ import { compare, hash } from "bcryptjs";
 
 import { ROLES } from "#/shared/constants/roles.js";
 import { GUEST_ID_TYPES } from "#/shared/constants/guest.js";
+import { encrypt, decrypt } from "#/shared/services/encryption.service.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -74,16 +75,17 @@ const userSchema = new mongoose.Schema(
       default: "Aadhaar",
     },
 
-    idNumber: {
+    // Encrypted sensitive fields
+    idNumberEncrypted: {
       type: String,
       default: "",
-      trim: true,
+      select: false,
     },
 
-    nationality: {
+    nationalityEncrypted: {
       type: String,
       default: null,
-      trim: true,
+      select: false,
     },
 
     isActive: {
@@ -177,6 +179,39 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+// Virtual getters/setters for encrypted fields
+userSchema
+  .virtual("idNumber")
+  .get(function () {
+    if (!this.idNumberEncrypted) return "";
+    try {
+      return decrypt(this.idNumberEncrypted);
+    } catch {
+      return this.idNumberEncrypted; // Return as-is if decryption fails (legacy data)
+    }
+  })
+  .set(function (value) {
+    this.idNumberEncrypted = value ? encrypt(String(value)) : "";
+  });
+
+userSchema
+  .virtual("nationality")
+  .get(function () {
+    if (!this.nationalityEncrypted) return null;
+    try {
+      return decrypt(this.nationalityEncrypted);
+    } catch {
+      return this.nationalityEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.nationalityEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+// Ensure virtuals are included in JSON
+userSchema.set("toJSON", { virtuals: true });
+userSchema.set("toObject", { virtuals: true });
 
 // Virtual for checking if account is locked
 userSchema.virtual("isLocked").get(function () {
