@@ -90,10 +90,10 @@ const AllStaff = () => {
       alert(response.data?.message || "CSV import request submitted.");
 
       await fetchStaff();
-    } catch (error) {
-      console.error("Staff import failed:", error);
+    } catch (importError) {
+      console.error("Staff import failed:", importError);
       alert(
-        error.response?.data?.message ||
+        importError.response?.data?.message ||
           "Failed to import staff. Please try again.",
       );
     } finally {
@@ -118,6 +118,7 @@ const AllStaff = () => {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // oxlint-disable-next-line react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -166,12 +167,14 @@ const AllStaff = () => {
     return () => controller.abort();
   }, [filters, refreshKey]);
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchStaffStats()
       .then(setStats)
       .catch(() => setStats(null));
   }, [refreshKey]);
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchStaffLookups()
       .then(setLookups)

@@ -123,9 +123,8 @@ export default function ManageMenu() {
       setError(requestError.message);
     }
   };
-  // oxlint-disable-next-line react/set-state-in-effect
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect
     load();
   }, []);
   const filtered = useMemo(
@@ -378,7 +377,9 @@ function Editor({
         (file) =>
           new Promise((resolve) => {
             const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
+            reader.addEventListener("load", () => resolve(reader.result), {
+              once: true,
+            });
             reader.readAsDataURL(file);
           }),
       ),

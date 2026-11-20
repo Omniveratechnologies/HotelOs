@@ -44,19 +44,17 @@ export default function Categories() {
   const [rows, setRows] = useState([]),
     [editing, setEditing] = useState(null),
     [error, setError] = useState("");
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setRows(await getCategories());
     } catch (e) {
       setError(e.message);
     }
-  };
+  }, []);
   // oxlint-disable react/set-state-in-effect
   useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect
     load();
-  }, []);
-  // oxlint-enable react/set-state-in-effect
+  }, [load]);
   const save = async () => {
     try {
       const saved = editing.id

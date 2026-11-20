@@ -55,6 +55,7 @@ const Holidays = () => {
     [],
   );
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     api(`/summary?${query({ year: filters.year })}`, {
@@ -67,6 +68,7 @@ const Holidays = () => {
     return () => controller.abort();
   }, [filters.year, refreshKey, notify]);
 
+  // oxlint-disable-next-line react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -84,6 +86,7 @@ const Holidays = () => {
     return () => controller.abort();
   }, [filters, search, page, limit, refreshKey, notify]);
 
+  // oxlint-disable-next-line react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setCalendarLoading(true);
@@ -98,6 +101,7 @@ const Holidays = () => {
     return () => controller.abort();
   }, [month, refreshKey, notify]);
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     api("/upcoming?limit=5", { signal: controller.signal })

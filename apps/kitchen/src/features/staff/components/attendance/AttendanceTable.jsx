@@ -10,6 +10,7 @@ import {
   formatNumber,
   formatTime,
 } from "../../utils/attendanceFormat.js";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const EMPTY_PAGINATION = { page: 1, limit: 10, total: 0, totalPages: 1 };
 
@@ -93,7 +94,7 @@ const RowMenu = ({ record, onView, onCorrect }) => {
 };
 
 const AttendanceTable = ({
-  records = [],
+  records = EMPTY_ARRAY,
   loading = false,
   error = "",
   onRetry,

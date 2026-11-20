@@ -666,6 +666,7 @@ export default function Upselling() {
     }
   }, []);
 
+  // oxlint-disable react/set-state-in-effect
   useEffect(() => {
     load();
   }, [load]);

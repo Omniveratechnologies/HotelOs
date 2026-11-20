@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { createMenuItem } from "../services/menu.js";
 
-const MenuForm = ({ onCancel = () => window.history.back() }) => {
+const goBack = () => window.history.back();
+const MenuForm = ({ onCancel = goBack }) => {
   const [formData, setFormData] = useState({
     name: "",
     shortDescription: "",
@@ -38,8 +39,8 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
           throw new Error("Image must be smaller than 2MB");
         image = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
+          reader.addEventListener("load", () => resolve(reader.result), { once: true });
+          reader.addEventListener("error", reject, { once: true });
           reader.readAsDataURL(formData.image);
         });
       }

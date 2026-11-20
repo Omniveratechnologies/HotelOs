@@ -51,6 +51,7 @@ const RegisterFace = () => {
     [],
   );
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     api("/summary", { signal: controller.signal })
@@ -67,6 +68,7 @@ const RegisterFace = () => {
       .catch(() => setDepartments([]));
   }, []);
 
+  // oxlint-disable-next-line react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);

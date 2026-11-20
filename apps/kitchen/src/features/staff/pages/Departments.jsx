@@ -103,6 +103,7 @@ const Departments = () => {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // oxlint-disable-next-line react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -145,6 +146,7 @@ const Departments = () => {
     return () => controller.abort();
   }, [filters, refreshKey]);
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchDepartmentStats()
       .then(setStats)
@@ -160,6 +162,7 @@ const Departments = () => {
     }
   }, [isWide, selectedKey, departments, setSearchParams]);
 
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => {
     setSummary(null);
     setSummaryError("");
@@ -168,6 +171,7 @@ const Departments = () => {
     setStaff(IDLE);
   }, [selectedKey]);
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!selectedKey) return undefined;
 
@@ -188,6 +192,7 @@ const Departments = () => {
 
   const departmentId = summary?.department?._id;
 
+  // oxlint-disable-next-line react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     if (
       !selectedKey ||

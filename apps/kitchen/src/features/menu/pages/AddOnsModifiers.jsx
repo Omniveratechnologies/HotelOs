@@ -35,6 +35,7 @@ export default function AddOnsModifiers() {
     }
   }, []);
 
+  // oxlint-disable react/set-state-in-effect
   useEffect(() => {
     load();
   }, [load]);

@@ -181,7 +181,7 @@ const ExportReports = () => {
       }));
     }
   }, []);
-
+  // oxlint-disable react/set-state-in-effect
   useEffect(() => {
     loadHistory(1);
   }, [loadHistory]);

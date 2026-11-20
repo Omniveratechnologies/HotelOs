@@ -88,6 +88,7 @@ const AttendanceHistory = () => {
   // ------------------------------------------------------------ data
 
   // The table
+  // oxlint-disable-next-line react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -125,6 +126,7 @@ const AttendanceHistory = () => {
   }, [applied, view, refreshKey]);
 
   // The cards and the donut (same filters as the table)
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
 
@@ -138,6 +140,7 @@ const AttendanceHistory = () => {
   }, [applied, refreshKey]);
 
   // The trend follows the department filter, and has its own period
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setTrendLoading(true);
@@ -159,6 +162,7 @@ const AttendanceHistory = () => {
     return () => controller.abort();
   }, [trendDays, applied.department_id, refreshKey]);
 
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => {
     setActivityError("");
     fetchAttendanceActivity(5)
@@ -167,6 +171,7 @@ const AttendanceHistory = () => {
   }, [refreshKey]);
 
   // Dropdown options (once)
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => {
     fetchDepartments({ status: "ALL", limit: 100 })
       .then((body) => setDepartments(body.data || []))

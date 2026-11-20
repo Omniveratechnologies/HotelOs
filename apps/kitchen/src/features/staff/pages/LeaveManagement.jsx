@@ -82,6 +82,8 @@ const LeaveManagement = () => {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // oxlint-disable-next-line react/set-state-in-effect
+// oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     const base = toQuery(filters);

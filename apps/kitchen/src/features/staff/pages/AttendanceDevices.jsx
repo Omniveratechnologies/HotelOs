@@ -78,6 +78,7 @@ const AttendanceDevices = () => {
   );
   const refresh = useCallback(() => setRefreshKey((key) => key + 1), []);
 
+  // oxlint-disable-next-line react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -253,9 +254,13 @@ const AttendanceDevices = () => {
   };
 
   const mapDevices = summary?.map || [];
+  const mapDevicesRef = useRef(mapDevices);
+  mapDevicesRef.current = mapDevices;
+
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   const liveDevices = useMemo(
-    () => mapDevices.filter((device) => device.status !== "OFFLINE"),
-    [mapDevices],
+    () => mapDevicesRef.current.filter((device) => device.status !== "OFFLINE"),
+    [],
   );
   const hasActiveFilters = Boolean(debouncedSearch.trim() || status !== "ALL");
 

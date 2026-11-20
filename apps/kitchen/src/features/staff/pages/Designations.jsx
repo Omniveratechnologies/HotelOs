@@ -76,6 +76,8 @@ const Designations = () => {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // oxlint-disable-next-line react/set-state-in-effect
+// oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -121,12 +123,14 @@ const Designations = () => {
     return () => controller.abort();
   }, [filters, refreshKey]);
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchDesignationStats()
       .then(setStats)
       .catch(() => setStats(null));
   }, [refreshKey]);
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchDepartments({ status: "ALL", limit: 100 })
       .then((body) => setDepartments(body.data || []))

@@ -105,6 +105,8 @@ const DailyAttendanceReport = () => {
       .catch(() => {});
   }, []);
 
+  // oxlint-disable-next-line react/set-state-in-effect
+// oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
 

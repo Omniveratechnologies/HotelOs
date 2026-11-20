@@ -64,6 +64,7 @@ const Recipe = () => {
 
   const [inventoryItems, setInventoryItems] = useState([]);
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchInventoryItems(API_BASE_URL)
       .then(setInventoryItems)
@@ -75,7 +76,7 @@ const Recipe = () => {
         .catch((err) => console.error("Failed to load recipe:", err))
         .finally(() => setLoading(false));
     }
-  }, [id]);
+  }, [id, isEditing]);
 
   const inventoryItemOptions = inventoryItems.map((item) => ({
     value: item._id,

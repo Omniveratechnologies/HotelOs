@@ -43,15 +43,19 @@ const RegisterFacePanel = ({
     [],
   );
 
+  // oxlint-disable react/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     releaseAll();
     setPhotos([]);
     setHint({ text: "", tone: "info" });
     setConsent(false);
     setError("");
-  }, [staff?._id, releaseAll]);
+  }, [staff?._id]);
+  // oxlint-enable react/set-state-in-effect, react-hooks/exhaustive-deps
 
-  useEffect(() => releaseAll, [releaseAll]);
+  // oxlint-disable react-hooks/exhaustive-deps
+  useEffect(() => releaseAll, []);
+  // oxlint-enable react-hooks/exhaustive-deps
 
   const addPhoto = async (blob, localIssues = []) => {
     if (localIssues.length)

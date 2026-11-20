@@ -9,6 +9,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import ViewButton from "@/components/ui/button/ViewButton";
 import DeleteButton from "@/components/ui/button/DeleteButton";
 import EditButton from "@/components/ui/button/EditButton";
+import { EMPTY_ARRAY, EMPTY_OBJECT } from "@/constants/defaults.js";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const EMPTY_PAGINATION = { page: 1, limit: 10, total: 0, totalPages: 1 };
@@ -58,7 +59,7 @@ const formatDate = (value) => {
 };
 
 const AllStaffTable = ({
-  staff = [],
+  staff = EMPTY_ARRAY,
   loading = false,
   error = "",
   onRetry,
@@ -69,9 +70,9 @@ const AllStaffTable = ({
 
   searchTerm = "",
   onSearchChange,
-  filters = {},
-  departments = [],
-  designations = [],
+  filters = EMPTY_OBJECT,
+  departments = EMPTY_ARRAY,
+  designations = EMPTY_ARRAY,
   onFilterChange,
   onReset,
 

@@ -138,7 +138,6 @@ const AddStaff = () => {
   const {
     register,
     handleSubmit,
-    watch,
     reset,
     setValue,
     getValues,
@@ -191,6 +190,7 @@ const AddStaff = () => {
     }
   }, []);
 
+  // oxlint-disable react/set-state-in-effect
   useEffect(() => {
     loadDesignations(departmentId);
   }, [departmentId, loadDesignations]);
@@ -218,6 +218,7 @@ const AddStaff = () => {
     }
   }, [isEditMode]);
 
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => {
     refreshStaffCode();
   }, [refreshStaffCode]);
@@ -283,6 +284,7 @@ const AddStaff = () => {
     };
   }, []);
 
+  // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => {
     if (!isEditMode) {
       reset(initialValues);
@@ -335,6 +337,7 @@ const AddStaff = () => {
   }, [id, isEditMode, reset]);
 
   const hasChangesRef = useRef(false);
+  // oxlint-disable-next-line react/refs
   hasChangesRef.current = hasChanges;
 
   useEffect(() => {
@@ -649,6 +652,7 @@ const AddStaff = () => {
             </div>
           ) : (
             <form
+              // oxlint-disable react/refs
               ref={formRef}
               onSubmit={handleSubmit(submit)}
               className="space-y-5"

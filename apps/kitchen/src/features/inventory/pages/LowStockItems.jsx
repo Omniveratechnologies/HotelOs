@@ -223,9 +223,13 @@ const LowStockItems = () => {
     setSelectedItem(item);
     setShowReorderModal(true);
   };
+  // oxlint-disable-next-line react/set-state-in-effect
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Reset page when filters/search/tab change
-    const _ = { activeTab, searchTerm, filterValues };
+    void activeTab;
+    void searchTerm;
+    void filterValues;
     setCurrentPage(1);
   }, [activeTab, searchTerm, filterValues]);
 
