@@ -51,5 +51,3 @@ export function WelcomeStep({
     </div>
   );
 }
-
-export default WelcomeStep;

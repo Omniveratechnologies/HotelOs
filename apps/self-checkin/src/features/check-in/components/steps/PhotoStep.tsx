@@ -270,5 +270,3 @@ export function PhotoStep({
     </div>
   );
 }
-
-export default PhotoStep;

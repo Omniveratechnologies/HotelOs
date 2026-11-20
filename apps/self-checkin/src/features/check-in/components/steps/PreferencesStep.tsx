@@ -86,5 +86,3 @@ export function PreferencesStep({
     </div>
   );
 }
-
-export default PreferencesStep;

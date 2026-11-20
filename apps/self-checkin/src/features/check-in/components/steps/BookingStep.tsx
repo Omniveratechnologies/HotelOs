@@ -83,5 +83,3 @@ export function BookingStep({ booking, guest }: BookingStepProps) {
     </div>
   );
 }
-
-export default BookingStep;

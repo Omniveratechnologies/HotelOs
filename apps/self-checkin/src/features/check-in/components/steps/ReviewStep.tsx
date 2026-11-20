@@ -101,5 +101,3 @@ export function ReviewStep({
     </div>
   );
 }
-
-export default ReviewStep;

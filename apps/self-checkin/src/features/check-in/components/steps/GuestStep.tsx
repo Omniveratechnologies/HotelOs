@@ -115,5 +115,3 @@ export function GuestStep({
     </div>
   );
 }
-
-export default GuestStep;

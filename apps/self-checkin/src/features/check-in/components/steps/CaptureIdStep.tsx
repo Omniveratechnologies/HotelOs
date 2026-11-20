@@ -244,5 +244,3 @@ export function CaptureIdStep({
     </div>
   );
 }
-
-export default CaptureIdStep;

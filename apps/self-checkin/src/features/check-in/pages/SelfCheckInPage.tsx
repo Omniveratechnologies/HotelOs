@@ -20,16 +20,16 @@ import {
   submitCheckIn,
   uploadCheckInFile,
 } from "../api/checkInApi";
-import WelcomeStep from "../components/steps/WelcomeStep";
-import BookingStep from "../components/steps/BookingStep";
-import GuestStep from "../components/steps/GuestStep";
-import CaptureIdStep from "../components/steps/CaptureIdStep";
-import PhotoStep from "../components/steps/PhotoStep";
-import RegistrationCardStep from "../components/steps/RegistrationCardStep";
-import SignatureStep from "../components/steps/SignatureStep";
-import PreferencesStep from "../components/steps/PreferencesStep";
-import ReviewStep from "../components/steps/ReviewStep";
-import SuccessStep from "../components/steps/SuccessStep";
+import { WelcomeStep } from "../components/steps/WelcomeStep";
+import { BookingStep } from "../components/steps/BookingStep";
+import { GuestStep } from "../components/steps/GuestStep";
+import { CaptureIdStep } from "../components/steps/CaptureIdStep";
+import { PhotoStep } from "../components/steps/PhotoStep";
+import { RegistrationCardStep } from "../components/steps/RegistrationCardStep";
+import { SignatureStep } from "../components/steps/SignatureStep";
+import { PreferencesStep } from "../components/steps/PreferencesStep";
+import { ReviewStep } from "../components/steps/ReviewStep";
+import { SuccessStep } from "../components/steps/SuccessStep";
 import type {
   CheckInSessionData,
   FileRef,
@@ -106,15 +106,13 @@ export default function SelfCheckInPage() {
   const guestNationality = guest.nationality || sessionGuest?.nationality || "";
 
   const isAlreadyCheckedIn = booking?.status === "checked-in";
+  // Captured once so the render stays pure while still reflecting "now".
+  const [mountedAt] = useState(() => Date.now());
   const isCheckOutPassed = useMemo(() => {
     if (booking?.status === "checked-out") return true;
     if (!booking?.checkOut) return false;
-    try {
-      return new Date() > new Date(booking.checkOut);
-    } catch {
-      return false;
-    }
-  }, [booking?.status, booking?.checkOut]);
+    return mountedAt > new Date(booking.checkOut).getTime();
+  }, [booking?.status, booking?.checkOut, mountedAt]);
 
   // Resolve check-in on mount
   useEffect(() => {
