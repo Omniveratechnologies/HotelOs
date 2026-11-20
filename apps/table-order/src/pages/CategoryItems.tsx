@@ -1,13 +1,10 @@
 import { Plus, ShoppingBag } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useState } from "react";
-import {
-  BottomNav,
-  formatMoney,
-  PageHeader,
-  useMenu,
-} from "../components/Layout";
-import { useCart } from "../context/CartContext";
+import { BottomNav, PageHeader } from "../components/Layout";
+import { formatMoney } from "../utils/format";
+import { useMenu } from "../context/useMenu";
+import { useCart } from "../context/useCart";
 
 export default function CategoryItems() {
   const { category = "", hotelId, tableId } = useParams();

@@ -7,8 +7,9 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useState } from "react";
-import { BottomNav, useMenu } from "../components/Layout";
-import { useCart } from "../context/CartContext";
+import { BottomNav } from "../components/Layout";
+import { useMenu } from "../context/useMenu";
+import { useCart } from "../context/useCart";
 import type { OrderType } from "../types";
 
 export default function Menu() {

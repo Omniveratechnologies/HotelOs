@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -10,17 +8,7 @@ import {
 import { SESSION_STORAGE_KEYS } from "@hotelos/utils";
 import { api } from "../services/api";
 import type { Order } from "../types";
-
-export interface OrdersContextType {
-  orders: Order[];
-  activeOrders: Order[];
-  latestOrder: Order | null;
-  loading: boolean;
-  addSessionOrder: (order: Order) => void;
-  refreshOrders: () => Promise<void>;
-}
-
-const OrdersContext = createContext<OrdersContextType | null>(null);
+import { OrdersContext, type OrdersContextType } from "./useOrders";
 
 const ACTIVE_STATUSES = new Set([
   "NEW",
@@ -123,15 +111,10 @@ export function OrdersProvider({
     }
   }, [hotelId, tableId, storageKey, persistOrderIds]);
 
-  // Initial load
+  // Initial load; refreshOrders owns the loading flag
   useEffect(() => {
-    let active = true;
-    refreshOrders().finally(() => {
-      if (active) setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
+    // oxlint-disable-next-line react/set-state-in-effect -- initial session data fetch is an intentional mount side effect
+    refreshOrders();
   }, [refreshOrders]);
 
   // Periodic polling for status changes (e.g. kitchen progresses order)
@@ -167,26 +150,26 @@ export function OrdersProvider({
     [orders],
   );
 
-  return (
-    <OrdersContext.Provider
-      value={{
-        orders,
-        activeOrders,
-        latestOrder,
-        loading,
-        addSessionOrder,
-        refreshOrders,
-      }}
-    >
-      {children}
-    </OrdersContext.Provider>
+  const value = useMemo<OrdersContextType>(
+    () => ({
+      orders,
+      activeOrders,
+      latestOrder,
+      loading,
+      addSessionOrder,
+      refreshOrders,
+    }),
+    [
+      orders,
+      activeOrders,
+      latestOrder,
+      loading,
+      addSessionOrder,
+      refreshOrders,
+    ],
   );
-}
 
-export function useOrders() {
-  const ctx = useContext(OrdersContext);
-  if (!ctx) {
-    throw new Error("useOrders must be used within an OrdersProvider");
-  }
-  return ctx;
+  return (
+    <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>
+  );
 }

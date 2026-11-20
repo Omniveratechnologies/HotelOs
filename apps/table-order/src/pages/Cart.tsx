@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { formatMoney } from "../components/Layout";
-import { useCart } from "../context/CartContext";
-import { useSession } from "../context/SessionContext";
-import { useOrders } from "../context/OrdersContext";
+import { formatMoney } from "../utils/format";
+import { useCart } from "../context/useCart";
+import { useSession } from "../context/useSession";
+import { useOrders } from "../context/useOrders";
 import { api } from "../services/api";
 import { openRazorpayCheckout } from "../services/razorpayCheckout";
-import type { PaymentMode } from "../types";
+import type { FoodItem, PaymentMode, UpsellSuggestion } from "../types";
 
 export default function Cart() {
   const { ensureAuthenticatedSession } = useSession();
@@ -37,13 +37,11 @@ export default function Cart() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [paymentFailure, setPaymentFailure] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [menu, setMenu] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<UpsellSuggestion[]>([]);
+  const [menu, setMenu] = useState<FoodItem[]>([]);
 
   useEffect(() => {
     if (!items.length) {
-      setMenu([]);
-      setSuggestions([]);
       return;
     }
     api
@@ -75,10 +73,13 @@ export default function Cart() {
       { foodItemId: string; name: string; price: number; image?: string }
     >();
     suggestions.forEach((rule) => {
-      rule.recommendedItems?.forEach((recommended: any) => {
-        const foodItemId = String(
-          recommended.foodItemId?._id || recommended.foodItemId,
-        );
+      rule.recommendedItems?.forEach((recommended) => {
+        const rawFoodItemId = recommended.foodItemId;
+        const foodItemId =
+          typeof rawFoodItemId === "string"
+            ? rawFoodItemId
+            : rawFoodItemId?._id || rawFoodItemId?.id || "";
+        if (!foodItemId) return;
         if (items.some((item) => item.foodItemId === foodItemId)) return;
         if (seen.has(foodItemId)) return;
         const foodItem = menu.find((m) => String(m.id ?? m._id) === foodItemId);
@@ -191,8 +192,8 @@ export default function Cart() {
         clearCart();
         navigate(`../order/${order.id}`);
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to place order");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to place order");
     } finally {
       setBusy(false);
     }

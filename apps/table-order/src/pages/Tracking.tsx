@@ -2,8 +2,10 @@ import { Check, Clock3, Utensils } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../services/api";
-import { formatMoney, PageHeader } from "../components/Layout";
-import { useOrders } from "../context/OrdersContext";
+import { PageHeader } from "../components/Layout";
+import { formatMoney } from "../utils/format";
+import { orderItemKey } from "../utils/orderItemKey";
+import { useOrders } from "../context/useOrders";
 import type { Order } from "../types";
 
 const stages = [
@@ -153,8 +155,8 @@ export default function Tracking() {
             {order.items.reduce((s, it) => s + (it.quantity || 1), 0)})
           </h3>
           <div className="tracking-items-list">
-            {order.items.map((item, idx) => (
-              <div key={idx} className="tracking-item-row">
+            {order.items.map((item) => (
+              <div key={orderItemKey(item)} className="tracking-item-row">
                 <span>
                   {item.name} × {item.quantity}
                 </span>
