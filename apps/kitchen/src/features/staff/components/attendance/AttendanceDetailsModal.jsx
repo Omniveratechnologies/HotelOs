@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-
 import Modal from "@/components/ui/Modal.jsx";
 import ActionButton from "@/components/ui/button/ActionButton.jsx";
 import StatusBadge from "@/components/ui/StatusBadge.jsx";
 import Avatar from "@/components/ui/Avatar.jsx";
 import { fetchAttendanceDetail } from "../../services/attendanceApi.js";
 import { formatDate, formatTime } from "../../utils/attendanceFormat.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const FIELD_LABELS = {
   status: "Status",
@@ -28,24 +27,14 @@ const Item = ({ label, children }) => (
   </div>
 );
 const AttendanceDetailsModal = ({ open, record, onClose, onCorrect }) => {
-  const [detail, setDetail] = useState(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!open || !record) return undefined;
-
-    let cancelled = false;
-    setDetail(null);
-    setError("");
-
-    fetchAttendanceDetail(record._id)
-      .then((data) => !cancelled && setDetail(data))
-      .catch((requestError) => !cancelled && setError(requestError.message));
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, record]);
+  const { data: detail, error } = useAsyncData(
+    async () => {
+      if (!open || !record) throw new Error("Not open");
+      const res = await fetchAttendanceDetail(record._id);
+      return res;
+    },
+    [open, record],
+  );
 
   if (!record) return null;
 

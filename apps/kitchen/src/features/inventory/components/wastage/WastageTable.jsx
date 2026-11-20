@@ -1,5 +1,4 @@
-/* oxlint-disable react/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Table from "@/components/ui/Table.jsx";
 import Tabs from "@/components/ui/Tabs.jsx";
 import ExpiryAlertsTable from "./ExpiryAlertsTable.jsx";
@@ -10,6 +9,7 @@ import Filters from "@/components/ui/Filters.jsx";
 import EditButton from "@/components/ui/button/EditButton.jsx";
 import DeleteButton from "@/components/ui/button/DeleteButton.jsx";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const REASON_BADGE_COLOR = {
   EXPIRED: "text-red-400",
@@ -55,12 +55,6 @@ const TAB_OPTIONS = [
 
 const WastageTable = ({ onEdit, refreshKey, onDeleted }) => {
   const [activeTab, setActiveTab] = useState("history");
-  const [records, setRecords] = useState([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    totalPages: 1,
-    totalRecords: 0,
-  });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterValues, setFilterValues] = useState({
     reason: "ALL",
@@ -68,38 +62,43 @@ const WastageTable = ({ onEdit, refreshKey, onDeleted }) => {
     period: "All Time",
   });
   const [page, setPage] = useState(1);
-  const limit = 5;
 
-  const fetchRecords = async () => {
-    try {
-      const params = new URLSearchParams({
-        search: searchTerm,
-        reason: filterValues.reason,
-        department: filterValues.department,
-        period: filterValues.period,
-        page,
-        limit,
-      });
+  const fetchRecords = useCallback(async () => {
+    const params = new URLSearchParams({
+      search: searchTerm,
+      reason: filterValues.reason,
+      department: filterValues.department,
+      period: filterValues.period,
+      page,
+      limit: 5,
+    });
 
-      const res = await fetch(
-        `${API_BASE_URL}/inventory/wastage?${params.toString()}`,
-      );
-      const data = await res.json();
+    const res = await fetch(
+      `${API_BASE_URL}/inventory/wastage?${params.toString()}`,
+    );
+    const data = await res.json();
 
-      if (!res.ok || !data.success) throw new Error(data.message);
+    if (!res.ok || !data.success) throw new Error(data.message);
 
-      setRecords(data.data.records);
-      setPagination(data.data.pagination);
-    } catch (err) {
-      console.error("Failed to load wastage history:", err);
-    }
-  };
+    return {
+      records: data.data.records,
+      pagination: data.data.pagination,
+    };
+  }, [searchTerm, filterValues, page]);
 
-  useEffect(() => {
-    if (activeTab !== "history") return;
-    fetchRecords();
-  }, [searchTerm, filterValues, page, refreshKey, activeTab]);
+  const { data: fetchResult, loading, refresh } = useAsyncData(fetchRecords, [
+    searchTerm,
+    filterValues,
+    page,
+    refreshKey,
+  ]);
 
+  const records = fetchResult?.records || [];
+  const pagination = fetchResult?.pagination || { page: 1, totalPages: 1, totalRecords: 0 };
+
+  // Reset page when filters/search change
+  // oxlint-disable react/set-state-in-effect
+  // oxlint-disable react-hooks/exhaustive-deps
   useEffect(() => {
     setPage(1);
   }, [searchTerm, filterValues]);
@@ -118,7 +117,7 @@ const WastageTable = ({ onEdit, refreshKey, onDeleted }) => {
 
       if (!res.ok || !data.success) throw new Error(data.message);
 
-      await fetchRecords();
+      await refresh();
       onDeleted?.();
     } catch (err) {
       console.error("Delete wastage error:", err);
@@ -130,7 +129,7 @@ const WastageTable = ({ onEdit, refreshKey, onDeleted }) => {
     {
       key: "serialNumber",
       label: "#",
-      render: (_, i) => (page - 1) * limit + i + 1,
+      render: (_, i) => (pagination.page - 1) * 5 + i + 1,
     },
     {
       key: "date",
@@ -222,12 +221,13 @@ const WastageTable = ({ onEdit, refreshKey, onDeleted }) => {
             columns={columns}
             data={records}
             emptyMessage="No wastage records found"
+            loading={loading}
           />
 
           <div className="mt-2 flex items-center justify-between">
             <p className="px-2 text-xs text-gray-500">
-              Showing {records.length === 0 ? 0 : (page - 1) * limit + 1}-
-              {(page - 1) * limit + records.length} of {pagination.totalRecords}{" "}
+              Showing {records.length === 0 ? 0 : (pagination.page - 1) * 5 + 1}-
+              {(pagination.page - 1) * 5 + records.length} of {pagination.totalRecords}{" "}
               records
             </p>
 

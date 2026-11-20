@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import { FiEdit2 } from "react-icons/fi";
 
 import Modal from "@/components/ui/Modal.jsx";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const dateText = (value) => {
   if (!value) return "-";
@@ -47,36 +47,23 @@ const Pill = ({ tone, children }) => (
 );
 
 const StaffViewModal = ({ open, staffId, onClose, onEdit }) => {
-  const [staff, setStaff] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const [retry, setRetry] = useState(0);
+  // Key changes when modal opens/closes or staffId changes, triggering remount
+  const formKey = open && staffId ? staffId : "closed";
 
-  useEffect(() => {
-    if (!open || !staffId) return undefined;
-
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    setStaff(null);
-    setPhotoFailed(false);
-
-    fetch(`${API_BASE_URL}/v1/staffManagement/${staffId}`, {
-      credentials: "include",
-      signal: controller.signal,
-    })
-      .then(async (res) => {
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok || json.success === false)
-          throw new Error(json.message || "Could not load this staff member.");
-        setStaff(json.data);
-      })
-      .catch((err) => err.name !== "AbortError" && setError(err.message))
-      .finally(() => !controller.signal.aborted && setLoading(false));
-
-    return () => controller.abort();
-  }, [open, staffId, retry]);
+  const { data: staff, loading, error, refresh } = useAsyncData(
+    async (signal) => {
+      if (!open || !staffId) throw new Error("Not open");
+      const res = await fetch(`${API_BASE_URL}/v1/staffManagement/${staffId}`, {
+        credentials: "include",
+        signal,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false)
+        throw new Error(json.message || "Could not load this staff member.");
+      return json.data;
+    },
+    [open, staffId],
+  );
 
   const initials = (staff?.name || "?")
     .split(/\s+/)
@@ -87,6 +74,7 @@ const StaffViewModal = ({ open, staffId, onClose, onEdit }) => {
 
   return (
     <Modal
+      key={formKey}
       open={open}
       onClose={onClose}
       title="Staff Details"
@@ -121,7 +109,7 @@ const StaffViewModal = ({ open, staffId, onClose, onEdit }) => {
           <p className="text-xs text-red-400">{error}</p>
           <button
             type="button"
-            onClick={() => setRetry((n) => n + 1)}
+            onClick={refresh}
             className="mt-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800"
           >
             Retry

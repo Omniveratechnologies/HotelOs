@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Modal from "@/components/ui/Modal";
 import ActionButton from "@/components/ui/button/ActionButton";
@@ -28,6 +28,7 @@ const Field = ({ label, hint, children }) => (
 
 const DeviceFormModal = ({ open, device, onClose, onSubmit }) => {
   const editing = Boolean(device);
+  // Key changes when modal opens/closes or device changes, triggering remount
   const formKey = open ? (device ? device._id : "new") : "closed";
 
   const initialValues = useMemo(
@@ -48,16 +49,6 @@ const DeviceFormModal = ({ open, device, onClose, onSubmit }) => {
   const [values, setValues] = useState(() => initialValues);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  // Reset form when key changes (modal opens/closes or device changes)
-  // Using key as dependency for state initializer
-  // oxlint-disable-next-line react/set-state-in-effect
-  // oxlint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    setValues(initialValues);
-    setError("");
-    setSaving(false);
-  }, [formKey]);
 
   const set = (name) => (event) =>
     setValues((previous) => ({ ...previous, [name]: event.target.value }));
@@ -94,6 +85,7 @@ const DeviceFormModal = ({ open, device, onClose, onSubmit }) => {
 
   return (
     <Modal
+      key={formKey}
       open={open}
       onClose={saving ? undefined : onClose}
       title={editing ? `Edit ${device.name}` : "Add Device"}

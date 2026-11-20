@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import Modal from "@/components/ui/Modal";
 import ActionButton from "@/components/ui/button/ActionButton";
@@ -12,17 +12,14 @@ const DevicePickerModal = ({
   onClose,
   onPick,
 }) => {
-  const key = open ? devices.map((d) => d._id).join(",") : "closed";
-  const [id, setId] = useState(() => open ? devices[0]?._id || "" : "");
+  // Key changes when modal opens/closes or device list changes, triggering remount
+  const formKey = open ? devices.map((d) => d._id).join(",") : "closed";
 
-  // Reset id when key changes (modal opens/closes or device list changes)
-  // oxlint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    setId(open ? devices[0]?._id || "" : "");
-  }, [key, open, devices]);
+  const [id, setId] = useState(() => open ? devices[0]?._id || "" : "");
 
   return (
     <Modal
+      key={formKey}
       open={open}
       onClose={onClose}
       title={title}

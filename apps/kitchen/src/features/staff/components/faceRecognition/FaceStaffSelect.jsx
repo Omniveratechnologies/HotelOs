@@ -4,29 +4,24 @@ import { FiChevronDown, FiSearch, FiX } from "react-icons/fi";
 import useDebounce from "@/hooks/useDebounce.js";
 import FaceAvatar from "./FaceAvatar.jsx";
 import { api, inputCls, query } from "../../utils/faceUtils.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const FaceStaffSelect = ({ value, onChange, disabled }) => {
   const [open, setOpen] = useState(false);
   const [term, setTerm] = useState("");
   const search = useDebounce(term.trim(), 250);
-  const [options, setOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
   const ref = useRef(null);
 
-  useEffect(() => {
-    if (!open) return undefined;
-    const controller = new AbortController();
-    setLoading(true);
-    api(`/staff-options?${query({ q: search, limit: 20 })}`, {
-      signal: controller.signal,
-    })
-      .then((res) => setOptions(res.data))
-      .catch(() => {})
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+  const { data: options = [], loading } = useAsyncData(
+    async (signal) => {
+      if (!open) throw new Error("Not open");
+      const res = await api(`/staff-options?${query({ q: search, limit: 20 })}`, {
+        signal,
       });
-    return () => controller.abort();
-  }, [open, search]);
+      return res.data;
+    },
+    [open, search],
+  );
 
   useEffect(() => {
     if (!open) return undefined;
@@ -78,17 +73,18 @@ const FaceStaffSelect = ({ value, onChange, disabled }) => {
           ) : (
             <span className="text-gray-500">Choose a staff member</span>
           )}
+
+          {value && !disabled && (
+            <button
+              type="button"
+              aria-label="Clear selection"
+              onClick={() => onChange(null)}
+              className="p-2 text-gray-500 hover:text-white"
+            >
+              <FiX size={14} />
+            </button>
+          )}
         </button>
-        {value && !disabled && (
-          <button
-            type="button"
-            aria-label="Clear selection"
-            onClick={() => onChange(null)}
-            className="p-2 text-gray-500 hover:text-white"
-          >
-            <FiX size={14} />
-          </button>
-        )}
         <FiChevronDown size={14} className="mr-3 text-gray-500" />
       </div>
 

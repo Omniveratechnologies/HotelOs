@@ -11,6 +11,7 @@ const StaffPhoto = ({ file, setFile, initialPhotoUrl = "" }) => {
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(initialPhotoUrl);
 
+  // oxlint-disable react/set-state-in-effect
   useEffect(() => {
     if (!file) {
       setPreview(initialPhotoUrl);
