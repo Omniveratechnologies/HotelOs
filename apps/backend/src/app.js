@@ -8,6 +8,7 @@ import logger from "#/utils/logger.js";
 import { env } from "#/config/env.js";
 import { getConnectionStatus } from "#/config/db.js";
 import { redisConnection } from "#/config/redis.js";
+import { sanitizeRequest } from "#/shared/middleware/sanitize.middleware.js";
 
 import hotelRoutes from "#/modules/hotels/index.js";
 import authRoutes from "#/modules/auth/index.js";
@@ -118,6 +119,9 @@ app.use(
 
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// NoSQL injection prevention - sanitize all requests
+app.use(sanitizeRequest);
 
 // Compression middleware - compress responses > 1KB
 app.use(compression({ threshold: 1024 }));
