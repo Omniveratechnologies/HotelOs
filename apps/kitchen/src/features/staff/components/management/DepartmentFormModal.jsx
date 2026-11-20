@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { FiPlus, FiSave } from "react-icons/fi";
 
 import Modal from "@/components/ui/Modal.jsx";
@@ -47,16 +47,11 @@ const DepartmentFormModal = ({
 }) => {
   const isEdit = mode === "edit";
 
-  const [values, setValues] = useState(EMPTY);
-  const [codeTouched, setCodeTouched] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [formError, setFormError] = useState("");
-  const [saving, setSaving] = useState(false);
+  // Key changes when modal opens/closes or department changes, triggering remount
+  const formKey = open ? (isEdit && department ? department._id : "new") : "closed";
 
-  useEffect(() => {
-    if (!open) return;
-
-    setValues(
+  const initialValues = useMemo(
+    () =>
       isEdit && department
         ? {
             name: department.name || "",
@@ -67,12 +62,14 @@ const DepartmentFormModal = ({
             color: department.color || DEFAULT_COLOR,
           }
         : EMPTY,
-    );
-    setCodeTouched(isEdit);
-    setErrors({});
-    setFormError("");
-    setSaving(false);
-  }, [open, isEdit, department]);
+    [isEdit, department],
+  );
+
+  const [values, setValues] = useState(() => initialValues);
+  const [codeTouched, setCodeTouched] = useState(isEdit);
+  const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const change = (key, value) => {
     setValues((previous) => {
@@ -115,6 +112,7 @@ const DepartmentFormModal = ({
 
   return (
     <Modal
+      key={formKey}
       open={open}
       onClose={saving ? undefined : onClose}
       title={isEdit ? "Edit Department" : "Add Department"}

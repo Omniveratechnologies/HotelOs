@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Table from "@/components/ui/Table.jsx";
@@ -8,6 +8,7 @@ import EditButton from "@/components/ui/button/EditButton.jsx";
 import DeleteButton from "@/components/ui/button/DeleteButton.jsx";
 import API_BASE_URL from "@/config/api.js";
 import StockOverviewHeader from "./StockOverviewHeader.jsx";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const daysLeftLabel = (expiryDate) => {
   if (!expiryDate) return null;
@@ -47,14 +48,6 @@ const daysLeftLabel = (expiryDate) => {
 const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
   const navigate = useNavigate();
 
-  const [items, setItems] = useState([]);
-
-  const [pagination, setPagination] = useState({
-    page: 1,
-    totalPages: 1,
-    totalRecords: 0,
-  });
-
   const [searchTerm, setSearchTerm] = useState("");
 
   const [filterValues, setFilterValues] = useState({
@@ -67,8 +60,6 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
   const [supplierOptions, setSupplierOptions] = useState([]);
 
   const [page, setPage] = useState(1);
-
-  const [reloadKey, setReloadKey] = useState(0);
 
   const limit = 10;
 
@@ -225,32 +216,29 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
     page,
   ]);
 
+  const { data: fetchResult, loading, refresh } = useAsyncData(fetchItems, [
+    searchTerm,
+    filterValues.supplier,
+    filterValues.status,
+    filterValues.category,
+    filterValues.sortBy,
+    activeCategory,
+    page,
+    refreshKey,
+  ]);
+
+  const items = fetchResult?.paginatedItems || [];
+  const pagination = fetchResult?.pagination || { page: 1, totalPages: 1, totalRecords: 0 };
+
+  const filteredItemsRef = useRef([]);
+
   useEffect(() => {
-    const loadItems = async () => {
-      try {
-        const result = await fetchItems();
+    filteredItemsRef.current = fetchResult?.filteredItems || [];
+  }, [fetchResult]);
 
-        setItems(result.paginatedItems);
-        setPagination(result.pagination);
-
-        onDataLoaded?.(result.filteredItems);
-      } catch (error) {
-        console.error("Failed to load inventory items:", error);
-
-        setItems([]);
-
-        setPagination({
-          page: 1,
-          totalPages: 1,
-          totalRecords: 0,
-        });
-
-        onDataLoaded?.([]);
-      }
-    };
-
-    loadItems();
-  }, [fetchItems, refreshKey, reloadKey, onDataLoaded]);
+  useEffect(() => {
+    onDataLoaded?.(filteredItemsRef.current);
+  }, [onDataLoaded, filteredItemsRef]);
 
   const handleSearchChange = (value) => {
     setPage(1);
@@ -265,6 +253,10 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
       [name]: value,
     }));
   };
+
+  // These are passed to StockOverviewHeader; mark as intentionally unused here
+  void handleSearchChange;
+  void handleFilterChange;
 
   const handleDelete = async (row) => {
     const confirmed = window.confirm(`Delete "${row.name}" from inventory?`);
@@ -287,7 +279,7 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
         throw new Error(data.message || "Failed to delete item");
       }
 
-      setReloadKey((previous) => previous + 1);
+      refresh();
     } catch (error) {
       console.error("Delete item error:", error);
 
@@ -330,42 +322,8 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
     },
 
     {
-      key: "minimumStock",
-      label: "Min. Stock",
-    },
-
-    {
-      key: "expiryDate",
-      label: "Expiry Date",
-      render: (row) => {
-        if (!row.expiryDate) {
-          return "-";
-        }
-
-        const label = daysLeftLabel(row.expiryDate);
-
-        return (
-          <div>
-            <div>
-              {new Date(row.expiryDate).toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </div>
-
-            {label && (
-              <div className={`text-[10px] ${label.color}`}>{label.text}</div>
-            )}
-          </div>
-        );
-      },
-    },
-
-    {
       key: "supplierName",
       label: "Supplier",
-      render: (row) => row.supplierName || "-",
     },
 
     {
@@ -375,52 +333,69 @@ const StockOverviewTable = ({ activeCategory, refreshKey, onDataLoaded }) => {
     },
 
     {
+      key: "expiry",
+      label: "Expiry",
+      render: (row) => {
+        const days = daysLeftLabel(row.expiryDate);
+        if (!days) return null;
+        return (
+          <span className={`text-xs font-medium ${days.color}`}>{days.text}</span>
+        );
+      },
+    },
+
+    {
       key: "actions",
       label: "Actions",
       render: (row) => (
         <div className="flex items-center justify-center gap-1">
           <EditButton
-            onClick={() => navigate(`/inventory/add-item?id=${row._id}`)}
+            onClick={() => navigate(`/inventory/edit/${row._id}`)}
+            aria-label={`Edit ${row.name}`}
           />
-
-          <DeleteButton onClick={() => handleDelete(row)} />
+          <DeleteButton onClick={() => handleDelete(row)} aria-label={`Delete ${row.name}`} />
         </div>
       ),
     },
   ];
 
   return (
-    <div className="bg-slate rounded-xl border border-gray-800/70 p-5">
-      <div className="mb-4">
-        <StockOverviewHeader
-          searchTerm={searchTerm}
-          setSearchTerm={handleSearchChange}
-          filterValues={filterValues}
-          onFilterChange={handleFilterChange}
-          supplierOptions={supplierOptions}
-        />
-      </div>
+    <section className="bg-slate rounded-xl border border-gray-800/70 p-5">
+      <StockOverviewHeader
+        activeCategory={activeCategory}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        filterValues={filterValues}
+        setFilterValues={setFilterValues}
+        supplierOptions={supplierOptions}
+        loading={loading}
+      />
 
       <Table
         columns={columns}
         data={items}
         emptyMessage="No inventory items found"
+        loading={loading}
+        minWidthClass="min-w-[1100px]"
       />
 
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-between">
         <p className="px-2 text-xs text-gray-500">
           Showing {items.length === 0 ? 0 : (pagination.page - 1) * limit + 1}-
-          {(pagination.page - 1) * limit + items.length} of{" "}
-          {pagination.totalRecords} items
+          {(pagination.page - 1) * limit + items.length} of {pagination.totalRecords}{" "}
+          records
         </p>
 
         <Pagination
           currentPage={pagination.page}
           totalPages={pagination.totalPages}
           onPageChange={setPage}
+          totalItems={pagination.totalRecords}
+          pageSize={limit}
+          itemLabel="items"
         />
       </div>
-    </div>
+    </section>
   );
 };
 

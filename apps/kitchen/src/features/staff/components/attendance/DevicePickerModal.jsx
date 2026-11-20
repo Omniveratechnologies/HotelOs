@@ -12,11 +12,14 @@ const DevicePickerModal = ({
   onClose,
   onPick,
 }) => {
-  const [id, setId] = useState("");
+  const key = open ? devices.map((d) => d._id).join(",") : "closed";
+  const [id, setId] = useState(() => open ? devices[0]?._id || "" : "");
 
+  // Reset id when key changes (modal opens/closes or device list changes)
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (open) setId(devices[0]?._id || "");
-  }, [open, devices]);
+    setId(open ? devices[0]?._id || "" : "");
+  }, [key, open, devices]);
 
   return (
     <Modal
