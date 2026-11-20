@@ -35,7 +35,7 @@ export const createRoomTypeBodySchema = z
     rooms: z.array(roomSchema),
   })
   .refine((data) => data.rooms.length === data.count, {
-    message: `Provide details for exactly ${data.count} room(s)`,
+    message: (data) => `Provide details for exactly ${data.count} room(s)`,
     path: ["rooms"],
   })
   .refine(

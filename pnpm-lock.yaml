@@ -50,6 +50,9 @@ importers:
       bullmq:
         specifier: ^6.4.2
         version: 6.4.2(ioredis@6.0.0)
+      compression:
+        specifier: ^1.8.2
+        version: 1.8.2
       cors:
         specifier: ^2.8.6
         version: 2.8.6

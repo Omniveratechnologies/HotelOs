@@ -1,16 +1,17 @@
 import nodemailer from "nodemailer";
 import logger from "#/utils/logger.js";
+import { env } from "#/config/env.js";
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
+  host: env.email.host,
 
-  port: Number(process.env.EMAIL_PORT),
+  port: env.email.port,
 
-  secure: process.env.EMAIL_SECURE === "true",
+  secure: env.email.secure,
 
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    user: env.email.user,
+    pass: env.email.password,
   },
 });
 

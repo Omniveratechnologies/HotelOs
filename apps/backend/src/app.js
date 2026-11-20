@@ -2,9 +2,12 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
+import compression from "compression";
 
 import logger from "#/utils/logger.js";
 import { env } from "#/config/env.js";
+import { getConnectionStatus } from "#/config/db.js";
+import { redisConnection } from "#/config/redis.js";
 
 import hotelRoutes from "#/modules/hotels/index.js";
 import authRoutes from "#/modules/auth/index.js";
@@ -116,14 +119,35 @@ app.use(
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 
+// Compression middleware - compress responses > 1KB
+app.use(compression({ threshold: 1024 }));
+
 app.use("/api/v1/tables", tableRoutes);
 
-app.get("/api/v1/health", (req, res) => {
-  res.json({
-    success: true,
-    message: "HotelOS backend is running",
-  });
-});
+const healthCheckHandler = (req, res, next) => {
+  try {
+    const mongoStatus = getConnectionStatus();
+    const redisStatus = redisConnection?.status || "disconnected";
+
+    const isHealthy = mongoStatus === "connected" && redisStatus === "ready";
+
+    res.status(isHealthy ? 200 : 503).json({
+      success: isHealthy,
+      message: isHealthy
+        ? "HotelOS backend is healthy"
+        : "HotelOS backend has degraded dependencies",
+      timestamp: new Date().toISOString(),
+      dependencies: {
+        mongodb: mongoStatus,
+        redis: redisStatus,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+app.get("/api/v1/health", healthCheckHandler);
 
 app.use("/api/v1/hotels", hotelRoutes);
 app.use("/api/v1/auth", authRoutes);

@@ -3,6 +3,7 @@ import User from "#/modules/users/models/User.js";
 import Booking from "#/modules/bookings/models/Booking.js";
 import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
 import { CURRENT_STAY_STATUSES } from "#/modules/bookings/constants.js";
+import { env } from "#/config/env.js";
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -17,7 +18,7 @@ export const authenticate = async (req, res, next) => {
 
     const token = authHeader.split(" ")[1];
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, env.jwtSecret);
 
     if (decoded.role === "KIOSK") {
       const kiosk = await KioskDevice.findById(decoded.kioskId);

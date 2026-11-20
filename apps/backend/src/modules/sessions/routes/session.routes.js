@@ -13,6 +13,7 @@ import { validate } from "#/shared/middleware/validate.middleware.js";
 import {
   createQrGuestSessionBodySchema,
   exchangeKioskHandoffBodySchema,
+  revokeCurrentSessionBodySchema,
 } from "../schemas.js";
 
 const router = express.Router();

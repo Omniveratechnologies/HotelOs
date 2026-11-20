@@ -84,12 +84,15 @@ export const exportAttendanceQuerySchema = z.object({
 // DEVICE SCHEMAS
 // =====================================================
 
+const ipRegex =
+  /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
 export const createDeviceBodySchema = z.object({
   deviceId: z.string().min(1, "Device ID is required"),
   name: z.string().min(1, "Device name is required"),
   type: z.enum(["FINGERPRINT", "FACE", "RFID", "PIN", "QR"]),
   location: z.string().optional(),
-  ipAddress: z.string().ip("Invalid IP address").optional(),
+  ipAddress: z.string().regex(ipRegex, "Invalid IP address").optional(),
   port: z.number().int().positive().max(65535).optional(),
 });
 
@@ -98,7 +101,7 @@ export const updateDeviceBodySchema = z
     name: z.string().min(1).optional(),
     type: z.enum(["FINGERPRINT", "FACE", "RFID", "PIN", "QR"]).optional(),
     location: z.string().optional(),
-    ipAddress: z.string().ip("Invalid IP address").optional(),
+    ipAddress: z.string().regex(ipRegex, "Invalid IP address").optional(),
     port: z.number().int().positive().max(65535).optional(),
     isActive: z.boolean().optional(),
   })
