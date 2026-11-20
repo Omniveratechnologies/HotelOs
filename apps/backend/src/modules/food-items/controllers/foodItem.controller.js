@@ -18,8 +18,9 @@ export const getFoodItems = async (req, res) => {
 };
 export const getPublicFoodItems = async (req, res) => {
   try {
+    const { hotelId } = req.validated.params;
     const items = await FoodItem.find({
-      hotelId: req.params.hotelId,
+      hotelId,
       isAvailable: true,
     });
     return res
@@ -37,13 +38,8 @@ export const getPublicFoodItems = async (req, res) => {
 // Do not build guest-facing UI for this endpoint.
 export const createFoodItem = async (req, res) => {
   try {
-    const { name, description, price, category, image } = req.body;
-
-    if (!name || price === undefined) {
-      return res
-        .status(400)
-        .json({ success: false, message: "name and price are required" });
-    }
+    const { name, description, price, category, image, isAvailable } =
+      req.validated.body;
 
     const item = await FoodItem.create({
       name,
@@ -51,6 +47,7 @@ export const createFoodItem = async (req, res) => {
       price,
       category,
       image,
+      isAvailable,
       hotelId: req.user.hotelId,
     });
 
@@ -69,9 +66,21 @@ export const createFoodItem = async (req, res) => {
 
 export const updateFoodItem = async (req, res) => {
   try {
+    const { id } = req.validated.params;
+    const { name, description, price, category, image, isAvailable } =
+      req.validated.body;
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (price !== undefined) updateData.price = price;
+    if (category !== undefined) updateData.category = category;
+    if (image !== undefined) updateData.image = image;
+    if (isAvailable !== undefined) updateData.isAvailable = isAvailable;
+
     const item = await FoodItem.findOneAndUpdate(
-      { _id: req.params.id, hotelId: req.user.hotelId },
-      { $set: req.body },
+      { _id: id, hotelId: req.user.hotelId },
+      { $set: updateData },
       { new: true, runValidators: true },
     );
     if (!item)
@@ -89,8 +98,9 @@ export const updateFoodItem = async (req, res) => {
 
 export const deleteFoodItem = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const item = await FoodItem.findOneAndDelete({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
     if (!item)

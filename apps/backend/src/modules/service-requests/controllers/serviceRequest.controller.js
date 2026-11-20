@@ -51,7 +51,7 @@ export const createServiceRequest = async (req, res) => {
       }
     }
 
-    const { type, description, items, details } = req.body;
+    const { type, description, items, details } = req.validated.body;
     if (!type)
       return res
         .status(400)
@@ -190,7 +190,7 @@ export const getHotelRequests = async (req, res) => {
 // active stay so tenant/guest isolation is preserved.
 export const createDeskRequest = async (req, res) => {
   try {
-    const { roomId, type, description, items, priority } = req.body;
+    const { roomId, type, description, items, priority } = req.validated.body;
 
     if (!roomId || !type) {
       return res.status(400).json({
@@ -275,7 +275,8 @@ export const createTableServiceRequest = async (req, res) => {
 
 export const updateHotelRequestStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { id } = req.validated.params;
+    const { status } = req.validated.body;
 
     if (!status || !VALID_REQUEST_STATUSES.has(status)) {
       return res.status(400).json({
@@ -285,7 +286,7 @@ export const updateHotelRequestStatus = async (req, res) => {
     }
 
     const request = await ServiceRequest.findOneAndUpdate(
-      { _id: req.params.id, hotelId: req.user.hotelId },
+      { _id: id, hotelId: req.user.hotelId },
       { status },
       { new: true },
     );
@@ -322,7 +323,14 @@ export const updateHotelRequestStatus = async (req, res) => {
  */
 export const createTableOrderServiceRequest = async (req, res) => {
   try {
-    const { type, description, items, details } = req.body;
+    const {
+      type,
+      description,
+      items,
+      details,
+      hotelId: bodyHotelId,
+      tableId: bodyTableId,
+    } = req.validated.body;
     if (!type) {
       return res
         .status(400)
@@ -330,11 +338,11 @@ export const createTableOrderServiceRequest = async (req, res) => {
     }
 
     const session = req.session;
-    const hotelId = session ? session.hotelId : req.body.hotelId;
+    const hotelId = session ? session.hotelId : bodyHotelId;
     const tableId =
       session && session.type === "QR_GUEST"
         ? session.tableId
-        : req.body.tableId || session?.tableId;
+        : bodyTableId || session?.tableId;
 
     const serviceRequest = await ServiceRequest.create({
       hotelId,

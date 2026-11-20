@@ -8,6 +8,13 @@ import {
 } from "../controllers/foodItem.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
+import { validate } from "#/shared/middleware/validate.middleware.js";
+import {
+  createFoodItemBodySchema,
+  updateFoodItemBodySchema,
+  foodItemIdParamsSchema,
+  hotelIdParamsSchema,
+} from "../schemas.js";
 
 const router = express.Router();
 
@@ -16,20 +23,27 @@ router.post(
   "/",
   authenticate,
   authorize("SUB_ADMIN", "KITCHEN", "RECEPTIONIST"),
+  validate({ body: createFoodItemBodySchema }),
   createFoodItem,
 );
 router.patch(
   "/:id",
   authenticate,
   authorize("SUB_ADMIN", "KITCHEN", "RECEPTIONIST"),
+  validate({ params: foodItemIdParamsSchema, body: updateFoodItemBodySchema }),
   updateFoodItem,
 );
 router.delete(
   "/:id",
   authenticate,
   authorize("SUB_ADMIN", "KITCHEN", "RECEPTIONIST"),
+  validate({ params: foodItemIdParamsSchema }),
   deleteFoodItem,
 );
-router.get("/public/:hotelId", getPublicFoodItems);
+router.get(
+  "/public/:hotelId",
+  validate({ params: hotelIdParamsSchema }),
+  getPublicFoodItems,
+);
 
 export default router;

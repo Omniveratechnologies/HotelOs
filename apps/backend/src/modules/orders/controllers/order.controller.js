@@ -147,7 +147,7 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    const { items, paymentMethod } = req.body;
+    const { items, paymentMethod } = req.validated.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res
@@ -271,7 +271,7 @@ export const verifyPayment = async (req, res) => {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-    } = req.body;
+    } = req.validated.body;
 
     if (
       !orderId ||
@@ -344,8 +344,9 @@ export const getMyOrders = async (req, res) => {
 
 export const getOrderById = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const order = await Order.findOne({
-      _id: req.params.id,
+      _id: id,
       guestId: req.user._id,
     });
     if (!order)
@@ -363,7 +364,8 @@ export const getOrderById = async (req, res) => {
 
 export const deleteOrder = async (req, res) => {
   try {
-    const order = await Order.findByIdAndDelete(req.params.id);
+    const { id } = req.validated.params;
+    const order = await Order.findByIdAndDelete(id);
 
     if (!order) {
       return res.status(404).json({
@@ -373,7 +375,7 @@ export const deleteOrder = async (req, res) => {
 
     res.status(200).json({
       message: "Order deleted successfully",
-      id: req.params.id,
+      id,
     });
   } catch (error) {
     console.error("Error deleting order:", error);
@@ -393,14 +395,15 @@ export const createTableOrder = async (req, res) => {
       notes,
       paymentMode,
       idempotencyKey: bodyIdempotencyKey,
-    } = req.body;
+      tableId: bodyTableId,
+    } = req.validated.body;
 
     const session = req.session;
-    const hotelId = session ? session.hotelId : req.body.hotelId;
+    const hotelId = session ? session.hotelId : req.validated.body.hotelId;
     const tableId =
       session && session.type === "QR_GUEST"
         ? session.tableId
-        : req.body.tableId || session?.tableId;
+        : bodyTableId || session?.tableId;
 
     if (!hotelId || !tableId || !items?.length) {
       return res.status(400).json({
@@ -588,7 +591,7 @@ export const createTableOrder = async (req, res) => {
 
 export const markPaymentFailed = async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { orderId } = req.validated.body;
     const order = await Order.findById(orderId);
     if (!order)
       return res
@@ -678,7 +681,8 @@ export const getSessionOrders = async (req, res) => {
 
 export const getPublicOrder = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const { id } = req.validated.params;
+    const order = await Order.findById(id);
     if (!order)
       return res
         .status(404)
@@ -719,7 +723,7 @@ export const verifyTableOrderPayment = async (req, res) => {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
-    } = req.body;
+    } = req.validated.body;
 
     if (
       !orderId ||
@@ -805,9 +809,16 @@ export const verifyTableOrderPayment = async (req, res) => {
 
 export const getHotelOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ hotelId: req.user.hotelId }).sort({
-      createdAt: -1,
-    });
+    const { status, page, limit } = req.validated.query;
+    const filter = { hotelId: req.user.hotelId };
+
+    if (status) filter.status = status;
+
+    const skip = (page - 1) * limit;
+    const orders = await Order.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     const roomIds = [
       ...new Set(orders.map((o) => o.roomId && o.roomId.toString())),
@@ -855,7 +866,7 @@ export const getHotelOrders = async (req, res) => {
 // preserved without the frontend ever sending a guestId.
 export const createDeskOrder = async (req, res) => {
   try {
-    const { roomId, items } = req.body;
+    const { roomId, items } = req.validated.body;
 
     if (!roomId || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -933,16 +944,13 @@ export const createDeskOrder = async (req, res) => {
 
 export const updateHotelOrderStatus = async (req, res) => {
   try {
-    const { status } = req.body;
-
-    if (!status) {
-      return res.status(400).json({ message: "status is required" });
-    }
+    const { id } = req.validated.params;
+    const { status } = req.validated.body;
 
     const normalized = normalizeStatus(status);
 
     const order = await Order.findOneAndUpdate(
-      { _id: req.params.id, hotelId: req.user.hotelId },
+      { _id: id, hotelId: req.user.hotelId },
       { status: normalized },
       { new: true },
     );
@@ -1015,9 +1023,10 @@ export const getAllOrders = async (req, res) => {
 
 export const updateOrder = async (req, res) => {
   try {
-    const { guestId, roomId, items } = req.body;
+    const { id } = req.validated.params;
+    const { guestId, roomId, items } = req.validated.body;
 
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({
@@ -1050,7 +1059,8 @@ export const updateOrder = async (req, res) => {
 
 export const updateOrderStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { id } = req.validated.params;
+    const { status } = req.validated.body;
 
     if (!status) {
       return res.status(400).json({
@@ -1060,7 +1070,7 @@ export const updateOrderStatus = async (req, res) => {
 
     const normalized = normalizeStatus(status);
 
-    const existingOrder = await Order.findById(req.params.id);
+    const existingOrder = await Order.findById(id);
 
     if (!existingOrder) {
       return res.status(404).json({
@@ -1080,7 +1090,7 @@ export const updateOrderStatus = async (req, res) => {
       updateData.outForDeliveryAt = new Date();
     }
 
-    const order = await Order.findByIdAndUpdate(req.params.id, updateData, {
+    const order = await Order.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: false,
     });
