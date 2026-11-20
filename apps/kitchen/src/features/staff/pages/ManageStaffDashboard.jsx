@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiCalendar, FiHome, FiPlus } from "react-icons/fi";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 import Navbar from "@/components/ui/Navbar.jsx";
 import Sidebar from "@/components/hamburger/SideBar.jsx";
@@ -33,51 +34,27 @@ const ManageStaffDashboard = () => {
 
   const [date, setDate] = useState(todayKey);
   const [range, setRange] = useState("week");
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [reload, setReload] = useState(0);
   const [now, setNow] = useState(() => Date.now());
 
   const [detailRow, setDetailRow] = useState(null);
   const [toast, setToast] = useState(null);
   const closeToast = useCallback(() => setToast(null), []);
-  const firstLoad = useRef(true);
-  const silent = useRef(false);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const quiet = silent.current;
-    silent.current = false;
-    if (!quiet) setLoading(true);
-    loadDashboard({ date, range }, { signal: controller.signal })
-      .then((res) => {
-        setData(res.data);
-        setError("");
-        setNow(Date.now());
-      })
-      .catch((err) => {
-        if (err.name === "AbortError") return;
-        setError(err.message);
-        if (!firstLoad.current)
-          setToast({ type: "error", message: err.message });
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-          firstLoad.current = false;
-        }
-      });
-    return () => controller.abort();
-  }, [date, range, reload]);
+  const { data, loading, error, refresh } = useAsyncData(
+    async (signal) => {
+      const res = await loadDashboard({ date, range }, { signal });
+      return res.data;
+    },
+    [date, range],
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
-      silent.current = true;
-      setReload((k) => k + 1);
+      refresh({ silent: true });
+      setNow(Date.now());
     }, REFRESH_MS);
     return () => clearInterval(timer);
-  }, []);
+  }, [refresh]);
 
   useEffect(() => {
     const tick = setInterval(() => setNow(Date.now()), 15_000);

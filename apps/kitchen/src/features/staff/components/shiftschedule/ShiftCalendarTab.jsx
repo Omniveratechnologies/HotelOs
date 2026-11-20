@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+
 
 import Avatar from "@/components/ui/Avatar.jsx";
 import MonthCalendar from "./MonthCalendar.jsx";
 import { ShiftPill, StatusPill } from "./ShiftBadges.jsx";
 import { api, formatLong, query } from "../../utils/shiftscheduleUtils.jsx";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const ShiftCalendarTab = ({
   calendar,
@@ -16,22 +17,13 @@ const ShiftCalendarTab = ({
   onViewAll,
   onView,
 }) => {
-  const [day, setDay] = useState({ rows: [], total: 0 });
-  const [dayLoading, setDayLoading] = useState(true);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setDayLoading(true);
-    api(`/schedule?${query({ date: selectedDate, limit: 8 })}`, {
-      signal: controller.signal,
-    })
-      .then((res) => setDay({ rows: res.data, total: res.pagination.total }))
-      .catch(() => setDay({ rows: [], total: 0 }))
-      .finally(() => {
-        if (!controller.signal.aborted) setDayLoading(false);
-      });
-    return () => controller.abort();
-  }, [selectedDate, refreshKey]);
+  const { data: day = { rows: [], total: 0 }, loading: dayLoading } = useAsyncData(
+    async (signal) => {
+      const res = await api(`/schedule?${query({ date: selectedDate, limit: 8 })}`, { signal });
+      return { rows: res.data, total: res.pagination.total };
+    },
+    [selectedDate, refreshKey],
+  );
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">

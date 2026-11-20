@@ -1,5 +1,5 @@
-/* oxlint-disable react/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 import { useNavigate } from "react-router-dom";
 import { MdFastfood } from "react-icons/md";
 
@@ -17,27 +17,17 @@ import { FiCopy, FiPlus } from "react-icons/fi";
 const RecipesLists = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [recipes, setRecipes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  const fetchRecipes = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/inventory/recipes`);
+  const { data: recipes = [], loading, refresh } = useAsyncData(
+    async (signal) => {
+      const res = await fetch(`${API_BASE_URL}/inventory/recipes`, { signal });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message);
-      setRecipes(data.data || []);
-    } catch (err) {
-      console.error("Failed to load recipes:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
+      return data.data || [];
+    },
+    [],
+  );
 
   const handleDelete = async (row) => {
     if (!window.confirm(`Delete "${row.menuItemName}"?`)) return;
@@ -47,7 +37,7 @@ const RecipesLists = () => {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message);
-      await fetchRecipes();
+      await refresh();
     } catch (err) {
       console.error("Delete recipe error:", err);
       alert(err.message || "Failed to delete recipe.");
@@ -57,7 +47,7 @@ const RecipesLists = () => {
   const handleDuplicate = async (row) => {
     try {
       const duplicated = await duplicateRecipe(API_BASE_URL, row._id);
-      await fetchRecipes();
+      await refresh();
       navigate(`/inventory/recipe/${duplicated._id}/edit`);
     } catch (err) {
       console.error("Duplicate recipe error:", err);

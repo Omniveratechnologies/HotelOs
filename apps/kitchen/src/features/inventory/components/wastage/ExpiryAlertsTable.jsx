@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import Table from "@/components/ui/Table.jsx";
 import StatusCard from "@/components/ui/StatusCard.jsx";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const URGENCY_STYLE = {
   EXPIRED: "text-red-500 font-semibold",
@@ -20,20 +20,23 @@ const URGENCY_LABEL = {
 };
 
 const ExpiryAlertsTable = ({ refreshKey }) => {
-  const [batches, setBatches] = useState([]);
-  const [summary, setSummary] = useState(null);
+  const { data: batches = [] } = useAsyncData(
+    async (signal) => {
+      const res = await fetch(`${API_BASE_URL}/inventory/batches/expiring?days=7`, { signal });
+      const data = await res.json();
+      return data.data || [];
+    },
+    [refreshKey],
+  );
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/inventory/batches/expiring?days=7`)
-      .then((res) => res.json())
-      .then((data) => setBatches(data.data || []))
-      .catch((err) => console.error("Failed to load expiring batches:", err));
-
-    fetch(`${API_BASE_URL}/inventory/batches/expiry-summary`)
-      .then((res) => res.json())
-      .then((data) => setSummary(data.data))
-      .catch((err) => console.error("Failed to load expiry summary:", err));
-  }, [refreshKey]);
+  const { data: summary } = useAsyncData(
+    async (signal) => {
+      const res = await fetch(`${API_BASE_URL}/inventory/batches/expiry-summary`, { signal });
+      const data = await res.json();
+      return data.data;
+    },
+    [refreshKey],
+  );
 
   const columns = [
     { key: "itemName", label: "Item" },

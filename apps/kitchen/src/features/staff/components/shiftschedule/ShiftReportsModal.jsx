@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiDownload } from "react-icons/fi";
 
 import ActionButton from "@/components/ui/button/ActionButton.jsx";
@@ -12,6 +12,7 @@ import {
   query,
   request,
 } from "../../utils/shiftscheduleUtils.jsx";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const HEADERS = [
   "Shift",
@@ -51,34 +52,22 @@ const ShiftReportsModal = ({ onClose }) => {
   const [from, setFrom] = useState(`${today.slice(0, 8)}01`);
   const [to, setTo] = useState(today);
   const [departmentId, setDepartmentId] = useState("");
-  const [departments, setDepartments] = useState([]);
-  const [report, setReport] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const { data: departments } = useAsyncData(
+    async (signal) => {
+      const res = await request("/staffManagement/departments", { signal });
+      return res.data || [];
+    },
+    [],
+  );
 
-  useEffect(() => {
-    request("/staffManagement/departments")
-      .then((res) => setDepartments(res.data || []))
-      .catch(() => setDepartments([]));
-  }, []);
-
-  useEffect(() => {
-    if (!from || !to || to < from) return undefined;
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    api(`/reports?${query({ from, to, department_id: departmentId })}`, {
-      signal: controller.signal,
-    })
-      .then((res) => setReport(res.data))
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err.message);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [from, to, departmentId]);
+  const { data: report, loading, error } = useAsyncData(
+    async (signal) => {
+      if (!from || !to || to < from) throw new Error("Invalid date range");
+      const res = await api(`/reports?${query({ from, to, department_id: departmentId })}`, { signal });
+      return res.data;
+    },
+    [from, to, departmentId],
+  );
 
   const download = () => {
     const blob = new Blob([toCsv(report.rows)], { type: "text/csv" });

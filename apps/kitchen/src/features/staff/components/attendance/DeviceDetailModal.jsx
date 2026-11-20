@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+
 
 import Modal from "@/components/ui/Modal";
 import ActionButton from "@/components/ui/button/ActionButton";
 import { DeviceStatusBadge, DeviceTypePill } from "./DeviceBadges.jsx";
 import { fetchDevice } from "../../services/deviceApi.js";
 import { formatLastSync, timeAgo } from "../../utils/deviceFormat.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const Row = ({ label, children }) => (
   <div>
@@ -25,30 +26,14 @@ const DeviceDetailModal = ({
   onRemove,
   refreshKey = 0,
 }) => {
-  const [events, setEvents] = useState([]);
-  const [fresh, setFresh] = useState(null);
-
-  useEffect(() => {
-    if (!open || !device) return;
-    let cancelled = false;
-    fetchDevice(device._id)
-      .then((detail) => {
-        if (cancelled) return;
-        setFresh(detail);
-        setEvents(detail.events || []);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [open, device, refreshKey]);
-
-  useEffect(() => {
-    if (!open) {
-      setFresh(null);
-      setEvents([]);
-    }
-  }, [open]);
+  const { data: fresh } = useAsyncData(
+    async () => {
+      if (!open || !device) throw new Error("Not open");
+      const detail = await fetchDevice(device._id);
+      return { detail, events: detail.events || [] };
+    },
+    [open, device, refreshKey],
+  );
 
   if (!device) return null;
   const current = fresh || device;

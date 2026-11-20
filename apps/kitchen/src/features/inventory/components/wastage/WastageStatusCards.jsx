@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
 import { FiTrash2, FiFileText, FiBarChart2 } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 import StatusCard from "@/components/ui/StatusCard.jsx";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-IN");
 
 const WastageStatusCards = ({ refreshKey }) => {
-  const [summary, setSummary] = useState(null);
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/inventory/wastage/summary?period=This Month`)
-      .then((res) => res.json())
-      .then((data) => setSummary(data.data))
-      .catch((err) => console.error("Failed to load wastage summary:", err));
-  }, [refreshKey]);
+  const { data: summary } = useAsyncData(
+    async (signal) => {
+      const res = await fetch(`${API_BASE_URL}/inventory/wastage/summary?period=This Month`, { signal });
+      const data = await res.json();
+      return data.data;
+    },
+    [refreshKey],
+  );
 
   const qtyChange = summary?.percentChangeQty;
   const costChange = summary?.percentChangeCost;

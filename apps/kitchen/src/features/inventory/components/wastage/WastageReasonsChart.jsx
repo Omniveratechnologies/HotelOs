@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const COLORS = {
   EXPIRED: "#ef4444",
@@ -31,16 +32,18 @@ const buildDonutSegments = (breakdown, radius = 70) => {
 
 const WastageReasonsChart = ({ refreshKey }) => {
   const [period, setPeriod] = useState("This Month");
-  const [data, setData] = useState({ total: 0, breakdown: [] });
 
-  useEffect(() => {
-    fetch(
-      `${API_BASE_URL}/inventory/wastage/reasons?period=${encodeURIComponent(period)}`,
-    )
-      .then((res) => res.json())
-      .then((res) => setData(res.data || { total: 0, breakdown: [] }))
-      .catch((err) => console.error("Failed to load wastage reasons:", err));
-  }, [period, refreshKey]);
+  const { data } = useAsyncData(
+    async (signal) => {
+      const res = await fetch(
+        `${API_BASE_URL}/inventory/wastage/reasons?period=${encodeURIComponent(period)}`,
+        { signal },
+      );
+      const json = await res.json();
+      return json.data || { total: 0, breakdown: [] };
+    },
+    [period, refreshKey],
+  );
 
   const segments = buildDonutSegments(data.breakdown);
   const radius = 70;

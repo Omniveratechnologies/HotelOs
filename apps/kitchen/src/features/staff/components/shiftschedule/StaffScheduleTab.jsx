@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 import Avatar from "@/components/ui/Avatar.jsx";
@@ -20,6 +20,7 @@ import {
   request,
   weekdayOf,
 } from "../../utils/shiftscheduleUtils.jsx";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const PAGE_SIZE = 10;
 
@@ -34,51 +35,35 @@ const STATE_TEXT = {
 const StaffScheduleTab = ({ refreshKey, onCellClick }) => {
   const [from, setFrom] = useState(() => mondayOf(localToday()));
   const [departmentId, setDepartmentId] = useState("");
-  const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [data, setData] = useState({
-    rows: [],
-    dates: [],
-    legend: [],
-    pagination: { total: 0, totalPages: 1 },
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const q = useDebounce(search.trim(), 350);
   const to = addDays(from, 6);
   const today = localToday();
 
-  useEffect(() => {
-    request("/staffManagement/departments")
-      .then((res) => setDepartments(res.data || []))
-      .catch(() => setDepartments([]));
-  }, []);
+  const { data: departments } = useAsyncData(
+    async (signal) => {
+      const res = await request("/staffManagement/departments", { signal });
+      return res.data || [];
+    },
+    [],
+  );
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    api(
-      `/schedule/roster?${query({ from, to, department_id: departmentId, q, page, limit: PAGE_SIZE })}`,
-      { signal: controller.signal },
-    )
-      .then((res) =>
-        setData({
-          rows: res.data,
-          dates: res.dates,
-          legend: res.legend,
-          pagination: res.pagination,
-        }),
-      )
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err.message);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [from, to, departmentId, q, page, refreshKey]);
+  const { data, loading } = useAsyncData(
+    async (signal) => {
+      const res = await api(
+        `/schedule/roster?${query({ from, to, department_id: departmentId, q, page, limit: PAGE_SIZE })}`,
+        { signal },
+      );
+      return {
+        rows: res.data,
+        dates: res.dates,
+        legend: res.legend,
+        pagination: res.pagination,
+      };
+    },
+    [from, to, departmentId, q, page, refreshKey],
+  );
 
   const columns = useMemo(
     () => [

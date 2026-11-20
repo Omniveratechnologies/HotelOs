@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiArrowUp, FiArrowDown, FiX } from "react-icons/fi";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const timeAgo = (date) => {
   const diffMs = Date.now() - new Date(date).getTime();
@@ -89,61 +90,52 @@ const ViewAllModal = ({ activities, onClose }) => (
 );
 
 const RecentActivitiesCard = ({ refreshKey }) => {
-  const [activities, setActivities] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const [purchaseRes, usageRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/inventory/purchase-history`),
-          fetch(`${API_BASE_URL}/inventory/usage`),
-        ]);
+  const { data: activities = [] } = useAsyncData(
+    async (signal) => {
+      const [purchaseRes, usageRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/inventory/purchase-history`, { signal }),
+        fetch(`${API_BASE_URL}/inventory/usage`, { signal }),
+      ]);
 
-        const purchaseData = await purchaseRes.json();
-        const usageData = await usageRes.json();
+      const purchaseData = await purchaseRes.json();
+      const usageData = await usageRes.json();
 
-        if (!purchaseRes.ok || !usageRes.ok) {
-          throw new Error("Failed to load inventory activities");
-        }
-
-        const purchases = Array.isArray(purchaseData.data)
-          ? purchaseData.data
-          : [];
-
-        const usage = Array.isArray(usageData.data) ? usageData.data : [];
-
-        const purchaseActivities = purchases.map((item) => ({
-          _id: item._id,
-          activityType: "RECEIVED",
-          itemName: item.inventoryItem?.name || "Unknown Item",
-          quantity: item.quantity || 0,
-          unit: item.unit || item.inventoryItem?.unit || "",
-          date: item.createdAt || item.purchaseDate,
-        }));
-
-        const usageActivities = usage.map((item) => ({
-          _id: item._id,
-          activityType: "USED",
-          itemName: item.inventoryItem?.name || "Unknown Item",
-          quantity: item.quantityUsed || 0,
-          unit: item.unit || item.inventoryItem?.unit || "",
-          date: item.createdAt || item.usedDate,
-        }));
-
-        const combinedActivities = [...purchaseActivities, ...usageActivities]
-          .toSorted((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 20);
-
-        setActivities(combinedActivities);
-      } catch (error) {
-        console.error("Failed to load recent activities:", error);
-        setActivities([]);
+      if (!purchaseRes.ok || !usageRes.ok) {
+        throw new Error("Failed to load inventory activities");
       }
-    };
 
-    fetchActivities();
-  }, [refreshKey]);
+      const purchases = Array.isArray(purchaseData.data)
+        ? purchaseData.data
+        : [];
+
+      const usage = Array.isArray(usageData.data) ? usageData.data : [];
+
+      const purchaseActivities = purchases.map((item) => ({
+        _id: item._id,
+        activityType: "RECEIVED",
+        itemName: item.inventoryItem?.name || "Unknown Item",
+        quantity: item.quantity || 0,
+        unit: item.unit || item.inventoryItem?.unit || "",
+        date: item.createdAt || item.purchaseDate,
+      }));
+
+      const usageActivities = usage.map((item) => ({
+        _id: item._id,
+        activityType: "USED",
+        itemName: item.inventoryItem?.name || "Unknown Item",
+        quantity: item.quantityUsed || 0,
+        unit: item.unit || item.inventoryItem?.unit || "",
+        date: item.createdAt || item.usedDate,
+      }));
+
+      return [...purchaseActivities, ...usageActivities]
+        .toSorted((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 20);
+    },
+    [refreshKey],
+  );
 
   return (
     <>

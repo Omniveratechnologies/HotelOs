@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiInfo, FiCheckCircle, FiX } from "react-icons/fi";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const QuickInsightsCard = () => (
   <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-4">
@@ -58,17 +59,19 @@ const Modal = ({ title, onClose, children }) => (
 );
 
 const TopWastedItemsCard = ({ refreshKey }) => {
-  const [items, setItems] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    fetch(
-      `${API_BASE_URL}/inventory/wastage/top-items?period=This Month&limit=5`,
-    )
-      .then((res) => res.json())
-      .then((data) => setItems(data.data || []))
-      .catch((err) => console.error("Failed to load top wasted items:", err));
-  }, [refreshKey]);
+  const { data: items = [] } = useAsyncData(
+    async (signal) => {
+      const res = await fetch(
+        `${API_BASE_URL}/inventory/wastage/top-items?period=This Month&limit=5`,
+        { signal },
+      );
+      const data = await res.json();
+      return data.data || [];
+    },
+    [refreshKey],
+  );
 
   const maxQty = Math.max(...items.map((i) => i.quantity), 1);
 
@@ -124,15 +127,16 @@ const TopWastedItemsCard = ({ refreshKey }) => {
 };
 
 const MonthlyWastageTrendCard = ({ refreshKey }) => {
-  const [trend, setTrend] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/inventory/wastage/trend?months=6`)
-      .then((res) => res.json())
-      .then((data) => setTrend(data.data || []))
-      .catch((err) => console.error("Failed to load wastage trend:", err));
-  }, [refreshKey]);
+  const { data: trend = [] } = useAsyncData(
+    async (signal) => {
+      const res = await fetch(`${API_BASE_URL}/inventory/wastage/trend?months=6`, { signal });
+      const data = await res.json();
+      return data.data || [];
+    },
+    [refreshKey],
+  );
 
   const maxQty = Math.max(...trend.map((t) => t.quantity), 1);
 

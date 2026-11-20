@@ -1,5 +1,5 @@
-/* oxlint-disable react/set-state-in-effect */
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 import Navbar from "@/components/ui/Navbar.jsx";
 import Sidebar from "@/components/hamburger/SideBar.jsx";
@@ -16,37 +16,21 @@ import ProcessBar from "@/components/ui/ProcessBar.jsx";
 const PurchaseOrderDetail = () => {
   const { id } = useParams();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [po, setPO] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
 
   const [receiveItems, setReceiveItems] = useState([]);
   const [receiveNotes, setReceiveNotes] = useState("");
   const [receiving, setReceiving] = useState(false);
 
-  const fetchPO = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(
-        `${API_BASE_URL}/inventory/purchase-orders/${id}`,
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch purchase order");
-      }
-
+  const { data: po, loading, refresh } = useAsyncData(
+    async (signal) => {
+      const res = await fetch(`${API_BASE_URL}/inventory/purchase-orders/${id}`, { signal });
+      if (!res.ok) throw new Error("Failed to fetch purchase order");
       const data = await res.json();
-      setPO(data.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPO();
-  }, [id]);
+      return data.data;
+    },
+    [id],
+  );
 
   const changeStatus = async (status, confirmMessage) => {
     if (!po?._id) return;
@@ -69,7 +53,7 @@ const PurchaseOrderDetail = () => {
         throw new Error(result.message || "Failed to update status");
       }
 
-      await fetchPO();
+      await refresh();
     } catch (error) {
       console.error("Status update error:", error);
       alert(error.message || "Failed to update status.");

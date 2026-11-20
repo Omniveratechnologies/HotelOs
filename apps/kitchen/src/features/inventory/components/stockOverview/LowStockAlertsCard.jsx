@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FiX, FiAlertTriangle } from "react-icons/fi";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const ViewAllModal = ({ title, items, onClose }) => (
   <div
@@ -44,15 +45,15 @@ const ViewAllModal = ({ title, items, onClose }) => (
 );
 
 const LowStockAlertsCard = ({ refreshKey }) => {
-  const [items, setItems] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/inventory/low-stock`)
-      .then((res) => res.json())
-      .then((data) => setItems(data.data || []))
-      .catch((err) => console.error("Failed to load low stock items:", err));
-  }, [refreshKey]);
+  const { data: items = [] } = useAsyncData(
+    (signal) =>
+      fetch(`${API_BASE_URL}/inventory/low-stock`, { signal })
+        .then((res) => res.json())
+        .then((data) => data.data || []),
+    [refreshKey],
+  );
 
   return (
     <>

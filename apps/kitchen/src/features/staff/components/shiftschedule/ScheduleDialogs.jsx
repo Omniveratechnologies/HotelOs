@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import ActionButton from "@/components/ui/button/ActionButton.jsx";
 import Avatar from "@/components/ui/Avatar.jsx";
@@ -14,6 +14,7 @@ import {
   query,
   scheduleColumns,
 } from "../../utils/shiftscheduleUtils.jsx";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const PAGE_SIZE = 10;
 
@@ -22,44 +23,29 @@ export const ViewAllDialog = ({ date, shifts, onClose, onView }) => {
   const [shiftId, setShiftId] = useState("");
   const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
-  const [data, setData] = useState({
-    rows: [],
-    counts: null,
-    pagination: { total: 0, totalPages: 1 },
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const q = useDebounce(search.trim(), 350);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-    api(
-      `/schedule?${query({ date, q, shift_id: shiftId, status: status === "ALL" ? "" : status, page, limit: PAGE_SIZE })}`,
-      { signal: controller.signal },
-    )
-      .then((res) =>
-        setData({
-          rows: res.data,
-          counts: res.counts,
-          pagination: res.pagination,
-        }),
-      )
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err.message);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [date, q, shiftId, status, page]);
+  const { data, loading } = useAsyncData(
+    async (signal) => {
+      const res = await api(
+        `/schedule?${query({ date, q, shift_id: shiftId, status: status === "ALL" ? "" : status, page, limit: PAGE_SIZE })}`,
+        { signal },
+      );
+      return {
+        rows: res.data,
+        counts: res.counts,
+        pagination: res.pagination,
+      };
+    },
+    [date, q, shiftId, status, page],
+  );
+
+  const counts = data?.counts;
 
   const columns = useMemo(
     () => scheduleColumns({ onView, offset: (page - 1) * PAGE_SIZE }),
     [onView, page],
   );
-  const counts = data.counts;
 
   return (
     <Modal

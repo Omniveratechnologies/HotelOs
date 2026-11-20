@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import Modal from "@/components/ui/Modal";
 import ActionButton from "@/components/ui/button/ActionButton";
@@ -28,15 +28,10 @@ const Field = ({ label, hint, children }) => (
 
 const DeviceFormModal = ({ open, device, onClose, onSubmit }) => {
   const editing = Boolean(device);
-  const [values, setValues] = useState(EMPTY);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const formKey = open ? (device ? device._id : "new") : "closed";
 
-  useEffect(() => {
-    if (!open) return;
-    setError("");
-    setSaving(false);
-    setValues(
+  const initialValues = useMemo(
+    () =>
       device
         ? {
             name: device.name,
@@ -47,8 +42,22 @@ const DeviceFormModal = ({ open, device, onClose, onSubmit }) => {
             configText: JSON.stringify(device.config || {}, null, 2),
           }
         : EMPTY,
-    );
-  }, [open, device]);
+    [device],
+  );
+
+  const [values, setValues] = useState(() => initialValues);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // Reset form when key changes (modal opens/closes or device changes)
+  // Using key as dependency for state initializer
+  // oxlint-disable-next-line react/set-state-in-effect
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setValues(initialValues);
+    setError("");
+    setSaving(false);
+  }, [formKey]);
 
   const set = (name) => (event) =>
     setValues((previous) => ({ ...previous, [name]: event.target.value }));

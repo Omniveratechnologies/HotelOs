@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
-
 import ActionButton from "@/components/ui/button/ActionButton.jsx";
 import Modal from "@/components/ui/Modal.jsx";
 import StatusBadge from "@/components/ui/StatusBadge.jsx";
 import FaceAvatar from "./FaceAvatar.jsx";
 import { api, formatDate, imageUrl } from "../../utils/faceUtils.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const ANGLE_LABEL = {
   FRONT: "Front",
@@ -15,19 +14,14 @@ const ANGLE_LABEL = {
 };
 
 const FaceDetailModal = ({ row, onClose, onUpdate, onDelete }) => {
-  const [detail, setDetail] = useState(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!row) return undefined;
-    const controller = new AbortController();
-    setDetail(null);
-    setError("");
-    api(`/${row._id}`, { signal: controller.signal })
-      .then((res) => setDetail(res.data))
-      .catch((e) => e.name !== "AbortError" && setError(e.message));
-    return () => controller.abort();
-  }, [row]);
+  const { data: detail, error } = useAsyncData(
+    async (signal) => {
+      if (!row) throw new Error("No row");
+      const res = await api(`/${row._id}`, { signal });
+      return res.data;
+    },
+    [row],
+  );
 
   if (!row) return null;
 

@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import SearchBar from "@/components/ui/SearchBar.jsx";
 import API_BASE_URL from "@/config/api.js";
+import { useAsyncData } from "@/hooks/useAsyncData.js";
 
 const URGENCY_DOT = {
   EXPIRED: "bg-red-500",
@@ -12,20 +13,21 @@ const URGENCY_DOT = {
 
 const BatchManagementTable = ({ refreshKey }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [items, setItems] = useState([]);
   const [expandedItem, setExpandedItem] = useState(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams({
-      search: searchTerm,
-      groupByItem: "true",
-    });
+  const { data: items = [] } = useAsyncData(
+    async (signal) => {
+      const params = new URLSearchParams({
+        search: searchTerm,
+        groupByItem: "true",
+      });
 
-    fetch(`${API_BASE_URL}/inventory/batches?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => setItems(data.data?.items || []))
-      .catch((err) => console.error("Failed to load batches:", err));
-  }, [searchTerm, refreshKey]);
+      const res = await fetch(`${API_BASE_URL}/inventory/batches?${params.toString()}`, { signal });
+      const data = await res.json();
+      return data.data?.items || [];
+    },
+    [searchTerm, refreshKey],
+  );
 
   return (
     <div>
