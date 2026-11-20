@@ -1,8 +1,10 @@
 import express from "express";
 import cors from "cors";
-// import pinoHttp from "pino-http";
+import helmet from "helmet";
+import pinoHttp from "pino-http";
 
 import logger from "#/utils/logger.js";
+import { env } from "#/config/env.js";
 
 import hotelRoutes from "#/modules/hotels/index.js";
 import authRoutes from "#/modules/auth/index.js";
@@ -44,11 +46,69 @@ import manageStaffDashboardRoutes from "./modules/managestaff-dashboard/index.js
 
 const app = express();
 
-// app.use(pinoHttp({ logger }));
+// Security headers
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: [
+          "'self'",
+          ...(env.socketCorsOrigins?.split(",").filter(Boolean) || []),
+        ],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }),
+);
+
+// Structured request logging
+app.use(
+  pinoHttp({
+    logger,
+    customLogLevel: (res, err) => {
+      if (res.statusCode >= 500 || err) return "error";
+      if (res.statusCode >= 400) return "warn";
+      return "info";
+    },
+    serializers: {
+      req: (req) => ({
+        id: req.id,
+        method: req.method,
+        url: req.url,
+        query: req.query,
+        headers: { "user-agent": req.headers["user-agent"] },
+      }),
+      res: (res) => ({ statusCode: res.statusCode }),
+    },
+  }),
+);
+
+// CORS - only allow configured frontend origins
+const allowedOrigins = new Set(
+  [
+    env.frontendUrls.superAdmin,
+    env.frontendUrls.subAdmin,
+    env.frontendUrls.receptionist,
+    env.frontendUrls.kitchen,
+    env.frontendUrls.guest,
+    env.frontendUrls.selfCheckin,
+    env.frontendUrls.tableOrder,
+  ].filter(Boolean),
+);
 
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );

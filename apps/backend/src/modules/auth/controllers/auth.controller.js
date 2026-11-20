@@ -308,13 +308,11 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Pre-save hook hashes the new password
-    user.password = password;
-    user.resetPasswordToken = null;
-    user.resetPasswordExpires = null;
-    user.mustChangePassword = false;
-
-    await user.save();
+    // Atomic update to prevent race condition (pre-save hook still hashes password)
+    await User.findByIdAndUpdate(user._id, {
+      $set: { password, mustChangePassword: false },
+      $unset: { resetPasswordToken: "", resetPasswordExpires: "" },
+    });
 
     logger.info({ userId: user._id }, "Password reset");
 
