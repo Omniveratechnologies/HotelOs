@@ -11,7 +11,7 @@ import {
   localToday,
   query,
   request,
-} from "../../utils/shiftscheduleUtils.js";
+} from "../../utils/shiftscheduleUtils.jsx";
 
 const HEADERS = [
   "Shift",

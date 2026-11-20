@@ -1,5 +1,5 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import { autoTable } from "jspdf-autotable";
 
 export const fetchUsageHistory = async (API_BASE_URL) => {
   const response = await fetch(`${API_BASE_URL}/inventory/usage`);

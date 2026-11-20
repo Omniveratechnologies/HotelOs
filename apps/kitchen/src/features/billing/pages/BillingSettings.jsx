@@ -8,9 +8,11 @@ import {
   Panel,
   Notice,
   Tabs,
+} from "../components/billingUi.jsx";
+import {
   css,
   money,
-} from "../components/billingUi.jsx";
+} from "../components/billingUiHelpers.js";
 
 const TABS = [
   "general",

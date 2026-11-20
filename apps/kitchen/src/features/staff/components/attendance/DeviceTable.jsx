@@ -8,6 +8,7 @@ import EditButton from "@/components/ui/button/EditButton";
 import { DeviceStatusBadge, DeviceTypePill } from "./DeviceBadges.jsx";
 import { STATUS_OPTIONS, formatLastSync } from "../../utils/deviceFormat.js";
 import { formatNumber } from "../../utils/attendanceFormat.js";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const EMPTY_PAGINATION = { page: 1, limit: 10, total: 0, totalPages: 1 };
 
@@ -78,7 +79,7 @@ const RowMenu = ({ device, actions }) => {
 };
 
 const DeviceTable = ({
-  devices = [],
+  devices = EMPTY_ARRAY,
   loading = false,
   error = "",
   onRetry,

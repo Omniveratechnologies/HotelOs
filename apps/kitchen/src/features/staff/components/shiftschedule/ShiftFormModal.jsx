@@ -12,7 +12,8 @@ import {
   put,
   spanMinutes,
   to12h,
-} from "../../utils/shiftscheduleUtils.js";
+} from "../../utils/shiftscheduleUtils.jsx";
+import { createRowKey } from "@/utils/rowKey.js";
 
 const Field = ({ label, children, hint }) => (
   <label className="block space-y-1.5">
@@ -23,8 +24,8 @@ const Field = ({ label, children, hint }) => (
 );
 
 const blankSegments = () => [
-  { startTime: "09:00", endTime: "13:00" },
-  { startTime: "17:00", endTime: "21:00" },
+  { startTime: "09:00", endTime: "13:00", clientKey: createRowKey("segment") },
+  { startTime: "17:00", endTime: "21:00", clientKey: createRowKey("segment") },
 ];
 
 const ShiftFormModal = ({ shift, onClose, onSaved }) => {
@@ -35,7 +36,7 @@ const ShiftFormModal = ({ shift, onClose, onSaved }) => {
     endTime: shift?.endTime ?? "17:00",
     split: Boolean(shift?.isSplit),
     segments: shift?.isSplit
-      ? shift.segments.map((s) => ({ ...s }))
+      ? shift.segments.map((s) => ({ ...s, clientKey: createRowKey("segment") }))
       : blankSegments(),
     breakMinutes: shift?.breakMinutes ?? 0,
     graceMinutes: shift?.graceMinutes ?? 10,
@@ -167,7 +168,7 @@ const ShiftFormModal = ({ shift, onClose, onSaved }) => {
         ) : (
           <div className="space-y-2">
             {form.segments.map((segment, index) => (
-              <div key={index} className="flex items-end gap-2">
+              <div key={segment.clientKey || index} className="flex items-end gap-2">
                 <Field label={`Block ${index + 1} start`}>
                   <input
                     aria-label={`Block ${index + 1} start`}
@@ -214,7 +215,7 @@ const ShiftFormModal = ({ shift, onClose, onSaved }) => {
                     ...f,
                     segments: [
                       ...f.segments,
-                      { startTime: "21:00", endTime: "22:00" },
+                      { startTime: "21:00", endTime: "22:00", clientKey: createRowKey("segment") },
                     ],
                   }))
                 }

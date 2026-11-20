@@ -1,6 +1,7 @@
 import { BriefcaseBusiness, RefreshCw } from "lucide-react";
 import FormField from "@/components/ui/FormField.jsx";
 import AddStaffCard from "./AddStaffCard.jsx";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const EMPLOYMENT_TYPES = [
   { value: "FULL_TIME", label: "Full Time" },
@@ -51,10 +52,10 @@ const RadioGroup = ({ label, name, options, register, error }) => (
 const EmploymentInformation = ({
   register,
   errors,
-  departments = [],
-  designations = [],
-  shifts = [],
-  staff = [],
+  departments = EMPTY_ARRAY,
+  designations = EMPTY_ARRAY,
+  shifts = EMPTY_ARRAY,
+  staff = EMPTY_ARRAY,
   onDepartmentChange,
   loadingDesignations,
   designationHint,

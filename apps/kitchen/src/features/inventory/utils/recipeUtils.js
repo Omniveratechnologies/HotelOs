@@ -19,8 +19,8 @@ export const saveRecipe = async (API_BASE_URL, id, form) => {
     ? `${API_BASE_URL}/inventory/recipes/${id}`
     : `${API_BASE_URL}/inventory/recipes`;
 
-  console.log("Recipe URL:", url);
-  console.log("Recipe payload:", form);
+  
+  
 
   const response = await fetch(url, {
     method: id ? "PATCH" : "POST",

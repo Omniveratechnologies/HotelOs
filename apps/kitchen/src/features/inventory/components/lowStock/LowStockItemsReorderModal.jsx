@@ -15,7 +15,7 @@ const LowStockItemsReorderModal = ({ item, onClose }) => {
     try {
       const orderQuantity = Number(quantity);
       const unitCost = Number(item.costPerUnit || 0);
-      const totalCost = orderQuantity * unitCost;
+      const orderTotalCost = orderQuantity * unitCost;
 
       if (!orderQuantity || orderQuantity <= 0) {
         throw new Error("Invalid order quantity");
@@ -30,7 +30,7 @@ const LowStockItemsReorderModal = ({ item, onClose }) => {
           inventoryItemId: item._id,
           quantityReceived: orderQuantity,
           unitCost,
-          totalCost,
+          totalCost: orderTotalCost,
           unit: item.unit,
           category: item.category,
           supplierName: "Low Stock Reorder",
@@ -44,7 +44,7 @@ const LowStockItemsReorderModal = ({ item, onClose }) => {
         throw new Error(data.message || "Failed to reorder item");
       }
 
-      console.log("Reorder successful:", data);
+      
 
       onClose(true);
     } catch (error) {

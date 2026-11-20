@@ -5,13 +5,15 @@ import {
   Panel,
   Table,
   Notice,
+} from "../components/billingUi.jsx";
+import {
   money,
   dateText,
   statusClass,
-  useLoad,
   css,
   waLink,
-} from "../components/billingUi.jsx";
+  useLoad,
+} from "../components/billingUiHelpers.js";
 
 import { getPayments } from "../services/billing.js";
 
@@ -127,8 +129,8 @@ export default function Payments() {
               <h3 className="border-t border-slate-800 pt-4 font-semibold">
                 Split Payment Breakdown
               </h3>
-              {(selected.splitPayments || []).map((split, index) => (
-                <p className="flex justify-between" key={index}>
+              {(selected.splitPayments || []).map((split) => (
+                <p className="flex justify-between" key={split._id || split.id || split.method}>
                   <span>{split.method}</span>
                   <span>
                     {money(split.amount)} · {split.status}

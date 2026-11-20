@@ -13,9 +13,9 @@ import {
   trendText,
 } from "../utils/monthlyReportUtils.js";
 
-const MonthlyReportCards = ({ kpis }) => {
-  const days = (metric) => (metric ? formatCount(metric.value) : "-");
+const days = (metric) => (metric ? formatCount(metric.value) : "-");
 
+const MonthlyReportCards = ({ kpis }) => {
   return (
     <div className="flex flex-wrap gap-3" aria-label="Monthly summary">
       <StatusCard

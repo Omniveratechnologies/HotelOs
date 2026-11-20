@@ -19,7 +19,7 @@ import {
   query,
   request,
   weekdayOf,
-} from "../../utils/shiftscheduleUtils.js";
+} from "../../utils/shiftscheduleUtils.jsx";
 
 const PAGE_SIZE = 10;
 

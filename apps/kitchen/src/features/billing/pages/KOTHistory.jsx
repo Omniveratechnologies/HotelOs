@@ -6,11 +6,13 @@ import {
   Panel,
   Table,
   Notice,
+} from "../components/billingUi.jsx";
+import {
   dateText,
   idOf,
   statusClass,
   useLoad,
-} from "../components/billingUi.jsx";
+} from "../components/billingUiHelpers.js";
 
 export default function KOTHistory() {
   const { data, setData, error, setError } = useLoad(getKots);
@@ -112,8 +114,8 @@ export default function KOTHistory() {
               </button>
             </div>
             <div className="mt-4 space-y-2 text-xs">
-              {selected.items?.map((item, index) => (
-                <p className="flex justify-between" key={index}>
+              {selected.items?.map((item) => (
+                <p className="flex justify-between" key={item._id || item.id || item.name}>
                   <span>
                     {item.name} × {item.quantity}
                   </span>
@@ -125,8 +127,8 @@ export default function KOTHistory() {
               Timeline
             </h3>
             <div className="space-y-2 pt-2 text-xs">
-              {(selected.timeline || []).map((event, index) => (
-                <p key={index}>
+              {(selected.timeline || []).map((event) => (
+                <p key={event._id || event.id || event.timestamp}>
                   <span className="text-emerald-400">●</span> {event.event}{" "}
                   <small className="text-slate-500">
                     {dateText(event.timestamp)}

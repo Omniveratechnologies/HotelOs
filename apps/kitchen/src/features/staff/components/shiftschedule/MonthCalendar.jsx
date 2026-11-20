@@ -7,7 +7,7 @@ import {
   dayNumber,
   monthLabel,
   shiftMonth,
-} from "../../utils/shiftscheduleUtils.js";
+} from "../../utils/shiftscheduleUtils.jsx";
 
 const MonthCalendar = ({
   calendar,

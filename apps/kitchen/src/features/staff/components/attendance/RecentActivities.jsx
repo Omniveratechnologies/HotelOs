@@ -1,5 +1,6 @@
 import Avatar from "@/components/ui/Avatar";
 import { formatDate, formatTime } from "../../utils/attendanceFormat.js";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const ACTIONS = {
   CHECKED_IN: "checked in",
@@ -11,7 +12,7 @@ const ACTIONS = {
 };
 
 const RecentActivities = ({
-  activities = [],
+  activities = EMPTY_ARRAY,
   loading = false,
   error = "",
   onViewAll,

@@ -1,11 +1,12 @@
 import Table from "@/components/ui/Table.jsx";
 import { FiEye, FiShoppingCart } from "react-icons/fi";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const LowStockTable = ({
-  items = [],
+  items = EMPTY_ARRAY,
   onReorder,
   onView,
-  selectedIds = [],
+  selectedIds = EMPTY_ARRAY,
   onToggleItem,
 }) => {
   const columns = [

@@ -12,13 +12,15 @@ import {
   Panel,
   Table,
   Notice,
+} from "../components/billingUi.jsx";
+import {
   css,
   money,
   dateText,
   idOf,
   statusClass,
   useLoad,
-} from "../components/billingUi.jsx";
+} from "../components/billingUiHelpers.js";
 
 const TODAY_DATE_STR = new Date().toDateString();
 

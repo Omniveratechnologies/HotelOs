@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 
 import Modal from "@/components/ui/Modal";
 import ActionButton from "@/components/ui/button/ActionButton";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const DevicePickerModal = ({
   open,
   title,
   actionLabel,
-  devices = [],
+  devices = EMPTY_ARRAY,
   onClose,
   onPick,
 }) => {

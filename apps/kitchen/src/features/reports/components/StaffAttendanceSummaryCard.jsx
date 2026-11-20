@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { FiChevronDown, FiChevronUp, FiEye, FiSearch } from "react-icons/fi";
 
 import Table from "@/components/ui/Table.jsx";
@@ -46,14 +46,17 @@ const StaffAttendanceSummaryCard = ({
   onLimitChange,
   onOpen,
 }) => {
-  const head = (label, field) => (
-    <SortHead
-      label={label}
-      field={field}
-      sort={sort}
-      direction={direction}
-      onSort={onSort}
-    />
+  const head = useCallback(
+    (label, field) => (
+      <SortHead
+        label={label}
+        field={field}
+        sort={sort}
+        direction={direction}
+        onSort={onSort}
+      />
+    ),
+    [sort, direction, onSort],
   );
 
   const columns = useMemo(
@@ -151,7 +154,7 @@ const StaffAttendanceSummaryCard = ({
         ),
       },
     ],
-    [rows, sort, direction, pagination.page, pagination.limit],
+    [pagination.page, pagination.limit, head, onOpen],
   );
 
   return (

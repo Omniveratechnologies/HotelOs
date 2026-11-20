@@ -73,7 +73,7 @@ const AddTables = () => {
 
   const sections = useMemo(
     () =>
-      [...new Set(tables.map((table) => table.section).filter(Boolean))].sort(),
+      [...new Set(tables.map((table) => table.section).filter(Boolean))].toSorted(),
     [tables],
   );
   const filteredTables = useMemo(() => {

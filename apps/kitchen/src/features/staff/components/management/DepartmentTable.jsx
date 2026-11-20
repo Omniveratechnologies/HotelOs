@@ -8,6 +8,7 @@ import ViewButton from "@/components/ui/button/ViewButton";
 import EditButton from "@/components/ui/button/EditButton";
 import DepartmentIcon from "./DepartmentIcon.jsx";
 import { departmentKey } from "../../utils/departmentOptions.js";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const EMPTY_PAGINATION = { page: 1, limit: 10, total: 0, totalPages: 1 };
 const RowMenu = ({ department, onToggleStatus, onDelete }) => {
@@ -83,7 +84,7 @@ const RowMenu = ({ department, onToggleStatus, onDelete }) => {
 };
 
 const DepartmentTable = ({
-  departments = [],
+  departments = EMPTY_ARRAY,
   loading = false,
   error = "",
   onRetry,

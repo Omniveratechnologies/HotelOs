@@ -6,6 +6,8 @@ import { STATUS_COLORS } from "../../utils/deviceFormat.js";
 const W = 100;
 const H = 62.5;
 
+const clamp = (value) => Math.min(100, Math.max(0, value));
+
 const Plan = ({ imageUrl }) =>
   imageUrl ? (
     <image
@@ -45,7 +47,7 @@ const Plan = ({ imageUrl }) =>
   );
 
 const DeviceFloorMap = ({
-  devices = [],
+  devices = EMPTY_ARRAY,
   imageUrl,
   onSelect,
   onSavePins,
@@ -70,7 +72,6 @@ const DeviceFloorMap = ({
 
   const toPercent = (event) => {
     const rect = svgRef.current.getBoundingClientRect();
-    const clamp = (value) => Math.min(100, Math.max(0, value));
     return {
       mapX:
         Math.round(

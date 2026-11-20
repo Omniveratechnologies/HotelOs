@@ -141,23 +141,38 @@ const DEVICE_PATHS = [
   "/devices",
 ];
 
-export const loadDeviceOptions = async () => {
-  for (const base of DEVICE_PATHS) {
-    const list = [];
-    try {
-      for (let page = 1; page <= 50; page += 1) {
-        const res = await request(`${base}?page=${page}&limit=100`);
-        const batch = Array.isArray(res.data)
-          ? res.data
-          : res.data?.devices || [];
-        list.push(...batch);
-        const totalPages =
-          res.pagination?.totalPages ?? res.meta?.totalPages ?? 1;
-        if (page >= totalPages || batch.length === 0) break;
-      }
-    } catch {
-      continue;
+const fetchAllPagesForBase = async (base) => {
+  const list = [];
+  // Fetch first page to get total pages
+  const firstRes = await request(`${base}?page=1&limit=100`);
+  const firstBatch = Array.isArray(firstRes.data)
+    ? firstRes.data
+    : firstRes.data?.devices || [];
+  list.push(...firstBatch);
+  const totalPages =
+    firstRes.pagination?.totalPages ?? firstRes.meta?.totalPages ?? 1;
+
+  if (totalPages > 1) {
+    // Fetch remaining pages in parallel
+    const pagePromises = [];
+    for (let page = 2; page <= totalPages; page += 1) {
+      pagePromises.push(request(`${base}?page=${page}&limit=100`));
     }
+    const responses = await Promise.all(pagePromises);
+    for (const res of responses) {
+      const batch = Array.isArray(res.data)
+        ? res.data
+        : res.data?.devices || [];
+      list.push(...batch);
+    }
+  }
+  return list;
+};
+
+const tryBasePaths = async (bases, index = 0) => {
+  if (index >= bases.length) return [];
+  try {
+    const list = await fetchAllPagesForBase(bases[index]);
     const seen = new Set();
     return list
       .filter((d) => d._id && !seen.has(d._id) && seen.add(d._id))
@@ -165,6 +180,9 @@ export const loadDeviceOptions = async () => {
         _id: d._id,
         name: d.name || d.deviceName || d.code || "Device",
       }));
+  } catch {
+    return tryBasePaths(bases, index + 1);
   }
-  return [];
 };
+
+export const loadDeviceOptions = async () => tryBasePaths(DEVICE_PATHS);

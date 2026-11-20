@@ -4,10 +4,11 @@ import {
   FiFileText,
   FiPrinter,
 } from "react-icons/fi";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const BulkActionsCard = ({
-  items = [],
-  selectedIds = [],
+  items = EMPTY_ARRAY,
+  selectedIds = EMPTY_ARRAY,
   onSelectAll,
   onCreatePurchaseOrder,
   onExportExcel,

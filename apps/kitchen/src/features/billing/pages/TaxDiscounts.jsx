@@ -24,10 +24,12 @@ import {
   Table,
   Notice,
   Tabs,
-  css,
-  idOf,
-  useLoad,
 } from "../components/billingUi.jsx";
+import {
+  css,
+  useLoad,
+  idOf,
+} from "../components/billingUiHelpers.js";
 
 export default function TaxDiscounts() {
   const [tab, setTab] = useState("tax");
@@ -311,8 +313,8 @@ function ResourceEditor({
           fields.map((f) => [f.key, f.type === "select" ? f.options[0] : ""]),
         ),
       );
-    } catch (e) {
-      onError(e.message);
+    } catch (err) {
+      onError(err.message);
     }
   }
   async function toggle(row) {
@@ -321,16 +323,16 @@ function ResourceEditor({
       setRows((current) =>
         current.map((r) => (idOf(r) === idOf(updated) ? updated : r)),
       );
-    } catch (e) {
-      onError(e.message);
+    } catch (err) {
+      onError(err.message);
     }
   }
   async function del(row) {
     try {
       await remove(idOf(row));
       setRows((current) => current.filter((r) => idOf(r) !== idOf(row)));
-    } catch (e) {
-      onError(e.message);
+    } catch (err) {
+      onError(err.message);
     }
   }
 

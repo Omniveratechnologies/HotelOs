@@ -1,4 +1,4 @@
-export const TABS = [
+const TABS = [
   { key: "overview", label: "Shift Overview" },
   { key: "roster", label: "Staff Schedule" },
   { key: "calendar", label: "Shift Calendar" },

@@ -16,9 +16,9 @@ const pageList = (page, total) => {
       (n) => n >= 1 && n <= total,
     ),
   );
-  const sorted = [...set].sort((a, b) => a - b);
-  return sorted.flatMap((n, i) =>
-    i && n - sorted[i - 1] > 1 ? ["…", n] : [n],
+  const sorted = [...set].toSorted((a, b) => a - b);
+  return sorted.flatMap((n, idx) =>
+    idx && n - sorted[idx - 1] > 1 ? [{ type: "gap", value: "…" }, n] : [n],
   );
 };
 
@@ -154,9 +154,9 @@ const FaceStaffListCard = ({
           >
             <FiChevronLeft size={14} />
           </button>
-          {pageList(page, pagination.totalPages).map((n, i) =>
-            n === "…" ? (
-              <span key={`gap-${i}`} className="px-1.5">
+          {pageList(page, pagination.totalPages).map((n) =>
+            n && n.type === "gap" ? (
+              <span key={`gap-${page}-${n.value}`} className="px-1.5">
                 …
               </span>
             ) : (

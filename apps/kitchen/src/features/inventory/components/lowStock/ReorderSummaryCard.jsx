@@ -1,4 +1,6 @@
-const ReorderSummaryCard = ({ items = [] }) => {
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
+
+const ReorderSummaryCard = ({ items = EMPTY_ARRAY }) => {
   const totalItems = items.length;
 
   const totalRecommendedQty = items.reduce(

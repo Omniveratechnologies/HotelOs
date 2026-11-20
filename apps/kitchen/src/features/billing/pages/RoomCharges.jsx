@@ -10,13 +10,15 @@ import {
   Panel,
   Table,
   Notice,
+} from "../components/billingUi.jsx";
+import {
   money,
   dateText,
   idOf,
   statusClass,
-  useLoad,
   css,
-} from "../components/billingUi.jsx";
+  useLoad,
+} from "../components/billingUiHelpers.js";
 
 export default function RoomCharges() {
   const { data, setData, error, setError } = useLoad(getRoomCharges);
@@ -130,10 +132,10 @@ export default function RoomCharges() {
               <p>Folio total: {money(selected.totalAmount)}</p>
             </div>
             <h3 className="mb-2 font-semibold">Charge History</h3>
-            {selected.items?.map((item, index) => (
+            {selected.items?.map((item) => (
               <p
                 className="flex justify-between border-b border-slate-800 py-2 text-xs"
-                key={index}
+                key={item._id || item.id || item.name}
               >
                 <span>{item.name}</span>
                 <span>{money(item.price * item.quantity)}</span>

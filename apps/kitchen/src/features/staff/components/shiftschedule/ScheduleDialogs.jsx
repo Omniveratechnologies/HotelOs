@@ -7,13 +7,13 @@ import Pagination from "@/components/ui/Pagination.jsx";
 import Table from "@/components/ui/Table.jsx";
 import useDebounce from "@/hooks/useDebounce.js";
 import { ShiftPill, StatusPill } from "./ShiftBadges.jsx";
-import { scheduleColumns } from "./TodayScheduleCard.jsx";
 import {
   api,
   formatLong,
   inputCls,
   query,
-} from "../../utils/shiftscheduleUtils.js";
+  scheduleColumns,
+} from "../../utils/shiftscheduleUtils.jsx";
 
 const PAGE_SIZE = 10;
 

@@ -12,18 +12,21 @@ import {
   getBills,
   getRooms,
 } from "../services/billing.js";
+import { createRowKey } from "@/utils/rowKey.js";
 import {
   Page,
   Panel,
   Notice,
-  useLoad,
+} from "../components/billingUi.jsx";
+import {
   css,
   money,
   waLink,
   billShareText,
   printInvoice,
   idOf,
-} from "../components/billingUi.jsx";
+  useLoad,
+} from "../components/billingUiHelpers.js";
 
 const PAYMENT_METHODS = ["cash", "upi", "card", "room"];
 
@@ -79,6 +82,7 @@ export default function NewBill() {
           price: item.price,
           quantity: 1,
           category: item.category,
+          clientKey: createRowKey("cart"),
         },
       ];
     });
@@ -93,19 +97,22 @@ export default function NewBill() {
         price: Number(custom.price),
         quantity: 1,
         category: null,
+        clientKey: createRowKey("cart"),
       },
     ]);
     setCustom({ name: "", price: "" });
   }
-  function updateQty(index, quantity) {
+  function updateQty(clientKey, quantity) {
     setCart((current) =>
       quantity < 1
-        ? current.filter((_, i) => i !== index)
-        : current.map((row, i) => (i === index ? { ...row, quantity } : row)),
+        ? current.filter((row) => row.clientKey !== clientKey)
+        : current.map((row) =>
+            row.clientKey === clientKey ? { ...row, quantity } : row,
+          ),
     );
   }
-  function removeRow(index) {
-    setCart((current) => current.filter((_, i) => i !== index));
+  function removeRow(clientKey) {
+    setCart((current) => current.filter((row) => row.clientKey !== clientKey));
   }
 
   const subtotal = cart.reduce((sum, row) => sum + row.price * row.quantity, 0);
@@ -456,21 +463,21 @@ export default function NewBill() {
             </button>
           )}
           <div className="max-h-64 space-y-2 overflow-y-auto">
-            {cart.map((row, index) => (
+            {cart.map((row) => (
               <div
-                key={index}
+                key={row.clientKey}
                 className="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs"
               >
                 <span className="flex-1">{row.name}</span>
                 <button
-                  onClick={() => updateQty(index, row.quantity - 1)}
+                  onClick={() => updateQty(row.clientKey, row.quantity - 1)}
                   className="cursor-pointer px-1"
                 >
                   −
                 </button>
                 <b>{row.quantity}</b>
                 <button
-                  onClick={() => updateQty(index, row.quantity + 1)}
+                  onClick={() => updateQty(row.clientKey, row.quantity + 1)}
                   className="cursor-pointer px-1"
                 >
                   +
@@ -479,7 +486,7 @@ export default function NewBill() {
                   {money(row.price * row.quantity)}
                 </span>
                 <button
-                  onClick={() => removeRow(index)}
+                  onClick={() => removeRow(row.clientKey)}
                   className="cursor-pointer text-red-400"
                 >
                   ✕

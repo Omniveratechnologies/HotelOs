@@ -293,29 +293,31 @@ const StockOut = () => {
     setError("");
 
     try {
-      for (const item of items) {
-        const response = await fetch(`${API_BASE_URL}/inventory/use`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            inventoryItemId: item.inventoryItemId,
-            category: item.category,
-            quantityUsed: item.quantityUsed,
-            unit: item.unit,
-            usageType: item.usageType,
-            notes: item.notes,
-            usedDate: item.usedDate,
-          }),
-        });
+      await Promise.all(
+        items.map(async (item) => {
+          const response = await fetch(`${API_BASE_URL}/inventory/use`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              inventoryItemId: item.inventoryItemId,
+              category: item.category,
+              quantityUsed: item.quantityUsed,
+              unit: item.unit,
+              usageType: item.usageType,
+              notes: item.notes,
+              usedDate: item.usedDate,
+            }),
+          });
 
-        const result = await response.json();
+          const result = await response.json();
 
-        if (!response.ok) {
-          throw new Error(result.message || "Failed to record usage");
-        }
-      }
+          if (!response.ok) {
+            throw new Error(result.message || "Failed to record usage");
+          }
+        }),
+      );
 
       setItems([]);
 

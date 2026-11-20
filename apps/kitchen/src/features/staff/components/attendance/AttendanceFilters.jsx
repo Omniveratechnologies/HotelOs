@@ -27,8 +27,8 @@ const AttendanceFilters = ({
   onChange,
   onApply,
   onClear,
-  departments = [],
-  designations = [],
+  departments = EMPTY_ARRAY,
+  designations = EMPTY_ARRAY,
   error = "",
 }) => {
   const visibleDesignations = values.department_id

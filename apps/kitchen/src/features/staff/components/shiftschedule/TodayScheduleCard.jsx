@@ -1,64 +1,7 @@
 import { useMemo } from "react";
-import { FiEye } from "react-icons/fi";
 
-import Avatar from "@/components/ui/Avatar.jsx";
 import Table from "@/components/ui/Table.jsx";
-import { ShiftPill, StatusPill } from "./ShiftBadges.jsx";
-import { formatLong } from "../../utils/shiftscheduleUtils.js";
-
-export const scheduleColumns = ({ onView, offset = 0 } = {}) => [
-  { key: "serial", label: "#", render: (_row, index) => offset + index + 1 },
-  {
-    key: "staff",
-    label: "Staff",
-    render: (row) => (
-      <div className="flex items-center justify-center gap-2.5">
-        <Avatar src={row.staff.photoUrl} name={row.staff.name} size={32} />
-        <div className="text-left leading-tight">
-          <p className="text-[13px] font-semibold text-white">
-            {row.staff.name}
-          </p>
-          <p className="text-[10px] text-gray-500">{row.staff.staffCode}</p>
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: "department",
-    label: "Department",
-    render: (row) => row.department?.name ?? "-",
-  },
-  {
-    key: "shift",
-    label: "Shift",
-    render: (row) => <ShiftPill shift={row.shift} />,
-  },
-  { key: "checkIn", label: "Check In", render: (row) => row.checkIn || "-" },
-  { key: "checkOut", label: "Check Out", render: (row) => row.checkOut || "-" },
-  {
-    key: "status",
-    label: "Status",
-    render: (row) => <StatusPill status={row.status} />,
-  },
-  ...(onView
-    ? [
-        {
-          key: "actions",
-          label: "Actions",
-          render: (row) => (
-            <button
-              type="button"
-              onClick={() => onView(row)}
-              aria-label={`View ${row.staff.name}'s schedule`}
-              className="rounded-md p-2 text-gray-400 transition hover:bg-[#1a1a1a] hover:text-white"
-            >
-              <FiEye size={15} />
-            </button>
-          ),
-        },
-      ]
-    : []),
-];
+import { formatLong, scheduleColumns } from "../../utils/shiftscheduleUtils.jsx";
 
 const TodayScheduleCard = ({
   date,

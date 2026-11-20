@@ -63,7 +63,10 @@ const DailyAttendanceReport = () => {
   });
 
   const tableRef = useRef(table);
-  tableRef.current = table;
+
+  useEffect(() => {
+    tableRef.current = table;
+  }, [table]);
 
   const [report, setReport] = useState(null);
   const [rows, setRows] = useState([]);
@@ -233,26 +236,41 @@ const DailyAttendanceReport = () => {
     setExporting(true);
 
     try {
-      let all = [];
-      let page = 1;
-      let totalPages = 1;
+      // Fetch first page to get total pages
+      const firstRes = await api(
+        `/daily/records?${query({
+          ...toParams(applied),
+          page: 1,
+          limit: 100,
+          sort: table.sort,
+          direction: table.direction,
+        })}`,
+      );
 
-      do {
-        const res = await api(
-          `/daily/records?${query({
-            ...toParams(applied),
-            page,
-            limit: 100,
-            sort: table.sort,
-            direction: table.direction,
-          })}`,
-        );
+      let all = firstRes.data;
+      const totalPages = Math.min(firstRes.pagination.totalPages, 60);
 
-        all = all.concat(res.data);
-
-        totalPages = res.pagination.totalPages;
-        page += 1;
-      } while (page <= totalPages && page <= 60);
+      if (totalPages > 1) {
+        // Fetch remaining pages in parallel
+        const pagePromises = [];
+        for (let page = 2; page <= totalPages; page += 1) {
+          pagePromises.push(
+            api(
+              `/daily/records?${query({
+                ...toParams(applied),
+                page,
+                limit: 100,
+                sort: table.sort,
+                direction: table.direction,
+              })}`,
+            ),
+          );
+        }
+        const responses = await Promise.all(pagePromises);
+        for (const res of responses) {
+          all = all.concat(res.data);
+        }
+      }
 
       const chosen = selected.size
         ? all.filter((row) => selected.has(row._id))

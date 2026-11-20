@@ -1,9 +1,10 @@
 import { FiEdit2, FiEye, FiTrash2 } from "react-icons/fi";
 import Table from "@/components/ui/Table";
 import StatusBadge from "@/components/ui/StatusBadge";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const OrdersTable = ({
-  orders = [],
+  orders = EMPTY_ARRAY,
   onEdit,
   onDelete,
   onView,

@@ -1,6 +1,7 @@
 import Table from "@/components/ui/Table.jsx";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
-const PurchaseOrderItemsTable = ({ items = [] }) => {
+const PurchaseOrderItemsTable = ({ items = EMPTY_ARRAY }) => {
   const columns = [
     {
       key: "serialNumber",

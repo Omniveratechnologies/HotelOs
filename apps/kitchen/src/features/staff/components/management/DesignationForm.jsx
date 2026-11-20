@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { FiPlus, FiSave } from "react-icons/fi";
 
 import ActionButton from "@/components/ui/button/ActionButton";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
-export const suggestDesignationCode = (name = "") => {
+const suggestDesignationCode = (name = "") => {
   const words = name
     .toUpperCase()
     .replace(/[^A-Z0-9 ]/g, "")
@@ -38,7 +39,7 @@ const validate = (values) => {
 const DesignationForm = ({
   mode = "create",
   designation,
-  departments = [],
+  departments = EMPTY_ARRAY,
   onSubmit,
   onCancel,
   focusToken = 0,

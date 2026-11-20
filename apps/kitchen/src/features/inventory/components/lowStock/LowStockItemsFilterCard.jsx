@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { FiCheck, FiChevronDown } from "react-icons/fi";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const LowStockItemsFilterCard = ({
-  items = [],
-  purchaseHistory = [],
+  items = EMPTY_ARRAY,
+  purchaseHistory = EMPTY_ARRAY,
   filterValues,
   onApply,
   onClear,

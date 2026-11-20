@@ -1,15 +1,16 @@
 import { FiCalendar, FiRotateCcw, FiSearch } from "react-icons/fi";
 
 import { buttonGhost, inputCls } from "../../utils/leaveManagementUtils.js";
+import { EMPTY_ARRAY, EMPTY_OBJECT } from "@/constants/defaults.js";
 
 const field = inputCls.replace("w-full", "").trim();
 
 const LeaveManagementFilters = ({
-  filters = {},
+  filters = EMPTY_OBJECT,
   searchInput,
   onSearchChange,
-  departments = [],
-  leaveTypes = [],
+  departments = EMPTY_ARRAY,
+  leaveTypes = EMPTY_ARRAY,
   onFilterChange,
   onReset,
 }) => {

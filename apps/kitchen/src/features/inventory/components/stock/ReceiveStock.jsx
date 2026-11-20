@@ -73,7 +73,7 @@ const ReceiveStock = () => {
         const result = await response.json();
 
         setPurchaseHistory(result.data || []);
-        console.log("Purchase History:", result.data);
+        
       } catch (err) {
         console.error("Error fetching purchase history:", err);
       } finally {

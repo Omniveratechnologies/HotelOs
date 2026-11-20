@@ -1,5 +1,18 @@
 import * as XLSX from "xlsx";
 
+const escapeHtml = (value) =>
+  String(value ?? "").replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&",
+      "<": "<",
+      ">": ">",
+      '"': "\"",
+      "'": "'",
+    };
+
+    return entities[character];
+  });
+
 export const exportStaffToExcel = (staff = []) => {
   const exportData = staff.map((member, index) => ({
     "S.No": index + 1,
@@ -36,19 +49,6 @@ export const printStaffList = (staff = []) => {
   const printWindow = window.open("", "_blank", "width=1000,height=700");
 
   if (!printWindow) return;
-
-  const escapeHtml = (value) =>
-    String(value ?? "").replace(/[&<>"']/g, (character) => {
-      const entities = {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      };
-
-      return entities[character];
-    });
 
   const rows = staff
     .map((member, index) => {

@@ -1,3 +1,12 @@
+const escapeCell = (value) => {
+  const str = String(value ?? "");
+
+  if (/[",\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+};
+
 const toCSV = (records) => {
   const headers = [
     "Date",
@@ -10,15 +19,6 @@ const toCSV = (records) => {
     "Cost (₹)",
     "Notes",
   ];
-
-  const escapeCell = (value) => {
-    const str = String(value ?? "");
-
-    if (/[",\n]/.test(str)) {
-      return `"${str.replace(/"/g, '""')}"`;
-    }
-    return str;
-  };
 
   const rows = records.map((r) => [
     new Date(r.date).toLocaleDateString("en-IN", {

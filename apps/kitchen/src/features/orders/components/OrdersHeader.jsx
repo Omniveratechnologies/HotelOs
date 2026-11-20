@@ -2,8 +2,8 @@ import { FiCalendar, FiDownload } from "react-icons/fi";
 
 import Filters from "@/components/ui/Filters";
 import SearchBar from "@/components/ui/SearchBar";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import { autoTable } from "jspdf-autotable";
 
 const OrdersHeader = ({
   filters,

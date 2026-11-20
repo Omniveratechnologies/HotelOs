@@ -2,11 +2,12 @@ import { useMemo } from "react";
 import { FiRefreshCw, FiSearch } from "react-icons/fi";
 
 import Filters from "@/components/ui/Filters";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const DesignationHeader = ({
   searchTerm = "",
   onSearchChange,
-  departments = [],
+  departments = EMPTY_ARRAY,
   departmentId = "",
   onDepartmentChange,
   status = "",

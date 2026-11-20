@@ -8,9 +8,10 @@ import OrdersTable from "./OrdersTable.jsx";
 
 import OrderHeader from "./OrdersHeader.jsx";
 import ViewOrderModal from "./ViewOrderModal.jsx";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const AllOrdersSection = ({
-  orders = [],
+  orders = EMPTY_ARRAY,
   setOrders,
   searchTerm,
   setSearchTerm,
@@ -180,7 +181,7 @@ const AllOrdersSection = ({
         items: updatedItems,
       };
 
-      console.log("Update payload:", updateData);
+      
 
       const response = await fetch(`${ORDERS_API}/${editingOrder.id}`, {
         method: "PATCH",

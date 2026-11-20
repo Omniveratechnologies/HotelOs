@@ -103,8 +103,8 @@ const PurchaseOrder = () => {
 
         const result = await response.json();
 
-        console.log("Purchase Orders API status:", response.status);
-        console.log("Purchase Orders API response:", result);
+        
+        
 
         if (response.ok && result.success && Array.isArray(result.data)) {
           setPurchaseOrders(result.data);
@@ -146,7 +146,7 @@ const PurchaseOrder = () => {
     }));
 
     setCurrentPage(1);
-    console.log("Selected supplier:", filterValues.supplier);
+    
   };
 
   const filteredPurchaseOrders = useMemo(() => {
@@ -233,7 +233,7 @@ const PurchaseOrder = () => {
   };
 
   const handleViewOrderPage = (row) => {
-    console.log("Navigating with id:", row._id);
+    
     navigate(`/purchase-orders/${row._id}`);
   };
   return (

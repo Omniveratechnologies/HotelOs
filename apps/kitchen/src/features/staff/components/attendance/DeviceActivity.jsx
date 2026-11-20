@@ -1,4 +1,5 @@
 import { timeAgo } from "../../utils/deviceFormat.js";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const DOT = {
   ONLINE: "bg-emerald-400",
@@ -13,7 +14,7 @@ const DOT = {
   REMOVED: "bg-gray-500",
 };
 
-const DeviceActivity = ({ activity = [], loading = false, error = "" }) => (
+const DeviceActivity = ({ activity = EMPTY_ARRAY, loading = false, error = "" }) => (
   <section
     aria-label="Recent device activity"
     className="rounded-xl border border-gray-800 bg-[#111111] p-4"

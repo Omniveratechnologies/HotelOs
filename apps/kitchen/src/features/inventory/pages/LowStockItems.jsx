@@ -1,5 +1,5 @@
 /* oxlint-disable react/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import API_BASE_URL from "@/config/api.js";
 
@@ -54,7 +54,7 @@ const LowStockItems = () => {
     sortBy: "currentStockAsc",
   });
 
-  const fetchLowStockItems = async () => {
+  const fetchLowStockItems = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -74,9 +74,9 @@ const LowStockItems = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchPurchaseHistory = async () => {
+  const fetchPurchaseHistory = useCallback(async () => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/inventory/purchase-history`,
@@ -94,12 +94,12 @@ const LowStockItems = () => {
     } catch (error) {
       console.error("Failed to fetch purchase history:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLowStockItems();
     fetchPurchaseHistory();
-  }, []);
+  }, [fetchLowStockItems, fetchPurchaseHistory]);
 
   const tabs = [
     {
@@ -135,14 +135,12 @@ const LowStockItems = () => {
   };
 
   const getSupplierForItem = (item) => {
-    const purchase = purchaseHistory.find((purchase) => {
-      const purchaseItemId =
-        purchase.inventoryItem?._id || purchase.inventoryItem;
-
+    const found = purchaseHistory.find((p) => {
+      const purchaseItemId = p.inventoryItem?._id || p.inventoryItem;
       return purchaseItemId === item._id;
     });
 
-    return purchase?.supplierName || "";
+    return found?.supplierName || "";
   };
 
   const filteredItems = lowStockItems
@@ -192,7 +190,7 @@ const LowStockItems = () => {
 
       return true;
     })
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       switch (filterValues.sortBy) {
         case "currentStockDesc":
           return b.currentStock - a.currentStock;
@@ -226,6 +224,8 @@ const LowStockItems = () => {
     setShowReorderModal(true);
   };
   useEffect(() => {
+    // Reset page when filters/search/tab change
+    const _ = { activeTab, searchTerm, filterValues };
     setCurrentPage(1);
   }, [activeTab, searchTerm, filterValues]);
 
@@ -250,20 +250,17 @@ const LowStockItems = () => {
     );
   };
 
-  const handleCreatePurchaseOrder = async (selectedIds) => {
+  const handleCreatePurchaseOrder = async (ids) => {
     try {
       const selectedItems = lowStockItems.filter((item) =>
-        selectedIds.includes(item._id),
+        ids.includes(item._id),
       );
 
       if (selectedItems.length === 0) {
         return;
       }
 
-      const result = await createPurchaseOrder(selectedItems);
-
-      console.log("Purchase order created:", result);
-
+      await createPurchaseOrder(selectedItems);
       setSelectedIds([]);
     } catch (error) {
       console.error("Create purchase order error:", error);

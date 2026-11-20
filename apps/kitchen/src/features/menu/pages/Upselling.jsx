@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -42,9 +42,11 @@ import {
   Panel,
   Table,
   Tabs,
+} from "../../billing/components/billingUi.jsx";
+import {
   css,
   money,
-} from "../../billing/components/billingUi.jsx";
+} from "../../billing/components/billingUiHelpers.js";
 
 const tabValues = [
   "overview",
@@ -638,7 +640,7 @@ export default function Upselling() {
     });
   const analyticsRef = useRef(null),
     comboRef = useRef(null);
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [menu, ruleData, offerData, fastData, smartData, metrics, billing] =
         await Promise.all([
@@ -662,12 +664,11 @@ export default function Upselling() {
     } catch (requestError) {
       setError(requestError.message || "Unable to load upselling data");
     }
-  };
-  // oxlint-disable-next-line react/set-state-in-effect
-  useEffect(() => {
-    // oxlint-disable-next-line react/set-state-in-effect
-    load();
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
   const save = async (create, update, form, blank, setForm, setRows) => {
     try {
       const payload = { ...form, status: isActive(form.status) };

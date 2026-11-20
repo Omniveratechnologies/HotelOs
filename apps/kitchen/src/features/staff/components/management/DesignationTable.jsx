@@ -6,6 +6,7 @@ import Pagination from "@/components/ui/Pagination";
 import StatusBadge from "@/components/ui/StatusBadge";
 import EditButton from "@/components/ui/button/EditButton";
 import DeleteButton from "@/components/ui/button/DeleteButton";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
 const EMPTY_PAGINATION = { page: 1, limit: 10, total: 0, totalPages: 1 };
 
@@ -84,7 +85,7 @@ const RowMenu = ({ designation, onToggleStatus }) => {
 };
 
 const DesignationTable = ({
-  designations = [],
+  designations = EMPTY_ARRAY,
   loading = false,
   error = "",
   onRetry,

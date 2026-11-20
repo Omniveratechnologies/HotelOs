@@ -1,5 +1,4 @@
-/* oxlint-disable react/set-state-in-effect */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Edit3, GripVertical, Plus, Trash2, X } from "lucide-react";
 import {
   getModifierGroups,
@@ -7,6 +6,7 @@ import {
   updateModifierGroup,
   deleteModifierGroup,
 } from "../services/menuManagement.js";
+import { createRowKey } from "@/utils/rowKey.js";
 const css =
   "w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-400";
 const empty = {
@@ -27,16 +27,17 @@ export default function AddOnsModifiers() {
     [editing, setEditing] = useState(null),
     [tab, setTab] = useState("Group Details"),
     [error, setError] = useState("");
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setRows(await getModifierGroups());
-    } catch (e) {
-      setError(e.message);
+    } catch (err) {
+      setError(err.message);
     }
-  };
+  }, []);
+
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
   const save = async () => {
     try {
       const saved = editing.id
@@ -148,6 +149,7 @@ function Editor({ value, setValue, tab, setTab, onClose, onSave }) {
         price: 0,
         isDefault: false,
         status: true,
+        clientKey: createRowKey("option"),
       },
     ]);
   return (
@@ -214,17 +216,18 @@ function Editor({ value, setValue, tab, setTab, onClose, onSave }) {
             >
               + Add Option
             </button>
-            {value.options.map((option, index) => (
+            {value.options.map((option) => (
               <div
                 className="mb-2 grid grid-cols-[1fr_100px_auto] gap-2"
-                key={index}
+                key={option.clientKey}
               >
                 <input
                   className={css}
                   value={option.name}
                   onChange={(e) => {
-                    const options = [...value.options];
-                    options[index] = { ...option, name: e.target.value };
+                    const options = value.options.map((o) =>
+                      o.clientKey === option.clientKey ? { ...o, name: e.target.value } : o,
+                    );
                     patch("options", options);
                   }}
                 />
@@ -233,11 +236,11 @@ function Editor({ value, setValue, tab, setTab, onClose, onSave }) {
                   type="number"
                   value={option.price}
                   onChange={(e) => {
-                    const options = [...value.options];
-                    options[index] = {
-                      ...option,
-                      price: Number(e.target.value),
-                    };
+                    const options = value.options.map((o) =>
+                      o.clientKey === option.clientKey
+                        ? { ...o, price: Number(e.target.value) }
+                        : o,
+                    );
                     patch("options", options);
                   }}
                 />
@@ -245,9 +248,7 @@ function Editor({ value, setValue, tab, setTab, onClose, onSave }) {
                   onClick={() =>
                     patch(
                       "options",
-                      value.options.filter(
-                        (_, itemIndex) => itemIndex !== index,
-                      ),
+                      value.options.filter((o) => o.clientKey !== option.clientKey),
                     )
                   }
                   className="text-red-400"

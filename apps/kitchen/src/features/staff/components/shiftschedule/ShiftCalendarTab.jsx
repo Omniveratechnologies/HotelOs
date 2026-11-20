@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Avatar from "@/components/ui/Avatar.jsx";
 import MonthCalendar from "./MonthCalendar.jsx";
 import { ShiftPill, StatusPill } from "./ShiftBadges.jsx";
-import { api, formatLong, query } from "../../utils/shiftscheduleUtils.js";
+import { api, formatLong, query } from "../../utils/shiftscheduleUtils.jsx";
 
 const ShiftCalendarTab = ({
   calendar,

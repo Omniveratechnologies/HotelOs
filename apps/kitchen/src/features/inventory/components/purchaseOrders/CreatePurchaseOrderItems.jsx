@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import API_BASE_URL from "@/config/api.js";
+import { createRowKey } from "@/utils/rowKey.js";
 
 const CreatePurchaseOrderItems = ({
   items,
@@ -45,6 +46,7 @@ const CreatePurchaseOrderItems = ({
         unitCost: 0,
         totalCost: 0,
         currentStock: 0,
+        clientKey: createRowKey("po-item"),
       },
     ]);
   };
@@ -199,7 +201,7 @@ const CreatePurchaseOrderItems = ({
                 </tr>
               ) : (
                 items.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-800/70">
+                  <tr key={item.clientKey || index} className="border-b border-gray-800/70">
                     <td className="px-4 py-3 text-center text-xs text-gray-500">
                       {index + 1}
                     </td>

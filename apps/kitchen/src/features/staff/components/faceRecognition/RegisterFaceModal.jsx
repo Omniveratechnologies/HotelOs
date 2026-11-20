@@ -33,7 +33,10 @@ const RegisterFacePanel = ({
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
   const photosRef = useRef(photos);
-  photosRef.current = photos;
+
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
 
   const releaseAll = useCallback(
     () => photosRef.current.forEach((p) => URL.revokeObjectURL(p.url)),
@@ -100,7 +103,7 @@ const RegisterFacePanel = ({
     const files = [...event.target.files].slice(0, max - photos.length);
     event.target.value = "";
     guarded(async () => {
-      for (const file of files) await addPhoto(file);
+      await Promise.all(files.map((file) => addPhoto(file)));
     });
   };
 

@@ -4,6 +4,8 @@ import { FaRupeeSign } from "react-icons/fa";
 import StatusCard from "@/components/ui/StatusCard.jsx";
 import API_BASE_URL from "@/config/api.js";
 
+const fmt = (n) => Number(n || 0).toLocaleString("en-IN");
+
 const WastageStatusCards = ({ refreshKey }) => {
   const [summary, setSummary] = useState(null);
 
@@ -13,8 +15,6 @@ const WastageStatusCards = ({ refreshKey }) => {
       .then((data) => setSummary(data.data))
       .catch((err) => console.error("Failed to load wastage summary:", err));
   }, [refreshKey]);
-
-  const fmt = (n) => Number(n || 0).toLocaleString("en-IN");
 
   const qtyChange = summary?.percentChangeQty;
   const costChange = summary?.percentChangeCost;

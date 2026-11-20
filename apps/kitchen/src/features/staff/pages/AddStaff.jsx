@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle, RotateCcw, Save, UserPlus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -149,8 +149,8 @@ const AddStaff = () => {
     mode: "onBlur",
   });
 
-  const dob = watch("dob");
-  const departmentId = watch("departmentId");
+  const dob = useWatch({ control, name: "dob" });
+  const departmentId = useWatch({ control, name: "departmentId" });
   const age = getAge(dob);
   const currentId = id ?? savedStaff?._id ?? "";
   const baseNotes = savedStaff?.notes ?? "";

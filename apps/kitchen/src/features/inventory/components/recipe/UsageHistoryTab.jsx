@@ -47,7 +47,7 @@ const UsageHistoryTab = ({ recipeId }) => {
       <div className="space-y-3">
         {history.map((entry, i) => (
           <div
-            key={i}
+            key={entry._id || entry.id || `${entry.date}-${entry.quantityPrepared}-${i}`}
             className="flex items-center justify-between border-b border-gray-800/60 pb-3 text-sm"
           >
             <span className="text-gray-300">{entry.date}</span>

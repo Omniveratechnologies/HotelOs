@@ -23,9 +23,7 @@ const WastagePage = () => {
   const handleViewReports = async () => {
     setDownloadingReport(true);
     try {
-      const count = await WastageReport(API_BASE_URL, { period: "All Time" });
-
-      console.log(`Downloaded report with ${count} records`);
+      await WastageReport(API_BASE_URL, { period: "All Time" });
     } catch (error) {
       console.error("Report download error:", error);
       alert(error.message || "Failed to download report.");

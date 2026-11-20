@@ -27,11 +27,11 @@ import {
   ViewAllDialog,
 } from "../components/shiftschedule/ScheduleDialogs.jsx";
 
-import { api, del, localToday, query } from "../utils/shiftscheduleUtils.js";
+import { api, del, localToday, query } from "../utils/shiftscheduleUtils.jsx";
 import ShiftscheduleListCard from "../components/shiftschedule/ShiftScheduleListCard.jsx";
 
 const ShiftSchedule = () => {
-  const today = useMemo(localToday, []);
+  const today = useMemo(() => localToday(), []);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [tab, setTab] = useState("overview");
   const [date, setDate] = useState(today);

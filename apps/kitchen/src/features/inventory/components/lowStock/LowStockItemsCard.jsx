@@ -3,8 +3,9 @@ import { FiAlertCircle, FiShoppingCart, FiPackage } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 
 import StatusCard from "@/components/ui/StatusCard.jsx";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
-const LowStockItemsCard = ({ items = [] }) => {
+const LowStockItemsCard = ({ items = EMPTY_ARRAY }) => {
   const lowStockCount = items.length;
 
   const criticalCount = items.filter(

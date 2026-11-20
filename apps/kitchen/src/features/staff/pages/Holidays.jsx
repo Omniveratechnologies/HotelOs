@@ -19,7 +19,7 @@ import { api, del, localToday, post, query } from "../utils/holidayUtils.js";
 const initialFilters = (year) => ({ type: "", status: "", year: String(year) });
 
 const Holidays = () => {
-  const today = useMemo(localToday, []);
+  const today = useMemo(() => localToday(), []);
   const thisYear = Number(today.slice(0, 4));
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 

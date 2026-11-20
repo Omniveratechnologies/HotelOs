@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
   FiChevronDown,
   FiChevronLeft,
@@ -47,16 +47,21 @@ const DailyRecordsCard = ({
   onLimitChange,
   onOpen,
 }) => {
-  const allSelected =
-    rows.length > 0 && rows.every((row) => selected.has(row._id));
-  const head = (label, field) => (
-    <SortHead
-      label={label}
-      field={field}
-      sort={sort}
-      direction={direction}
-      onSort={onSort}
-    />
+  const allSelected = useCallback(
+    () => rows.length > 0 && rows.every((row) => selected.has(row._id)),
+    [rows, selected],
+  );
+  const head = useCallback(
+    (label, field) => (
+      <SortHead
+        label={label}
+        field={field}
+        sort={sort}
+        direction={direction}
+        onSort={onSort}
+      />
+    ),
+    [sort, direction, onSort],
   );
 
   const columns = useMemo(
@@ -148,15 +153,7 @@ const DailyRecordsCard = ({
         ),
       },
     ],
-    [
-      rows,
-      selected,
-      allSelected,
-      sort,
-      direction,
-      pagination.page,
-      pagination.limit,
-    ],
+    [allSelected, head, onToggle, onToggleAll, onOpen, pagination.page, pagination.limit, selected],
   );
 
   return (

@@ -7,8 +7,9 @@ import {
 import { RiMoneyRupeeCircleFill } from "react-icons/ri";
 
 import StatusCard from "@/components/ui/StatusCard";
+import { EMPTY_ARRAY } from "@/constants/defaults.js";
 
-const OrderStatusCards = ({ orders = [] }) => {
+const OrderStatusCards = ({ orders = EMPTY_ARRAY }) => {
   const totalRevenue = orders.reduce((total, order) => {
     return total + Number(order.totalAmount || order.amount || 0);
   }, 0);

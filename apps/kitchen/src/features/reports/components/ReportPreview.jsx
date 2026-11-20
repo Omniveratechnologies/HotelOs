@@ -81,7 +81,7 @@ const ReportPreview = ({
               <tbody>
                 {rows.map((row, index) => (
                   <tr
-                    key={index}
+                    key={row._id || row.id || index}
                     className="border-b border-gray-800/60 text-gray-300"
                   >
                     <td className="px-2 py-2.5 text-gray-500">{index + 1}</td>

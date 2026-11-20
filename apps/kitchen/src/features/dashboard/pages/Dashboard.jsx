@@ -27,8 +27,6 @@ const Dashboard = () => {
 
       const result = await response.json();
 
-      console.log("Status update response:", result);
-
       if (!response.ok) {
         throw new Error(result.message || "Failed to update order status");
       }

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import useMenuItems from "../hooks/useMenuItems.js";
 import { updateMenuItem } from "../services/menu.js";
+import { createRowKey } from "@/utils/rowKey.js";
 const css =
   "w-full rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-400";
 const periods = ["Breakfast", "Lunch", "Evening", "Dinner", "Late Night"],
@@ -228,7 +229,12 @@ export default function MenuAvailability() {
   );
 }
 function TimeDays({ item, save }) {
-  const [slots, setSlots] = useState(item.timeAvailability?.slots || []),
+  const initialSlots = (item.timeAvailability?.slots || []).map((s) => {
+    const slot = { start: s.start, end: s.end };
+    slot.clientKey = s.clientKey || createRowKey("slot");
+    return slot;
+  });
+  const [slots, setSlots] = useState(initialSlots),
     [days, setDays] = useState(item.dayAvailability || dayNames);
   const persist = (nextSlots, nextDays) =>
     save({
@@ -258,7 +264,7 @@ function TimeDays({ item, save }) {
         Enable Time Restriction
       </label>
       {slots.map((slot, index) => (
-        <div className="grid grid-cols-[1fr_1fr_auto] gap-2" key={index}>
+        <div className="grid grid-cols-[1fr_1fr_auto] gap-2" key={slot.clientKey}>
           <input
             className={css}
             value={slot.start}
@@ -295,7 +301,7 @@ function TimeDays({ item, save }) {
       ))}
       <button
         onClick={() => {
-          const next = [...slots, { start: "09:00", end: "17:00" }];
+          const next = [...slots, { start: "09:00", end: "17:00", clientKey: createRowKey("slot") }];
           setSlots(next);
           persist(next, days);
         }}

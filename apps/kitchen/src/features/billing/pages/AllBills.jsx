@@ -13,15 +13,17 @@ import {
   Table,
   Notice,
   Tabs,
+} from "../components/billingUi.jsx";
+import {
   money,
   dateText,
   idOf,
   statusClass,
-  useLoad,
   waLink,
   billShareText,
   printInvoice,
-} from "../components/billingUi.jsx";
+  useLoad,
+} from "../components/billingUiHelpers.js";
 
 const TODAY_DATE_STR = new Date().toDateString();
 
@@ -187,9 +189,9 @@ export default function AllBills() {
                 </div>
               )}
               {tab === "items" &&
-                selected.items?.map((i, idx) => (
+                selected.items?.map((i) => (
                   <p
-                    key={idx}
+                    key={i._id || i.id || i.name}
                     className="flex justify-between border-b border-slate-800 py-1.5"
                   >
                     <span>

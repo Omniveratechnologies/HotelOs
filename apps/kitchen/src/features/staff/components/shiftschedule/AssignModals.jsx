@@ -13,7 +13,8 @@ import {
   post,
   query,
   request,
-} from "../../utils/shiftscheduleUtils.js";
+} from "../../utils/shiftscheduleUtils.jsx";
+import { createRowKey } from "@/utils/rowKey.js";
 
 const Field = ({ label, children }) => (
   <label className="block space-y-1.5">
@@ -102,8 +103,8 @@ const ResultPanel = ({ result }) => {
         <div>
           <p className="mb-1 text-yellow-400">Not enough people for:</p>
           <ul className="max-h-24 space-y-0.5 overflow-y-auto text-gray-400">
-            {unmet.map((u, i) => (
-              <li key={i}>
+            {unmet.map((u) => (
+              <li key={`${u.date}-${u.shiftName}`}>
                 {u.date} · {u.shiftName}: {u.actual} of {u.required}
               </li>
             ))}
@@ -114,8 +115,8 @@ const ResultPanel = ({ result }) => {
         <div>
           <p className="mb-1 text-red-300">Skipped:</p>
           <ul className="max-h-28 space-y-0.5 overflow-y-auto text-gray-400">
-            {skipped.slice(0, 30).map((s, i) => (
-              <li key={i}>
+            {skipped.slice(0, 30).map((s) => (
+              <li key={`${s.staffName}-${s.date}-${s.reason}`}>
                 {s.staffName} · {s.date} · {s.reason}
               </li>
             ))}
@@ -126,8 +127,8 @@ const ResultPanel = ({ result }) => {
         <div>
           <p className="mb-1 text-yellow-400">Heads up:</p>
           <ul className="max-h-24 space-y-0.5 overflow-y-auto text-gray-400">
-            {warnings.slice(0, 20).map((w, i) => (
-              <li key={i}>
+            {warnings.slice(0, 20).map((w) => (
+              <li key={`${w.staffName}-${w.date}-${w.message}`}>
                 {w.staffName} · {w.date} · {w.message}
               </li>
             ))}
@@ -140,8 +141,8 @@ const ResultPanel = ({ result }) => {
             Sample of the plan ({result.preview.length})
           </summary>
           <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto text-gray-400">
-            {result.preview.map((p, i) => (
-              <li key={i}>
+            {result.preview.map((p) => (
+              <li key={`${p.date}-${p.staffName}-${p.shift}`}>
                 {p.date} · {p.staffName} · {p.shift}
               </li>
             ))}
@@ -443,11 +444,11 @@ export const AutoScheduleModal = ({ shifts, onClose, onDone }) => {
     minRestHours: Number(minRest),
     coverage: coverage
       .filter((c) => c.shiftId && Number(c.min) >= 1)
-      .map((c) => ({
-        shiftId: c.shiftId,
-        min: Number(c.min),
-        ...(c.departmentId ? { departmentId: c.departmentId } : {}),
-      })),
+      .map((c) => {
+        const obj = { shiftId: c.shiftId, min: Number(c.min) };
+        if (c.departmentId) obj.departmentId = c.departmentId;
+        return obj;
+      }),
     overwrite,
     dryRun,
   });
@@ -614,7 +615,7 @@ export const AutoScheduleModal = ({ shifts, onClose, onDone }) => {
               onClick={() =>
                 setCoverage((c) => [
                   ...c,
-                  { shiftId: poolShifts[0]._id, min: 1, departmentId: "" },
+                  { shiftId: poolShifts[0]._id, min: 1, departmentId: "", clientKey: createRowKey("coverage") },
                 ])
               }
               className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-40"
@@ -624,7 +625,7 @@ export const AutoScheduleModal = ({ shifts, onClose, onDone }) => {
           </div>
           {coverage.map((rule, index) => (
             <div
-              key={index}
+              key={rule.clientKey || index}
               className="flex items-center gap-2"
               role="group"
               aria-label={`Coverage rule ${index + 1}`}
