@@ -10,11 +10,55 @@ export class ApiError extends Error {
   /**
    * @param {string} message - Error description
    * @param {number} status - HTTP status code
+   * @param {object} [validationErrors] - Field-level validation errors { body, query, params }
    */
-  constructor(message, status) {
+  constructor(message, status, validationErrors = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.validationErrors = validationErrors;
+  }
+
+  /**
+   * Check if this is a validation error (400 with field errors)
+   */
+  get isValidationError() {
+    return this.status === 400 && this.validationErrors !== null;
+  }
+
+  /**
+   * Get field errors for a specific source (body, query, params)
+   * @param {'body'|'query'|'params'} source
+   * @returns {object|null}
+   */
+  getFieldErrors(source) {
+    return this.validationErrors?.[source] ?? null;
+  }
+
+  /**
+   * Get all field errors flattened
+   * @returns {Record<string, string[]>}
+   */
+  getAllFieldErrors() {
+    if (!this.validationErrors) return {};
+    const all = {};
+    for (const [source, fields] of Object.entries(this.validationErrors)) {
+      for (const [field, messages] of Object.entries(fields)) {
+        const key = `${source}.${field}`;
+        all[key] = Array.isArray(messages) ? messages : [messages];
+      }
+    }
+    return all;
+  }
+
+  /**
+   * Get first error message for display
+   * @returns {string}
+   */
+  getFirstErrorMessage() {
+    const all = this.getAllFieldErrors();
+    const firstKey = Object.keys(all)[0];
+    return firstKey ? all[firstKey][0] : this.message;
   }
 }
 
@@ -161,10 +205,11 @@ export async function apiFetch(
   }
 
   if (!response.ok) {
-    throw new ApiError(
-      data?.message || data?.error || `Request failed (${response.status})`,
-      response.status,
-    );
+    // Extract validation errors from new standardized format
+    const validationErrors = data?.errors ?? null;
+    const message =
+      data?.message || data?.error || `Request failed (${response.status})`;
+    throw new ApiError(message, response.status, validationErrors);
   }
 
   return data;

@@ -4,8 +4,36 @@ import { Save } from "lucide-react";
 import { Modal, Input, Button } from "@hotelos/ui/components";
 
 import { useUpdateHotel, useSetHotelAiosellCode } from "../hooks/useHotels.js";
+import { ApiError } from "@hotelos/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Map backend validation field paths to frontend field names
+ */
+function mapValidationErrors(validationErrors) {
+  if (!validationErrors) return {};
+
+  const mapped = {};
+
+  if (validationErrors.body) {
+    Object.assign(mapped, validationErrors.body);
+  }
+
+  if (validationErrors.query) {
+    for (const [field, messages] of Object.entries(validationErrors.query)) {
+      mapped[`query.${field}`] = messages;
+    }
+  }
+
+  if (validationErrors.params) {
+    for (const [field, messages] of Object.entries(validationErrors.params)) {
+      mapped[`params.${field}`] = messages;
+    }
+  }
+
+  return mapped;
+}
 
 export default function EditHotelModal({ hotel, onClose, onSaved }) {
   // Local copy initialized directly from the hotel record with zero hardcoded fallbacks
@@ -155,9 +183,15 @@ export default function EditHotelModal({ hotel, onClose, onSaved }) {
       onClose();
     } catch (error) {
       console.error("Update hotel error:", error);
-      setErrors({
-        form: error.message || "Something went wrong. Please try again.",
-      });
+
+      if (error instanceof ApiError && error.isValidationError) {
+        const fieldErrors = mapValidationErrors(error.validationErrors);
+        setErrors(fieldErrors);
+      } else {
+        setErrors({
+          form: error.message || "Something went wrong. Please try again.",
+        });
+      }
     } finally {
       setSubmitting(false);
     }

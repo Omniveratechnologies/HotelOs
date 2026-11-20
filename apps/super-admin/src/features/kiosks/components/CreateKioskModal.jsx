@@ -9,6 +9,34 @@ import {
   useHotelRooms,
 } from "../hooks/useKiosks.js";
 import { useHotels } from "../../hotels/hooks/useHotels.js";
+import { ApiError } from "@hotelos/api";
+
+/**
+ * Map backend validation field paths to frontend field names
+ */
+function mapValidationErrors(validationErrors) {
+  if (!validationErrors) return {};
+
+  const mapped = {};
+
+  if (validationErrors.body) {
+    Object.assign(mapped, validationErrors.body);
+  }
+
+  if (validationErrors.query) {
+    for (const [field, messages] of Object.entries(validationErrors.query)) {
+      mapped[`query.${field}`] = messages;
+    }
+  }
+
+  if (validationErrors.params) {
+    for (const [field, messages] of Object.entries(validationErrors.params)) {
+      mapped[`params.${field}`] = messages;
+    }
+  }
+
+  return mapped;
+}
 
 export default function CreateKioskModal({ open, onClose, onCreated }) {
   const { hotels } = useHotels();
@@ -87,7 +115,14 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
       }
       handleClose();
     } catch (err) {
-      setErrors({ form: err?.message || "Failed to register kiosk terminal" });
+      if (err instanceof ApiError && err.isValidationError) {
+        const fieldErrors = mapValidationErrors(err.validationErrors);
+        setErrors(fieldErrors);
+      } else {
+        setErrors({
+          form: err?.message || "Failed to register kiosk terminal",
+        });
+      }
     }
   }
 

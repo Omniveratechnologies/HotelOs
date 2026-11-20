@@ -10,6 +10,34 @@ import {
   useHotelRooms,
 } from "../hooks/useKiosks.js";
 import { useHotels } from "../../hotels/hooks/useHotels.js";
+import { ApiError } from "@hotelos/api";
+
+/**
+ * Map backend validation field paths to frontend field names
+ */
+function mapValidationErrors(validationErrors) {
+  if (!validationErrors) return {};
+
+  const mapped = {};
+
+  if (validationErrors.body) {
+    Object.assign(mapped, validationErrors.body);
+  }
+
+  if (validationErrors.query) {
+    for (const [field, messages] of Object.entries(validationErrors.query)) {
+      mapped[`query.${field}`] = messages;
+    }
+  }
+
+  if (validationErrors.params) {
+    for (const [field, messages] of Object.entries(validationErrors.params)) {
+      mapped[`params.${field}`] = messages;
+    }
+  }
+
+  return mapped;
+}
 
 export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
   const { hotels } = useHotels();
@@ -98,7 +126,12 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
       if (onUpdated) onUpdated(updated);
       onClose();
     } catch (err) {
-      setErrors({ form: err?.message || "Failed to update kiosk terminal" });
+      if (err instanceof ApiError && err.isValidationError) {
+        const fieldErrors = mapValidationErrors(err.validationErrors);
+        setErrors(fieldErrors);
+      } else {
+        setErrors({ form: err?.message || "Failed to update kiosk terminal" });
+      }
     }
   }
 
@@ -112,7 +145,12 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
       setCommandFeedback(`Command "${label}" dispatched successfully.`);
       setTimeout(() => setCommandFeedback(""), 4000);
     } catch (err) {
-      setErrors({ command: err?.message || "Failed to dispatch command" });
+      if (err instanceof ApiError && err.isValidationError) {
+        const fieldErrors = mapValidationErrors(err.validationErrors);
+        setErrors(fieldErrors);
+      } else {
+        setErrors({ command: err?.message || "Failed to dispatch command" });
+      }
     }
   }
 
