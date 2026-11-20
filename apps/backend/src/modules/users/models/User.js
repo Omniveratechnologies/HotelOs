@@ -151,6 +151,27 @@ const userSchema = new mongoose.Schema(
         changedAt: { type: Date, default: Date.now },
       },
     ],
+
+    // Two-Factor Authentication (2FA)
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+      select: false,
+    },
+
+    twoFactorSecret: {
+      type: String,
+      default: null,
+      select: false,
+    },
+
+    twoFactorBackupCodes: [
+      {
+        code: { type: String, select: false },
+        used: { type: Boolean, default: false },
+        usedAt: { type: Date, default: null },
+      },
+    ],
   },
   {
     timestamps: true,
@@ -218,6 +239,102 @@ userSchema.methods.isPasswordReused = async function (newPassword) {
   );
   const results = await Promise.all(checks);
   return results.some((match) => match);
+};
+
+// =====================================================
+// TWO-FACTOR AUTHENTICATION METHODS
+// =====================================================
+
+// Generate new 2FA secret and backup codes
+userSchema.methods.generateTwoFactor = function () {
+  const { authenticator } = require("otplib");
+
+  // Generate a new secret
+  const secret = authenticator.generateSecret();
+
+  // Generate backup codes (10 codes, 8 chars each)
+  const backupCodes = [];
+  for (let i = 0; i < 10; i++) {
+    backupCodes.push({
+      code: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      used: false,
+      usedAt: null,
+    });
+  }
+
+  this.twoFactorSecret = secret;
+  this.twoFactorBackupCodes = backupCodes;
+  this.twoFactorEnabled = false; // Not enabled until verified
+
+  return { secret, backupCodes: backupCodes.map((b) => b.code) };
+};
+
+// Enable 2FA after successful verification
+userSchema.methods.enableTwoFactor = async function () {
+  this.twoFactorEnabled = true;
+  await this.save();
+  return this;
+};
+
+// Disable 2FA
+userSchema.methods.disableTwoFactor = async function () {
+  this.twoFactorEnabled = false;
+  this.twoFactorSecret = null;
+  this.twoFactorBackupCodes = [];
+  await this.save();
+  return this;
+};
+
+// Verify TOTP token
+userSchema.methods.verifyTwoFactorToken = function (token) {
+  if (!this.twoFactorEnabled || !this.twoFactorSecret) {
+    return false;
+  }
+
+  const { authenticator } = require("otplib");
+  return authenticator.check(token, this.twoFactorSecret);
+};
+
+// Verify and consume backup code
+userSchema.methods.verifyBackupCode = async function (code) {
+  const normalizedCode = code.toUpperCase().replace(/\s/g, "");
+
+  const backupCode = this.twoFactorBackupCodes.find(
+    (b) => b.code === normalizedCode && !b.used,
+  );
+
+  if (!backupCode) {
+    return false;
+  }
+
+  backupCode.used = true;
+  backupCode.usedAt = new Date();
+  await this.save();
+
+  return true;
+};
+
+// Regenerate backup codes
+userSchema.methods.regenerateBackupCodes = async function () {
+  const backupCodes = [];
+  for (let i = 0; i < 10; i++) {
+    backupCodes.push({
+      code: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      used: false,
+      usedAt: null,
+    });
+  }
+
+  this.twoFactorBackupCodes = backupCodes;
+  await this.save();
+
+  return backupCodes.map((b) => b.code);
+};
+
+// Check if 2FA is required for this user's role
+userSchema.methods.isTwoFactorRequired = function () {
+  const requiredRoles = ["SUPER_ADMIN", "SUB_ADMIN", "RECEPTIONIST"];
+  return requiredRoles.includes(this.role);
 };
 
 export default mongoose.model("User", userSchema);

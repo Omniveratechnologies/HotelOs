@@ -223,6 +223,55 @@ export const login = async (req, res) => {
       }
     }
 
+    // Check if 2FA is enabled for this user
+    const userWith2FA = await User.findById(user._id).select(
+      "+twoFactorEnabled +twoFactorSecret",
+    );
+
+    // If 2FA is enabled, return challenge instead of token
+    if (userWith2FA?.twoFactorEnabled) {
+      await logAuditEvent({
+        event: AUDIT_EVENTS.LOGIN_SUCCESS,
+        actor: {
+          userId: user._id,
+          username: user.username,
+          role: user.role,
+          ip: req.ip,
+          userAgent: req.get("user-agent"),
+        },
+        target: {
+          userId: user._id,
+          hotelId: user.hotelId,
+        },
+        details: { expectedRole, method: "password_only", requires2FA: true },
+        success: true,
+        correlationId: req.id,
+      });
+
+      logger.info(
+        { userId: user._id, username, role: user.role },
+        "Login successful - 2FA required",
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Password verified. 2FA required.",
+        requires2FA: true,
+        data: {
+          userId: user._id,
+          username: user.username,
+          role: user.role,
+          hotelId: user.hotelId,
+          hotelName,
+          roomId,
+          bookingStatus,
+          reservationNo,
+          mustChangePassword: user.mustChangePassword,
+        },
+      });
+    }
+
+    // 2FA not enabled or not required - proceed with normal login
     logger.info(
       { userId: user._id, username, role: user.role },
       "Login successful",

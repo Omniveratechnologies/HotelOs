@@ -54,6 +54,7 @@
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.8",
     "socket.io": "^4.8.3",
+    "speakeasy": "^2.0.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
