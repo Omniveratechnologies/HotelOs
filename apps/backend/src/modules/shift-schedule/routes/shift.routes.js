@@ -15,24 +15,101 @@ import {
   clearSchedule,
   report,
 } from "../controllers/shift.controller.js";
+import { validate } from "#/shared/middleware/validate.middleware.js";
+import {
+  createShiftBodySchema,
+  updateShiftBodySchema,
+  listShiftsQuerySchema,
+  listScheduleQuerySchema,
+  calendarQuerySchema,
+  rosterQuerySchema,
+  assignBodySchema,
+  bulkAssignBodySchema,
+  autoScheduleBodySchema,
+  clearScheduleBodySchema,
+  reportQuerySchema,
+  summaryQuerySchema,
+  shiftIdParamsSchema,
+} from "../schemas.js";
 
 const shiftScheduleRoutes = Router();
 
-shiftScheduleRoutes.get("/summary", summary);
-shiftScheduleRoutes.get("/reports", report);
+shiftScheduleRoutes.get(
+  "/summary",
+  validate({ query: summaryQuerySchema }),
+  summary,
+);
+shiftScheduleRoutes.get(
+  "/reports",
+  validate({ query: reportQuerySchema }),
+  report,
+);
 
-shiftScheduleRoutes.get("/shifts", listShifts);
-shiftScheduleRoutes.post("/shifts", createShift);
-shiftScheduleRoutes.get("/shifts/:id", getShift);
-shiftScheduleRoutes.put("/shifts/:id", updateShift);
-shiftScheduleRoutes.delete("/shifts/:id", deleteShift);
+shiftScheduleRoutes.get(
+  "/shifts",
+  validate({ query: listShiftsQuerySchema }),
+  listShifts,
+);
+shiftScheduleRoutes.post(
+  "/shifts",
+  validate({ body: createShiftBodySchema }),
+  createShift,
+);
+shiftScheduleRoutes.get(
+  "/shifts/:id",
+  validate({ params: shiftIdParamsSchema }),
+  getShift,
+);
+shiftScheduleRoutes.put(
+  "/shifts/:id",
+  validate({ params: shiftIdParamsSchema, body: updateShiftBodySchema }),
+  updateShift,
+);
+shiftScheduleRoutes.delete(
+  "/shifts/:id",
+  validate({ params: shiftIdParamsSchema }),
+  deleteShift,
+);
 
-shiftScheduleRoutes.get("/schedule", listSchedule);
-shiftScheduleRoutes.get("/schedule/calendar", calendar);
-shiftScheduleRoutes.get("/schedule/roster", roster);
-shiftScheduleRoutes.post("/schedule/assign", assign);
-shiftScheduleRoutes.post("/schedule/bulk-assign", bulkAssign);
-shiftScheduleRoutes.post("/schedule/auto", autoSchedule);
-shiftScheduleRoutes.post("/schedule/clear", clearSchedule);
+shiftScheduleRoutes.get(
+  "/schedule",
+  validate({ query: listScheduleQuerySchema }),
+  listSchedule,
+);
+shiftScheduleRoutes.get(
+  "/schedule/calendar",
+  validate({ query: calendarQuerySchema }),
+  calendar,
+);
+shiftScheduleRoutes.get(
+  "/schedule/roster",
+  validate({ query: rosterQuerySchema }),
+  roster,
+);
+shiftScheduleRoutes.post(
+  "/schedule/assign",
+  validate({ body: assignBodySchema }),
+  assign,
+);
+shiftScheduleRoutes.post(
+  "/schedule/bulk-assign",
+  validate({ body: bulkAssignBodySchema }),
+  bulkAssign,
+);
+shiftScheduleRoutes.post(
+  "/schedule/auto",
+  validate({ body: autoScheduleBodySchema }),
+  autoSchedule,
+);
+shiftScheduleRoutes.post(
+  "/schedule/clear",
+  validate({ body: clearScheduleBodySchema }),
+  clearSchedule,
+);
+shiftScheduleRoutes.get(
+  "/reports",
+  validate({ query: reportQuerySchema }),
+  report,
+);
 
 export default shiftScheduleRoutes;

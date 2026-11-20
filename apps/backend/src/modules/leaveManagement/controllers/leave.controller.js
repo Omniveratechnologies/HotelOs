@@ -12,7 +12,7 @@ const actorOf = (req) => ({
 export const listLeaves = route(async (req, res) => {
   const { rows, pagination } = await service.listLeaves(
     getHotelId(req),
-    req.query,
+    req.validated.query,
   );
   res.json({ success: true, data: rows, pagination });
 });
@@ -21,7 +21,7 @@ export const listLeaves = route(async (req, res) => {
 export const leaveStats = route(async (req, res) => {
   res.json({
     success: true,
-    data: await service.leaveStats(getHotelId(req), req.query),
+    data: await service.leaveStats(getHotelId(req), req.validated.query),
   });
 });
 
@@ -29,7 +29,7 @@ export const leaveStats = route(async (req, res) => {
 export const listLeaveTypes = route(async (req, res) => {
   res.json({
     success: true,
-    data: await service.listLeaveTypes(getHotelId(req)),
+    data: await service.listLeaveTypes(getHotelId(req), req.validated.query),
   });
 });
 
@@ -39,8 +39,8 @@ export const staffLeaveBalance = route(async (req, res) => {
     success: true,
     data: await service.staffLeaveBalance(
       getHotelId(req),
-      req.params.id,
-      req.query,
+      req.validated.params.id,
+      req.validated.query,
     ),
   });
 });
@@ -49,7 +49,10 @@ export const staffLeaveBalance = route(async (req, res) => {
 export const listNotifications = route(async (req, res) => {
   res.json({
     success: true,
-    data: await notifications.listNotifications(getHotelId(req), req.query),
+    data: await notifications.listNotifications(
+      getHotelId(req),
+      req.validated.query,
+    ),
   });
 });
 
@@ -57,7 +60,7 @@ export const listNotifications = route(async (req, res) => {
 export const markNotificationsRead = route(async (req, res) => {
   res.json({
     success: true,
-    data: await notifications.markRead(getHotelId(req), req.body),
+    data: await notifications.markRead(getHotelId(req), req.validated.body),
   });
 });
 
@@ -65,7 +68,7 @@ export const markNotificationsRead = route(async (req, res) => {
 export const getLeave = route(async (req, res) => {
   res.json({
     success: true,
-    data: await service.getLeave(getHotelId(req), req.params.id),
+    data: await service.getLeave(getHotelId(req), req.validated.params.id),
   });
 });
 
@@ -73,7 +76,7 @@ export const getLeave = route(async (req, res) => {
 export const applyLeave = route(async (req, res) => {
   const data = await service.applyLeave(
     getHotelId(req),
-    req.body,
+    req.validated.body,
     actorOf(req),
   );
   res.status(201).json({ success: true, data, message: "Leave applied" });
@@ -83,8 +86,8 @@ export const applyLeave = route(async (req, res) => {
 export const approveLeave = route(async (req, res) => {
   const data = await service.approveLeave(
     getHotelId(req),
-    req.params.id,
-    req.body,
+    req.validated.params.id,
+    req.validated.body,
     actorOf(req),
   );
   res.json({ success: true, data, message: "Leave approved" });
@@ -94,8 +97,8 @@ export const approveLeave = route(async (req, res) => {
 export const rejectLeave = route(async (req, res) => {
   const data = await service.rejectLeave(
     getHotelId(req),
-    req.params.id,
-    req.body,
+    req.validated.params.id,
+    req.validated.body,
     actorOf(req),
   );
   res.json({ success: true, data, message: "Leave rejected" });
@@ -105,8 +108,8 @@ export const rejectLeave = route(async (req, res) => {
 export const cancelLeave = route(async (req, res) => {
   const data = await service.cancelLeave(
     getHotelId(req),
-    req.params.id,
-    req.body,
+    req.validated.params.id,
+    req.validated.body,
     actorOf(req),
   );
   res.json({ success: true, data, message: "Leave cancelled" });

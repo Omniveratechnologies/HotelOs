@@ -8,7 +8,7 @@ const actorOf = (req) => ({ name: req.user?.name || req.user?.fullName || "" });
 export const summary = route(async (req, res) => {
   res.json({
     success: true,
-    data: await schedule.summary(getHotelId(req), req.query),
+    data: await schedule.summary(getHotelId(req), req.validated.query),
   });
 });
 
@@ -16,7 +16,7 @@ export const summary = route(async (req, res) => {
 export const listShifts = route(async (req, res) => {
   res.json({
     success: true,
-    data: await schedule.listShifts(getHotelId(req), req.query),
+    data: await schedule.listShifts(getHotelId(req), req.validated.query),
   });
 });
 
@@ -24,13 +24,13 @@ export const listShifts = route(async (req, res) => {
 export const getShift = route(async (req, res) => {
   res.json({
     success: true,
-    data: await shifts.getShift(getHotelId(req), req.params.id),
+    data: await shifts.getShift(getHotelId(req), req.validated.params.id),
   });
 });
 
 // POST /shifts { name, startTime, endTime, segments?, breakMinutes?, graceMinutes?, color? }
 export const createShift = route(async (req, res) => {
-  const data = await shifts.createShift(getHotelId(req), req.body);
+  const data = await shifts.createShift(getHotelId(req), req.validated.body);
   res.status(201).json({ success: true, message: "Shift created.", data });
 });
 
@@ -38,15 +38,18 @@ export const createShift = route(async (req, res) => {
 export const updateShift = route(async (req, res) => {
   const data = await shifts.updateShift(
     getHotelId(req),
-    req.params.id,
-    req.body,
+    req.validated.params.id,
+    req.validated.body,
   );
   res.json({ success: true, message: "Shift updated.", data });
 });
 
 // DELETE /shifts/:id
 export const deleteShift = route(async (req, res) => {
-  const data = await shifts.deleteShift(getHotelId(req), req.params.id);
+  const data = await shifts.deleteShift(
+    getHotelId(req),
+    req.validated.params.id,
+  );
   res.json({ success: true, message: "Shift deleted.", data });
 });
 
@@ -54,7 +57,7 @@ export const deleteShift = route(async (req, res) => {
 export const listSchedule = route(async (req, res) => {
   const { rows, pagination, counts, date } = await schedule.listSchedule(
     getHotelId(req),
-    req.query,
+    req.validated.query,
   );
   res.json({ success: true, data: rows, pagination, counts, date });
 });
@@ -63,7 +66,7 @@ export const listSchedule = route(async (req, res) => {
 export const calendar = route(async (req, res) => {
   res.json({
     success: true,
-    data: await schedule.calendar(getHotelId(req), req.query),
+    data: await schedule.calendar(getHotelId(req), req.validated.query),
   });
 });
 
@@ -71,7 +74,7 @@ export const calendar = route(async (req, res) => {
 export const roster = route(async (req, res) => {
   const { rows, pagination, ...rest } = await schedule.roster(
     getHotelId(req),
-    req.query,
+    req.validated.query,
   );
   res.json({ success: true, data: rows, pagination, ...rest });
 });
@@ -80,7 +83,7 @@ export const roster = route(async (req, res) => {
 export const assign = route(async (req, res) => {
   const data = await schedule.bulkAssign(
     getHotelId(req),
-    { overwrite: true, ...req.body },
+    { overwrite: true, ...req.validated.body },
     actorOf(req),
   );
   res.json({ success: true, message: "Schedule updated.", data });
@@ -90,7 +93,7 @@ export const assign = route(async (req, res) => {
 export const bulkAssign = route(async (req, res) => {
   const data = await schedule.bulkAssign(
     getHotelId(req),
-    req.body,
+    req.validated.body,
     actorOf(req),
   );
   res.json({
@@ -104,7 +107,7 @@ export const bulkAssign = route(async (req, res) => {
 export const autoSchedule = route(async (req, res) => {
   const data = await schedule.autoSchedule(
     getHotelId(req),
-    req.body,
+    req.validated.body,
     actorOf(req),
   );
   res.json({
@@ -116,7 +119,10 @@ export const autoSchedule = route(async (req, res) => {
 
 // POST /schedule/clear { staffIds[]|departmentId, fromDate, toDate }
 export const clearSchedule = route(async (req, res) => {
-  const data = await schedule.clearAssignments(getHotelId(req), req.body);
+  const data = await schedule.clearAssignments(
+    getHotelId(req),
+    req.validated.body,
+  );
   res.json({ success: true, message: "Booked days cleared.", data });
 });
 
@@ -124,6 +130,6 @@ export const clearSchedule = route(async (req, res) => {
 export const report = route(async (req, res) => {
   res.json({
     success: true,
-    data: await schedule.report(getHotelId(req), req.query),
+    data: await schedule.report(getHotelId(req), req.validated.query),
   });
 });

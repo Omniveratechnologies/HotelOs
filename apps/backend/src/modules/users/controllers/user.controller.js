@@ -13,7 +13,7 @@ import logger from "#/utils/logger.js";
 
 export const createUser = async (req, res) => {
   try {
-    const { name, role } = req.body || {};
+    const { name, role } = req.validated.body;
 
     // Required fields
     if (!name || !role) {
@@ -99,7 +99,7 @@ export const createUser = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const { role } = req.query;
+    const { role } = req.validated.query;
 
     const filter = {};
 
@@ -142,7 +142,7 @@ export const getUsers = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.validated.params;
 
     if (!id) {
       return res.status(400).json({

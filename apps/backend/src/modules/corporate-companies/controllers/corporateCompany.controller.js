@@ -6,7 +6,7 @@ import logger from "#/utils/logger.js";
 // =====================================================
 export const getCorporateCompanies = async (req, res) => {
   try {
-    const { status, q, page = 1, limit = 50 } = req.query;
+    const { status, q, page = 1, limit = 50 } = req.validated.query;
     const filter = { hotelId: req.user.hotelId };
 
     if (status && ["ACTIVE", "INACTIVE"].includes(status)) {
@@ -66,7 +66,7 @@ export const getCorporateCompanies = async (req, res) => {
 export const getCorporateCompany = async (req, res) => {
   try {
     const company = await CorporateCompany.findOne({
-      _id: req.params.id,
+      _id: req.validated.params.id,
       hotelId: req.user.hotelId,
     }).lean();
 
@@ -110,7 +110,7 @@ export const createCorporateCompany = async (req, res) => {
       tier,
       creditFacility,
       status,
-    } = req.body;
+    } = req.validated.body;
 
     if (!name?.trim() || !contactPerson?.trim() || !phone?.trim()) {
       return res.status(400).json({
@@ -174,8 +174,9 @@ export const createCorporateCompany = async (req, res) => {
 // =====================================================
 export const updateCorporateCompany = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const company = await CorporateCompany.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 
@@ -204,15 +205,15 @@ export const updateCorporateCompany = async (req, res) => {
     ];
 
     for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        company[field] = req.body[field];
+      if (req.validated.body[field] !== undefined) {
+        company[field] = req.validated.body[field];
       }
     }
 
-    if (req.body.name !== undefined) {
+    if (req.validated.body.name !== undefined) {
       const existing = await CorporateCompany.findOne({
         hotelId: req.user.hotelId,
-        name: req.body.name.trim(),
+        name: req.validated.body.name.trim(),
         _id: { $ne: company._id },
       });
 
@@ -250,8 +251,9 @@ export const updateCorporateCompany = async (req, res) => {
 // =====================================================
 export const deleteCorporateCompany = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const company = await CorporateCompany.findOneAndDelete({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 

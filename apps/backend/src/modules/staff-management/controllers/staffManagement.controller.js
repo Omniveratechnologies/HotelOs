@@ -91,50 +91,50 @@ const payload = (body) => {
 export const listStaff = async (req, res) => {
   try {
     const hotelId = hotel(req);
-    const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
+    const {
+      page,
+      limit,
+      search,
+      department_id,
+      designation_id,
+      status,
+      joined_from,
+      joined_to,
+      sort: sortQuery,
+      direction: directionQuery,
+    } = req.validated.query;
 
     const q = { ...activeFilter(hotelId) };
 
-    if (req.query.search?.trim()) {
-      const term = req.query.search
-        .trim()
-        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (search?.trim()) {
+      const term = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
       q.$or = ["name", "staffCode", "phone", "email"].map((k) => ({
         [k]: new RegExp(term, "i"),
       }));
     }
 
-    if (
-      req.query.department_id &&
-      mongoose.isValidObjectId(req.query.department_id)
-    ) {
-      q.departmentId = req.query.department_id;
+    if (department_id && mongoose.isValidObjectId(department_id)) {
+      q.departmentId = department_id;
     }
 
-    if (
-      req.query.designation_id &&
-      mongoose.isValidObjectId(req.query.designation_id)
-    ) {
-      q.designationId = req.query.designation_id;
+    if (designation_id && mongoose.isValidObjectId(designation_id)) {
+      q.designationId = designation_id;
     }
 
-    if (
-      ["ACTIVE", "INACTIVE"].includes(String(req.query.status).toUpperCase())
-    ) {
-      q.status = String(req.query.status).toUpperCase();
+    if (["ACTIVE", "INACTIVE"].includes(String(status).toUpperCase())) {
+      q.status = String(status).toUpperCase();
     }
 
-    if (req.query.joined_from || req.query.joined_to) {
+    if (joined_from || joined_to) {
       q.joinedOn = {};
 
-      if (req.query.joined_from) {
-        q.joinedOn.$gte = new Date(req.query.joined_from);
+      if (joined_from) {
+        q.joinedOn.$gte = new Date(joined_from);
       }
 
-      if (req.query.joined_to) {
-        q.joinedOn.$lte = new Date(`${req.query.joined_to}T23:59:59.999Z`);
+      if (joined_to) {
+        q.joinedOn.$lte = new Date(`${joined_to}T23:59:59.999Z`);
       }
     }
 
@@ -146,11 +146,9 @@ export const listStaff = async (req, res) => {
       "createdAt",
     ];
 
-    const sort = sortAllowed.includes(req.query.sort)
-      ? req.query.sort
-      : "joinedOn";
+    const sort = sortAllowed.includes(sortQuery) ? sortQuery : "joinedOn";
 
-    const direction = req.query.direction === "asc" ? 1 : -1;
+    const direction = directionQuery === "asc" ? 1 : -1;
 
     const [items, total] = await Promise.all([
       Staff.find(q)
@@ -197,6 +195,7 @@ export const listStaff = async (req, res) => {
 export const stats = async (req, res) => {
   try {
     const h = hotel(req);
+    // req.validated.query available but stats doesn't need query params
     const start = new Date();
 
     start.setDate(1);
@@ -267,19 +266,7 @@ export const getStaff = async (req, res) => {
 export const createStaff = async (req, res) => {
   try {
     const h = hotel(req);
-    const b = payload(req.body);
-
-    if (
-      !b.name?.trim() ||
-      !b.phone?.trim()
-      // !b.departmentId ||
-      // !b.designationId
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, phone, department and designation are required.",
-      });
-    }
+    const b = payload(req.validated.body);
 
     if (!b.staffCode) {
       const count = await Staff.countDocuments({ hotelId: h });
@@ -301,15 +288,16 @@ export const createStaff = async (req, res) => {
 export const updateStaff = async (req, res) => {
   try {
     const h = hotel(req);
+    const { id } = req.validated.params;
 
-    if (!mongoose.isValidObjectId(req.params.id)) {
+    if (!mongoose.isValidObjectId(id)) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid staff ID." });
     }
 
     const current = await Staff.findOne({
-      _id: req.params.id,
+      _id: id,
       ...activeFilter(h),
     });
 
@@ -319,11 +307,7 @@ export const updateStaff = async (req, res) => {
         .json({ success: false, message: "Staff not found." });
     }
 
-    const b = payload(req.body);
-    // const dep = b.departmentId || current.departmentId;
-    // const des = b.designationId || current.designationId;
-
-    // await validRefs(h, dep, des);
+    const b = payload(req.validated.body);
 
     Object.assign(current, b);
 
@@ -341,9 +325,10 @@ export const updateStaff = async (req, res) => {
 
 export const archiveStaff = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const s = await Staff.findOneAndUpdate(
       {
-        _id: req.params.id,
+        _id: id,
         ...activeFilter(hotel(req)),
       },
       { $set: { deletedAt: new Date() } },

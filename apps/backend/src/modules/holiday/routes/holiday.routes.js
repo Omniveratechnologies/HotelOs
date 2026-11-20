@@ -11,19 +11,67 @@ import {
   importHolidays,
   seedNational,
 } from "../controllers/holiday.controller.js";
+import { validate } from "#/shared/middleware/validate.middleware.js";
+import {
+  createHolidayBodySchema,
+  updateHolidayBodySchema,
+  listHolidaysQuerySchema,
+  summaryQuerySchema,
+  upcomingQuerySchema,
+  calendarQuerySchema,
+  importHolidaysBodySchema,
+  seedNationalBodySchema,
+  holidayIdParamsSchema,
+} from "../schemas.js";
 
 const holidayRoutes = Router();
 
-holidayRoutes.get("/", listHolidays);
-holidayRoutes.get("/summary", summary);
-holidayRoutes.get("/upcoming", upcoming);
-holidayRoutes.get("/calendar", calendar);
-holidayRoutes.post("/import", importHolidays);
-holidayRoutes.post("/seed-national", seedNational);
+holidayRoutes.get(
+  "/",
+  validate({ query: listHolidaysQuerySchema }),
+  listHolidays,
+);
+holidayRoutes.get("/summary", validate({ query: summaryQuerySchema }), summary);
+holidayRoutes.get(
+  "/upcoming",
+  validate({ query: upcomingQuerySchema }),
+  upcoming,
+);
+holidayRoutes.get(
+  "/calendar",
+  validate({ query: calendarQuerySchema }),
+  calendar,
+);
+holidayRoutes.post(
+  "/import",
+  validate({ body: importHolidaysBodySchema }),
+  importHolidays,
+);
+holidayRoutes.post(
+  "/seed-national",
+  validate({ body: seedNationalBodySchema }),
+  seedNational,
+);
 
-holidayRoutes.post("/", createHoliday);
-holidayRoutes.get("/:id", getHoliday);
-holidayRoutes.put("/:id", updateHoliday);
-holidayRoutes.delete("/:id", deleteHoliday);
+holidayRoutes.post(
+  "/",
+  validate({ body: createHolidayBodySchema }),
+  createHoliday,
+);
+holidayRoutes.get(
+  "/:id",
+  validate({ params: holidayIdParamsSchema }),
+  getHoliday,
+);
+holidayRoutes.put(
+  "/:id",
+  validate({ params: holidayIdParamsSchema, body: updateHolidayBodySchema }),
+  updateHoliday,
+);
+holidayRoutes.delete(
+  "/:id",
+  validate({ params: holidayIdParamsSchema }),
+  deleteHoliday,
+);
 
 export default holidayRoutes;

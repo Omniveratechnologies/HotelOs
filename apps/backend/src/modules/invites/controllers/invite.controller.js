@@ -26,7 +26,7 @@ export const sendInvite = async (req, res) => {
       "Send invite request",
     );
 
-    const { name, username, email, role, hotelId } = req.body;
+    const { name, username, email, role, hotelId } = req.validated.body;
 
     // =================================================
     // BASIC VALIDATION
@@ -342,7 +342,7 @@ export const sendInvite = async (req, res) => {
 
 export const verifyInvite = async (req, res) => {
   try {
-    const { token } = req.body;
+    const { token } = req.validated.body;
 
     if (!token) {
       return res.status(400).json({
@@ -439,7 +439,7 @@ export const verifyInvite = async (req, res) => {
 
 export const acceptInvite = async (req, res) => {
   try {
-    const { token, name, username, password } = req.body;
+    const { token, name, username, password } = req.validated.body;
 
     // =================================================
     // VALIDATION

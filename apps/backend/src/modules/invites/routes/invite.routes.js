@@ -7,6 +7,12 @@ import {
 } from "../controllers/invite.controller.js";
 
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
+import { validate } from "#/shared/middleware/validate.middleware.js";
+import {
+  sendInviteBodySchema,
+  verifyInviteBodySchema,
+  acceptInviteBodySchema,
+} from "../schemas.js";
 
 const router = express.Router();
 
@@ -15,20 +21,33 @@ const router = express.Router();
 // PUBLIC
 // =====================================================
 
-router.post("/verify", verifyInvite);
+router.post(
+  "/verify",
+  validate({ body: verifyInviteBodySchema }),
+  verifyInvite,
+);
 
 // =====================================================
 // ACCEPT INVITATION + CREATE ACCOUNT
 // PUBLIC
 // =====================================================
 
-router.post("/accept", acceptInvite);
+router.post(
+  "/accept",
+  validate({ body: acceptInviteBodySchema }),
+  acceptInvite,
+);
 
 // =====================================================
 // SEND INVITATION
 // AUTHENTICATED
 // =====================================================
 
-router.post("/", authenticate, sendInvite);
+router.post(
+  "/",
+  authenticate,
+  validate({ body: sendInviteBodySchema }),
+  sendInvite,
+);
 
 export default router;

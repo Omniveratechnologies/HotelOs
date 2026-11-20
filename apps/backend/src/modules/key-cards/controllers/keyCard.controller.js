@@ -7,7 +7,7 @@ import logger from "#/utils/logger.js";
 // =====================================================
 export const getKeyCards = async (req, res) => {
   try {
-    const { status, keyType, q, page = 1, limit = 50 } = req.query;
+    const { status, keyType, q, page = 1, limit = 50 } = req.validated.query;
     const filter = { hotelId: req.user.hotelId };
 
     if (status && status !== "ALL") {
@@ -116,7 +116,7 @@ export const createKeyCard = async (req, res) => {
       keyType = "RFID_CARD",
       count = 1,
       prefix = "RC-2026-",
-    } = req.body;
+    } = req.validated.body;
 
     // Batch creation
     if (count > 1) {
@@ -205,7 +205,8 @@ export const createKeyCard = async (req, res) => {
 // =====================================================
 export const assignKeyCard = async (req, res) => {
   try {
-    const { cardNumber, cardId, bookingId, roomId, guestId, notes } = req.body;
+    const { cardNumber, cardId, bookingId, roomId, guestId, notes } =
+      req.validated.body;
 
     let card = null;
     if (cardId) {
@@ -269,9 +270,10 @@ export const assignKeyCard = async (req, res) => {
 // =====================================================
 export const reissueKeyCard = async (req, res) => {
   try {
-    const { newCardNumber, reason } = req.body;
+    const { newCardNumber, reason } = req.validated.body;
+    const { id } = req.validated.params;
     const oldCard = await KeyCard.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 
@@ -343,9 +345,10 @@ export const reissueKeyCard = async (req, res) => {
 // =====================================================
 export const blockKeyCard = async (req, res) => {
   try {
-    const { reason = "Reported Lost" } = req.body;
+    const { reason = "Reported Lost" } = req.validated.body;
+    const { id } = req.validated.params;
     const card = await KeyCard.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 
@@ -382,8 +385,9 @@ export const blockKeyCard = async (req, res) => {
 // =====================================================
 export const deactivateKeyCard = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const card = await KeyCard.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 
@@ -426,8 +430,9 @@ export const deactivateKeyCard = async (req, res) => {
 // =====================================================
 export const deleteKeyCard = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const card = await KeyCard.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 
