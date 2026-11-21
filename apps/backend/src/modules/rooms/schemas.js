@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { flexibleDateOptionalSchema } from "#/shared/schemas/common.js";
 
 const mongoIdSchema = z
   .string()
@@ -38,8 +39,8 @@ export const updateRoomBodySchema = z
     rate: z.number().nonnegative("Rate must be non-negative").optional(),
     floor: z.number().int().optional(),
     currentGuest: z.string().nullable().optional(),
-    checkIn: z.string().datetime({ offset: true }).nullable().optional(),
-    checkOut: z.string().datetime({ offset: true }).nullable().optional(),
+    checkIn: flexibleDateOptionalSchema,
+    checkOut: flexibleDateOptionalSchema,
     roomCode: z.string().nullable().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {

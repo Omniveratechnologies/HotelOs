@@ -21,16 +21,19 @@ import {
 const router = express.Router();
 
 // Rate limiter for auth endpoints (10 requests per 15 minutes)
-const authLimiter = rateLimit({
+export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
   message: { success: false, message: "Too many attempts, try again later" },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) =>
+    process.env.NODE_ENV === "test" &&
+    req.headers["x-test-rate-limit"] !== "true",
 });
 
 // Stricter rate limiter for login (5 requests per 15 minutes)
-const loginLimiter = rateLimit({
+export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: {
@@ -39,6 +42,9 @@ const loginLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) =>
+    process.env.NODE_ENV === "test" &&
+    req.headers["x-test-rate-limit"] !== "true",
 });
 
 router.post("/login", loginLimiter, validate({ body: loginBodySchema }), login);

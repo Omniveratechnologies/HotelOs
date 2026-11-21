@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { flexibleDateOptionalSchema } from "#/shared/schemas/common.js";
 
 const mongoIdSchema = z
   .string()
@@ -51,8 +52,8 @@ export const updateRatePlanBodySchema = z
 
 export const syncAllRatesBodySchema = z
   .object({
-    startDate: z.string().datetime({ offset: true }).optional(),
-    endDate: z.string().datetime({ offset: true }).optional(),
+    startDate: flexibleDateOptionalSchema,
+    endDate: flexibleDateOptionalSchema,
   })
   .refine((data) => data.startDate || data.endDate, {
     message: "At least startDate or endDate must be provided",

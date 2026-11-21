@@ -46,9 +46,9 @@ const billSchema = new mongoose.Schema(
       default: null,
     },
     // Encrypted sensitive guest fields
-    guestNameEncrypted: { type: String, default: "", select: false },
-    guestPhoneEncrypted: { type: String, default: "", select: false },
-    guestEmailEncrypted: { type: String, default: "", select: false },
+    guestNameEncrypted: { type: String, default: "" },
+    guestPhoneEncrypted: { type: String, default: "" },
+    guestEmailEncrypted: { type: String, default: "" },
     linkedOrderIds: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: "Order",
@@ -90,12 +90,14 @@ const billSchema = new mongoose.Schema(
 billSchema
   .virtual("guestName")
   .get(function () {
-    if (!this.guestNameEncrypted) return "";
-    try {
-      return decrypt(this.guestNameEncrypted);
-    } catch {
-      return this.guestNameEncrypted;
+    if (this.guestNameEncrypted) {
+      try {
+        return decrypt(this.guestNameEncrypted);
+      } catch {
+        return this.guestNameEncrypted;
+      }
     }
+    return this._doc?.guestName || "";
   })
   .set(function (value) {
     this.guestNameEncrypted = value ? encrypt(String(value)) : "";
@@ -104,12 +106,14 @@ billSchema
 billSchema
   .virtual("guestPhone")
   .get(function () {
-    if (!this.guestPhoneEncrypted) return "";
-    try {
-      return decrypt(this.guestPhoneEncrypted);
-    } catch {
-      return this.guestPhoneEncrypted;
+    if (this.guestPhoneEncrypted) {
+      try {
+        return decrypt(this.guestPhoneEncrypted);
+      } catch {
+        return this.guestPhoneEncrypted;
+      }
     }
+    return this._doc?.guestPhone || "";
   })
   .set(function (value) {
     this.guestPhoneEncrypted = value ? encrypt(String(value)) : "";
@@ -118,12 +122,14 @@ billSchema
 billSchema
   .virtual("guestEmail")
   .get(function () {
-    if (!this.guestEmailEncrypted) return "";
-    try {
-      return decrypt(this.guestEmailEncrypted);
-    } catch {
-      return this.guestEmailEncrypted;
+    if (this.guestEmailEncrypted) {
+      try {
+        return decrypt(this.guestEmailEncrypted);
+      } catch {
+        return this.guestEmailEncrypted;
+      }
     }
+    return this._doc?.guestEmail || "";
   })
   .set(function (value) {
     this.guestEmailEncrypted = value ? encrypt(String(value)) : "";
@@ -132,6 +138,42 @@ billSchema
 // Ensure virtuals are included in JSON
 billSchema.set("toJSON", { virtuals: true });
 billSchema.set("toObject", { virtuals: true });
+
+function decryptBill(doc) {
+  if (!doc) return;
+  if (doc.guestNameEncrypted && !doc.guestName) {
+    try {
+      doc.guestName = decrypt(doc.guestNameEncrypted);
+    } catch {
+      doc.guestName = doc.guestNameEncrypted;
+    }
+  }
+  if (doc.guestPhoneEncrypted && !doc.guestPhone) {
+    try {
+      doc.guestPhone = decrypt(doc.guestPhoneEncrypted);
+    } catch {
+      doc.guestPhone = doc.guestPhoneEncrypted;
+    }
+  }
+  if (doc.guestEmailEncrypted && !doc.guestEmail) {
+    try {
+      doc.guestEmail = decrypt(doc.guestEmailEncrypted);
+    } catch {
+      doc.guestEmail = doc.guestEmailEncrypted;
+    }
+  }
+}
+
+billSchema.post(["find", "findOne", "findOneAndUpdate"], function (result) {
+  if (!result) return;
+  if (Array.isArray(result)) {
+    for (const doc of result) {
+      decryptBill(doc);
+    }
+  } else {
+    decryptBill(result);
+  }
+});
 
 billSchema.index({ hotelId: 1, billNo: 1 }, { unique: true });
 

@@ -529,7 +529,9 @@ export const resetPassword = async (req, res) => {
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: new Date() },
-    }).select("+resetPasswordToken +resetPasswordExpires +passwordHistory");
+    }).select(
+      "+password +resetPasswordToken +resetPasswordExpires +passwordHistory",
+    );
 
     if (!user) {
       return res.status(400).json({
@@ -544,15 +546,15 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Password was recently used. Please choose a different password.",
+          "Password was recently used and cannot be reused. Please choose a different password.",
       });
     }
 
-    // Atomic update to prevent race condition (pre-save hook still hashes password)
-    await User.findByIdAndUpdate(user._id, {
-      $set: { password, mustChangePassword: false },
-      $unset: { resetPasswordToken: "", resetPasswordExpires: "" },
-    });
+    user.password = password;
+    user.mustChangePassword = false;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
 
     logger.info({ userId: user._id }, "Password reset");
 
@@ -640,7 +642,7 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Password was recently used. Please choose a different password.",
+          "Password was recently used and cannot be reused. Please choose a different password.",
       });
     }
 

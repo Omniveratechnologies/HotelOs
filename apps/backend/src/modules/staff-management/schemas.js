@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { flexibleDateOptionalSchema } from "#/shared/schemas/common.js";
 
 const mongoIdSchema = z
   .string()
@@ -13,7 +14,7 @@ export const createStaffBodySchema = z.object({
   name: z.string().min(1, "Name is required"),
   phone: z.string().optional(),
   email: z.string().email("Invalid email").optional(),
-  dob: z.string().datetime({ offset: true }).nullable().optional(),
+  dob: flexibleDateOptionalSchema,
   address: z.string().optional(),
   govIdType: z.string().optional(),
   govIdEnc: z.string().optional(),
@@ -23,7 +24,7 @@ export const createStaffBodySchema = z.object({
   managerId: mongoIdSchema.nullable().optional(),
   employmentType: z.enum(["FULL_TIME", "PART_TIME", "CONTRACT"]).optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
-  joinedOn: z.string().datetime({ offset: true }).optional(),
+  joinedOn: flexibleDateOptionalSchema,
   photoUrl: z.string().url("Invalid photo URL").optional(),
   notes: z.string().optional(),
 });
@@ -34,7 +35,7 @@ export const updateStaffBodySchema = z
     name: z.string().min(1).optional(),
     phone: z.string().optional(),
     email: z.string().email("Invalid email").optional(),
-    dob: z.string().datetime({ offset: true }).nullable().optional(),
+    dob: flexibleDateOptionalSchema,
     address: z.string().optional(),
     govIdType: z.string().optional(),
     govIdEnc: z.string().optional(),
@@ -44,7 +45,7 @@ export const updateStaffBodySchema = z
     managerId: mongoIdSchema.nullable().optional(),
     employmentType: z.enum(["FULL_TIME", "PART_TIME", "CONTRACT"]).optional(),
     status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
-    joinedOn: z.string().datetime({ offset: true }).optional(),
+    joinedOn: flexibleDateOptionalSchema,
     photoUrl: z.string().url("Invalid photo URL").optional(),
     notes: z.string().optional(),
   })
@@ -61,8 +62,8 @@ export const listStaffQuerySchema = z.object({
   department_id: mongoIdSchema.optional(),
   designation_id: mongoIdSchema.optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
-  joined_from: z.string().datetime({ offset: true }).optional(),
-  joined_to: z.string().datetime({ offset: true }).optional(),
+  joined_from: flexibleDateOptionalSchema,
+  joined_to: flexibleDateOptionalSchema,
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   sort: z

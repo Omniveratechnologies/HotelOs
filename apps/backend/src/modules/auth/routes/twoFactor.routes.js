@@ -20,7 +20,16 @@ import {
 
 const router = express.Router();
 
-// All routes require authentication
+// =====================================================
+// 2FA LOGIN VERIFICATION (public - used during login flow)
+// =====================================================
+router.post(
+  "/verify-login",
+  validate({ body: verifyTwoFactorLoginBodySchema }),
+  verifyTwoFactorLogin,
+);
+
+// All subsequent routes require authentication
 router.use(authenticate);
 
 // =====================================================
@@ -67,15 +76,6 @@ router.post(
   "/backup-codes/regenerate",
   validate({ body: regenerateBackupCodesBodySchema }),
   regenerateBackupCodes,
-);
-
-// =====================================================
-// 2FA LOGIN VERIFICATION (used during login flow)
-// =====================================================
-router.post(
-  "/verify-login",
-  validate({ body: verifyTwoFactorLoginBodySchema }),
-  verifyTwoFactorLogin,
 );
 
 export default router;

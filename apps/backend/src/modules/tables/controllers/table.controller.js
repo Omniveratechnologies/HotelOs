@@ -177,7 +177,7 @@ export const getPublicTable = async (req, res) => {
  */
 export const resetTable = async (req, res) => {
   try {
-    const { id } = req.validated.params;
+    const id = req.validated?.params?.id || req.params?.id;
     const table = await Table.findOneAndUpdate(
       { _id: id, hotelId: req.user.hotelId },
       {

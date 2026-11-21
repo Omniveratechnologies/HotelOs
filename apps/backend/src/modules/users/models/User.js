@@ -79,13 +79,11 @@ const userSchema = new mongoose.Schema(
     idNumberEncrypted: {
       type: String,
       default: "",
-      select: false,
     },
 
     nationalityEncrypted: {
       type: String,
       default: null,
-      select: false,
     },
 
     isActive: {
@@ -169,7 +167,7 @@ const userSchema = new mongoose.Schema(
 
     twoFactorBackupCodes: [
       {
-        code: { type: String, select: false },
+        code: { type: String },
         used: { type: Boolean, default: false },
         usedAt: { type: Date, default: null },
       },
@@ -246,29 +244,65 @@ userSchema.methods.comparePassword = async function (password) {
 
 // Increment failed login attempts
 userSchema.methods.incrementFailedLogin = async function () {
-  this.failedLoginAttempts = (this.failedLoginAttempts || 0) + 1;
+  const updatedUser = await this.constructor.findByIdAndUpdate(
+    this._id,
+    [
+      {
+        $set: {
+          failedLoginAttempts: {
+            $add: [{ $ifNull: ["$failedLoginAttempts", 0] }, 1],
+          },
+          lockUntil: {
+            $cond: {
+              if: {
+                $gte: [
+                  { $add: [{ $ifNull: ["$failedLoginAttempts", 0] }, 1] },
+                  5,
+                ],
+              },
+              // oxlint-disable-next-line unicorn/no-thenable
+              then: new Date(Date.now() + 30 * 60 * 1000),
+              else: "$lockUntil",
+            },
+          },
+        },
+      },
+    ],
+    { new: true },
+  );
 
-  // Lock account after 5 failed attempts for 30 minutes
-  if (this.failedLoginAttempts >= 5) {
-    this.lockUntil = new Date(Date.now() + 30 * 60 * 1000);
+  if (updatedUser) {
+    this.failedLoginAttempts = updatedUser.failedLoginAttempts;
+    this.lockUntil = updatedUser.lockUntil;
+  } else {
+    this.failedLoginAttempts = (this.failedLoginAttempts || 0) + 1;
+    if (this.failedLoginAttempts >= 5) {
+      this.lockUntil = new Date(Date.now() + 30 * 60 * 1000);
+    }
+    await this.save();
   }
-
-  await this.save();
   return this;
 };
 
 // Reset failed login attempts on successful login
 userSchema.methods.resetFailedLogin = async function () {
   if (this.failedLoginAttempts > 0 || this.lockUntil) {
+    await this.constructor.findByIdAndUpdate(this._id, {
+      $set: { failedLoginAttempts: 0, lockUntil: null },
+    });
     this.failedLoginAttempts = 0;
     this.lockUntil = null;
-    await this.save();
   }
   return this;
 };
 
 // Check if password was used recently (prevent reuse)
 userSchema.methods.isPasswordReused = async function (newPassword) {
+  if (this.password) {
+    const currentMatch = await compare(newPassword, this.password);
+    if (currentMatch) return true;
+  }
+
   const checks = (this.passwordHistory || []).map((history) =>
     compare(newPassword, history.password),
   );
@@ -282,26 +316,27 @@ userSchema.methods.isPasswordReused = async function (newPassword) {
 
 // Generate new 2FA secret and backup codes
 userSchema.methods.generateTwoFactor = function () {
-  const { authenticator } = require("otplib");
+  const secret = speakeasy.generateSecret({
+    name: `HotelOS:${this.username}`,
+    issuer: "HotelOS",
+    length: 20,
+  });
 
-  // Generate a new secret
-  const secret = authenticator.generateSecret();
-
-  // Generate backup codes (10 codes, 8 chars each)
   const backupCodes = [];
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   for (let i = 0; i < 10; i++) {
-    backupCodes.push({
-      code: Math.random().toString(36).substring(2, 10).toUpperCase(),
-      used: false,
-      usedAt: null,
-    });
+    let code = "";
+    for (let j = 0; j < 8; j++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    backupCodes.push({ code, used: false, usedAt: null });
   }
 
-  this.twoFactorSecret = secret;
+  this.twoFactorSecret = secret.base32;
   this.twoFactorBackupCodes = backupCodes;
-  this.twoFactorEnabled = false; // Not enabled until verified
+  this.twoFactorEnabled = false;
 
-  return { secret, backupCodes: backupCodes.map((b) => b.code) };
+  return { secret: secret.base32, backupCodes: backupCodes.map((b) => b.code) };
 };
 
 // Enable 2FA after successful verification
@@ -325,9 +360,11 @@ userSchema.methods.verifyTwoFactorToken = function (token) {
   if (!this.twoFactorEnabled || !this.twoFactorSecret) {
     return false;
   }
-
-  const { authenticator } = require("otplib");
-  return authenticator.check(token, this.twoFactorSecret);
+  return speakeasy.totp.verify({
+    secret: this.twoFactorSecret,
+    encoding: "base32",
+    token: String(token).replace(/\s/g, ""),
+  });
 };
 
 // Verify and consume backup code
@@ -371,5 +408,34 @@ userSchema.methods.isTwoFactorRequired = function () {
   const requiredRoles = ["SUPER_ADMIN", "SUB_ADMIN", "RECEPTIONIST"];
   return requiredRoles.includes(this.role);
 };
+
+function decryptUser(doc) {
+  if (!doc) return;
+  if (doc.idNumberEncrypted && !doc.idNumber) {
+    try {
+      doc.idNumber = decrypt(doc.idNumberEncrypted);
+    } catch {
+      doc.idNumber = doc.idNumberEncrypted;
+    }
+  }
+  if (doc.nationalityEncrypted && !doc.nationality) {
+    try {
+      doc.nationality = decrypt(doc.nationalityEncrypted);
+    } catch {
+      doc.nationality = doc.nationalityEncrypted;
+    }
+  }
+}
+
+userSchema.post(["find", "findOne", "findOneAndUpdate"], function (result) {
+  if (!result) return;
+  if (Array.isArray(result)) {
+    for (const doc of result) {
+      decryptUser(doc);
+    }
+  } else {
+    decryptUser(result);
+  }
+});
 
 export default mongoose.model("User", userSchema);

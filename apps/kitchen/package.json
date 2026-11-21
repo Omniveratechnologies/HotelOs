@@ -27,6 +27,8 @@
     "@hookform/resolvers": "^5.9.1",
     "@hotelos/api": "workspace:*",
     "@hotelos/platform": "workspace:*",
+    "@hotelos/ui": "workspace:*",
+    "@hotelos/utils": "workspace:*",
     "@mediapipe/tasks-vision": "^1.1.1",
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.19.0",

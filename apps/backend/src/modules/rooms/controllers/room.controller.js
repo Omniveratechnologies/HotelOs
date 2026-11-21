@@ -30,8 +30,8 @@ import {
  */
 export const getRooms = async (req, res) => {
   try {
-    const { hotelId, status } = req.validated.query;
-    const effectiveHotelId = hotelId || req.user.hotelId;
+    const { hotelId, status } = req.validated?.query || req.query || {};
+    const effectiveHotelId = hotelId || req.user?.hotelId;
 
     if (!effectiveHotelId) {
       return res.status(400).json({

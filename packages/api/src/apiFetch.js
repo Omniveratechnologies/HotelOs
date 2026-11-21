@@ -210,8 +210,12 @@ export async function apiFetch(
     ...headers,
   };
 
-  // Add correlation ID if available
-  const correlationId = localStorage.getItem("hotelos_correlation_id");
+  // Add correlation ID if available (only in browser environment)
+  const isBrowser =
+    typeof window !== "undefined" && typeof localStorage !== "undefined";
+  const correlationId = isBrowser
+    ? localStorage.getItem("hotelos_correlation_id")
+    : null;
   if (correlationId) {
     requestHeaders["x-correlation-id"] = correlationId;
   }
@@ -224,7 +228,7 @@ export async function apiFetch(
   }
 
   if (auth) {
-    const token = localStorage.getItem("auth_token");
+    const token = isBrowser ? localStorage.getItem("auth_token") : null;
 
     if (token) {
       requestHeaders.Authorization = `Bearer ${token}`;
@@ -285,18 +289,12 @@ export async function apiFetch(
     data = await response.text();
   }
 
-  // Store correlation ID from response headers
-  const responseCorrelationId =
-    response.headers.get("x-correlation-id") ||
-    response.headers.get("x-request-id");
-  if (responseCorrelationId && typeof window !== "undefined") {
-    localStorage.setItem("hotelos_correlation_id", responseCorrelationId);
-  }
-
   if (response.status === 401) {
-    const hadToken = !!localStorage.getItem("auth_token");
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_user");
+    const hadToken = isBrowser ? !!localStorage.getItem("auth_token") : false;
+    if (isBrowser) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+    }
 
     if (hadToken && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("hotelos:unauthorized"));

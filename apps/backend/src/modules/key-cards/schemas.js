@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { flexibleDateOptionalSchema } from "#/shared/schemas/common.js";
 
 const mongoIdSchema = z
   .string()
@@ -14,8 +15,8 @@ export const createKeyCardBodySchema = z.object({
     .enum(["AVAILABLE", "ACTIVE", "BLOCKED", "LOST", "DEACTIVATED"])
     .default("AVAILABLE"),
   type: z.enum(["RFID", "MAGNETIC", "NFC", "HYBRID"]).default("RFID"),
-  issueDate: z.string().datetime({ offset: true }).optional(),
-  expiryDate: z.string().datetime({ offset: true }).optional(),
+  issueDate: flexibleDateOptionalSchema,
+  expiryDate: flexibleDateOptionalSchema,
   notes: z.string().optional(),
 });
 
@@ -35,7 +36,7 @@ export const assignKeyCardBodySchema = z.object({
   guestId: mongoIdSchema.optional(),
   roomId: mongoIdSchema,
   issuedBy: mongoIdSchema.optional(),
-  expiresAt: z.string().datetime({ offset: true }).optional(),
+  expiresAt: flexibleDateOptionalSchema,
 });
 
 export const reissueKeyCardBodySchema = z.object({

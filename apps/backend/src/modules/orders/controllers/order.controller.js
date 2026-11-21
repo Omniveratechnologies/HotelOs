@@ -388,6 +388,7 @@ export const deleteOrder = async (req, res) => {
 
 export const createTableOrder = async (req, res) => {
   try {
+    const body = req.validated?.body || req.body || {};
     const {
       items,
       orderType,
@@ -396,10 +397,10 @@ export const createTableOrder = async (req, res) => {
       paymentMode,
       idempotencyKey: bodyIdempotencyKey,
       tableId: bodyTableId,
-    } = req.validated.body;
+    } = body;
 
     const session = req.session;
-    const hotelId = session ? session.hotelId : req.validated.body.hotelId;
+    const hotelId = session ? session.hotelId : body.hotelId;
     const tableId =
       session && session.type === "QR_GUEST"
         ? session.tableId
@@ -591,7 +592,7 @@ export const createTableOrder = async (req, res) => {
 
 export const markPaymentFailed = async (req, res) => {
   try {
-    const { orderId } = req.validated.body;
+    const { orderId } = req.validated?.body || req.body || {};
     const order = await Order.findById(orderId);
     if (!order)
       return res

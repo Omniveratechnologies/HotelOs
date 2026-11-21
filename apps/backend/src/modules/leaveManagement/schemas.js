@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  flexibleDateSchema,
+  flexibleDateOptionalSchema,
+} from "#/shared/schemas/common.js";
 
 const mongoIdSchema = z
   .string()
@@ -10,8 +14,8 @@ const mongoIdSchema = z
 
 export const applyLeaveBodySchema = z.object({
   leaveTypeId: mongoIdSchema,
-  fromDate: z.string().datetime({ offset: true }),
-  toDate: z.string().datetime({ offset: true }),
+  fromDate: flexibleDateSchema,
+  toDate: flexibleDateSchema,
   reason: z.string().min(1, "Reason is required"),
   attachment: z.string().url("Invalid attachment URL").optional(),
 });
@@ -32,15 +36,15 @@ export const listLeavesQuerySchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED", "CANCELLED"]).optional(),
   leaveTypeId: mongoIdSchema.optional(),
   staffId: mongoIdSchema.optional(),
-  fromDate: z.string().datetime({ offset: true }).optional(),
-  toDate: z.string().datetime({ offset: true }).optional(),
+  fromDate: flexibleDateOptionalSchema,
+  toDate: flexibleDateOptionalSchema,
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
 
 export const leaveStatsQuerySchema = z.object({
-  date_from: z.string().datetime({ offset: true }).optional(),
-  date_to: z.string().datetime({ offset: true }).optional(),
+  date_from: flexibleDateOptionalSchema,
+  date_to: flexibleDateOptionalSchema,
   department_id: mongoIdSchema.optional(),
 });
 

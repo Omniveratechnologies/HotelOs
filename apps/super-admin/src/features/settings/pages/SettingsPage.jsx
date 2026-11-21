@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { Save, Bell, ShieldCheck, User } from "lucide-react";
-import { Header, Input, Button } from "@hotelos/ui/components";
+import { Save, Bell, User } from "lucide-react";
+import {
+  Header,
+  Input,
+  Button,
+  TwoFactorSecurityCard,
+} from "@hotelos/ui/components";
 import { currentAdmin } from "../../../data/mockData.js";
 
 function SectionCard({ icon: Icon, title, description, children }) {
@@ -56,7 +61,6 @@ export default function SettingsPage() {
   const [notifyExpiry, setNotifyExpiry] = useState(true);
   const [notifyRequests, setNotifyRequests] = useState(true);
   const [notifyTransactions, setNotifyTransactions] = useState(false);
-  const [twoFactor, setTwoFactor] = useState(false);
   const [saved, setSaved] = useState(false);
 
   function handleSave(e) {
@@ -122,18 +126,7 @@ export default function SettingsPage() {
             </div>
           </SectionCard>
 
-          <SectionCard
-            icon={ShieldCheck}
-            title="Security"
-            description="Keep your super admin account secure."
-          >
-            <Toggle
-              checked={twoFactor}
-              onChange={setTwoFactor}
-              label="Two-factor authentication"
-              description="Require a verification code in addition to your password."
-            />
-          </SectionCard>
+          <TwoFactorSecurityCard />
 
           <div className="flex items-center gap-3">
             <Button type="submit" icon={Save}>

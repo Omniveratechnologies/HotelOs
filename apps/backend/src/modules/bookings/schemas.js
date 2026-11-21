@@ -1,11 +1,7 @@
 import { z } from "zod";
+import { mongoIdSchema, flexibleDateSchema } from "#/shared/schemas/common.js";
 
-const mongoIdSchema = z
-  .string()
-  .regex(/^[0-9a-fA-F]{24}$/, "Invalid ID format");
-const dateOnlySchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
+const dateOnlySchema = flexibleDateSchema;
 const settlementModeSchema = z.enum([
   "CASH",
   "CARD",
@@ -129,42 +125,74 @@ const roomRequirementSchema = z.object({
   rate: z.number().nonnegative().optional(),
 });
 
-export const createReservationBodySchema = z.object({
-  guest: guestSchema,
-  checkIn: dateOnlySchema,
-  checkOut: dateOnlySchema,
-  adults: z.number().int().positive().default(1),
-  children: z.number().int().nonnegative().default(0),
-  roomRequirements: z.array(roomRequirementSchema).min(1),
-  ratePlanCode: z.string().optional(),
-  source: z
-    .enum([
-      "DIRECT",
-      "WALKIN",
-      "OTA",
-      "REPEAT_GUEST",
-      "CORPORATE",
-      "CHANNEL_MANAGER",
-    ])
-    .default("DIRECT"),
-  specialRequests: z.string().optional(),
-  groupInfo: z
-    .object({
-      name: z.string(),
-      contactPerson: z.string(),
-      contactPhone: z.string(),
-    })
-    .optional(),
-  pricing: z
-    .object({
-      nightlyRate: z.number().nonnegative(),
-      grandTotal: z.number().nonnegative(),
-      cgst: z.number().nonnegative().default(0),
-      sgst: z.number().nonnegative().default(0),
-      taxPercent: z.number().nonnegative().default(0),
-    })
-    .optional(),
-});
+export const createReservationBodySchema = z
+  .object({
+    name: z.string().optional(),
+    email: z.string().optional().or(z.literal("")),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    idType: z.string().optional(),
+    idNumber: z.string().optional(),
+    nationality: z.string().optional(),
+    designation: z.string().optional(),
+    guest: guestSchema.optional(),
+
+    checkIn: dateOnlySchema,
+    checkOut: dateOnlySchema,
+
+    roomId: mongoIdSchema.optional(),
+    roomTypeCode: z.string().optional(),
+    ratePlanId: mongoIdSchema.optional().or(z.string().optional()),
+    ratePlanCode: z.string().optional(),
+    mealPlan: z.string().optional(),
+    rateOverride: z.union([z.number(), z.string()]).optional(),
+
+    rooms: z.coerce.number().int().positive().default(1),
+    adults: z.coerce.number().int().positive().default(1),
+    children: z.coerce.number().int().nonnegative().default(0),
+    infants: z.coerce.number().int().nonnegative().default(0),
+
+    roomRequirements: z.array(roomRequirementSchema).optional(),
+    roomAllocations: z.array(z.any()).optional(),
+
+    purpose: z.string().optional(),
+    guestType: z.string().optional(),
+    specialRequests: z.string().optional(),
+    source: z.string().default("DIRECT"),
+    status: z.string().default("confirmed"),
+
+    addOns: z.array(z.any()).optional(),
+    discount: z.union([z.number(), z.string()]).optional(),
+    taxPercent: z.number().nonnegative().optional(),
+    paymentStatus: z.string().optional(),
+    groupInfo: z.any().optional(),
+    guestRoster: z.any().optional(),
+    metadata: z.any().optional(),
+    documents: z.array(z.any()).optional(),
+    files: z.array(z.any()).optional(),
+    pricing: z.any().optional(),
+  })
+  .refine(
+    (data) => {
+      const hasName = Boolean(data.name?.trim() || data.guest?.name?.trim());
+      return hasName;
+    },
+    {
+      message: "Guest name is required",
+      path: ["name"],
+    },
+  )
+  .refine(
+    (data) => {
+      const phone = data.phone?.trim() || data.guest?.phone?.trim();
+      const email = data.email?.trim() || data.guest?.email?.trim();
+      return Boolean(phone || email);
+    },
+    {
+      message: "Guest phone or email is required",
+      path: ["phone"],
+    },
+  );
 
 // =====================================================
 // BOOKING UPDATE

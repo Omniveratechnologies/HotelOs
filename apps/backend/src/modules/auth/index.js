@@ -4,7 +4,7 @@ import twoFactorRouter from "./routes/twoFactor.routes.js";
 
 const router = express.Router();
 
-router.use("/auth", authRouter);
 router.use("/2fa", twoFactorRouter);
+router.use("/", authRouter);
 
 export default router;

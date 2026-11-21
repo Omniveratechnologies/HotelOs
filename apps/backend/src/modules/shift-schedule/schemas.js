@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  flexibleDateSchema,
+  flexibleDateOptionalSchema,
+} from "#/shared/schemas/common.js";
 
 const mongoIdSchema = z
   .string()
@@ -58,27 +62,27 @@ export const listShiftsQuerySchema = z.object({
 
 export const listScheduleQuerySchema = z.object({
   staff_id: mongoIdSchema.optional(),
-  date_from: z.string().datetime({ offset: true }).optional(),
-  date_to: z.string().datetime({ offset: true }).optional(),
+  date_from: flexibleDateOptionalSchema,
+  date_to: flexibleDateOptionalSchema,
   shift_id: mongoIdSchema.optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
 
 export const calendarQuerySchema = z.object({
-  date_from: z.string().datetime({ offset: true }).optional(),
-  date_to: z.string().datetime({ offset: true }).optional(),
+  date_from: flexibleDateOptionalSchema,
+  date_to: flexibleDateOptionalSchema,
 });
 
 export const rosterQuerySchema = z.object({
-  date: z.string().datetime({ offset: true }).optional(),
+  date: flexibleDateOptionalSchema,
   department_id: mongoIdSchema.optional(),
 });
 
 export const assignBodySchema = z.object({
   staffId: mongoIdSchema,
   shiftId: mongoIdSchema,
-  date: z.string().datetime({ offset: true }),
+  date: flexibleDateSchema,
 });
 
 export const bulkAssignBodySchema = z.object({
@@ -87,34 +91,34 @@ export const bulkAssignBodySchema = z.object({
       z.object({
         staffId: mongoIdSchema,
         shiftId: mongoIdSchema,
-        date: z.string().datetime({ offset: true }),
+        date: flexibleDateSchema,
       }),
     )
     .min(1, "At least one assignment is required"),
 });
 
 export const autoScheduleBodySchema = z.object({
-  date_from: z.string().datetime({ offset: true }),
-  date_to: z.string().datetime({ offset: true }),
+  date_from: flexibleDateSchema,
+  date_to: flexibleDateSchema,
   department_id: mongoIdSchema.optional(),
   shift_pattern: z.enum(["ROTATING", "FIXED"]).default("ROTATING"),
 });
 
 export const clearScheduleBodySchema = z.object({
-  date_from: z.string().datetime({ offset: true }),
-  date_to: z.string().datetime({ offset: true }),
+  date_from: flexibleDateSchema,
+  date_to: flexibleDateSchema,
   department_id: mongoIdSchema.optional(),
 });
 
 export const reportQuerySchema = z.object({
-  date_from: z.string().datetime({ offset: true }),
-  date_to: z.string().datetime({ offset: true }),
+  date_from: flexibleDateSchema,
+  date_to: flexibleDateSchema,
   department_id: mongoIdSchema.optional(),
 });
 
 export const summaryQuerySchema = z.object({
-  date_from: z.string().datetime({ offset: true }).optional(),
-  date_to: z.string().datetime({ offset: true }).optional(),
+  date_from: flexibleDateOptionalSchema,
+  date_to: flexibleDateOptionalSchema,
 });
 
 // =====================================================

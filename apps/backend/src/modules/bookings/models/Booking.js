@@ -137,31 +137,26 @@ const roomAllocationSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: null,
-      select: false,
     },
     occupantPhoneEncrypted: {
       type: String,
       trim: true,
       default: null,
-      select: false,
     },
     occupantEmailEncrypted: {
       type: String,
       trim: true,
       default: null,
-      select: false,
     },
     occupantIdTypeEncrypted: {
       type: String,
       trim: true,
       default: null,
-      select: false,
     },
     occupantIdNumberEncrypted: {
       type: String,
       trim: true,
       default: null,
-      select: false,
     },
     status: {
       type: String,
@@ -565,5 +560,60 @@ bookingSchema.index(
     partialFilterExpression: { aiosellBookingId: { $type: "string" } },
   },
 );
+
+function decryptRoomAllocations(doc) {
+  if (!doc) return;
+  const allocations = doc.roomAllocations || doc.allocatedRooms;
+  if (Array.isArray(allocations)) {
+    for (const room of allocations) {
+      if (room && room.occupantNameEncrypted && !room.occupantName) {
+        try {
+          room.occupantName = decrypt(room.occupantNameEncrypted);
+        } catch {
+          room.occupantName = room.occupantNameEncrypted;
+        }
+      }
+      if (room && room.occupantPhoneEncrypted && !room.occupantPhone) {
+        try {
+          room.occupantPhone = decrypt(room.occupantPhoneEncrypted);
+        } catch {
+          room.occupantPhone = room.occupantPhoneEncrypted;
+        }
+      }
+      if (room && room.occupantEmailEncrypted && !room.occupantEmail) {
+        try {
+          room.occupantEmail = decrypt(room.occupantEmailEncrypted);
+        } catch {
+          room.occupantEmail = room.occupantEmailEncrypted;
+        }
+      }
+      if (room && room.occupantIdTypeEncrypted && !room.occupantIdType) {
+        try {
+          room.occupantIdType = decrypt(room.occupantIdTypeEncrypted);
+        } catch {
+          room.occupantIdType = room.occupantIdTypeEncrypted;
+        }
+      }
+      if (room && room.occupantIdNumberEncrypted && !room.occupantIdNumber) {
+        try {
+          room.occupantIdNumber = decrypt(room.occupantIdNumberEncrypted);
+        } catch {
+          room.occupantIdNumber = room.occupantIdNumberEncrypted;
+        }
+      }
+    }
+  }
+}
+
+bookingSchema.post(["find", "findOne", "findOneAndUpdate"], function (result) {
+  if (!result) return;
+  if (Array.isArray(result)) {
+    for (const doc of result) {
+      decryptRoomAllocations(doc);
+    }
+  } else {
+    decryptRoomAllocations(result);
+  }
+});
 
 export default mongoose.model("Booking", bookingSchema);

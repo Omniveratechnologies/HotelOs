@@ -3,6 +3,8 @@
  * Tests: Login, 2FA, Password Reset, Account Lockout
  */
 
+process.env.NODE_ENV = "test";
+
 import { describe, it, before, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { MongoMemoryServer } from "mongodb-memory-server";
@@ -58,27 +60,53 @@ before(async () => {
   const appModule = await import("../src/app.js");
   app = appModule.default;
 
-  // Connect to database
+  // Connect to in-memory database
   const dbModule = await import("../src/config/db.js");
-  await dbModule.default();
+  await dbModule.default(uri);
 
   // Start HTTP server
   const { createServer } = await import("node:http");
   server = createServer(app);
-  await new Promise((resolve) => server.listen(0, resolve));
+  await new Promise((resolve, reject) => {
+    server.listen(5001, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
 
   global.testServer = server;
   global.testApp = app;
 });
 
 after(async () => {
-  await server.close();
+  if (server) {
+    server.closeAllConnections?.();
+    await new Promise((resolve) => server.close(resolve));
+  }
   await mongoose.disconnect();
-  await mongoServer.stop();
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
+  try {
+    const { redisConnection } = await import("../src/config/redis.js");
+    if (
+      redisConnection?.status === "ready" ||
+      redisConnection?.status === "connecting"
+    ) {
+      redisConnection.disconnect();
+    }
+  } catch {}
 });
 
 beforeEach(async () => {
-  // Clear database between tests
+  // Clear database between tests ONLY on verified local test host
+  const host = mongoose.connection?.host;
+  const isLocalHost = host === "127.0.0.1" || host === "localhost";
+  if (!isLocalHost) {
+    throw new Error(
+      `CRITICAL TEST SAFETY GUARD: Aborting User.deleteMany()! Mongoose is connected to non-local host: '${host}'`,
+    );
+  }
   await User.deleteMany({});
 });
 
@@ -431,13 +459,16 @@ describe("Authentication Integration Tests", () => {
       const user = await createTestSuperAdmin();
       const token = generateToken(user);
 
-      const response = await fetch("http://localhost:5001/api/v1/2fa/setup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        "http://localhost:5001/api/v1/auth/2fa/setup",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       const data = await response.json();
       assert.equal(response.status, 200);
@@ -454,7 +485,7 @@ describe("Authentication Integration Tests", () => {
 
       // Setup 2FA
       const setupResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/setup",
+        "http://localhost:5001/api/v1/auth/2fa/setup",
         {
           method: "POST",
           headers: {
@@ -471,7 +502,7 @@ describe("Authentication Integration Tests", () => {
 
       // Verify and enable
       const verifyResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/setup/verify",
+        "http://localhost:5001/api/v1/auth/2fa/setup/verify",
         {
           method: "POST",
           headers: {
@@ -489,7 +520,7 @@ describe("Authentication Integration Tests", () => {
 
       // Check 2FA status
       const statusResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/status",
+        "http://localhost:5001/api/v1/auth/2fa/status",
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -502,7 +533,7 @@ describe("Authentication Integration Tests", () => {
       const user = await createTestSuperAdmin();
       const token = generateToken(user);
 
-      await fetch("http://localhost:5001/api/v1/2fa/setup", {
+      await fetch("http://localhost:5001/api/v1/auth/2fa/setup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -511,7 +542,7 @@ describe("Authentication Integration Tests", () => {
       });
 
       const response = await fetch(
-        "http://localhost:5001/api/v1/2fa/setup/verify",
+        "http://localhost:5001/api/v1/auth/2fa/setup/verify",
         {
           method: "POST",
           headers: {
@@ -533,7 +564,7 @@ describe("Authentication Integration Tests", () => {
 
       // Setup and enable 2FA
       const setupResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/setup",
+        "http://localhost:5001/api/v1/auth/2fa/setup",
         {
           method: "POST",
           headers: {
@@ -546,7 +577,7 @@ describe("Authentication Integration Tests", () => {
       const secret = setupData.data.secret;
       const totp = speakeasy.totp({ secret, encoding: "base32" });
 
-      await fetch("http://localhost:5001/api/v1/2fa/setup/verify", {
+      await fetch("http://localhost:5001/api/v1/auth/2fa/setup/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -577,7 +608,7 @@ describe("Authentication Integration Tests", () => {
       // Verify 2FA to complete login
       const totp2 = speakeasy.totp({ secret, encoding: "base32" });
       const verifyResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/verify-login",
+        "http://localhost:5001/api/v1/auth/2fa/verify-login",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -597,7 +628,7 @@ describe("Authentication Integration Tests", () => {
 
       // Setup and enable 2FA
       const setupResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/setup",
+        "http://localhost:5001/api/v1/auth/2fa/setup",
         {
           method: "POST",
           headers: {
@@ -609,7 +640,7 @@ describe("Authentication Integration Tests", () => {
       const setupData = await setupResponse.json();
       const backupCode = setupData.data.backupCodes[0];
 
-      await fetch("http://localhost:5001/api/v1/2fa/setup/verify", {
+      await fetch("http://localhost:5001/api/v1/auth/2fa/setup/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -638,7 +669,7 @@ describe("Authentication Integration Tests", () => {
       const loginData = await loginResponse.json();
 
       const verifyResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/verify-login",
+        "http://localhost:5001/api/v1/auth/2fa/verify-login",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -652,7 +683,7 @@ describe("Authentication Integration Tests", () => {
 
       // Backup code should be consumed
       const statusResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/status",
+        "http://localhost:5001/api/v1/auth/2fa/status",
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -667,7 +698,7 @@ describe("Authentication Integration Tests", () => {
 
       // Setup and enable 2FA
       const setupResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/setup",
+        "http://localhost:5001/api/v1/auth/2fa/setup",
         {
           method: "POST",
           headers: {
@@ -682,7 +713,7 @@ describe("Authentication Integration Tests", () => {
         encoding: "base32",
       });
 
-      await fetch("http://localhost:5001/api/v1/2fa/setup/verify", {
+      await fetch("http://localhost:5001/api/v1/auth/2fa/setup/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -693,7 +724,7 @@ describe("Authentication Integration Tests", () => {
 
       // Disable 2FA
       const disableResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/disable",
+        "http://localhost:5001/api/v1/auth/2fa/disable",
         {
           method: "POST",
           headers: {
@@ -737,7 +768,7 @@ describe("Authentication Integration Tests", () => {
 
       // Setup and enable 2FA
       const setupResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/setup",
+        "http://localhost:5001/api/v1/auth/2fa/setup",
         {
           method: "POST",
           headers: {
@@ -752,7 +783,7 @@ describe("Authentication Integration Tests", () => {
         encoding: "base32",
       });
 
-      await fetch("http://localhost:5001/api/v1/2fa/setup/verify", {
+      await fetch("http://localhost:5001/api/v1/auth/2fa/setup/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -763,7 +794,7 @@ describe("Authentication Integration Tests", () => {
 
       // Regenerate backup codes
       const regenResponse = await fetch(
-        "http://localhost:5001/api/v1/2fa/backup-codes/regenerate",
+        "http://localhost:5001/api/v1/auth/2fa/backup-codes/regenerate",
         {
           method: "POST",
           headers: {
@@ -792,18 +823,22 @@ describe("Authentication Integration Tests", () => {
     it("should enforce rate limit on login endpoint", async () => {
       await createTestSuperAdmin({ password: "TestPass123!" });
 
-      // Make 6 requests (limit is 5)
-      const loginRequests = Array.from({ length: 6 }, () =>
-        fetch("http://localhost:5001/api/v1/auth/login", {
+      // Make 6 sequential requests (limit is 5)
+      const responses = [];
+      for (let i = 0; i < 6; i++) {
+        const res = await fetch("http://localhost:5001/api/v1/auth/login", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-test-rate-limit": "true",
+          },
           body: JSON.stringify({
             username: "testuser",
             password: "WrongPass123!",
           }),
-        }),
-      );
-      const responses = await Promise.all(loginRequests);
+        });
+        responses.push(res);
+      }
       for (let i = 0; i < responses.length; i++) {
         if (i < 5) {
           assert.equal(responses[i].status, 401);
@@ -814,15 +849,22 @@ describe("Authentication Integration Tests", () => {
     });
 
     it("should enforce rate limit on password reset", async () => {
-      // Make multiple requests
-      const resetRequests = Array.from({ length: 11 }, () =>
-        fetch("http://localhost:5001/api/v1/auth/forgot-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: "test@example.com" }),
-        }),
-      );
-      const responses = await Promise.all(resetRequests);
+      // Make 11 sequential requests (limit is 10)
+      const responses = [];
+      for (let i = 0; i < 11; i++) {
+        const res = await fetch(
+          "http://localhost:5001/api/v1/auth/forgot-password",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-test-rate-limit": "true",
+            },
+            body: JSON.stringify({ email: "test@example.com" }),
+          },
+        );
+        responses.push(res);
+      }
       for (let i = 0; i < responses.length; i++) {
         if (i < 10) {
           assert.equal(responses[i].status, 200);
@@ -868,7 +910,7 @@ describe("Authentication Integration Tests", () => {
       const user = await createTestSuperAdmin();
       const token = generateToken(user);
 
-      await fetch("http://localhost:5001/api/v1/2fa/setup", {
+      await fetch("http://localhost:5001/api/v1/auth/2fa/setup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -877,7 +919,7 @@ describe("Authentication Integration Tests", () => {
       });
 
       const response = await fetch(
-        "http://localhost:5001/api/v1/2fa/setup/verify",
+        "http://localhost:5001/api/v1/auth/2fa/setup/verify",
         {
           method: "POST",
           headers: {

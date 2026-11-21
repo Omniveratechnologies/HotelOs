@@ -52,6 +52,12 @@ export const router = createBrowserRouter([
           () => import("@/features/dashboard/pages/Dashboard.jsx"),
         ),
       },
+      {
+        path: "settings",
+        lazy: lazyPage(
+          () => import("@/features/settings/pages/SettingsPage.jsx"),
+        ),
+      },
       // Orders
       {
         path: "orders/all-orders",

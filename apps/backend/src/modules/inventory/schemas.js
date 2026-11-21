@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { flexibleDateOptionalSchema } from "#/shared/schemas/common.js";
 
 const mongoIdSchema = z
   .string()
@@ -14,7 +15,7 @@ export const createInventoryItemBodySchema = z.object({
   unit: z.string().min(1, "Unit is required"),
   minimumStock: z.number().nonnegative().default(0),
   costPerUnit: z.number().nonnegative().default(0),
-  expiryDate: z.string().datetime({ offset: true }).nullable().optional(),
+  expiryDate: flexibleDateOptionalSchema,
 });
 
 export const updateInventoryItemBodySchema = z
@@ -24,7 +25,7 @@ export const updateInventoryItemBodySchema = z
     unit: z.string().min(1).optional(),
     minimumStock: z.number().nonnegative().optional(),
     costPerUnit: z.number().nonnegative().optional(),
-    expiryDate: z.string().datetime({ offset: true }).nullable().optional(),
+    expiryDate: flexibleDateOptionalSchema,
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
@@ -38,7 +39,7 @@ export const receiveStockBodySchema = z
     supplier: mongoIdSchema.optional(),
     purchaseOrder: mongoIdSchema.optional(),
     batchNumber: z.string().optional(),
-    expiryDate: z.string().datetime({ offset: true }).optional(),
+    expiryDate: flexibleDateOptionalSchema,
   })
   .refine((data) => data.supplier || data.purchaseOrder, {
     message: "Either supplier or purchaseOrder is required",
@@ -56,8 +57,8 @@ export const useStockBodySchema = z.object({
 export const getUsageHistoryQuerySchema = z.object({
   item: mongoIdSchema.optional(),
   department: z.string().optional(),
-  startDate: z.string().datetime({ offset: true }).optional(),
-  endDate: z.string().datetime({ offset: true }).optional(),
+  startDate: flexibleDateOptionalSchema,
+  endDate: flexibleDateOptionalSchema,
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
@@ -65,8 +66,8 @@ export const getUsageHistoryQuerySchema = z.object({
 export const getPurchaseHistoryQuerySchema = z.object({
   item: mongoIdSchema.optional(),
   supplier: mongoIdSchema.optional(),
-  startDate: z.string().datetime({ offset: true }).optional(),
-  endDate: z.string().datetime({ offset: true }).optional(),
+  startDate: flexibleDateOptionalSchema,
+  endDate: flexibleDateOptionalSchema,
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
@@ -175,7 +176,7 @@ export const createPurchaseOrderBodySchema = z.object({
       }),
     )
     .min(1, "At least one item is required"),
-  expectedDeliveryDate: z.string().datetime({ offset: true }).optional(),
+  expectedDeliveryDate: flexibleDateOptionalSchema,
   notes: z.string().optional(),
 });
 
@@ -192,7 +193,7 @@ export const updatePurchaseOrderBodySchema = z
         }),
       )
       .optional(),
-    expectedDeliveryDate: z.string().datetime({ offset: true }).optional(),
+    expectedDeliveryDate: flexibleDateOptionalSchema,
     notes: z.string().optional(),
     status: purchaseOrderStatusSchema.optional(),
   })
@@ -211,7 +212,7 @@ export const receivePurchaseOrderStockBodySchema = z.object({
         purchaseOrderItemId: mongoIdSchema,
         quantityReceived: z.number().int().positive(),
         batchNumber: z.string().optional(),
-        expiryDate: z.string().datetime({ offset: true }).optional(),
+        expiryDate: flexibleDateOptionalSchema,
       }),
     )
     .min(1),
@@ -246,10 +247,7 @@ export const createWastageBodySchema = z.object({
   department: z.string().optional(),
   notes: z.string().optional(),
   cost: z.number().nonnegative().optional(),
-  wastageDate: z
-    .string()
-    .datetime({ offset: true })
-    .default(() => new Date().toISOString()),
+  wastageDate: flexibleDateOptionalSchema,
 });
 
 export const updateWastageBodySchema = z
@@ -259,7 +257,7 @@ export const updateWastageBodySchema = z
     department: z.string().optional(),
     notes: z.string().optional(),
     cost: z.number().nonnegative().optional(),
-    wastageDate: z.string().datetime({ offset: true }).optional(),
+    wastageDate: flexibleDateOptionalSchema,
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
@@ -272,8 +270,8 @@ export const getWastageRecordsQuerySchema = z.object({
   period: z
     .enum(["today", "week", "month", "quarter", "year", "custom"])
     .optional(),
-  startDate: z.string().datetime({ offset: true }).optional(),
-  endDate: z.string().datetime({ offset: true }).optional(),
+  startDate: flexibleDateOptionalSchema,
+  endDate: flexibleDateOptionalSchema,
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
@@ -282,8 +280,8 @@ export const getWastageSummaryQuerySchema = z.object({
   period: z
     .enum(["today", "week", "month", "quarter", "year", "custom"])
     .optional(),
-  startDate: z.string().datetime({ offset: true }).optional(),
-  endDate: z.string().datetime({ offset: true }).optional(),
+  startDate: flexibleDateOptionalSchema,
+  endDate: flexibleDateOptionalSchema,
 });
 
 export const getTopWastedItemsQuerySchema = z.object({
@@ -291,8 +289,8 @@ export const getTopWastedItemsQuerySchema = z.object({
     .enum(["today", "week", "month", "quarter", "year", "custom"])
     .optional(),
   limit: z.coerce.number().int().positive().max(100).default(10),
-  startDate: z.string().datetime({ offset: true }).optional(),
-  endDate: z.string().datetime({ offset: true }).optional(),
+  startDate: flexibleDateOptionalSchema,
+  endDate: flexibleDateOptionalSchema,
 });
 
 export const getMonthlyWastageTrendQuerySchema = z.object({

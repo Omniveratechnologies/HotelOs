@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { isAuthenticated, login } from "../services/auth.service.js";
+import { TwoFactorChallenge } from "@hotelos/ui/components";
 
 export default function LoginPage() {
   const location = useLocation();
@@ -8,6 +9,7 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [challenge, setChallenge] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +19,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login({ username, password });
+      const res = await login({ username, password });
+      if (res?.requires2FA) {
+        setChallenge(res);
+        return;
+      }
       const from = location.state?.from?.pathname || "/";
       navigate(from, { replace: true });
     } catch (err) {
@@ -26,6 +32,23 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (challenge) {
+    return (
+      <div className="relative flex min-h-screen items-center justify-center bg-[#0f0f0f] px-6 text-white">
+        <TwoFactorChallenge
+          userId={challenge.userId}
+          username={challenge.username}
+          theme="dark"
+          onSuccess={() => {
+            const from = location.state?.from?.pathname || "/";
+            navigate(from, { replace: true });
+          }}
+          onCancel={() => setChallenge(null)}
+        />
+      </div>
+    );
   }
 
   if (isAuthenticated()) {

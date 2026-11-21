@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Input } from "@hotelos/ui/components";
+import { Input, TwoFactorChallenge } from "@hotelos/ui/components";
 import { authApi } from "@hotelos/api";
 
 export default function LoginPage() {
@@ -8,6 +8,7 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,7 +25,16 @@ export default function LoginPage() {
     try {
       setLoading(true);
 
-      await authApi.login({ username, password, expectedRole: "SUPER_ADMIN" });
+      const res = await authApi.login({
+        username,
+        password,
+        expectedRole: "SUPER_ADMIN",
+      });
+
+      if (res?.requires2FA) {
+        setChallenge(res);
+        return;
+      }
 
       navigate("/dashboard", { replace: true });
     } catch (err) {
@@ -34,6 +44,20 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (challenge) {
+    return (
+      <div className="bg-background-50 flex min-h-screen items-center justify-center px-4">
+        <TwoFactorChallenge
+          userId={challenge.userId}
+          username={challenge.username}
+          expectedRole="SUPER_ADMIN"
+          onSuccess={() => navigate("/dashboard", { replace: true })}
+          onCancel={() => setChallenge(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background-50 flex min-h-screen items-center justify-center px-4">

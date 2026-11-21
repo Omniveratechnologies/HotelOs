@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  flexibleDateSchema,
+  flexibleDateOptionalSchema,
+} from "#/shared/schemas/common.js";
 
 const mongoIdSchema = z
   .string()
@@ -10,7 +14,7 @@ const mongoIdSchema = z
 
 export const createHolidayBodySchema = z.object({
   name: z.string().min(1, "Holiday name is required"),
-  date: z.string().datetime({ offset: true }),
+  date: flexibleDateSchema,
   type: z
     .enum(["NATIONAL", "REGIONAL", "COMPANY", "RELIGIOUS", "OTHER"])
     .default("OTHER"),
@@ -22,7 +26,7 @@ export const createHolidayBodySchema = z.object({
 export const updateHolidayBodySchema = z
   .object({
     name: z.string().min(1).optional(),
-    date: z.string().datetime({ offset: true }).optional(),
+    date: flexibleDateOptionalSchema,
     type: z
       .enum(["NATIONAL", "REGIONAL", "COMPANY", "RELIGIOUS", "OTHER"])
       .optional(),
@@ -39,8 +43,8 @@ export const listHolidaysQuerySchema = z.object({
     .enum(["NATIONAL", "REGIONAL", "COMPANY", "RELIGIOUS", "OTHER"])
     .optional(),
   isRecurring: z.enum(["true", "false"]).optional(),
-  date_from: z.string().datetime({ offset: true }).optional(),
-  date_to: z.string().datetime({ offset: true }).optional(),
+  date_from: flexibleDateOptionalSchema,
+  date_to: flexibleDateOptionalSchema,
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
@@ -64,7 +68,7 @@ export const importHolidaysBodySchema = z.object({
     .array(
       z.object({
         name: z.string().min(1),
-        date: z.string().datetime({ offset: true }),
+        date: flexibleDateSchema,
         type: z
           .enum(["NATIONAL", "REGIONAL", "COMPANY", "RELIGIOUS", "OTHER"])
           .default("OTHER"),

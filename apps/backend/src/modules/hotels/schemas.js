@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { flexibleDateSchema } from "#/shared/schemas/common.js";
 
 // Common reusable schemas
-const dateSchema = z.string().datetime({ offset: true });
+const dateSchema = flexibleDateSchema;
 const timeSchema = z
   .string()
   .regex(/^\d{2}:\d{2}$/, "Time must be HH:MM format");

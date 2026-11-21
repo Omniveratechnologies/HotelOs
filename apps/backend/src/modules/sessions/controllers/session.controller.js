@@ -50,7 +50,7 @@ function clearSessionCookie(res) {
 export const createQrGuestSession = async (req, res) => {
   try {
     const { hotelId, tableId, latitude, longitude, accuracy } =
-      req.validated.body;
+      req.validated?.body || req.body || {};
 
     if (!hotelId || !tableId) {
       return res.status(400).json({
@@ -207,7 +207,7 @@ export const createQrGuestSession = async (req, res) => {
  */
 export const exchangeKioskHandoff = async (req, res) => {
   try {
-    const { handoffCode } = req.validated.body;
+    const { handoffCode } = req.validated?.body || req.body || {};
 
     if (
       !handoffCode ||
@@ -444,7 +444,7 @@ export const validateCurrentSession = async (req, res) => {
  */
 export const revokeCurrentSession = async (req, res) => {
   try {
-    const { reason } = req.validated.body;
+    const { reason } = req.validated?.body || req.body || {};
     req.session.status = "REVOKED";
     req.session.revokedAt = new Date();
     req.session.revocationReason = reason || "USER_LOGOUT";

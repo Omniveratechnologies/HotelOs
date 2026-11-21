@@ -69,6 +69,14 @@ export const login = async ({ username, password, expectedRole }) => {
     password,
   });
 
+  // If 2FA is required, return challenge payload without storing tokens
+  if (result.requires2FA) {
+    return {
+      requires2FA: true,
+      ...result.data,
+    };
+  }
+
   const user = result.data?.user;
   const token = result.data?.token;
 
@@ -80,6 +88,128 @@ export const login = async ({ username, password, expectedRole }) => {
 
   storeAuth(token, user);
   return user;
+};
+
+/**
+ * Completes login verification using 2FA TOTP token or single-use backup code.
+ * @param {object} params
+ * @param {string} params.userId
+ * @param {string} [params.token] - 6-digit TOTP code
+ * @param {string} [params.backupCode] - Emergency backup code
+ * @param {string} [params.expectedRole]
+ * @returns {Promise<object>} Authenticated user object.
+ */
+export const verify2FALogin = async ({
+  userId,
+  token,
+  backupCode,
+  expectedRole,
+}) => {
+  if (!userId) {
+    throw new Error("User ID is required.");
+  }
+  if (!token && !backupCode) {
+    throw new Error("Verification code or backup code is required.");
+  }
+
+  const result = await api.post("/api/v1/auth/2fa/verify-login", {
+    userId,
+    ...(token ? { token: token.trim() } : {}),
+    ...(backupCode ? { backupCode: backupCode.trim() } : {}),
+  });
+
+  const user = result.data?.user;
+  const authToken = result.data?.token;
+
+  if (expectedRole && user?.role !== expectedRole) {
+    throw new Error(
+      `This account does not have ${expectedRole.toLowerCase()} access.`,
+    );
+  }
+
+  storeAuth(authToken, user);
+  return user;
+};
+
+/**
+ * Fetches current user's 2FA status and remaining backup codes count.
+ * @returns {Promise<{ enabled: boolean, required: boolean, backupCodesRemaining: number }>}
+ */
+export const get2FAStatus = async () => {
+  const result = await api.get("/api/v1/auth/2fa/status", { auth: true });
+  return result.data;
+};
+
+/**
+ * Initiates 2FA setup and returns QR code url, manual key, and backup codes.
+ * @returns {Promise<{ secret: string, qrCodeUrl: string, backupCodes: string[], manualEntryKey: string }>}
+ */
+export const setup2FA = async () => {
+  const result = await api.post("/api/v1/auth/2fa/setup", {}, { auth: true });
+  return result.data;
+};
+
+/**
+ * Verifies TOTP token to activate 2FA for the current user.
+ * @param {string} token - 6-digit TOTP code
+ * @returns {Promise<object>}
+ */
+export const verify2FASetup = async (token) => {
+  if (!token?.trim()) {
+    throw new Error("Verification code is required.");
+  }
+  const result = await api.post(
+    "/api/v1/auth/2fa/setup/verify",
+    { token: token.trim() },
+    { auth: true },
+  );
+  return result.data;
+};
+
+/**
+ * Disables 2FA for the current user.
+ * @param {object} params
+ * @param {string} [params.password]
+ * @param {string} [params.token]
+ * @param {string} [params.backupCode]
+ * @returns {Promise<object>}
+ */
+export const disable2FA = async ({ password, token, backupCode } = {}) => {
+  const payload = {};
+  if (password) payload.password = password;
+  if (token) payload.token = token.trim();
+  if (backupCode) payload.backupCode = backupCode.trim();
+
+  const result = await api.post("/api/v1/auth/2fa/disable", payload, {
+    auth: true,
+  });
+  return result.data;
+};
+
+/**
+ * Regenerates 10 single-use emergency backup codes.
+ * @param {object} params
+ * @param {string} [params.password]
+ * @param {string} [params.token]
+ * @param {string} [params.backupCode]
+ * @returns {Promise<{ backupCodes: string[] }>}
+ */
+export const regenerateBackupCodes = async ({
+  password,
+  token,
+  backupCode,
+} = {}) => {
+  const payload = {};
+  if (password) payload.password = password;
+  if (token) payload.token = token.trim();
+  if (backupCode) payload.backupCode = backupCode.trim();
+
+  const result = await api.post(
+    "/api/v1/auth/2fa/backup-codes/regenerate",
+    payload,
+    { auth: true },
+  );
+  return result.data;
 };
 
 /**

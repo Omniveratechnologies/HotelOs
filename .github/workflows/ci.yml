@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, developer]
   pull_request:
-    branches: [main, develop]
+    branches: [main, developer]
   workflow_dispatch:
     inputs:
       environment:
@@ -17,8 +17,8 @@ on:
           - production
 
 env:
-  NODE_VERSION: '20.x'
-  PNPM_VERSION: '8.x'
+  NODE_VERSION: '24.x'
+  PNPM_VERSION: '11.x'
 
 jobs:
   # ============================================================

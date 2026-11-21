@@ -125,7 +125,14 @@ const allowedOrigins = new Set(
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.has(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.has(origin) ||
+        (env.nodeEnv === "development" &&
+          (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+            /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
+            /^https?:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/.test(origin)))
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));

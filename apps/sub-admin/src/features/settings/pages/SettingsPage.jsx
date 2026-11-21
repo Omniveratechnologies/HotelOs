@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { Header, Button, Input } from "@hotelos/ui/components";
+import {
+  Header,
+  Button,
+  Input,
+  TwoFactorSecurityCard,
+} from "@hotelos/ui/components";
 
 import { useMyHotel, useUpdateMyHotel } from "../hooks/useHotelSettings.js";
 
@@ -315,13 +320,20 @@ export default function SettingsPage() {
             Loading hotel details...
           </div>
         ) : hotel ? (
-          <SettingsForm
-            key={hotel.id || "hotel"}
-            hotel={hotel}
-            onSave={handleSave}
-            saving={updateMyHotelMutation.isPending}
-          />
-        ) : null}
+          <div className="space-y-8">
+            <SettingsForm
+              key={hotel.id || "hotel"}
+              hotel={hotel}
+              onSave={handleSave}
+              saving={updateMyHotelMutation.isPending}
+            />
+            <TwoFactorSecurityCard />
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <TwoFactorSecurityCard />
+          </div>
+        )}
       </main>
     </div>
   );

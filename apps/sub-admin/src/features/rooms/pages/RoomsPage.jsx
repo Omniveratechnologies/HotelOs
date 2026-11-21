@@ -56,10 +56,11 @@ export default function RoomsPage() {
   async function handleDelete(room) {
     if (!window.confirm(`Delete room ${room.roomNumber}?`)) return;
 
-    setRemoving(room.id);
+    const roomId = room.id || room._id;
+    setRemoving(roomId);
 
     try {
-      const updated = await deleteRoomMutation.mutateAsync(room.id);
+      const updated = await deleteRoomMutation.mutateAsync(roomId);
 
       setToast(
         updated?.pendingDelete

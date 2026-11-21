@@ -27,9 +27,22 @@ export function validate(schemaMap) {
       });
 
       if (Object.keys(errors).length > 0) {
+        const firstErrorMessages = [];
+        for (const fieldErrors of Object.values(errors)) {
+          for (const [field, msgs] of Object.entries(fieldErrors)) {
+            if (Array.isArray(msgs) && msgs.length > 0) {
+              firstErrorMessages.push(`${field}: ${msgs[0]}`);
+            }
+          }
+        }
+        const message =
+          firstErrorMessages.length > 0
+            ? `Validation failed: ${firstErrorMessages.join("; ")}`
+            : "Validation failed";
+
         return res.status(400).json({
           success: false,
-          message: "Validation failed",
+          message,
           errors,
         });
       }

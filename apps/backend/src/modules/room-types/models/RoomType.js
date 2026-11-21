@@ -49,7 +49,11 @@ const roomTypeSchema = new Schema(
       default: "completed",
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
 
 roomTypeSchema.index({ hotelId: 1, roomCode: 1 }, { unique: true });
