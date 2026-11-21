@@ -191,7 +191,7 @@ const LeaveManagement = () => {
 
       <div
         className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
+          "lg:ml-64"
         }`}
       >
         <Navbar
@@ -217,7 +217,7 @@ const LeaveManagement = () => {
           }
         />
 
-        <main className="space-y-5 px-4 py-5">
+        <main className="space-y-5 p-3 sm:p-4 lg:p-6">
           <LeaveManagementStatusCards stats={stats} isThisMonth={isThisMonth} />
 
           <LeaveManagementFilters

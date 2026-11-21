@@ -45,12 +45,22 @@ export const createFoodItem = async (req, res) => {
         .json({ success: false, message: "name and price are required" });
     }
 
+    const isVeg =
+      req.body.isVeg !== undefined
+        ? Boolean(req.body.isVeg)
+        : req.body.foodType
+          ? req.body.foodType === "veg"
+          : true;
+    const { hotelId, ...fields } = req.body;
     const item = await FoodItem.create({
+      ...fields,
       name,
       description,
       price,
       category,
       image,
+      isVeg,
+      foodType: isVeg ? "veg" : "non-veg",
       hotelId: req.user.hotelId,
     });
 
@@ -69,9 +79,17 @@ export const createFoodItem = async (req, res) => {
 
 export const updateFoodItem = async (req, res) => {
   try {
+    const { hotelId, ...fields } = req.body;
+    if (fields.isVeg !== undefined) {
+      fields.isVeg = Boolean(fields.isVeg);
+      fields.foodType = fields.isVeg ? "veg" : "non-veg";
+    } else if (fields.foodType !== undefined) {
+      fields.isVeg = fields.foodType === "veg";
+      fields.foodType = fields.isVeg ? "veg" : "non-veg";
+    }
     const item = await FoodItem.findOneAndUpdate(
       { _id: req.params.id, hotelId: req.user.hotelId },
-      { $set: req.body },
+      { $set: fields },
       { new: true, runValidators: true },
     );
     if (!item)

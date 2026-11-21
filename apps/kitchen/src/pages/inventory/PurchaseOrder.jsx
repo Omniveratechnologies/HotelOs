@@ -242,7 +242,7 @@ const PurchaseOrder = () => {
 
       <div
         className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
+          "lg:ml-64"
         }`}
       >
         <Navbar
@@ -270,7 +270,7 @@ const PurchaseOrder = () => {
           }
         />
 
-        <main className="mt-3 px-4 pb-6">
+        <main className="mt-3 p-3 pb-6 sm:p-4 lg:p-6">
           <PurchaseOrderCards summary={summary} />
 
           <div className="mt-5 flex flex-wrap items-center gap-3">

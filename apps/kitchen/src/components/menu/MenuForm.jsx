@@ -10,7 +10,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
     price: "",
     stock: "",
     availability: "Always",
-    isVeg: false,
+    isVeg: true,
     isSpicy: false,
     isChefSpecial: false,
     isRoomServiceAvailable: false,
@@ -52,7 +52,7 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
         image,
         stock: Number(formData.stock || 0),
         availability: formData.availability,
-        isVeg: formData.isVeg,
+        isVeg: formData.isVeg === true || formData.isVeg === "true",
         isSpicy: formData.isSpicy,
         isChefSpecial: formData.isChefSpecial,
         isRoomServiceAvailable: formData.isRoomServiceAvailable,
@@ -211,37 +211,35 @@ const MenuForm = ({ onCancel = () => window.history.back() }) => {
 
       <div className="border-t border-slate-200 pt-6 dark:border-slate-700">
         <h3 className="text-base font-semibold text-slate-900 dark:text-white">
-          Item Options
+          Item Type <span className="text-red-500">*</span>
         </h3>
 
-        <div className="mt-4 space-y-3">
-          <Checkbox
-            name="isVeg"
-            checked={formData.isVeg}
-            onChange={handleChange}
-            label="Veg Item"
-          />
-
-          <Checkbox
-            name="isSpicy"
-            checked={formData.isSpicy}
-            onChange={handleChange}
-            label="Spicy"
-          />
-
-          <Checkbox
-            name="isChefSpecial"
-            checked={formData.isChefSpecial}
-            onChange={handleChange}
-            label="Chef's Special"
-          />
-
-          <Checkbox
-            name="isRoomServiceAvailable"
-            checked={formData.isRoomServiceAvailable}
-            onChange={handleChange}
-            label="Room Service Available"
-          />
+        <div className="mt-4 flex gap-3">
+          {[["true", "Veg"], ["false", "Non-Veg"]].map(([value, label]) => (
+            <label
+              key={value}
+              className={`flex flex-1 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${
+                (formData.isVeg === true || formData.isVeg === "true") ===
+                (value === "true")
+                  ? "border-emerald-500 bg-emerald-500/10 text-white"
+                  : "border-slate-600 text-slate-300"
+              }`}
+            >
+              <input
+                type="radio"
+                name="isVeg"
+                value={value}
+                checked={
+                  (formData.isVeg === true || formData.isVeg === "true") ===
+                  (value === "true")
+                }
+                onChange={() => setFormData((prev) => ({ ...prev, isVeg: value === "true" }))}
+                required
+                className="h-4 w-4 accent-emerald-500"
+              />
+              <span>{label}</span>
+            </label>
+          ))}
         </div>
       </div>
 
