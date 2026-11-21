@@ -45,7 +45,7 @@ const StockOverview = () => {
 
       <div
         className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
+          "lg:ml-64"
         }`}
       >
         <Navbar
@@ -78,7 +78,7 @@ const StockOverview = () => {
           showPageHeading
         />
 
-        <main className="space-y-4 px-4 py-4">
+        <main className="space-y-4 p-3 sm:p-4 lg:p-6">
           <StockOverviewCards refreshKey={refreshKey} />
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">

@@ -46,7 +46,7 @@ const Cancelled = () => {
 
       <div
         className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
+          "lg:ml-64"
         }`}
       >
         <Navbar
