@@ -29,3 +29,29 @@ export const generateKioskToken = (kiosk) => {
     },
   );
 };
+
+export const generateAccountSelectionToken = ({ email, portal }) => {
+  return jwt.sign(
+    {
+      email,
+      portal,
+      purpose: "account_selection",
+    },
+    env.jwtSecret,
+    {
+      expiresIn: "15m",
+    },
+  );
+};
+
+export const verifyAccountSelectionToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, env.jwtSecret);
+    if (!decoded || decoded.purpose !== "account_selection") {
+      return null;
+    }
+    return decoded;
+  } catch {
+    return null;
+  }
+};

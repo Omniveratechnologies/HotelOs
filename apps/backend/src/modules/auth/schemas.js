@@ -19,6 +19,18 @@ const passwordStrengthSchema = z
   .refine((val) => !/\s/.test(val), "Password must not contain whitespace");
 
 // =====================================================
+// PORTAL ENUM & SCHEMAS
+// =====================================================
+
+export const portalEnum = z.enum([
+  "SUPER_ADMIN",
+  "SUB_ADMIN",
+  "RECEPTIONIST",
+  "KITCHEN",
+  "GUEST",
+]);
+
+// =====================================================
 // LOGIN SCHEMA
 // =====================================================
 
@@ -36,14 +48,41 @@ export const loginBodySchema = z.object({
 
 export const forgotUsernameBodySchema = z.object({
   email: z.string().email("Invalid email address"),
+  portal: portalEnum.optional(),
 });
 
 // =====================================================
 // FORGOT PASSWORD SCHEMA
 // =====================================================
 
-export const forgotPasswordBodySchema = z.object({
-  email: z.string().email("Invalid email address"),
+export const forgotPasswordBodySchema = z
+  .object({
+    identifier: z.string().min(1, "Identifier is required").optional(),
+    email: z.string().optional(),
+    portal: portalEnum.optional(),
+  })
+  .refine(
+    (data) =>
+      (typeof data.identifier === "string" &&
+        data.identifier.trim().length > 0) ||
+      (typeof data.email === "string" && data.email.trim().length > 0),
+    {
+      message: "Email or username is required",
+      path: ["identifier"],
+    },
+  );
+
+// =====================================================
+// RESET PASSWORD ACCOUNT SELECTION SCHEMAS
+// =====================================================
+
+export const getResetAccountsQuerySchema = z.object({
+  token: z.string().min(1, "Selection token is required"),
+});
+
+export const selectResetAccountBodySchema = z.object({
+  token: z.string().min(1, "Selection token is required"),
+  username: z.string().min(1, "Username is required"),
 });
 
 // =====================================================

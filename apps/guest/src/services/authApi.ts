@@ -59,6 +59,28 @@ export async function logout(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
 }
 
+export async function forgotUsername(email: string): Promise<string> {
+  const res = await apiRequest<{ success: boolean; message: string }>(
+    "/auth/forgot-username",
+    {
+      method: "POST",
+      body: JSON.stringify({ email: email.trim(), portal: "GUEST" }),
+    },
+  );
+  return res.message || "If an account exists, instructions have been sent.";
+}
+
+export async function forgotPassword(identifier: string): Promise<string> {
+  const res = await apiRequest<{ success: boolean; message: string }>(
+    "/auth/forgot-password",
+    {
+      method: "POST",
+      body: JSON.stringify({ identifier: identifier.trim(), portal: "GUEST" }),
+    },
+  );
+  return res.message || "If an account exists, instructions have been sent.";
+}
+
 export async function exchangeKioskHandoff(
   handoffCode: string,
 ): Promise<KioskExchangeResponse> {

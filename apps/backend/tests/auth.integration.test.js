@@ -10,7 +10,10 @@ import assert from "node:assert/strict";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
 import User from "../src/modules/users/models/User.js";
-import { generateToken } from "../src/shared/utils/jwt.js";
+import {
+  generateToken,
+  generateAccountSelectionToken,
+} from "../src/shared/utils/jwt.js";
 import speakeasy from "speakeasy";
 
 let mongoServer;
@@ -348,6 +351,311 @@ describe("Authentication Integration Tests", () => {
       assert.equal(response.status, 400);
       assert.equal(data.success, false);
       assert.ok(data.message.includes("reused"));
+    });
+  });
+
+  describe("Multi-Dashboard & Multi-Account Recovery Flow", () => {
+    it("should scope forgot-username to portal when superadmin and subadmin share an email", async () => {
+      const email = "shared_recovery@example.com";
+      await createTestUser({
+        username: "super_admin_shared",
+        email,
+        role: "SUPER_ADMIN",
+      });
+      await createTestUser({
+        username: "sub_admin_shared",
+        email,
+        role: "SUB_ADMIN",
+      });
+
+      const response = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-username",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, portal: "SUB_ADMIN" }),
+        },
+      );
+
+      const data = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(data.success, true);
+    });
+
+    it("should scope forgot-password to portal and not touch other dashboards when email is shared", async () => {
+      const email = "shared_pwd@example.com";
+      const superUser = await createTestUser({
+        username: "super_pwd_user",
+        email,
+        role: "SUPER_ADMIN",
+      });
+      const subUser = await createTestUser({
+        username: "sub_pwd_user",
+        email,
+        role: "SUB_ADMIN",
+      });
+
+      const response = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, portal: "SUB_ADMIN" }),
+        },
+      );
+
+      const data = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(data.success, true);
+
+      // Verify that Sub-Admin user received reset token, but Super-Admin user was untouched
+      const refreshedSub = await User.findById(subUser._id).select(
+        "+resetPasswordToken",
+      );
+      const refreshedSuper = await User.findById(superUser._id).select(
+        "+resetPasswordToken",
+      );
+
+      assert.ok(refreshedSub.resetPasswordToken);
+      assert.ok(!refreshedSuper.resetPasswordToken);
+    });
+
+    it("should require account selection when 1 email has multiple accounts in the same portal", async () => {
+      const email = "multi_subadmin@example.com";
+      const sub1 = await createTestUser({
+        username: "hotel1_admin",
+        email,
+        role: "SUB_ADMIN",
+      });
+      const sub2 = await createTestUser({
+        username: "hotel2_admin",
+        email,
+        role: "SUB_ADMIN",
+      });
+
+      // Request forgot-password with email
+      const response = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, portal: "SUB_ADMIN" }),
+        },
+      );
+
+      const data = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(data.success, true);
+
+      // Verify NO resetPasswordToken is assigned yet to either user (prevent premature reset tokens)
+      const freshSub1 = await User.findById(sub1._id).select(
+        "+resetPasswordToken",
+      );
+      const freshSub2 = await User.findById(sub2._id).select(
+        "+resetPasswordToken",
+      );
+      assert.ok(!freshSub1.resetPasswordToken);
+      assert.ok(!freshSub2.resetPasswordToken);
+
+      // Verify selection token allows fetching accounts
+      const selectionToken = generateAccountSelectionToken({
+        email,
+        portal: "SUB_ADMIN",
+      });
+
+      const accountsRes = await fetch(
+        `http://localhost:5001/api/v1/auth/reset-password/accounts?token=${selectionToken}`,
+      );
+      const accountsData = await accountsRes.json();
+      assert.equal(accountsRes.status, 200);
+      assert.equal(accountsData.success, true);
+      assert.equal(accountsData.data.accounts.length, 2);
+
+      const usernames = new Set(
+        accountsData.data.accounts.map((a) => a.username),
+      );
+      assert.ok(usernames.has("hotel1_admin"));
+      assert.ok(usernames.has("hotel2_admin"));
+
+      // Select hotel1_admin
+      const selectRes = await fetch(
+        "http://localhost:5001/api/v1/auth/reset-password/select-account",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: selectionToken,
+            username: "hotel1_admin",
+          }),
+        },
+      );
+      const selectData = await selectRes.json();
+      assert.equal(selectRes.status, 200);
+      assert.equal(selectData.success, true);
+      assert.ok(selectData.data.resetToken);
+
+      // Check DB: hotel1_admin now has reset token, hotel2_admin still does not
+      const finalSub1 = await User.findById(sub1._id).select(
+        "+resetPasswordToken",
+      );
+      const finalSub2 = await User.findById(sub2._id).select(
+        "+resetPasswordToken",
+      );
+      assert.equal(finalSub1.resetPasswordToken, selectData.data.resetToken);
+      assert.ok(!finalSub2.resetPasswordToken);
+
+      // Perform reset password using the returned resetToken
+      const resetRes = await fetch(
+        "http://localhost:5001/api/v1/auth/reset-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: selectData.data.resetToken,
+            password: "NewBrandNewPass123!",
+          }),
+        },
+      );
+      const resetData = await resetRes.json();
+      assert.equal(resetRes.status, 200);
+      assert.equal(resetData.success, true);
+    });
+
+    it("should allow direct password reset by username without disambiguation", async () => {
+      const email = "direct_user@example.com";
+      const subUser = await createTestUser({
+        username: "direct_sub_user",
+        email,
+        role: "SUB_ADMIN",
+      });
+
+      const response = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            identifier: "direct_sub_user",
+            portal: "SUB_ADMIN",
+          }),
+        },
+      );
+
+      const data = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(data.success, true);
+
+      const refreshed = await User.findById(subUser._id).select(
+        "+resetPasswordToken",
+      );
+      assert.ok(refreshed.resetPasswordToken);
+    });
+
+    it("should prevent enumeration for forgot-username and forgot-password with nonexistent accounts", async () => {
+      const resUsername = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-username",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: "notexists@example.com",
+            portal: "SUB_ADMIN",
+          }),
+        },
+      );
+      const dataUsername = await resUsername.json();
+      assert.equal(resUsername.status, 200);
+      assert.equal(dataUsername.success, true);
+
+      const resPassword = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            identifier: "nonexistent_username",
+            portal: "SUB_ADMIN",
+          }),
+        },
+      );
+      const dataPassword = await resPassword.json();
+      assert.equal(resPassword.status, 200);
+      assert.equal(dataPassword.success, true);
+    });
+
+    it("should scope forgot-password to KITCHEN portal when kitchen and superadmin share an email", async () => {
+      const email = "shared_kitchen@example.com";
+      const superUser = await createTestUser({
+        username: "super_kitchen_shared",
+        email,
+        role: "SUPER_ADMIN",
+      });
+      const kitchenUser = await createTestUser({
+        username: "kitchen_staff_shared",
+        email,
+        role: "KITCHEN",
+      });
+
+      const response = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, portal: "KITCHEN" }),
+        },
+      );
+
+      const data = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(data.success, true);
+
+      const refreshedKitchen = await User.findById(kitchenUser._id).select(
+        "+resetPasswordToken",
+      );
+      const refreshedSuper = await User.findById(superUser._id).select(
+        "+resetPasswordToken",
+      );
+
+      assert.ok(refreshedKitchen.resetPasswordToken);
+      assert.ok(!refreshedSuper.resetPasswordToken);
+    });
+
+    it("should scope forgot-username and forgot-password to GUEST portal", async () => {
+      const email = "guest_recovery@example.com";
+      const guestUser = await createTestUser({
+        username: "guest_user_1",
+        email,
+        role: "GUEST",
+      });
+
+      const resUser = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-username",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, portal: "GUEST" }),
+        },
+      );
+      const dataUser = await resUser.json();
+      assert.equal(resUser.status, 200);
+      assert.equal(dataUser.success, true);
+
+      const resPass = await fetch(
+        "http://localhost:5001/api/v1/auth/forgot-password",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, portal: "GUEST" }),
+        },
+      );
+      const dataPass = await resPass.json();
+      assert.equal(resPass.status, 200);
+      assert.equal(dataPass.success, true);
+
+      const refreshedGuest = await User.findById(guestUser._id).select(
+        "+resetPasswordToken",
+      );
+      assert.ok(refreshedGuest.resetPasswordToken);
     });
   });
 

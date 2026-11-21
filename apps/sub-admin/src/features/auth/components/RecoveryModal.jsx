@@ -4,7 +4,7 @@ import { Input } from "@hotelos/ui/components";
 import { forgotPassword, forgotUsername } from "@hotelos/api";
 
 export default function RecoveryModal({ recoveryMode, onClose }) {
-  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryInput, setRecoveryInput] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState("");
 
@@ -17,8 +17,8 @@ export default function RecoveryModal({ recoveryMode, onClose }) {
     try {
       const message =
         recoveryMode === "username"
-          ? await forgotUsername(recoveryEmail)
-          : await forgotPassword(recoveryEmail);
+          ? await forgotUsername(recoveryInput, "SUB_ADMIN")
+          : await forgotPassword(recoveryInput, "SUB_ADMIN");
 
       setRecoveryMessage(message);
     } catch (err) {
@@ -47,7 +47,7 @@ export default function RecoveryModal({ recoveryMode, onClose }) {
             <p className="text-brand-900/60 mt-1 text-sm">
               {recoveryMode === "username"
                 ? "Enter your registered email and we'll send your username."
-                : "Enter your registered email and we'll send you a password reset link."}
+                : "Enter your registered email or username and we'll send password reset instructions."}
             </p>
           </div>
 
@@ -62,15 +62,23 @@ export default function RecoveryModal({ recoveryMode, onClose }) {
 
         <form onSubmit={handleRecovery} className="space-y-5">
           <Input
-            id="recoveryEmail"
-            name="recoveryEmail"
-            label="Registered Email"
-            type="email"
+            id="recoveryInput"
+            name="recoveryInput"
+            label={
+              recoveryMode === "username"
+                ? "Registered Email"
+                : "Registered Email or Username"
+            }
+            type={recoveryMode === "username" ? "email" : "text"}
             required
             autoFocus
-            value={recoveryEmail}
-            onChange={(e) => setRecoveryEmail(e.target.value)}
-            placeholder="you@hotel.com"
+            value={recoveryInput}
+            onChange={(e) => setRecoveryInput(e.target.value)}
+            placeholder={
+              recoveryMode === "username"
+                ? "you@hotel.com"
+                : "you@hotel.com or username"
+            }
           />
 
           {/* Recovery message */}
@@ -98,7 +106,7 @@ export default function RecoveryModal({ recoveryMode, onClose }) {
                 ? "Sending..."
                 : recoveryMode === "username"
                   ? "Send Username"
-                  : "Send Reset Link"}
+                  : "Send Instructions"}
             </button>
           </div>
         </form>

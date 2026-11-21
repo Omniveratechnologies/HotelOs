@@ -214,32 +214,79 @@ export const regenerateBackupCodes = async ({
 
 /**
  * Requests username recovery email.
- * @param {string} email
+ * @param {string|object} input - Email address or object { email, portal }
+ * @param {string} [portal] - Dashboard portal (e.g. "SUB_ADMIN", "SUPER_ADMIN", "RECEPTIONIST")
  * @returns {Promise<string>}
  */
-export const forgotUsername = async (email) => {
-  if (!email?.trim()) {
+export const forgotUsername = async (input, portal) => {
+  const payload =
+    typeof input === "object" && input !== null
+      ? { email: input.email?.trim(), portal: input.portal || portal }
+      : { email: input?.trim(), portal };
+
+  if (!payload.email) {
     throw new Error("Please enter your email address.");
   }
-  const result = await api.post("/api/v1/auth/forgot-username", {
-    email: email.trim(),
-  });
+  const result = await api.post("/api/v1/auth/forgot-username", payload);
   return result.message || "Please check your email.";
 };
 
 /**
  * Requests password reset email.
- * @param {string} email
+ * @param {string|object} input - Identifier/email or object { identifier, email, portal }
+ * @param {string} [portal] - Dashboard portal (e.g. "SUB_ADMIN", "SUPER_ADMIN", "RECEPTIONIST")
  * @returns {Promise<string>}
  */
-export const forgotPassword = async (email) => {
-  if (!email?.trim()) {
-    throw new Error("Please enter your email address.");
+export const forgotPassword = async (input, portal) => {
+  const payload =
+    typeof input === "object" && input !== null
+      ? {
+          identifier: (input.identifier || input.email)?.trim(),
+          portal: input.portal || portal,
+        }
+      : {
+          identifier: input?.trim(),
+          portal,
+        };
+
+  if (!payload.identifier) {
+    throw new Error("Please enter your email or username.");
   }
-  const result = await api.post("/api/v1/auth/forgot-password", {
-    email: email.trim(),
-  });
+  const result = await api.post("/api/v1/auth/forgot-password", payload);
   return result.message || "Please check your email.";
+};
+
+/**
+ * Retrieves accounts associated with an account selection token.
+ * @param {string} token - 15-minute selection token from email
+ * @returns {Promise<{ accounts: Array<{ username: string, name: string, hotelName: string }>, portal: string }>}
+ */
+export const getResetPasswordAccounts = async (token) => {
+  if (!token?.trim()) {
+    throw new Error("Selection token is required.");
+  }
+  const result = await api.get(
+    `/api/v1/auth/reset-password/accounts?token=${encodeURIComponent(token.trim())}`,
+  );
+  return result.data;
+};
+
+/**
+ * Selects an account to issue a password reset token.
+ * @param {object} params
+ * @param {string} params.token - Selection token
+ * @param {string} params.username - Selected account username
+ * @returns {Promise<{ resetToken: string }>}
+ */
+export const selectResetPasswordAccount = async ({ token, username }) => {
+  if (!token?.trim() || !username?.trim()) {
+    throw new Error("Token and username are required.");
+  }
+  const result = await api.post("/api/v1/auth/reset-password/select-account", {
+    token: token.trim(),
+    username: username.trim(),
+  });
+  return result.data;
 };
 
 /**

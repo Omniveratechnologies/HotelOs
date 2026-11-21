@@ -91,8 +91,30 @@ export const sendInvitationEmail = async ({
 // FORGOT USERNAME EMAIL
 // =====================================================
 
-export const sendUsernameReminderEmail = async ({ email, name, username }) => {
-  const subject = "HotelOS - Your Username";
+export const sendUsernameReminderEmail = async ({
+  email,
+  name,
+  username,
+  usernames,
+  portalName,
+}) => {
+  const portalText = portalName || "HotelOS";
+  const subject = `HotelOS - Your ${portalText} Username(s)`;
+
+  const usernameList =
+    Array.isArray(usernames) && usernames.length > 0
+      ? usernames
+      : [username || "your account"];
+
+  const usernameContent =
+    usernameList.length === 1
+      ? `<p>Your username is: <strong>${usernameList[0]}</strong></p>`
+      : `
+        <p>The username(s) associated with this email for this portal are:</p>
+        <ul style="padding-left: 20px; line-height: 1.8;">
+          ${usernameList.map((u) => `<li><strong>${u}</strong></li>`).join("")}
+        </ul>
+      `;
 
   const html = `
     <div
@@ -102,19 +124,16 @@ export const sendUsernameReminderEmail = async ({ email, name, username }) => {
         margin: 0 auto;
       "
     >
-      <h2>Your HotelOS Username</h2>
+      <h2>Your ${portalText} Username</h2>
 
-      <p>Hello ${name},</p>
+      <p>Hello ${name || "there"},</p>
 
       <p>
         You recently requested your username for
-        your HotelOS account.
+        your <strong>${portalText}</strong> account.
       </p>
 
-      <p>
-        Your username is:
-        <strong>${username}</strong>
-      </p>
+      ${usernameContent}
 
       <p>
         If you did not request this,
@@ -281,8 +300,19 @@ export const sendCheckInEmail = async ({
 // PASSWORD RESET EMAIL
 // =====================================================
 
-export const sendPasswordResetEmail = async ({ email, name, resetUrl }) => {
-  const subject = "HotelOS - Reset Your Password";
+export const sendPasswordResetEmail = async ({
+  email,
+  name,
+  username,
+  resetUrl,
+  portalName,
+}) => {
+  const portalText = portalName || "HotelOS";
+  const subject = `HotelOS - Reset Your Password (${portalText})`;
+
+  const accountInfo = username
+    ? `<p>We received a request to reset the password for account: <strong>${username}</strong> on <strong>${portalText}</strong>.</p>`
+    : `<p>We received a request to reset the password for your <strong>${portalText}</strong> account.</p>`;
 
   const html = `
     <div
@@ -294,12 +324,9 @@ export const sendPasswordResetEmail = async ({ email, name, resetUrl }) => {
     >
       <h2>Reset Your Password</h2>
 
-      <p>Hello ${name},</p>
+      <p>Hello ${name || "there"},</p>
 
-      <p>
-        We received a request to reset the password
-        for your HotelOS account.
-      </p>
+      ${accountInfo}
 
       <p>
         Click the button below to choose a new password.
@@ -329,6 +356,79 @@ export const sendPasswordResetEmail = async ({ email, name, resetUrl }) => {
         If you did not request a password reset,
         please ignore this email and your password
         will remain unchanged.
+      </p>
+
+      <br />
+
+      <p>HotelOS Team</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject,
+    html,
+  });
+};
+
+// =====================================================
+// ACCOUNT SELECTION EMAIL (MULTI-ACCOUNT RECOVERY)
+// =====================================================
+
+export const sendAccountSelectionEmail = async ({
+  email,
+  name,
+  selectUrl,
+  portalName,
+}) => {
+  const portalText = portalName || "HotelOS";
+  const subject = `HotelOS - Select Account to Reset Password (${portalText})`;
+
+  const html = `
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+      "
+    >
+      <h2>Select Your Account</h2>
+
+      <p>Hello ${name || "there"},</p>
+
+      <p>
+        We received a request to reset your password on <strong>${portalText}</strong>.
+      </p>
+
+      <p>
+        Your email address is associated with multiple accounts on this portal.
+        Please click the button below to choose which account you would like to reset:
+      </p>
+
+      <p>
+        <a
+          href="${selectUrl}"
+          style="
+            display: inline-block;
+            padding: 12px 20px;
+            background: #111827;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+          "
+        >
+          Select Account to Reset
+        </a>
+      </p>
+
+      <p>
+        This account selection link will expire in 15 minutes.
+      </p>
+
+      <p>
+        No active password reset links have been generated yet. If you did not request this,
+        you can safely ignore this email.
       </p>
 
       <br />

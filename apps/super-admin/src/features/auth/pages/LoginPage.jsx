@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Input, TwoFactorChallenge } from "@hotelos/ui/components";
 import { authApi } from "@hotelos/api";
+import RecoveryModal from "../components/RecoveryModal.jsx";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [recoveryMode, setRecoveryMode] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -121,8 +123,40 @@ export default function LoginPage() {
           >
             {loading ? "Logging in..." : "Login"}
           </button>
+
+          {/* Recovery links */}
+          <div className="flex items-center justify-between pt-1 text-sm">
+            <button
+              type="button"
+              onClick={() => {
+                setRecoveryMode("username");
+                setError("");
+              }}
+              className="text-brand-700/70 hover:text-brand-900 transition-colors"
+            >
+              Forgot username?
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setRecoveryMode("password");
+                setError("");
+              }}
+              className="text-brand-700/70 hover:text-brand-900 transition-colors"
+            >
+              Forgot password?
+            </button>
+          </div>
         </form>
       </div>
+
+      {recoveryMode && (
+        <RecoveryModal
+          mode={recoveryMode}
+          onClose={() => setRecoveryMode(null)}
+        />
+      )}
     </div>
   );
 }

@@ -7,6 +7,8 @@ import {
   forgotPassword,
   resetPassword,
   changePassword,
+  getResetPasswordAccounts,
+  selectResetPasswordAccount,
 } from "../controllers/auth.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { validate } from "#/shared/middleware/validate.middleware.js";
@@ -16,6 +18,8 @@ import {
   forgotPasswordBodySchema,
   resetPasswordBodySchema,
   changePasswordBodySchema,
+  getResetAccountsQuerySchema,
+  selectResetAccountBodySchema,
 } from "../schemas.js";
 
 const router = express.Router();
@@ -71,6 +75,20 @@ router.post(
   authLimiter,
   validate({ body: resetPasswordBodySchema }),
   resetPassword,
+);
+
+router.get(
+  "/reset-password/accounts",
+  authLimiter,
+  validate({ query: getResetAccountsQuerySchema }),
+  getResetPasswordAccounts,
+);
+
+router.post(
+  "/reset-password/select-account",
+  authLimiter,
+  validate({ body: selectResetAccountBodySchema }),
+  selectResetPasswordAccount,
 );
 
 // Change password (authenticated)

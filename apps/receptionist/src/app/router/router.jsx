@@ -25,6 +25,12 @@ export const router = createBrowserRouter([
         lazy: lazyPage(() => import("../../features/auth/pages/LoginPage.jsx")),
       },
       {
+        path: "reset-password",
+        lazy: lazyPage(
+          () => import("../../features/auth/pages/ResetPasswordPage.jsx"),
+        ),
+      },
+      {
         path: "accept-invitation",
         lazy: lazyPage(
           () => import("../../features/auth/pages/AcceptInvitationPage.jsx"),

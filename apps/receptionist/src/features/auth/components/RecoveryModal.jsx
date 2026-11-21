@@ -3,7 +3,7 @@ import { Input } from "@hotelos/ui/components";
 import { forgotUsername, forgotPassword } from "@hotelos/api";
 
 export default function RecoveryModal({ mode, onClose }) {
-  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryInput, setRecoveryInput] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState("");
   const [recoveryError, setRecoveryError] = useState("");
@@ -14,8 +14,12 @@ export default function RecoveryModal({ mode, onClose }) {
     setRecoveryMessage("");
     setRecoveryError("");
 
-    if (!recoveryEmail.trim()) {
-      setRecoveryError("Please enter your email address.");
+    if (!recoveryInput.trim()) {
+      setRecoveryError(
+        mode === "username"
+          ? "Please enter your email address."
+          : "Please enter your email or username.",
+      );
       return;
     }
 
@@ -24,8 +28,8 @@ export default function RecoveryModal({ mode, onClose }) {
     try {
       const message =
         mode === "username"
-          ? await forgotUsername(recoveryEmail)
-          : await forgotPassword(recoveryEmail);
+          ? await forgotUsername(recoveryInput, "RECEPTIONIST")
+          : await forgotPassword(recoveryInput, "RECEPTIONIST");
 
       setRecoveryMessage(message);
     } catch (err) {
@@ -50,7 +54,7 @@ export default function RecoveryModal({ mode, onClose }) {
             <p className="text-brand-900/60 mt-1 text-sm">
               {mode === "username"
                 ? "Enter your registered email and we'll send your username."
-                : "Enter your registered email and we'll send you a password reset link."}
+                : "Enter your registered email or username and we'll send password reset instructions."}
             </p>
           </div>
 
@@ -65,15 +69,23 @@ export default function RecoveryModal({ mode, onClose }) {
 
         <form onSubmit={handleRecovery} className="space-y-5">
           <Input
-            id="recoveryEmail"
-            name="recoveryEmail"
-            label="Registered Email"
-            type="email"
+            id="recoveryInput"
+            name="recoveryInput"
+            label={
+              mode === "username"
+                ? "Registered Email"
+                : "Registered Email or Username"
+            }
+            type={mode === "username" ? "email" : "text"}
             required
             autoFocus
-            value={recoveryEmail}
-            onChange={(e) => setRecoveryEmail(e.target.value)}
-            placeholder="you@hotel.com"
+            value={recoveryInput}
+            onChange={(e) => setRecoveryInput(e.target.value)}
+            placeholder={
+              mode === "username"
+                ? "you@hotel.com"
+                : "you@hotel.com or username"
+            }
           />
 
           {/* Recovery error */}
@@ -108,7 +120,7 @@ export default function RecoveryModal({ mode, onClose }) {
                 ? "Sending..."
                 : mode === "username"
                   ? "Send Username"
-                  : "Send Reset Link"}
+                  : "Send Instructions"}
             </button>
           </div>
         </form>

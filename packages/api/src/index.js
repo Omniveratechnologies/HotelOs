@@ -34,6 +34,8 @@ export {
   login,
   forgotUsername,
   forgotPassword,
+  getResetPasswordAccounts,
+  selectResetPasswordAccount,
   resetPassword,
 } from "./endpoints/auth.js";
 export * from "./endpoints/auth.js";
