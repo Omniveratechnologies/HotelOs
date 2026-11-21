@@ -622,6 +622,115 @@ describe("Authentication Integration Tests", () => {
       assert.ok(verifyData.data.token);
     });
 
+    it("should reject subsequent login with the same 2FA token (replay prevention)", async () => {
+      // 1. Setup and enable 2FA
+      const user = await createTestSuperAdmin({ password: "TestPass123!" });
+      const authToken = generateToken(user);
+
+      const setupResponse = await fetch(
+        "http://localhost:5001/api/v1/auth/2fa/setup",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
+      );
+      const setupData = await setupResponse.json();
+      const secret = setupData.data.secret;
+
+      // Enable 2FA
+      const setupTotp = speakeasy.totp({ secret, encoding: "base32" });
+      await fetch("http://localhost:5001/api/v1/auth/2fa/setup/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ token: setupTotp }),
+      });
+
+      // 2. First login attempt with 2FA
+      const login1 = await fetch("http://localhost:5001/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "testuser",
+          password: "TestPass123!",
+        }),
+      });
+      const login1Data = await login1.json();
+      assert.equal(login1Data.requires2FA, true);
+
+      // Generate current TOTP code and complete first login
+      const totpCode = speakeasy.totp({ secret, encoding: "base32" });
+      const verify1 = await fetch(
+        "http://localhost:5001/api/v1/auth/2fa/verify-login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: login1Data.data.userId,
+            token: totpCode,
+          }),
+        },
+      );
+      assert.equal(verify1.status, 200);
+      const verify1Data = await verify1.json();
+      assert.equal(verify1Data.success, true);
+      assert.ok(verify1Data.data.token);
+
+      // 3. Subsequent login with the EXACT SAME code must be REJECTED (RFC 6238 replay prevention)
+      const login2 = await fetch("http://localhost:5001/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "testuser",
+          password: "TestPass123!",
+        }),
+      });
+      const login2Data = await login2.json();
+      assert.equal(login2Data.requires2FA, true);
+
+      const verify2 = await fetch(
+        "http://localhost:5001/api/v1/auth/2fa/verify-login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: login2Data.data.userId,
+            token: totpCode,
+          }),
+        },
+      );
+      assert.equal(verify2.status, 401);
+      const verify2Data = await verify2.json();
+      assert.equal(verify2Data.success, false);
+
+      // 4. Subsequent login with the NEXT rolling time-step code must SUCCEED
+      const nextTotpCode = speakeasy.totp({
+        secret,
+        encoding: "base32",
+        time: Date.now() / 1000 + 30,
+      });
+      const verify3 = await fetch(
+        "http://localhost:5001/api/v1/auth/2fa/verify-login",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: login2Data.data.userId,
+            token: nextTotpCode,
+          }),
+        },
+      );
+      assert.equal(verify3.status, 200);
+      const verify3Data = await verify3.json();
+      assert.equal(verify3Data.success, true);
+      assert.ok(verify3Data.data.token);
+    });
+
     it("should allow backup code for 2FA verification", async () => {
       const user = await createTestSuperAdmin({ password: "TestPass123!" });
       const token = generateToken(user);

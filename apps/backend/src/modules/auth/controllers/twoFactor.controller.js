@@ -476,7 +476,7 @@ export const verifyTwoFactorLogin = async (req, res) => {
     const { userId, token, backupCode } = req.validated.body;
 
     const user = await User.findById(userId).select(
-      "+twoFactorSecret +twoFactorEnabled +twoFactorBackupCodes +password +failedLoginAttempts +lockUntil +mustChangePassword",
+      "+twoFactorSecret +twoFactorEnabled +twoFactorBackupCodes +password +failedLoginAttempts +lockUntil +mustChangePassword +twoFactorLastUsedStep",
     );
 
     if (!user) {
@@ -502,11 +502,11 @@ export const verifyTwoFactorLogin = async (req, res) => {
       });
     }
 
-    // Verify 2FA token or backup code
+    // Verify 2FA token (atomically consumed per RFC 6238) or single-use backup code
     let isValid = false;
 
     if (token) {
-      isValid = verifyToken(token, user.twoFactorSecret);
+      isValid = await user.verifyAndConsumeToken(token);
     } else if (backupCode) {
       isValid = await user.verifyBackupCode(backupCode);
     }

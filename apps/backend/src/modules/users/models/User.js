@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { compare, hash } from "bcryptjs";
+import speakeasy from "speakeasy";
 
 import { ROLES } from "#/shared/constants/roles.js";
 import { GUEST_ID_TYPES } from "#/shared/constants/guest.js";
@@ -172,6 +173,13 @@ const userSchema = new mongoose.Schema(
         usedAt: { type: Date, default: null },
       },
     ],
+
+    // Last consumed TOTP time-step to prevent replay attacks on subsequent sign-in (RFC 6238)
+    twoFactorLastUsedStep: {
+      type: Number,
+      default: null,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -351,11 +359,12 @@ userSchema.methods.disableTwoFactor = async function () {
   this.twoFactorEnabled = false;
   this.twoFactorSecret = null;
   this.twoFactorBackupCodes = [];
+  this.twoFactorLastUsedStep = null;
   await this.save();
   return this;
 };
 
-// Verify TOTP token
+// Verify TOTP token without consuming
 userSchema.methods.verifyTwoFactorToken = function (token) {
   if (!this.twoFactorEnabled || !this.twoFactorSecret) {
     return false;
@@ -365,6 +374,56 @@ userSchema.methods.verifyTwoFactorToken = function (token) {
     encoding: "base32",
     token: String(token).replace(/\s/g, ""),
   });
+};
+
+// Verify and atomically consume TOTP token (RFC 6238 replay prevention)
+userSchema.methods.verifyAndConsumeToken = async function (token) {
+  if (!this.twoFactorEnabled || !this.twoFactorSecret) {
+    return false;
+  }
+
+  const normalizedToken = String(token).replace(/\s/g, "");
+  if (!/^\d{6}$/.test(normalizedToken)) {
+    return false;
+  }
+
+  const delta = speakeasy.totp.verifyDelta({
+    secret: this.twoFactorSecret,
+    encoding: "base32",
+    token: normalizedToken,
+    window: 1,
+  });
+
+  if (!delta) {
+    return false;
+  }
+
+  const currentStep = Math.floor(Date.now() / 1000 / 30);
+  const verifiedStep = currentStep + delta.delta;
+
+  // Atomic check-and-set: ensure this step has not already been used for sign-in
+  const updatedUser = await this.constructor.findOneAndUpdate(
+    {
+      _id: this._id,
+      $or: [
+        { twoFactorLastUsedStep: null },
+        { twoFactorLastUsedStep: { $exists: false } },
+        { twoFactorLastUsedStep: { $lt: verifiedStep } },
+      ],
+    },
+    {
+      $set: { twoFactorLastUsedStep: verifiedStep },
+    },
+    { new: true },
+  );
+
+  if (!updatedUser) {
+    // Already consumed in this time-step or a subsequent time-step
+    return false;
+  }
+
+  this.twoFactorLastUsedStep = verifiedStep;
+  return true;
 };
 
 // Verify and consume backup code

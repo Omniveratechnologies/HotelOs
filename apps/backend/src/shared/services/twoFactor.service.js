@@ -107,6 +107,51 @@ export function verifyToken(token, secret) {
 }
 
 /**
+ * Verify a TOTP token with time-step replay prevention (RFC 6238)
+ * @param {string} token - 6-digit token from authenticator app
+ * @param {string} secret - User's 2FA secret
+ * @param {number|null} [lastUsedStep=null] - Last consumed time-step counter
+ * @returns {{ valid: boolean, verifiedStep?: number, reason?: string }}
+ */
+export function verifyTokenWithStep(token, secret, lastUsedStep = null) {
+  if (!token || !secret) return { valid: false };
+
+  const normalizedToken = String(token).replace(/\s/g, "");
+  if (!/^\d{6}$/.test(normalizedToken)) {
+    return { valid: false };
+  }
+
+  try {
+    const delta = speakeasy.totp.verifyDelta({
+      secret,
+      encoding: "base32",
+      token: normalizedToken,
+      window: 1, // Allow 1 step before/after for clock drift
+    });
+
+    if (!delta) {
+      return { valid: false };
+    }
+
+    const currentStep = Math.floor(Date.now() / 1000 / 30);
+    const verifiedStep = currentStep + delta.delta;
+
+    if (
+      lastUsedStep !== null &&
+      lastUsedStep !== undefined &&
+      verifiedStep <= lastUsedStep
+    ) {
+      return { valid: false, verifiedStep, reason: "ALREADY_USED" };
+    }
+
+    return { valid: true, verifiedStep };
+  } catch (error) {
+    logger.error({ error: error.message }, "2FA token verification error");
+    return { valid: false };
+  }
+}
+
+/**
  * Generate new backup codes
  * @param {number} count - Number of codes to generate (default: 10)
  * @returns {Array<string>} Array of backup codes
@@ -165,6 +210,7 @@ export function getSetupInstructions() {
 export default {
   generateTwoFactorSecret,
   verifyToken,
+  verifyTokenWithStep,
   generateBackupCodes,
   getUnusedBackupCodesCount,
   isTwoFactorRequired,
