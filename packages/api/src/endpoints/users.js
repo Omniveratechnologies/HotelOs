@@ -1,10 +1,8 @@
-import { api } from "../apiFetch.js";
-
-/**
- * Creates a new user in the system.
- * @param {object} userData
- * @returns {Promise<object>}
- */
-export const createUser = async (userData) => {
-  return api.post("/api/v1/users", userData, { auth: true });
-};
+export {
+  fetchStaff as getUsers,
+  createStaff as createUser,
+  updateStaff as updateUser,
+  deleteStaff as deleteUser,
+  restoreStaff as restoreUser,
+  resetStaffPassword as resetUserPassword,
+} from "./staff.js";

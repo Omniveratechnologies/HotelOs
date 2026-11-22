@@ -87,5 +87,3 @@ export function RoomTypePicker({
     </SectionCard>
   );
 }
-
-export default RoomTypePicker;

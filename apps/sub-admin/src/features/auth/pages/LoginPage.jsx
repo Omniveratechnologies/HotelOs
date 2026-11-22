@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 
 import RecoveryModal from "../components/RecoveryModal.jsx";
-import { Input } from "@hotelos/ui/components";
+import { Input, TwoFactorChallenge } from "@hotelos/ui/components";
 import { login } from "@hotelos/api";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [challenge, setChallenge] = useState(null);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -30,7 +31,16 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login({ username, password, expectedRole: "SUB_ADMIN" });
+      const res = await login({
+        username,
+        password,
+        expectedRole: "SUB_ADMIN",
+      });
+
+      if (res?.requires2FA) {
+        setChallenge(res);
+        return;
+      }
 
       setSuccess("Login successful. Redirecting...");
 
@@ -55,6 +65,23 @@ export default function LoginPage() {
   const closeRecovery = () => {
     setRecoveryMode(null);
   };
+
+  if (challenge) {
+    return (
+      <div className="bg-background-50 relative flex min-h-screen items-center justify-center px-6">
+        <TwoFactorChallenge
+          userId={challenge.userId}
+          username={challenge.username}
+          expectedRole="SUB_ADMIN"
+          onSuccess={() => {
+            const from = location.state?.from?.pathname || "/dashboard";
+            navigate(from, { replace: true });
+          }}
+          onCancel={() => setChallenge(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background-50 relative flex min-h-screen items-center justify-center px-6">

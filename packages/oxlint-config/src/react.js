@@ -21,5 +21,11 @@ export const reactConfig = composeConfig(browserConfig, {
     "react/incompatible-library": "warn",
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { allowConstantExport: true }],
+    "import/no-unassigned-import": [
+      "warn",
+      {
+        allow: ["**/*.css"],
+      },
+    ],
   },
 });

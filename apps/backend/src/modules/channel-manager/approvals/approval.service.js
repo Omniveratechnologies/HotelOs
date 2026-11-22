@@ -5,7 +5,7 @@ import RoomType from "#/modules/room-types/models/RoomType.js";
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import { refreshRoomTypeCount } from "#/modules/room-types/services/roomType.service.js";
 import { aiosellSyncInventory } from "#/shared/services/inventory.service.js";
-import aiosell from "#/shared/services/aiosell.service.js";
+import { fetchPropertyDetails } from "#/shared/services/aiosell.service.js";
 
 // Under-review change requests for Aiosell codes and hotel details.
 // Rooms, rate plans (RatePlan.ratePlanCode), room types (RoomType.roomCode)
@@ -229,7 +229,7 @@ export async function verifyCodeApproval(hotelId, approvalId, verifiedBy) {
     return { ok: false, error: "Hotel is not mapped to a property" };
   }
 
-  const fetched = await aiosell.fetchPropertyDetails(hotel.aiosellHotelCode);
+  const fetched = await fetchPropertyDetails(hotel.aiosellHotelCode);
   if (!fetched.ok) {
     const detail = fetched.error
       ? typeof fetched.error === "string"

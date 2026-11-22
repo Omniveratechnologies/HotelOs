@@ -1,6 +1,8 @@
 import { Fragment } from "react";
 import { cn } from "@hotelos/utils";
 
+const EMPTY_STEPS = [];
+
 /**
  * @typedef {Object} StepperStep
  * @property {string} id - Stable step identifier.
@@ -21,7 +23,7 @@ import { cn } from "@hotelos/utils";
  * @returns {React.ReactElement}
  */
 export function Stepper({
-  steps = [],
+  steps = EMPTY_STEPS,
   currentIndex,
   currentStep,
   onStepClick,

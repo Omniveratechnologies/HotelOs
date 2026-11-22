@@ -57,6 +57,19 @@ export interface CartItem {
   specialInstructions?: string;
 }
 
+export interface UpsellRecommendedItem {
+  foodItemId?: string | { id?: string; _id?: string };
+  name?: string;
+  price?: number;
+}
+
+export interface UpsellSuggestion {
+  id?: string;
+  triggerItemId?: string;
+  type?: string;
+  recommendedItems?: UpsellRecommendedItem[];
+}
+
 export interface CreateOrderInput {
   hotelId: string;
   tableId: string;

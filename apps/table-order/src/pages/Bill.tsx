@@ -1,12 +1,14 @@
 import { ClipboardList, Download, MessageCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import { api } from "../services/api";
-import { formatMoney, PageHeader } from "../components/Layout";
-import { useCart } from "../context/CartContext";
-import { useSession } from "../context/SessionContext";
-import { useOrders } from "../context/OrdersContext";
+import { PageHeader } from "../components/Layout";
+import { formatMoney } from "../utils/format";
+import { orderItemKey } from "../utils/orderItemKey";
+import { useCart } from "../context/useCart";
+import { useSession } from "../context/useSession";
+import { useOrders } from "../context/useOrders";
 
 export default function Bill() {
   const { orderId: routeOrderId } = useParams();
@@ -14,22 +16,20 @@ export default function Bill() {
   const { ensureAuthenticatedSession } = useSession();
   const { orders, loading } = useOrders();
 
-  const [selectedTab, setSelectedTab] = useState<string>(
-    routeOrderId || (orders.length > 1 ? "ALL" : orders[0]?.id || "ALL"),
-  );
+  const [tabSelection, setTabSelection] = useState<{
+    routeOrderId?: string;
+    tab: string;
+  } | null>(null);
   const [rating, setRating] = useState(0);
   const [sent, setSent] = useState(false);
 
-  // If routeOrderId is passed in URL, switch to that order's tab
-  useEffect(() => {
-    if (routeOrderId) {
-      setSelectedTab(routeOrderId);
-    } else if (orders.length > 1) {
-      setSelectedTab("ALL");
-    } else if (orders.length === 1) {
-      setSelectedTab(orders[0].id);
-    }
-  }, [routeOrderId, orders]);
+  const defaultTab =
+    routeOrderId ?? (orders.length > 1 ? "ALL" : orders[0]?.id || "ALL");
+  const effectiveTab =
+    tabSelection && tabSelection.routeOrderId === routeOrderId
+      ? tabSelection.tab
+      : defaultTab;
+  const selectTab = (tab: string) => setTabSelection({ routeOrderId, tab });
 
   // Combined totals across all orders in current session
   const combinedSubtotal = useMemo(
@@ -65,12 +65,12 @@ export default function Bill() {
   );
 
   const activeOrder = useMemo(
-    () => orders.find((o) => o.id === selectedTab),
-    [orders, selectedTab],
+    () => orders.find((o) => o.id === effectiveTab),
+    [orders, effectiveTab],
   );
 
   const isAllView =
-    selectedTab === "ALL" || (!activeOrder && orders.length > 0);
+    effectiveTab === "ALL" || (!activeOrder && orders.length > 0);
 
   const shareText = isAllView
     ? `Table ${tableNumber || "Dining"} Bill\nTotal Orders: ${orders.length}\nGrand Total: ${formatMoney(combinedTotal)}\nThank you for dining with us!`
@@ -195,7 +195,7 @@ export default function Bill() {
         <div className="bill-tabs-bar">
           <button
             className={`bill-tab-btn ${isAllView ? "active" : ""}`}
-            onClick={() => setSelectedTab("ALL")}
+            onClick={() => selectTab("ALL")}
           >
             <span>Table Total</span>
             <small>All {orders.length} orders</small>
@@ -203,8 +203,8 @@ export default function Bill() {
           {orders.map((o, idx) => (
             <button
               key={o.id}
-              className={`bill-tab-btn ${selectedTab === o.id ? "active" : ""}`}
-              onClick={() => setSelectedTab(o.id)}
+              className={`bill-tab-btn ${effectiveTab === o.id ? "active" : ""}`}
+              onClick={() => selectTab(o.id)}
             >
               <span>Round {orders.length - idx}</span>
               <small>#{o.id.slice(-4).toUpperCase()}</small>
@@ -229,11 +229,8 @@ export default function Bill() {
                   <strong>Round {orders.length - ordIdx}</strong>
                   <span>#{ord.id.slice(-6).toUpperCase()}</span>
                 </div>
-                {ord.items.map((item, itemIdx) => (
-                  <div
-                    key={`${item.foodItemId || item.name}-${itemIdx}`}
-                    className="bill-item-subline"
-                  >
+                {ord.items.map((item) => (
+                  <div key={orderItemKey(item)} className="bill-item-subline">
                     <span>
                       {item.name} × {item.quantity}
                     </span>
@@ -276,8 +273,8 @@ export default function Bill() {
           </div>
         ) : activeOrder ? (
           <div className="bill-lines">
-            {activeOrder.items.map((item, itemIdx) => (
-              <div key={`${item.foodItemId || item.name}-${itemIdx}`}>
+            {activeOrder.items.map((item) => (
+              <div key={orderItemKey(item)}>
                 <span>
                   {item.name} × {item.quantity}
                 </span>

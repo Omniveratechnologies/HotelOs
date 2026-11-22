@@ -25,7 +25,7 @@ import { billingApi } from "../api/billingApi.js";
 import { ActionDrawer, Field, Panel, BillingPageSkeleton } from "../components";
 
 export default function NightAuditPage() {
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [drawer, setDrawer] = useState("");
   const [search, setSearch] = useState("");
   const [actionError, setActionError] = useState("");
@@ -522,17 +522,18 @@ function Occupancy({ rows = EMPTY_ROWS, total = 0 }) {
     rows.reduce((s, r) => s + (Number(r.value) || 0), 0) || total || 1;
 
   let currentPercent = 0;
-  const gradientParts = rows.length
-    ? rows
-        .map((r, idx) => {
-          const pct = ((Number(r.value) || 0) / totalVal) * 100;
-          const start = currentPercent;
-          currentPercent += pct;
-          const color = colors[idx % colors.length];
-          return `${color} ${start.toFixed(1)}% ${currentPercent.toFixed(1)}%`;
-        })
-        .join(", ")
-    : "#10b981 0% 100%";
+  const parts = [];
+  if (rows.length) {
+    for (let idx = 0; idx < rows.length; idx++) {
+      const r = rows[idx];
+      const pct = ((Number(r.value) || 0) / totalVal) * 100;
+      const start = currentPercent;
+      currentPercent += pct;
+      const color = colors[idx % colors.length];
+      parts.push(`${color} ${start.toFixed(1)}% ${currentPercent.toFixed(1)}%`);
+    }
+  }
+  const gradientParts = parts.length ? parts.join(", ") : "#10b981 0% 100%";
 
   return (
     <div className="flex items-center gap-6">

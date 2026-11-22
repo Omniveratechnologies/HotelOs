@@ -1,5 +1,5 @@
 import { MapPin, AlertCircle, RefreshCw, X } from "lucide-react";
-import { useSession } from "../context/SessionContext";
+import { useSession } from "../context/useSession";
 
 export function LocationPromptModal() {
   const {

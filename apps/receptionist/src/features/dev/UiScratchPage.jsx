@@ -21,13 +21,13 @@ import {
   SignaturePad,
   Button,
 } from "@hotelos/ui/components";
-import StayDetailsSection from "../reservations/sections/StayDetailsSection.jsx";
-import RoomTypePicker from "../reservations/sections/RoomTypePicker.jsx";
-import RatePlanPicker from "../reservations/sections/RatePlanPicker.jsx";
-import RoomSelection from "../reservations/sections/RoomSelection.jsx";
-import GuestSection from "../reservations/sections/GuestSection.jsx";
-import AdditionalOptionsSection from "../reservations/sections/AdditionalOptionsSection.jsx";
-import BookingSummary from "../reservations/sections/BookingSummary.jsx";
+import { StayDetailsSection } from "../reservations/sections/StayDetailsSection.jsx";
+import { RoomTypePicker } from "../reservations/sections/RoomTypePicker.jsx";
+import { RatePlanPicker } from "../reservations/sections/RatePlanPicker.jsx";
+import { RoomSelection } from "../reservations/sections/RoomSelection.jsx";
+import { GuestSection } from "../reservations/sections/GuestSection.jsx";
+import { AdditionalOptionsSection } from "../reservations/sections/AdditionalOptionsSection.jsx";
+import { BookingSummary } from "../reservations/sections/BookingSummary.jsx";
 import { useAvailability } from "../reservations/hooks/useAvailability.js";
 import { useQuote } from "../reservations/hooks/useQuote.js";
 import { useGuestSearch } from "../reservations/hooks/useGuestSearch.js";

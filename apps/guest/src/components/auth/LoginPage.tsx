@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useAuth } from "@/context/useAuth";
+import { RecoveryModal } from "./RecoveryModal";
 
 export function LoginPage() {
   const { login, error } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState<
+    "username" | "password" | null
+  >(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +49,31 @@ export function LoginPage() {
         >
           {submitting ? "Logging in…" : "Log In"}
         </button>
+
+        <div className="flex items-center justify-between pt-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setRecoveryMode("username")}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Forgot username?
+          </button>
+          <button
+            type="button"
+            onClick={() => setRecoveryMode("password")}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Forgot password?
+          </button>
+        </div>
       </form>
+
+      {recoveryMode && (
+        <RecoveryModal
+          mode={recoveryMode}
+          onClose={() => setRecoveryMode(null)}
+        />
+      )}
     </div>
   );
 }

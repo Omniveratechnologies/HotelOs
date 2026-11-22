@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Header } from "@hotelos/ui/components/Header";
 
 import StatCard from "../../../components/StatCard.jsx";
-import AddMembers from "../../members/components/AddMembers.jsx";
 import { useDashboardStats } from "../hooks/useDashboardStats.js";
 
 const statDefinitions = [
@@ -192,12 +191,6 @@ export default function Dashboard() {
         ===================================================== */}
 
         <main className="px-6 py-8 lg:px-10">
-          {/* ===================================================
-              ADD MEMBERS
-          =================================================== */}
-
-          <AddMembers />
-
           {/* ===================================================
               STATISTICS
           =================================================== */}

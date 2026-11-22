@@ -814,7 +814,7 @@ export const getQuote = async (req, res) => {
       discount,
       taxPercent,
       roomRequirements,
-    } = req.body;
+    } = req.validated.body;
 
     const checkInDate = parseDate(checkIn);
     const checkOutDate = parseDate(checkOut);
@@ -936,8 +936,9 @@ export const getQuote = async (req, res) => {
 
 export const getAvailability = async (req, res) => {
   try {
-    const checkInDate = parseDate(req.query.checkIn);
-    const checkOutDate = parseDate(req.query.checkOut);
+    const { checkIn, checkOut } = req.validated.query;
+    const checkInDate = parseDate(checkIn);
+    const checkOutDate = parseDate(checkOut);
 
     if (!checkInDate || !checkOutDate || checkOutDate <= checkInDate) {
       return badRequest(res, "A valid check-in/check-out range is required");
@@ -968,9 +969,9 @@ export const getAvailability = async (req, res) => {
 
 export const getAvailableRooms = async (req, res) => {
   try {
-    const { roomTypeCode } = req.query;
-    const checkInDate = parseDate(req.query.checkIn);
-    const checkOutDate = parseDate(req.query.checkOut);
+    const { roomTypeCode, checkIn, checkOut } = req.validated.query;
+    const checkInDate = parseDate(checkIn);
+    const checkOutDate = parseDate(checkOut);
 
     if (
       !roomTypeCode ||
@@ -1038,7 +1039,7 @@ export const getBookings = async (req, res) => {
       page = 1,
       limit = 50,
       sort = "-createdAt",
-    } = req.query;
+    } = req.validated.query;
 
     if (status && RESERVATION_STATUSES.includes(status)) {
       filter.status = status;
@@ -1211,6 +1212,7 @@ export const getBookingStats = async (req, res) => {
 
 export const getBookingById = async (req, res) => {
   try {
+    const { id: _id } = req.validated.params;
     const booking = await Booking.findOne({
       _id: req.params.id,
       hotelId: req.user.hotelId,
@@ -1641,7 +1643,7 @@ export const cancelBooking = async (req, res) => {
     const booking = await findBookingOr404(req, res);
     if (!booking) return;
 
-    const { reason } = req.body;
+    const { reason } = req.validated.body;
     if (!reason?.trim()) {
       return badRequest(res, "A cancellation reason is required");
     }
@@ -1799,7 +1801,7 @@ export const changeBookingRoom = async (req, res) => {
       });
     }
 
-    const { roomId } = req.body;
+    const { roomId } = req.validated.body;
     if (!roomId) {
       return badRequest(res, "roomId is required");
     }
@@ -1904,7 +1906,7 @@ export const extendBookingStay = async (req, res) => {
       });
     }
 
-    const newCheckOut = parseDate(req.body.checkOut);
+    const { newCheckOut } = req.validated.body;
     if (!newCheckOut || newCheckOut <= booking.checkOut) {
       return badRequest(
         res,
@@ -2016,8 +2018,9 @@ export const extendBookingStay = async (req, res) => {
 
 export const getBookingHistory = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const booking = await Booking.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     })
       .select("reservationNo auditTrail")
@@ -2052,8 +2055,9 @@ export const getBookingHistory = async (req, res) => {
 
 export const deleteBooking = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const booking = await Booking.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 

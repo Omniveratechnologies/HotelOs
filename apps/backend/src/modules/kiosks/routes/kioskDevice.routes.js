@@ -1,4 +1,5 @@
 import express from "express";
+import { rateLimit } from "express-rate-limit";
 import {
   getKioskDevices,
   createKioskDevice,
@@ -17,10 +18,22 @@ import { authorize } from "#/shared/middleware/role.middleware.js";
 
 const router = express.Router();
 
+// Rate limiter for kiosk pairing (5 attempts per 15 minutes per IP)
+const kioskPairLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: {
+    success: false,
+    message: "Too many pairing attempts. Please wait before trying again.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // =====================================================
 // DEVICE ENDPOINTS (Terminal Setup & Heartbeat)
 // =====================================================
-router.post("/pair", pairKiosk);
+router.post("/pair", kioskPairLimiter, pairKiosk);
 router.post("/heartbeat", authenticate, kioskHeartbeat);
 router.get("/status", authenticate, getKioskStatus);
 router.post("/handoff-code", authenticate, createKioskHandoffCode);

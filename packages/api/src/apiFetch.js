@@ -10,11 +10,145 @@ export class ApiError extends Error {
   /**
    * @param {string} message - Error description
    * @param {number} status - HTTP status code
+   * @param {object} [validationErrors] - Field-level validation errors { body, query, params }
+   * @param {string} [errorCode] - Standardized error code from backend
+   * @param {object} [errorDetails] - Additional error details
    */
-  constructor(message, status) {
+  constructor(
+    message,
+    status,
+    validationErrors = null,
+    errorCode = null,
+    errorDetails = null,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.validationErrors = validationErrors;
+    this.errorCode = errorCode;
+    this.errorDetails = errorDetails;
+  }
+
+  /**
+   * Check if this is a validation error (400 with field errors)
+   */
+  get isValidationError() {
+    return this.status === 400 && this.validationErrors !== null;
+  }
+
+  /**
+   * Check if this is an authentication error
+   */
+  get isAuthError() {
+    return this.status === 401 || this.status === 403 || this.status === 423;
+  }
+
+  /**
+   * Check if this is a rate limit error
+   */
+  get isRateLimitError() {
+    return this.status === 429;
+  }
+
+  /**
+   * Check if this is a server error
+   */
+  get isServerError() {
+    return this.status >= 500;
+  }
+
+  /**
+   * Check if this is a network error
+   */
+  get isNetworkError() {
+    return this.status === 0;
+  }
+
+  /**
+   * Get field errors for a specific source (body, query, params)
+   * @param {'body'|'query'|'params'} source
+   * @returns {object|null}
+   */
+  getFieldErrors(source) {
+    return this.validationErrors?.[source] ?? null;
+  }
+
+  /**
+   * Get all field errors flattened
+   * @returns {Record<string, string[]>}
+   */
+  getAllFieldErrors() {
+    if (!this.validationErrors) return {};
+    const all = {};
+    for (const [source, fields] of Object.entries(this.validationErrors)) {
+      for (const [field, messages] of Object.entries(fields)) {
+        const key = `${source}.${field}`;
+        all[key] = Array.isArray(messages) ? messages : [messages];
+      }
+    }
+    return all;
+  }
+
+  /**
+   * Get first error message for display
+   * @returns {string}
+   */
+  getFirstErrorMessage() {
+    const all = this.getAllFieldErrors();
+    const firstKey = Object.keys(all)[0];
+    return firstKey ? all[firstKey][0] : this.message;
+  }
+
+  /**
+   * Get user-friendly error message based on error code
+   * @returns {string}
+   */
+  getUserFriendlyMessage() {
+    if (!this.errorCode) return this.message;
+
+    const friendlyMessages = {
+      // Auth errors
+      "AUTH.INVALID_CREDENTIALS": "Invalid username or password",
+      "AUTH.TOKEN_EXPIRED": "Your session has expired. Please login again.",
+      "AUTH.TOKEN_INVALID": "Invalid session. Please login again.",
+      "AUTH.ACCOUNT_LOCKED":
+        "Account temporarily locked. Please try again later.",
+      "AUTH.ACCOUNT_DISABLED": "This account has been disabled.",
+      "AUTH.MFA_REQUIRED": "Two-factor authentication is required",
+      "AUTH.MFA_INVALID": "Invalid authentication code",
+
+      // Validation errors
+      "VALIDATION.FAILED": "Please check your input and try again",
+      "VALIDATION.REQUIRED_FIELD": "Required field is missing",
+      "VALIDATION.INVALID_EMAIL": "Please enter a valid email address",
+      "VALIDATION.INVALID_PASSWORD": "Password does not meet requirements",
+      "VALIDATION.PASSWORD_WEAK": "Password is too weak",
+      "VALIDATION.PASSWORD_REUSED":
+        "Password was recently used. Please choose a different one.",
+
+      // Resource errors
+      "RESOURCE.NOT_FOUND": "The requested resource was not found",
+      "RESOURCE.ALREADY_EXISTS": "This resource already exists",
+      "RESOURCE.CONFLICT": "Conflict with existing resource",
+
+      // Business errors
+      "BUSINESS.BOOKING_CONFLICT": "Booking conflict with existing reservation",
+      "BUSINESS.ROOM_UNAVAILABLE":
+        "Room is not available for the selected dates",
+
+      // External errors
+      "EXTERNAL.PAYMENT_FAILED": "Payment processing failed. Please try again.",
+      "EXTERNAL.SERVICE_UNAVAILABLE": "Service temporarily unavailable",
+
+      // Rate limit
+      "RATE_LIMIT.EXCEEDED": "Too many requests. Please slow down.",
+
+      // File errors
+      "FILE.TOO_LARGE": "File size exceeds the maximum allowed",
+      "FILE.INVALID_TYPE": "File type not supported",
+    };
+
+    return friendlyMessages[this.errorCode] || this.message;
   }
 }
 
@@ -76,6 +210,16 @@ export async function apiFetch(
     ...headers,
   };
 
+  // Add correlation ID if available (only in browser environment)
+  const isBrowser =
+    typeof window !== "undefined" && typeof localStorage !== "undefined";
+  const correlationId = isBrowser
+    ? localStorage.getItem("hotelos_correlation_id")
+    : null;
+  if (correlationId) {
+    requestHeaders["x-correlation-id"] = correlationId;
+  }
+
   const isJsonBody =
     body !== undefined && body !== null && !(body instanceof FormData);
 
@@ -84,7 +228,7 @@ export async function apiFetch(
   }
 
   if (auth) {
-    const token = localStorage.getItem("auth_token");
+    const token = isBrowser ? localStorage.getItem("auth_token") : null;
 
     if (token) {
       requestHeaders.Authorization = `Bearer ${token}`;
@@ -146,9 +290,11 @@ export async function apiFetch(
   }
 
   if (response.status === 401) {
-    const hadToken = !!localStorage.getItem("auth_token");
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_user");
+    const hadToken = isBrowser ? !!localStorage.getItem("auth_token") : false;
+    if (isBrowser) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+    }
 
     if (hadToken && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("hotelos:unauthorized"));
@@ -161,9 +307,24 @@ export async function apiFetch(
   }
 
   if (!response.ok) {
+    // Extract validation errors from new standardized format
+    const validationErrors = data?.errors ?? null;
+
+    // Extract standardized error code and details
+    const errorCode = data?.error?.code ?? null;
+    const errorDetails = data?.error?.details ?? null;
+
+    const message =
+      data?.message ||
+      data?.error?.message ||
+      `Request failed (${response.status})`;
+
     throw new ApiError(
-      data?.message || data?.error || `Request failed (${response.status})`,
+      message,
       response.status,
+      validationErrors,
+      errorCode,
+      errorDetails,
     );
   }
 

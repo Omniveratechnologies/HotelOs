@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient, queryKeys } from "@hotelos/query";
 import { reportsApi } from "@hotelos/api";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const DEFAULT_PERIOD = "today";
 
@@ -14,6 +14,13 @@ const DEFAULT_PERIOD = "today";
  */
 export function useReports(options = {}) {
   const { period = DEFAULT_PERIOD, startDate, endDate } = options;
+  const [reportDate] = useState(() =>
+    new Date().toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }),
+  );
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -90,13 +97,9 @@ export function useReports(options = {}) {
       periodStart: query.data?.period?.start,
       periodEnd: query.data?.period?.end,
       hotelName: query.data?.hotelName,
-      reportDate: new Date().toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
+      reportDate,
     };
-  }, [query.data, period]);
+  }, [query.data, period, reportDate]);
 
   const refetchAll = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.reports.all });

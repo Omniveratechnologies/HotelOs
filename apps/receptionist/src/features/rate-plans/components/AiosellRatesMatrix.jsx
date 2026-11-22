@@ -1,14 +1,17 @@
 import { useState } from "react";
+import { toLocalDateString } from "@hotelos/utils";
 import { useLiveRates, useUpdateLiveRates } from "../hooks/useRatePlans.js";
 
 function addDays(isoStr, n) {
-  const d = new Date(`${isoStr}T00:00:00Z`);
+  const norm = toLocalDateString(isoStr);
+  const d = new Date(`${norm}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
 
 function formatDateHeader(isoStr) {
-  const d = new Date(`${isoStr}T00:00:00Z`);
+  const norm = toLocalDateString(isoStr);
+  const d = new Date(`${norm}T00:00:00Z`);
   const day = d.getUTCDate();
   const month = d.toLocaleDateString("en-US", {
     month: "short",
@@ -24,7 +27,7 @@ function formatDateHeader(isoStr) {
 
 export default function AiosellRatesMatrix() {
   const [startDate, setStartDate] = useState(() =>
-    new Date().toISOString().slice(0, 10),
+    toLocalDateString(new Date()),
   );
   const endDate = addDays(startDate, 9);
 
@@ -47,8 +50,12 @@ export default function AiosellRatesMatrix() {
 
   // Bulk rate modal
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
-  const [bulkStart, setBulkStart] = useState(startDate);
-  const [bulkEnd, setBulkEnd] = useState(() => addDays(startDate, 9));
+  const [bulkStart, setBulkStart] = useState(() =>
+    toLocalDateString(new Date()),
+  );
+  const [bulkEnd, setBulkEnd] = useState(() =>
+    addDays(toLocalDateString(new Date()), 9),
+  );
   const [bulkRoomCode, setBulkRoomCode] = useState("all");
   const [bulkPlanCode, setBulkPlanCode] = useState("all");
   const [bulkRateVal, setBulkRateVal] = useState("");
@@ -69,7 +76,7 @@ export default function AiosellRatesMatrix() {
   };
 
   const handleToday = () => {
-    setStartDate(new Date().toISOString().slice(0, 10));
+    setStartDate(toLocalDateString(new Date()));
   };
 
   const handleCellClick = (date, row) => {
@@ -303,10 +310,10 @@ export default function AiosellRatesMatrix() {
 
           <input
             type="date"
-            value={startDate}
+            value={toLocalDateString(startDate)}
             onChange={(e) => {
               if (e.target.value) {
-                setStartDate(e.target.value);
+                setStartDate(toLocalDateString(e.target.value));
               }
             }}
             className="focus:border-brand-500 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none"
@@ -612,8 +619,10 @@ export default function AiosellRatesMatrix() {
                   <input
                     type="date"
                     required
-                    value={bulkStart}
-                    onChange={(e) => setBulkStart(e.target.value)}
+                    value={toLocalDateString(bulkStart)}
+                    onChange={(e) =>
+                      setBulkStart(toLocalDateString(e.target.value))
+                    }
                     className="focus:border-brand-500 mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-xs text-gray-900 outline-none"
                   />
                 </div>
@@ -624,8 +633,10 @@ export default function AiosellRatesMatrix() {
                   <input
                     type="date"
                     required
-                    value={bulkEnd}
-                    onChange={(e) => setBulkEnd(e.target.value)}
+                    value={toLocalDateString(bulkEnd)}
+                    onChange={(e) =>
+                      setBulkEnd(toLocalDateString(e.target.value))
+                    }
                     className="focus:border-brand-500 mt-1 w-full rounded-xl border border-gray-300 px-3 py-2 text-xs text-gray-900 outline-none"
                   />
                 </div>

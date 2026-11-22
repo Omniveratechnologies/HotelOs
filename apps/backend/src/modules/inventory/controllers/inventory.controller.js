@@ -9,7 +9,7 @@ import * as recipeServices from "../services/recipeServices.js";
 
 export const receiveStock = async (req, res) => {
   try {
-    const result = await inventoryServices.receiveStock(req.body);
+    const result = await inventoryServices.receiveStock(req.validated.body);
 
     res.status(201).json({
       success: true,
@@ -46,15 +46,13 @@ export const getInventoryItems = async (req, res) => {
           status = "LOW STOCK";
         }
 
-        return {
-          ...item.toObject(),
-
+        return Object.assign({}, item.toObject(), {
           supplierName: latestPurchaseOrder?.supplier?.supplierName || "-",
 
           expiryDate: item.expiryDate || null,
 
           status,
-        };
+        });
       }),
     );
 
@@ -74,7 +72,7 @@ export const getInventoryItems = async (req, res) => {
 
 export const useStock = async (req, res) => {
   try {
-    const result = await inventoryServices.useStock(req.body);
+    const result = await inventoryServices.useStock(req.validated.body);
 
     res.status(201).json({
       success: true,
@@ -91,7 +89,9 @@ export const useStock = async (req, res) => {
 
 export const getUsageHistory = async (req, res) => {
   try {
-    const usageHistory = await inventoryServices.getUsageHistory();
+    const usageHistory = await inventoryServices.getUsageHistory(
+      req.validated.query,
+    );
 
     res.status(200).json({
       success: true,
@@ -107,7 +107,9 @@ export const getUsageHistory = async (req, res) => {
 
 export const getPurchaseHistory = async (req, res) => {
   try {
-    const purchaseHistory = await inventoryServices.getPurchaseHistory();
+    const purchaseHistory = await inventoryServices.getPurchaseHistory(
+      req.validated.query,
+    );
 
     res.status(200).json({
       success: true,
@@ -143,7 +145,11 @@ export const getLowStockItems = async (req, res) => {
 
 export const getSuppliers = async (req, res) => {
   try {
-    const { search = "", status = "ALL", category = "ALL" } = req.query;
+    const {
+      search = "",
+      status = "ALL",
+      category = "ALL",
+    } = req.validated.query;
 
     const suppliers = await supplierServices.getSuppliers({
       search,
@@ -167,7 +173,8 @@ export const getSuppliers = async (req, res) => {
 
 export const getSupplierById = async (req, res) => {
   try {
-    const supplier = await supplierServices.getSupplierById(req.params.id);
+    const { id } = req.validated.params;
+    const supplier = await supplierServices.getSupplierById(id);
 
     res.status(200).json({
       success: true,
@@ -187,7 +194,7 @@ export const getSupplierById = async (req, res) => {
 
 export const createSupplier = async (req, res) => {
   try {
-    const supplier = await supplierServices.createSupplier(req.body);
+    const supplier = await supplierServices.createSupplier(req.validated.body);
 
     res.status(201).json({
       success: true,
@@ -206,9 +213,10 @@ export const createSupplier = async (req, res) => {
 
 export const updateSupplier = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const supplier = await supplierServices.updateSupplier(
-      req.params.id,
-      req.body,
+      id,
+      req.validated.body,
     );
 
     res.status(200).json({
@@ -230,10 +238,10 @@ export const updateSupplier = async (req, res) => {
 
 export const updateSupplierStatus = async (req, res) => {
   try {
-    const supplier = await supplierServices.updateSupplierStatus(
-      req.params.id,
-      req.body.status,
-    );
+    const { id } = req.validated.params;
+    const { status } = req.validated.body;
+
+    const supplier = await supplierServices.updateSupplierStatus(id, status);
 
     res.status(200).json({
       success: true,
@@ -254,7 +262,8 @@ export const updateSupplierStatus = async (req, res) => {
 
 export const deleteSupplier = async (req, res) => {
   try {
-    const result = await supplierServices.deleteSupplier(req.params.id);
+    const { id } = req.validated.params;
+    const result = await supplierServices.deleteSupplier(id);
 
     res.status(200).json({
       success: true,
@@ -292,7 +301,9 @@ export const getSupplierSummary = async (req, res) => {
 
 export const createPurchaseOrder = async (req, res) => {
   try {
-    const purchaseOrder = await purchaseServices.createPurchaseOrder(req.body);
+    const purchaseOrder = await purchaseServices.createPurchaseOrder(
+      req.validated.body,
+    );
 
     return res.status(201).json({
       success: true,
@@ -311,11 +322,9 @@ export const createPurchaseOrder = async (req, res) => {
 
 export const getPurchaseOrders = async (req, res) => {
   try {
-    const purchaseOrders = await purchaseServices.getPurchaseOrders({
-      search: req.query.search,
-      supplier: req.query.supplier,
-      status: req.query.status,
-    });
+    const purchaseOrders = await purchaseServices.getPurchaseOrders(
+      req.validated.query,
+    );
 
     return res.status(200).json({
       success: true,
@@ -351,9 +360,8 @@ export const getPurchaseOrderSummary = async (req, res) => {
 
 export const deletePurchaseOrder = async (req, res) => {
   try {
-    const purchaseOrder = await purchaseServices.deletePurchaseOrder(
-      req.params.id,
-    );
+    const { id } = req.validated.params;
+    const purchaseOrder = await purchaseServices.deletePurchaseOrder(id);
 
     return res.status(200).json({
       success: true,
@@ -373,7 +381,8 @@ export const deletePurchaseOrder = async (req, res) => {
 // UPDATE: getPurchaseOrderById (404 only when really not found)
 export const getPurchaseOrderById = async (req, res) => {
   try {
-    const data = await purchaseServices.getPurchaseOrderById(req.params.id);
+    const { id } = req.validated.params;
+    const data = await purchaseServices.getPurchaseOrderById(id);
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get purchase order error:", error);
@@ -385,9 +394,11 @@ export const getPurchaseOrderById = async (req, res) => {
 // UPDATE: pass the logged-in user for the audit trail
 export const updatePurchaseOrderStatus = async (req, res) => {
   try {
+    const { id } = req.validated.params;
+    const { status } = req.validated.body;
     const data = await purchaseServices.updatePurchaseOrderStatus(
-      req.params.id,
-      req.body.status,
+      id,
+      status,
       req.user?._id,
     );
     return res.status(200).json({
@@ -406,9 +417,10 @@ export const updatePurchaseOrderStatus = async (req, res) => {
 // UPDATE: pass user
 export const receivePurchaseOrderStock = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const data = await inventoryServices.receivePurchaseOrderStock(
-      req.params.id,
-      req.body,
+      id,
+      req.validated.body,
       req.user?._id,
     );
     return res.status(200).json({
@@ -427,9 +439,10 @@ export const receivePurchaseOrderStock = async (req, res) => {
 // NEW: Mark as Received (receive everything remaining)
 export const receiveAllPurchaseOrderStock = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const data = await inventoryServices.receiveAllPurchaseOrderStock(
-      req.params.id,
-      req.body,
+      id,
+      req.validated.body,
       req.user?._id,
     );
     return res.status(200).json({
@@ -446,9 +459,10 @@ export const receiveAllPurchaseOrderStock = async (req, res) => {
 };
 export const updatePurchaseOrder = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const purchaseOrder = await purchaseServices.updatePurchaseOrder(
-      req.params.id,
-      req.body,
+      id,
+      req.validated.body,
     );
 
     res.status(200).json({
@@ -465,7 +479,7 @@ export const updatePurchaseOrder = async (req, res) => {
 };
 export const adjustStock = async (req, res) => {
   try {
-    const result = await inventoryServices.adjustStock(req.body);
+    const result = await inventoryServices.adjustStock(req.validated.body);
 
     return res.status(200).json({
       success: true,
@@ -489,7 +503,7 @@ const statusFor = (error) =>
 
 export const createWastage = async (req, res) => {
   try {
-    const data = await wastageServices.createWastage(req.body);
+    const data = await wastageServices.createWastage(req.validated.body);
     return res.status(201).json({
       success: true,
       message: "Wastage recorded successfully",
@@ -503,7 +517,8 @@ export const createWastage = async (req, res) => {
 
 export const updateWastage = async (req, res) => {
   try {
-    const data = await wastageServices.updateWastage(req.params.id, req.body);
+    const { id } = req.validated.params;
+    const data = await wastageServices.updateWastage(id, req.validated.body);
     return res.status(200).json({
       success: true,
       message: "Wastage record updated successfully",
@@ -519,7 +534,8 @@ export const updateWastage = async (req, res) => {
 
 export const deleteWastage = async (req, res) => {
   try {
-    const data = await wastageServices.deleteWastage(req.params.id);
+    const { id } = req.validated.params;
+    const data = await wastageServices.deleteWastage(id);
     return res.status(200).json({
       success: true,
       message: "Wastage record deleted successfully",
@@ -535,14 +551,7 @@ export const deleteWastage = async (req, res) => {
 
 export const getWastageRecords = async (req, res) => {
   try {
-    const data = await wastageServices.getWastageRecords({
-      search: req.query.search,
-      reason: req.query.reason,
-      department: req.query.department,
-      period: req.query.period,
-      page: req.query.page,
-      limit: req.query.limit,
-    });
+    const data = await wastageServices.getWastageRecords(req.validated.query);
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get wastage records error:", error);
@@ -552,7 +561,8 @@ export const getWastageRecords = async (req, res) => {
 
 export const getWastageById = async (req, res) => {
   try {
-    const data = await wastageServices.getWastageById(req.params.id);
+    const { id } = req.validated.params;
+    const data = await wastageServices.getWastageById(id);
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get wastage error:", error);
@@ -564,9 +574,7 @@ export const getWastageById = async (req, res) => {
 
 export const getWastageSummary = async (req, res) => {
   try {
-    const data = await wastageServices.getWastageSummary({
-      period: req.query.period,
-    });
+    const data = await wastageServices.getWastageSummary(req.validated.query);
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get wastage summary error:", error);
@@ -576,9 +584,9 @@ export const getWastageSummary = async (req, res) => {
 
 export const getWastageReasonsBreakdown = async (req, res) => {
   try {
-    const data = await wastageServices.getWastageReasonsBreakdown({
-      period: req.query.period,
-    });
+    const data = await wastageServices.getWastageReasonsBreakdown(
+      req.validated.query,
+    );
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get wastage reasons error:", error);
@@ -588,10 +596,7 @@ export const getWastageReasonsBreakdown = async (req, res) => {
 
 export const getTopWastedItems = async (req, res) => {
   try {
-    const data = await wastageServices.getTopWastedItems({
-      period: req.query.period,
-      limit: req.query.limit,
-    });
+    const data = await wastageServices.getTopWastedItems(req.validated.query);
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get top wasted items error:", error);
@@ -601,9 +606,9 @@ export const getTopWastedItems = async (req, res) => {
 
 export const getMonthlyWastageTrend = async (req, res) => {
   try {
-    const data = await wastageServices.getMonthlyWastageTrend({
-      months: req.query.months,
-    });
+    const data = await wastageServices.getMonthlyWastageTrend(
+      req.validated.query,
+    );
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get monthly wastage trend error:", error);
@@ -613,9 +618,9 @@ export const getMonthlyWastageTrend = async (req, res) => {
 
 export const getExpiringBatches = async (req, res) => {
   try {
-    const data = await stockBatchServices.getExpiringBatches({
-      days: req.query.days,
-    });
+    const data = await stockBatchServices.getExpiringBatches(
+      req.validated.query,
+    );
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get expiring batches error:", error);
@@ -635,12 +640,7 @@ export const getExpirySummary = async (req, res) => {
 
 export const getAllBatches = async (req, res) => {
   try {
-    const data = await stockBatchServices.getAllBatches({
-      search: req.query.search,
-      groupByItem: req.query.groupByItem === "true",
-      page: req.query.page,
-      limit: req.query.limit,
-    });
+    const data = await stockBatchServices.getAllBatches(req.validated.query);
     return res.status(200).json({ success: true, data });
   } catch (error) {
     console.error("Get all batches error:", error);
@@ -664,7 +664,8 @@ export const getRecipesController = async (req, res) => {
 
 export const getRecipeByIdController = async (req, res) => {
   try {
-    const recipe = await recipeServices.getRecipeById(req.params.id);
+    const { id } = req.validated.params;
+    const recipe = await recipeServices.getRecipeById(id);
     return res.status(200).json({ success: true, data: recipe });
   } catch (error) {
     console.error("Get recipe by ID error:", error);
@@ -681,7 +682,7 @@ export const getRecipeByIdController = async (req, res) => {
 
 export const createRecipeController = async (req, res) => {
   try {
-    const recipe = await recipeServices.createRecipe(req.body);
+    const recipe = await recipeServices.createRecipe(req.validated.body);
     return res.status(201).json({
       success: true,
       message: "Recipe created successfully",
@@ -699,7 +700,8 @@ export const createRecipeController = async (req, res) => {
 
 export const updateRecipeController = async (req, res) => {
   try {
-    const recipe = await recipeServices.updateRecipe(req.params.id, req.body);
+    const { id } = req.validated.params;
+    const recipe = await recipeServices.updateRecipe(id, req.validated.body);
     return res.status(200).json({
       success: true,
       message: "Recipe updated successfully",
@@ -720,7 +722,8 @@ export const updateRecipeController = async (req, res) => {
 
 export const deleteRecipeController = async (req, res) => {
   try {
-    await recipeServices.deleteRecipe(req.params.id);
+    const { id } = req.validated.params;
+    await recipeServices.deleteRecipe(id);
     return res
       .status(200)
       .json({ success: true, message: "Recipe deleted successfully" });
@@ -739,7 +742,8 @@ export const deleteRecipeController = async (req, res) => {
 
 export const duplicateRecipeController = async (req, res) => {
   try {
-    const recipe = await recipeServices.duplicateRecipe(req.params.id);
+    const { id } = req.validated.params;
+    const recipe = await recipeServices.duplicateRecipe(id);
     return res.status(201).json({
       success: true,
       message: "Recipe duplicated successfully",
@@ -761,14 +765,7 @@ export const duplicateRecipeController = async (req, res) => {
 export const createInventoryItem = async (req, res) => {
   try {
     const { name, category, unit, minimumStock, costPerUnit, expiryDate } =
-      req.body;
-
-    if (!name || !category || !unit) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, category and unit are required",
-      });
-    }
+      req.validated.body;
 
     const existingItem = await Inventory.findOne({
       name: name.trim(),
@@ -808,7 +805,7 @@ export const createInventoryItem = async (req, res) => {
 
 export const getInventoryItemById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.validated.params;
 
     const item = await Inventory.findById(id);
 
@@ -833,10 +830,9 @@ export const getInventoryItemById = async (req, res) => {
 
 export const updateInventoryItem = async (req, res) => {
   try {
-    const { id } = req.params;
-
+    const { id } = req.validated.params;
     const { name, category, unit, minimumStock, costPerUnit, expiryDate } =
-      req.body;
+      req.validated.body;
 
     const item = await Inventory.findByIdAndUpdate(
       id,
@@ -883,7 +879,7 @@ export const updateInventoryItem = async (req, res) => {
 
 export const deleteInventoryItem = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.validated.params;
 
     const item = await Inventory.findByIdAndDelete(id);
 

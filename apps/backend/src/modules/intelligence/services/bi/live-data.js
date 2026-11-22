@@ -625,25 +625,19 @@ function processPosBills(bills, foodMap, start, end) {
     posCount,
 
     categoryRows: [...categoryMap.entries()]
-      .map(([name, value]) => ({
-        _id: name,
-        ...value,
-      }))
-      .sort((a, b) => b.revenue - a.revenue),
+      .map(([name, value]) => Object.assign({ _id: name }, value))
+      .toSorted((a, b) => b.revenue - a.revenue),
 
     outletRows: [...outletMap.entries()]
       .map(([name, revenue]) => ({
         _id: name,
         revenue,
       }))
-      .sort((a, b) => b.revenue - a.revenue),
+      .toSorted((a, b) => b.revenue - a.revenue),
 
     itemRows: [...itemMap.entries()]
-      .map(([name, value]) => ({
-        _id: name,
-        ...value,
-      }))
-      .sort((a, b) => b.revenue - a.revenue)
+      .map(([name, value]) => Object.assign({ _id: name }, value))
+      .toSorted((a, b) => b.revenue - a.revenue)
       .slice(0, 10),
 
     billRows,
@@ -801,7 +795,7 @@ async function loadTotalRevenue({ hid, windows, db }) {
 
     topCategories: pos.current.categoryRows.slice(0, 5),
 
-    topRoomTypes: [...topRoomTypes.values()].sort(
+    topRoomTypes: [...topRoomTypes.values()].toSorted(
       (a, b) => b.revenue - a.revenue,
     ),
 
@@ -1366,7 +1360,7 @@ async function loadConversion({ hid, windows, db }) {
     })),
 
     topItems: [...itemMap.values()]
-      .sort((a, b) => b.orders - a.orders)
+      .toSorted((a, b) => b.orders - a.orders)
       .slice(0, 5),
   };
 }
@@ -1374,6 +1368,15 @@ async function loadConversion({ hid, windows, db }) {
 // --------------------------------------------------
 // 5. HOTEL GUEST SPENDING
 // --------------------------------------------------
+
+const stayBucket = (nights) =>
+  nights <= 1
+    ? "1 Night"
+    : nights <= 3
+      ? "2-3 Nights"
+      : nights <= 7
+        ? "4-7 Nights"
+        : "7+ Nights";
 
 async function loadGuestSpending({ hid, windows, db }) {
   const stays = await buildStayIndex(db, hid);
@@ -1579,15 +1582,6 @@ async function loadGuestSpending({ hid, windows, db }) {
   const purposeMap = new Map();
   const roomMap = new Map();
 
-  const stayBucket = (nights) =>
-    nights <= 1
-      ? "1 Night"
-      : nights <= 3
-        ? "2-3 Nights"
-        : nights <= 7
-          ? "4-7 Nights"
-          : "7+ Nights";
-
   for (const row of reservations) {
     const stayKey = stayBucket(row.nights);
 
@@ -1633,7 +1627,7 @@ async function loadGuestSpending({ hid, windows, db }) {
   }
 
   const topGuests = [...reservations]
-    .sort((a, b) => b.roomSpend + b.posSpend - (a.roomSpend + a.posSpend))
+    .toSorted((a, b) => b.roomSpend + b.posSpend - (a.roomSpend + a.posSpend))
     .slice(0, 5)
     .map((row) => ({
       name: row.name,
@@ -1666,7 +1660,7 @@ async function loadGuestSpending({ hid, windows, db }) {
 
     topGuests,
 
-    topRooms: [...roomMap.values()].sort((a, b) => b.posSpend - a.posSpend),
+    topRooms: [...roomMap.values()].toSorted((a, b) => b.posSpend - a.posSpend),
   };
 }
 
@@ -2150,40 +2144,42 @@ async function loadRecommendations({ hid, windows, db }) {
 
   const recommendationCollection = db.collection("recommendations");
 
-  for (const recommendation of generated) {
-    await recommendationCollection.updateOne(
-      {
-        hotelId: hid,
-        key: recommendation.key,
-      },
-      {
-        $setOnInsert: {
+  await Promise.all(
+    generated.map((recommendation) =>
+      recommendationCollection.updateOne(
+        {
           hotelId: hid,
           key: recommendation.key,
-          status: "new",
         },
+        {
+          $setOnInsert: {
+            hotelId: hid,
+            key: recommendation.key,
+            status: "new",
+          },
 
-        $set: {
-          title: recommendation.title,
+          $set: {
+            title: recommendation.title,
 
-          description: recommendation.description,
+            description: recommendation.description,
 
-          category: recommendation.category,
+            category: recommendation.category,
 
-          priority: recommendation.priority,
+            priority: recommendation.priority,
 
-          effort: recommendation.effort,
+            effort: recommendation.effort,
 
-          estMonthlyImpact: recommendation.estMonthlyImpact,
+            estMonthlyImpact: recommendation.estMonthlyImpact,
 
-          updatedAt: new Date(),
+            updatedAt: new Date(),
+          },
         },
-      },
-      {
-        upsert: true,
-      },
-    );
-  }
+        {
+          upsert: true,
+        },
+      ),
+    ),
+  );
 
   const generatedKeys = generated.map((recommendation) => recommendation.key);
 
@@ -2212,10 +2208,11 @@ async function loadRecommendations({ hid, windows, db }) {
     .toArray();
 
   return {
-    recommendations: recommendations.map((recommendation) => ({
-      ...recommendation,
-      id: String(recommendation._id),
-    })),
+    recommendations: recommendations.map((recommendation) =>
+      Object.assign({}, recommendation, {
+        id: String(recommendation._id),
+      }),
+    ),
 
     guestExperienceScore: guestExperienceScore(signals),
 

@@ -347,5 +347,3 @@ export function RoomRequirementsMatrix({
     </div>
   );
 }
-
-export default RoomRequirementsMatrix;

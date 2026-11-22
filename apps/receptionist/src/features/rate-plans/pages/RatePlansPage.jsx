@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Header } from "@hotelos/ui/components/Header";
+import { toLocalDateString } from "@hotelos/utils";
 import RatePlanModal from "../components/RatePlanModal.jsx";
 import AiosellRatesMatrix from "../components/AiosellRatesMatrix.jsx";
 import {
@@ -33,11 +34,13 @@ export default function RatePlansPage() {
   const [removing, setRemoving] = useState("");
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [syncStartDate, setSyncStartDate] = useState(() =>
-    new Date().toISOString().slice(0, 10),
+    toLocalDateString(new Date()),
   );
-  const [syncEndDate, setSyncEndDate] = useState(() =>
-    new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-  );
+  const [syncEndDate, setSyncEndDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return toLocalDateString(d);
+  });
   const [syncError, setSyncError] = useState("");
 
   const error = loadError
@@ -370,8 +373,10 @@ export default function RatePlansPage() {
                     </label>
                     <input
                       type="date"
-                      value={syncStartDate}
-                      onChange={(e) => setSyncStartDate(e.target.value)}
+                      value={toLocalDateString(syncStartDate)}
+                      onChange={(e) =>
+                        setSyncStartDate(toLocalDateString(e.target.value))
+                      }
                       required
                       className="focus:border-brand-500 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                     />
@@ -382,8 +387,10 @@ export default function RatePlansPage() {
                     </label>
                     <input
                       type="date"
-                      value={syncEndDate}
-                      onChange={(e) => setSyncEndDate(e.target.value)}
+                      value={toLocalDateString(syncEndDate)}
+                      onChange={(e) =>
+                        setSyncEndDate(toLocalDateString(e.target.value))
+                      }
                       required
                       className="focus:border-brand-500 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                     />

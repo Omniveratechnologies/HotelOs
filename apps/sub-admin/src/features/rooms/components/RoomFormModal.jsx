@@ -125,7 +125,10 @@ export default function RoomFormModal({ room, onClose, onSaved }) {
       };
 
       const saved = room
-        ? await updateRoomMutation.mutateAsync({ id: room.id, data: payload })
+        ? await updateRoomMutation.mutateAsync({
+            id: room.id || room._id,
+            data: payload,
+          })
         : await createRoomMutation.mutateAsync(payload);
 
       onSaved?.(saved);

@@ -36,10 +36,11 @@ export default function RoomTypesPage() {
   async function handleDelete(roomType) {
     if (!window.confirm(`Delete room type ${roomType.name}?`)) return;
 
-    setRemoving(roomType.id);
+    const roomTypeId = roomType.id || roomType._id;
+    setRemoving(roomTypeId);
 
     try {
-      await deleteRoomTypeMutation.mutateAsync(roomType.id);
+      await deleteRoomTypeMutation.mutateAsync(roomTypeId);
       setToast(`Room type ${roomType.name} deleted.`);
     } catch (error) {
       console.error("Delete room type error:", error);

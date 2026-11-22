@@ -23,7 +23,13 @@ const TABLE_STATUSES = [
   "ABSENT",
   ...LEAVE_STATUSES,
 ];
-const SORTS = ["name", "checkInAt", "checkOutAt", "workMinutes", "status"];
+const SORTS = new Set([
+  "name",
+  "checkInAt",
+  "checkOutAt",
+  "workMinutes",
+  "status",
+]);
 
 const pad = (n) => String(n).padStart(2, "0");
 const round1 = (n) => Math.round(n * 10) / 10;
@@ -80,7 +86,7 @@ export const parseQuery = (query = {}) => {
     deviceId: readId(query.device_id ?? query.deviceId, "device_id"),
     page: Math.max(1, Number(query.page) || 1),
     limit: Math.min(100, Math.max(1, Number(query.limit) || 10)),
-    sort: SORTS.includes(query.sort) ? query.sort : "checkInAt",
+    sort: SORTS.has(query.sort) ? query.sort : "checkInAt",
     direction: String(query.direction).toLowerCase() === "desc" ? -1 : 1,
   };
 };
@@ -276,7 +282,7 @@ export const computeReport = ({
     filters.status
       ? items.filter((item) => item.status === filters.status)
       : attendance
-  ).sort(
+  ).toSorted(
     compareBy(filters.sort || "checkInAt", filters.direction || 1, lookups),
   );
   const page = filters.page || 1;
@@ -315,11 +321,13 @@ export const computeReport = ({
           ? [{ status: "ON_LEAVE", count: counts.onLeave }]
           : []),
         ...(notMarked ? [{ status: "NOT_MARKED", count: notMarked }] : []),
-      ].map((slice) => ({ ...slice, percent: pct(slice.count) })),
+      ].map((slice) => Object.assign({}, slice, { percent: pct(slice.count) })),
     },
-    departments: [...byDepartment.values()].sort((a, b) => b.total - a.total),
+    departments: [...byDepartment.values()].toSorted(
+      (a, b) => b.total - a.total,
+    ),
     devices: [...byDevice.values()]
-      .sort((a, b) => b.records - a.records)
+      .toSorted((a, b) => b.records - a.records)
       .slice(0, 10),
     insights: {
       averageCheckIn: { minutes: avgIn, label: formatClock(avgIn) },
@@ -376,6 +384,8 @@ const loadRecords = async (hotelId, f) =>
     .limit(MAX_RECORDS)
     .lean();
 
+const toIdMap = (list) => new Map(list.map((item) => [String(item._id), item]));
+
 const loadLookups = async (hotelId, records) => {
   const ids = (key) => [
     ...new Set(
@@ -385,7 +395,6 @@ const loadLookups = async (hotelId, records) => {
         .map(String),
     ),
   ];
-  const byId = (list) => new Map(list.map((item) => [String(item._id), item]));
 
   const Device = mongoose.models[DEVICE_MODEL];
   const deviceIds = ids("checkInDeviceId");
@@ -411,16 +420,17 @@ const loadLookups = async (hotelId, records) => {
   );
 
   return {
-    staff: byId(staff),
-    departments: byId(departments),
-    designations: byId(designations),
-    shifts: byId(shifts),
-    devices: byId(
-      devices.map((d) => ({
-        ...d,
-        name: d.name ?? d.deviceName ?? d.code ?? "",
-        onlinePercent: d.uptimePercent ?? d.onlinePercent ?? null,
-      })),
+    staff: toIdMap(staff),
+    departments: toIdMap(departments),
+    designations: toIdMap(designations),
+    shifts: toIdMap(shifts),
+    devices: toIdMap(
+      devices.map((d) =>
+        Object.assign({}, d, {
+          name: d.name ?? d.deviceName ?? d.code ?? "",
+          onlinePercent: d.uptimePercent ?? d.onlinePercent ?? null,
+        }),
+      ),
     ),
   };
 };

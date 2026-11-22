@@ -56,12 +56,11 @@ export function OrderProgressCarousel({
   const touchStartXRef = useRef<number | null>(null);
   const touchDeltaXRef = useRef<number>(0);
 
-  // Keep index clamped if orders count changes
-  useEffect(() => {
-    if (currentIndex >= activeOrders.length && activeOrders.length > 0) {
-      setCurrentIndex(activeOrders.length - 1);
-    }
-  }, [activeOrders.length, currentIndex]);
+  // Clamp during render instead of syncing state in an effect
+  const safeIndex =
+    activeOrders.length > 0
+      ? Math.min(currentIndex, activeOrders.length - 1)
+      : 0;
 
   // Auto-slide every 4.5 seconds when multiple orders exist and not paused
   useEffect(() => {
@@ -128,7 +127,7 @@ export function OrderProgressCarousel({
       <div
         className="soh-carousel-track"
         style={{
-          transform: `translateX(-${currentIndex * 100}%)`,
+          transform: `translateX(-${safeIndex * 100}%)`,
         }}
       >
         {activeOrders.map((order, idx) => {
@@ -211,7 +210,7 @@ export function OrderProgressCarousel({
             <button
               type="button"
               key={order.id}
-              className={`soh-dot ${i === currentIndex ? "active" : ""}`}
+              className={`soh-dot ${i === safeIndex ? "active" : ""}`}
               onClick={(e) => {
                 e.stopPropagation();
                 setCurrentIndex(i);

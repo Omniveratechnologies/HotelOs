@@ -9,6 +9,12 @@ import {
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authenticateSession } from "#/shared/middleware/sessionAuth.middleware.js";
 import { createRateLimiter } from "#/shared/middleware/rateLimiter.middleware.js";
+import { validate } from "#/shared/middleware/validate.middleware.js";
+import {
+  createQrGuestSessionBodySchema,
+  exchangeKioskHandoffBodySchema,
+  revokeCurrentSessionBodySchema,
+} from "../schemas.js";
 
 const router = express.Router();
 
@@ -24,8 +30,18 @@ const sessionCreateLimiter = createRateLimiter({
 });
 
 // Public endpoints to establish sessions
-router.post("/qr-guest", sessionCreateLimiter, createQrGuestSession);
-router.post("/kiosk-exchange", sessionCreateLimiter, exchangeKioskHandoff);
+router.post(
+  "/qr-guest",
+  sessionCreateLimiter,
+  validate({ body: createQrGuestSessionBodySchema }),
+  createQrGuestSession,
+);
+router.post(
+  "/kiosk-exchange",
+  sessionCreateLimiter,
+  validate({ body: exchangeKioskHandoffBodySchema }),
+  exchangeKioskHandoff,
+);
 
 // Authenticated kiosk room stay check (idempotent, safe on reload)
 router.get("/kiosk-room-status", authenticate, getKioskRoomStatus);
@@ -39,6 +55,7 @@ router.get(
 router.post(
   "/revoke",
   authenticateSession({ requireLocation: false }),
+  validate({ body: revokeCurrentSessionBodySchema }),
   revokeCurrentSession,
 );
 

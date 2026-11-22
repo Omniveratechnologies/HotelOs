@@ -100,26 +100,30 @@ export const saveBill = async (req, res) => {
 
     // Auto-generate a KOT per kitchen station present in this bill.
     const stations = [...new Set(bill.items.map((i) => i.kitchenStation))];
-    for (const station of stations) {
-      const stationItems = bill.items.filter(
-        (i) => i.kitchenStation === station,
-      );
-      const kot = await KOT.create({
-        kotNo: seq("K"),
-        hotelId: bill.hotelId,
-        billId: bill._id,
-        tableId: bill.tableId,
-        roomId: bill.roomId,
-        station,
-        items: stationItems.map((i) => ({
-          name: i.name,
-          quantity: i.quantity,
-          notes: i.notes,
-          status: "preparing",
-        })),
-      });
-      emitToHotel(bill.hotelId, SOCKET_EVENTS.ORDER_UPDATED, kotDTO(kot));
-    }
+    const kots = await Promise.all(
+      stations.map((station) => {
+        const stationItems = bill.items.filter(
+          (i) => i.kitchenStation === station,
+        );
+        return KOT.create({
+          kotNo: seq("K"),
+          hotelId: bill.hotelId,
+          billId: bill._id,
+          tableId: bill.tableId,
+          roomId: bill.roomId,
+          station,
+          items: stationItems.map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            notes: i.notes,
+            status: "preparing",
+          })),
+        });
+      }),
+    );
+    kots.forEach((kot) =>
+      emitToHotel(bill.hotelId, SOCKET_EVENTS.ORDER_UPDATED, kotDTO(kot)),
+    );
 
     return res.status(200).json({ success: true, data: billDTO(bill) });
   } catch (error) {
@@ -190,16 +194,14 @@ export const listRoomsLookup = async (req, res) => {
     const rooms = await Room.find({ hotelId: req.user.hotelId })
       .select("roomNumber status")
       .sort({ roomNumber: 1 });
-    return res
-      .status(200)
-      .json({
-        success: true,
-        data: rooms.map((r) => ({
-          id: r._id,
-          roomNumber: r.roomNumber,
-          status: r.status,
-        })),
-      });
+    return res.status(200).json({
+      success: true,
+      data: rooms.map((r) => ({
+        id: r._id,
+        roomNumber: r.roomNumber,
+        status: r.status,
+      })),
+    });
   } catch (error) {
     logger.error(error, "List rooms lookup error");
     return res
@@ -222,10 +224,11 @@ export const listRoomCharges = async (req, res) => {
       ? await Room.find({ _id: { $in: roomIds } }).select("roomNumber")
       : [];
     const roomMap = new Map(rooms.map((r) => [r._id.toString(), r]));
-    const data = bills.map((b) => ({
-      ...billDTO(b),
-      roomNumber: roomMap.get(b.roomId?.toString())?.roomNumber || null,
-    }));
+    const data = bills.map((b) =>
+      Object.assign({}, billDTO(b), {
+        roomNumber: roomMap.get(b.roomId?.toString())?.roomNumber || null,
+      }),
+    );
     return res.status(200).json({ success: true, data });
   } catch (error) {
     logger.error(error, "List room charges error");
@@ -332,12 +335,10 @@ export const createPayment = async (req, res) => {
     const isGateway = method === "wallet";
     if (method === "cash") {
       if (!cashierShiftId)
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "An open cashier shift is required for cash payments",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "An open cashier shift is required for cash payments",
+        });
       const shift = await BillingWorkflow.findOne({
         _id: cashierShiftId,
         hotelId: req.user.hotelId,
@@ -431,12 +432,10 @@ export const sendPaymentLink = async (req, res) => {
     return res
       .status(404)
       .json({ success: false, message: "Payment not found" });
-  return res
-    .status(202)
-    .json({
-      success: true,
-      data: { paymentId: payment._id, status: "link_queued" },
-    });
+  return res.status(202).json({
+    success: true,
+    data: { paymentId: payment._id, status: "link_queued" },
+  });
 };
 
 // ---------- REFUNDS ----------
@@ -469,12 +468,10 @@ export const createRefund = async (req, res) => {
       0,
     );
     if (!amount || Number(amount) > refundable)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Refund exceeds refundable payment balance",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Refund exceeds refundable payment balance",
+      });
     const refund = await Refund.create({
       refundId: seq("RF"),
       hotelId: req.user.hotelId,

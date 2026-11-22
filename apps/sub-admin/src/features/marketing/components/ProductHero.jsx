@@ -50,13 +50,14 @@ function Breadcrumb({ items }) {
  *   ["Run Your", "Restaurant", [{ text: "HotelOS POS", accent: true }]]
  */
 function HeroTitle({ lines, accentClass }) {
-  return lines.map((line, lineIndex) => {
+  return lines.map((line) => {
     const parts = typeof line === "string" ? [{ text: line }] : line;
+    const lineKey = parts.map((part) => part.text).join(" ");
     return (
-      <span key={`line-${lineIndex}`} className="block">
-        {parts.map((part, partIndex) => (
+      <span key={lineKey} className="block">
+        {parts.map((part) => (
           <span
-            key={`part-${lineIndex}-${partIndex}`}
+            key={part.text}
             className={part.accent ? accentClass : undefined}
           >
             {part.text}
@@ -66,6 +67,17 @@ function HeroTitle({ lines, accentClass }) {
     );
   });
 }
+
+const DOT_KEYS = [
+  "hero-dot-1",
+  "hero-dot-2",
+  "hero-dot-3",
+  "hero-dot-4",
+  "hero-dot-5",
+  "hero-dot-6",
+  "hero-dot-7",
+  "hero-dot-8",
+];
 
 function HeroSlider({ slides, label, showControls, badges, theme }) {
   const [index, setIndex] = useState(0);
@@ -131,9 +143,9 @@ function HeroSlider({ slides, label, showControls, badges, theme }) {
 
       {hasControls && (
         <div className="mt-5 flex items-center justify-center gap-2">
-          {slides.map((_, dotIndex) => (
+          {DOT_KEYS.slice(0, count).map((dotKey, dotIndex) => (
             <button
-              key={`dot-${dotIndex}`}
+              key={dotKey}
               type="button"
               aria-label={`Show image ${dotIndex + 1}`}
               aria-current={dotIndex === current}
@@ -169,9 +181,14 @@ function HeroSlider({ slides, label, showControls, badges, theme }) {
  *  badges       floating cards on the image: [{ icon, title, subtitle, position }]
  *               position: "top-left" | "top-right" | "bottom-left" | "bottom-right"
  */
+const EMPTY_BREADCRUMB = [];
+const EMPTY_CHECKS = [];
+const EMPTY_SLIDES = [];
+const EMPTY_BADGES = [];
+
 export default function ProductHero({
   theme = "gold",
-  breadcrumb = [],
+  breadcrumb = EMPTY_BREADCRUMB,
   eyebrow,
   title,
   subtitle,
@@ -180,11 +197,11 @@ export default function ProductHero({
   secondaryCta,
   secondaryLabel = "Watch Video",
   onSecondaryClick,
-  checks = [],
-  slides = [],
+  checks = EMPTY_CHECKS,
+  slides = EMPTY_SLIDES,
   slideLabel = "Hero image",
   showControls = true,
-  badges = [],
+  badges = EMPTY_BADGES,
 }) {
   const t = THEMES[theme];
 

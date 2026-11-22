@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Link,
   Outlet,
@@ -26,11 +20,13 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
-import { formatCurrency } from "@hotelos/utils";
 import { api } from "../services/api";
-import { CartProvider, useCart } from "../context/CartContext";
+import { CartProvider } from "../context/CartContext";
+import { useCart } from "../context/useCart";
 import { SessionProvider } from "../context/SessionContext";
-import { OrdersProvider, useOrders } from "../context/OrdersContext";
+import { OrdersProvider } from "../context/OrdersContext";
+import { useOrders } from "../context/useOrders";
+import { MenuDataContext, useMenuContext } from "../context/useMenu";
 import { LocationPromptModal } from "./LocationPromptModal";
 import { OrderProgressCarousel } from "./OrderProgressCarousel";
 import type { FoodItem } from "../types";
@@ -47,11 +43,15 @@ export function AppLayout() {
       .catch(() => setMenu([]))
       .finally(() => setMenuReady(true));
   }, [hotelId]);
+  const menuValue = useMemo(
+    () => ({ menu, ready: menuReady }),
+    [menu, menuReady],
+  );
   return (
     <SessionProvider hotelId={hotelId} tableId={tableId}>
       <OrdersProvider hotelId={hotelId} tableId={tableId}>
         <CartProvider hotelId={hotelId} tableId={tableId}>
-          <MenuDataContext.Provider value={{ menu, ready: menuReady }}>
+          <MenuDataContext.Provider value={menuValue}>
             <Shell drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen}>
               <Outlet />
             </Shell>
@@ -66,16 +66,6 @@ export function MenuLayout() {
   const { ready } = useMenuContext();
   if (!ready) return <main className="page loading">Loading menu...</main>;
   return <Outlet />;
-}
-const MenuDataContext = createContext<{ menu: FoodItem[]; ready: boolean }>({
-  menu: [],
-  ready: false,
-});
-export function useMenu() {
-  return useContext(MenuDataContext).menu;
-}
-function useMenuContext() {
-  return useContext(MenuDataContext);
 }
 export function BottomNav() {
   const { itemCount } = useCart();
@@ -298,7 +288,4 @@ export function PageHeader({
       <span className="header-actions">{actions}</span>
     </header>
   );
-}
-export function formatMoney(value?: number) {
-  return value == null ? "—" : formatCurrency(value);
 }

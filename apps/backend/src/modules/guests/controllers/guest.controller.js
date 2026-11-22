@@ -15,10 +15,10 @@ import {
   deleteObjects,
 } from "#/config/r2.js";
 
-import {
-  MAX_FILES,
-  validateDocument,
-} from "#/shared/middleware/upload.middleware.js";
+// import {
+//   MAX_FILES,
+//   validateDocument,
+// } from "#/shared/middleware/upload.middleware.js";
 
 import { guestProfileDTO } from "../dto/guest.dto.js";
 
@@ -32,17 +32,6 @@ import logger from "#/utils/logger.js";
 
 // Documents arrive as JSON metadata referencing R2 objects the client has
 // already uploaded. Each entry: { key, filename, docType, size, mimeType }.
-function resolveDocuments(req) {
-  if (!Array.isArray(req.body.documents)) {
-    return [];
-  }
-
-  return req.body.documents.map((doc) => ({
-    docType: doc.docType || null,
-    filename: doc.filename,
-    path: doc.key,
-  }));
-}
 
 // Best-effort removal of R2 objects referenced by their keys
 async function removeFilesQuietly(keys) {
@@ -87,39 +76,7 @@ async function sendCredentialsQuietly({
 
 export const getDocumentUploadUrls = async (req, res) => {
   try {
-    const files = req.body.files;
-
-    if (!Array.isArray(files) || files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "At least one document is required",
-      });
-    }
-
-    if (files.length > MAX_FILES) {
-      return res.status(400).json({
-        success: false,
-        message: `A maximum of ${MAX_FILES} documents can be uploaded at once`,
-      });
-    }
-
-    for (const file of files) {
-      if (!file?.filename || !file?.mimeType) {
-        return res.status(400).json({
-          success: false,
-          message: "Each document must include a filename and mimeType",
-        });
-      }
-
-      const validationError = validateDocument(file);
-
-      if (validationError) {
-        return res.status(400).json({
-          success: false,
-          message: validationError,
-        });
-      }
-    }
+    const { files } = req.validated.body;
 
     // Files are stored per hotel: guests/<hotelId>/...
     const hotelId = req.user.hotelId;
@@ -166,14 +123,26 @@ export const updateGuest = async (req, res) => {
   let uploadedPaths = [];
 
   try {
+    const { id } = req.validated.params;
+    const {
+      name,
+      email,
+      phone,
+      address,
+      idType,
+      idNumber,
+      nationality,
+      documents,
+    } = req.validated.body;
+
     const guest = await User.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
       role: "GUEST",
     });
 
     if (!guest) {
-      uploadedPaths = resolveDocuments(req).map((d) => d.path);
+      uploadedPaths = (documents || []).map((d) => d.path);
 
       await removeFilesQuietly(uploadedPaths);
 
@@ -183,34 +152,23 @@ export const updateGuest = async (req, res) => {
       });
     }
 
-    const allowedFields = [
-      "name",
-      "phone",
-      "address",
-      "idType",
-      "idNumber",
-      "nationality",
-    ];
-
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        guest[field] = req.body[field];
-      }
-    }
+    if (name !== undefined) guest.name = name;
+    if (phone !== undefined) guest.phone = phone;
+    if (address !== undefined) guest.address = address;
+    if (idType !== undefined) guest.idType = idType;
+    if (idNumber !== undefined) guest.idNumber = idNumber;
+    if (nationality !== undefined) guest.nationality = nationality;
 
     // Email change must not clash with a non-guest account (guests may share
     // an email across separate stays)
-    if (
-      req.body.email !== undefined &&
-      req.body.email.trim().toLowerCase() !== guest.email
-    ) {
+    if (email !== undefined && email.trim().toLowerCase() !== guest.email) {
       const clash = await User.findOne({
-        email: req.body.email.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
         role: { $ne: "GUEST" },
       });
 
       if (clash && String(clash._id) !== String(guest._id)) {
-        uploadedPaths = resolveDocuments(req).map((d) => d.path);
+        uploadedPaths = (documents || []).map((d) => d.path);
 
         await removeFilesQuietly(uploadedPaths);
 
@@ -220,11 +178,11 @@ export const updateGuest = async (req, res) => {
         });
       }
 
-      guest.email = req.body.email.trim().toLowerCase();
+      guest.email = email.trim().toLowerCase();
     }
 
     // Optional new documents (JSON edit)
-    const newDocuments = resolveDocuments(req);
+    const newDocuments = documents || [];
 
     uploadedPaths = newDocuments.map((d) => d.path);
 
@@ -235,7 +193,7 @@ export const updateGuest = async (req, res) => {
     await guest.save();
 
     // Keep the active room display name in sync
-    if (req.body.name?.trim()) {
+    if (name?.trim()) {
       const activeBooking = await Booking.findOne({
         guestId: guest._id,
         status: { $in: ACTIVE_STAY_STATUSES },
@@ -272,8 +230,11 @@ export const updateGuest = async (req, res) => {
 
 export const updateGuestCredentials = async (req, res) => {
   try {
+    const { id } = req.validated.params;
+    const { action, password, reveal } = req.validated.body;
+
     const guest = await User.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
       role: "GUEST",
     });
@@ -285,18 +246,9 @@ export const updateGuestCredentials = async (req, res) => {
       });
     }
 
-    const regenerate = req.body.action === "regenerate";
+    const regenerate = action === "regenerate";
 
-    const newPassword = regenerate
-      ? generateTemporaryPassword()
-      : req.body.password;
-
-    if (!regenerate && (!newPassword || newPassword.length < 8)) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters long",
-      });
-    }
+    const newPassword = regenerate ? generateTemporaryPassword() : password;
 
     guest.password = newPassword;
 
@@ -325,7 +277,7 @@ export const updateGuestCredentials = async (req, res) => {
         : "Password updated successfully",
       data: {
         username: guest.username,
-        ...(regenerate || req.body.reveal === true
+        ...(regenerate || reveal === true
           ? { temporaryPassword: newPassword, emailSent }
           : {}),
       },
@@ -346,8 +298,10 @@ export const updateGuestCredentials = async (req, res) => {
 
 export const deleteGuestDocument = async (req, res) => {
   try {
+    const { guestId, docId } = req.validated.params;
+
     const guest = await User.findOne({
-      _id: req.params.guestId,
+      _id: guestId,
       hotelId: req.user.hotelId,
       role: "GUEST",
     });
@@ -359,7 +313,7 @@ export const deleteGuestDocument = async (req, res) => {
       });
     }
 
-    const document = guest.documents.id(req.params.docId);
+    const document = guest.documents.id(docId);
 
     if (!document) {
       return res.status(404).json({
@@ -433,12 +387,7 @@ export const getMyProfile = async (req, res) => {
 
 export const updateDND = async (req, res) => {
   try {
-    const { enabled } = req.body;
-    if (typeof enabled !== "boolean") {
-      return res
-        .status(400)
-        .json({ success: false, message: "enabled (boolean) is required" });
-    }
+    const { enabled } = req.validated.body;
 
     const booking = req.currentBooking;
 
@@ -489,11 +438,14 @@ export const updateDND = async (req, res) => {
 
 export const searchGuests = async (req, res) => {
   try {
-    const search = req.query.q?.trim();
+    const { q: search } = req.validated.query;
 
     const filter = { hotelId: req.user.hotelId, role: "GUEST" };
-    if (search) {
-      const rx = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    if (search?.trim()) {
+      const rx = new RegExp(
+        search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        "i",
+      );
       filter.$or = [{ name: rx }, { phone: rx }, { email: rx }];
     }
 
@@ -612,14 +564,14 @@ export const searchGuests = async (req, res) => {
 
 export const getGuests = async (req, res) => {
   try {
+    const { search, status } = req.validated.query;
     const userFilter = {
       hotelId: req.user.hotelId,
       role: "GUEST",
     };
 
-    if (req.query.search?.trim()) {
-      const search = req.query.search.trim();
-      const regex = new RegExp(search, "i");
+    if (search?.trim()) {
+      const regex = new RegExp(search.trim(), "i");
       userFilter.$or = [
         { name: regex },
         { email: regex },
@@ -629,9 +581,9 @@ export const getGuests = async (req, res) => {
       ];
     }
 
-    if (req.query.status === "active") {
+    if (status === "active") {
       userFilter.isActive = { $ne: false };
-    } else if (req.query.status === "inactive") {
+    } else if (status === "inactive") {
       userFilter.isActive = false;
     }
 
@@ -654,7 +606,7 @@ export const getGuests = async (req, res) => {
       bookingMap.get(gid).push(b);
     }
 
-    let data = await Promise.all(
+    const data = await Promise.all(
       guests.map(async (guest) => {
         const guestBookings = bookingMap.get(String(guest._id)) || [];
 
@@ -789,8 +741,9 @@ export const getGuests = async (req, res) => {
 
 export const getGuestById = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const guest = await User.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
       role: "GUEST",
     });
@@ -906,8 +859,9 @@ export const getGuestById = async (req, res) => {
 
 export const deleteGuest = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const guest = await User.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
       role: "GUEST",
     });
@@ -956,8 +910,9 @@ export const deleteGuest = async (req, res) => {
 
 export const restoreGuest = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const guest = await User.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
       role: "GUEST",
     });

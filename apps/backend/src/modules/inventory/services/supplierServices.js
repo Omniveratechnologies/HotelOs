@@ -69,11 +69,11 @@ const getSuppliers = async ({
     ]),
   );
 
-  return suppliers.map((supplier) => ({
-    ...supplier.toObject(),
-
-    totalPurchaseValue: purchaseValueMap.get(supplier.supplierName) || 0,
-  }));
+  return suppliers.map((supplier) =>
+    Object.assign({}, supplier.toObject(), {
+      totalPurchaseValue: purchaseValueMap.get(supplier.supplierName) || 0,
+    }),
+  );
 };
 
 const getSupplierById = async (supplierId) => {

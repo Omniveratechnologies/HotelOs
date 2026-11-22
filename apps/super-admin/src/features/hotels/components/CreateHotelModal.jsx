@@ -4,9 +4,41 @@ import { Send } from "lucide-react";
 import { Modal, Input, Button } from "@hotelos/ui/components";
 
 import { useCreateHotel } from "../hooks/useHotels.js";
-import { invitationsApi } from "@hotelos/api";
+import { invitationsApi, ApiError } from "@hotelos/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Map backend validation field paths to frontend field names
+ * Backend uses: body.fieldName, query.fieldName, params.fieldName
+ * Frontend uses: fieldName
+ */
+function mapValidationErrors(validationErrors) {
+  if (!validationErrors) return {};
+
+  const mapped = {};
+
+  // Map body errors directly (most common)
+  if (validationErrors.body) {
+    Object.assign(mapped, validationErrors.body);
+  }
+
+  // Map query errors with prefix
+  if (validationErrors.query) {
+    for (const [field, messages] of Object.entries(validationErrors.query)) {
+      mapped[`query.${field}`] = messages;
+    }
+  }
+
+  // Map params errors with prefix
+  if (validationErrors.params) {
+    for (const [field, messages] of Object.entries(validationErrors.params)) {
+      mapped[`params.${field}`] = messages;
+    }
+  }
+
+  return mapped;
+}
 
 export default function CreateHotelModal({ open, onClose, onCreated }) {
   // =====================================================
@@ -244,9 +276,17 @@ export default function CreateHotelModal({ open, onClose, onCreated }) {
       resetAndClose();
     } catch (error) {
       console.error("Create hotel / invite error:", error);
-      setErrors({
-        form: error.message || "Failed to create hotel. Please try again.",
-      });
+
+      if (error instanceof ApiError && error.isValidationError) {
+        // Map backend validation errors to frontend field names
+        const fieldErrors = mapValidationErrors(error.validationErrors);
+        setErrors(fieldErrors);
+      } else {
+        // Non-validation error (network, server, etc.)
+        setErrors({
+          form: error.message || "Failed to create hotel. Please try again.",
+        });
+      }
     } finally {
       setSubmitting(false);
     }

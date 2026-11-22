@@ -11,10 +11,12 @@ export function validate(schemaMap) {
       const validated = {};
       const errors = {};
 
-      for (const [source, schema] of Object.entries(schemaMap)) {
-        const data = req[source];
-        // Zod v4: safeParseAsync works the same
-        const result = await schema.safeParseAsync(data);
+      const entries = Object.entries(schemaMap);
+      const results = await Promise.all(
+        entries.map(([source, schema]) => schema.safeParseAsync(req[source])),
+      );
+      entries.forEach(([source], index) => {
+        const result = results[index];
 
         if (!result.success) {
           // Zod v4 error format - flatten() still works
@@ -22,12 +24,25 @@ export function validate(schemaMap) {
         } else {
           validated[source] = result.data;
         }
-      }
+      });
 
       if (Object.keys(errors).length > 0) {
+        const firstErrorMessages = [];
+        for (const fieldErrors of Object.values(errors)) {
+          for (const [field, msgs] of Object.entries(fieldErrors)) {
+            if (Array.isArray(msgs) && msgs.length > 0) {
+              firstErrorMessages.push(`${field}: ${msgs[0]}`);
+            }
+          }
+        }
+        const message =
+          firstErrorMessages.length > 0
+            ? `Validation failed: ${firstErrorMessages.join("; ")}`
+            : "Validation failed";
+
         return res.status(400).json({
           success: false,
-          message: "Validation failed",
+          message,
           errors,
         });
       }

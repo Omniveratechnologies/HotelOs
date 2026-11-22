@@ -2,6 +2,7 @@
 # 📦 Dependencies & Package Managers
 # ------------------------------------------------------
 node_modules/
+.pnpm/
 .pnpm-store
 /.pnp
 .pnp.*

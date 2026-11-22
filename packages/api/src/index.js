@@ -11,7 +11,7 @@ export * as reservationsApi from "./endpoints/reservations.js";
 export * as ordersApi from "./endpoints/orders.js";
 export * as serviceRequestsApi from "./endpoints/serviceRequests.js";
 export * as dashboardApi from "./endpoints/dashboard.js";
-export * as membersApi from "./endpoints/members.js";
+export * as staffApi from "./endpoints/staff.js";
 export * as invitationsApi from "./endpoints/invitations.js";
 export * as subscriptionsApi from "./endpoints/subscriptions.js";
 export * as transactionsApi from "./endpoints/transactions.js";
@@ -34,7 +34,10 @@ export {
   login,
   forgotUsername,
   forgotPassword,
+  getResetPasswordAccounts,
+  selectResetPasswordAccount,
   resetPassword,
+  changePassword,
 } from "./endpoints/auth.js";
 export * from "./endpoints/auth.js";
 export * from "./endpoints/hotels.js";
@@ -52,7 +55,7 @@ export * from "./endpoints/reservations.js";
 export * from "./endpoints/orders.js";
 export * from "./endpoints/serviceRequests.js";
 export * from "./endpoints/dashboard.js";
-export * from "./endpoints/members.js";
+export * from "./endpoints/staff.js";
 export * from "./endpoints/invitations.js";
 export * from "./endpoints/subscriptions.js";
 export * from "./endpoints/transactions.js";

@@ -1,4 +1,4 @@
-import redisConnection from "#/config/redis.js";
+import { redisConnection } from "#/config/redis.js";
 import logger from "#/utils/logger.js";
 
 const memoryStore = new Map();

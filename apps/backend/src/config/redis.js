@@ -1,5 +1,5 @@
 import { Redis } from "ioredis";
-import env from "./env.js";
+import { env } from "./env.js";
 import logger from "#/utils/logger.js";
 
 /**
@@ -9,7 +9,11 @@ import logger from "#/utils/logger.js";
 export const redisConnection = new Redis(env.redisUrl, {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
+  lazyConnect: env.nodeEnv === "test" || process.env.NODE_ENV === "test",
   retryStrategy(times) {
+    if (env.nodeEnv === "test" || process.env.NODE_ENV === "test") {
+      return null;
+    }
     const delay = Math.min(times * 200, 3000);
     return delay;
   },

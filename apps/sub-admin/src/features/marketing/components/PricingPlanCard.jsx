@@ -32,6 +32,8 @@ const TONES = {
  *  features     list of included features
  *  cta          { label, to }
  */
+const EMPTY_FEATURES = [];
+
 export default function PricingPlanCard({
   tone = "blue",
   icon,
@@ -40,7 +42,7 @@ export default function PricingPlanCard({
   description,
   price,
   note,
-  features = [],
+  features = EMPTY_FEATURES,
   cta,
 }) {
   const t = TONES[tone];

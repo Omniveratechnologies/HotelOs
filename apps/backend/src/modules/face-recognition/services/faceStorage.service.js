@@ -8,6 +8,7 @@ import {
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ApiError } from "../../../utils/http.js";
+import logger from "#/utils/logger.js";
 
 let warned = false;
 const encryptionKey = () => {
@@ -17,7 +18,7 @@ const encryptionKey = () => {
       throw new ApiError(500, "FACE_ENCRYPTION_KEY is not set.");
     if (!warned) {
       warned = true;
-      console.warn(
+      logger.warn(
         "[face] FACE_ENCRYPTION_KEY not set: using an INSECURE development key.",
       );
     }
@@ -143,18 +144,20 @@ export const readImage = async (key) => {
 };
 
 export const removeImages = async (keys = []) => {
-  for (const key of keys.filter(Boolean)) {
-    try {
-      if (driver() === "r2") {
-        const { client, DeleteObjectCommand, bucket } = await r2();
-        await client.send(
-          new DeleteObjectCommand({ Bucket: bucket, Key: key }),
-        );
-      } else {
-        await fs.rm(localPath(key), { force: true });
+  await Promise.all(
+    keys.filter(Boolean).map(async (key) => {
+      try {
+        if (driver() === "r2") {
+          const { client, DeleteObjectCommand, bucket } = await r2();
+          await client.send(
+            new DeleteObjectCommand({ Bucket: bucket, Key: key }),
+          );
+        } else {
+          await fs.rm(localPath(key), { force: true });
+        }
+      } catch (error) {
+        logger.warn(`[face] could not delete ${key}: ${error.message}`);
       }
-    } catch (error) {
-      console.warn(`[face] could not delete ${key}: ${error.message}`);
-    }
-  }
+    }),
+  );
 };

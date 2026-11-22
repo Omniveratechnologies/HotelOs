@@ -1,0 +1,401 @@
+import React, { useState } from "react";
+import { Plus } from "lucide-react";
+import { Modal, Input, Button } from "@hotelos/ui/components";
+import { KIOSK_SUPPORTED_FEATURES } from "@hotelos/utils";
+import {
+  useCreateKiosk,
+  useKioskDashboards,
+  useHotelTables,
+  useHotelRooms,
+} from "../hooks/useKiosks.ts";
+import { useHotels } from "../hooks/useHotels.js";
+import { ApiError } from "@hotelos/api";
+import type { Hotel, KioskDevice, CreateKioskModalProps } from "../types.ts";
+
+/**
+ * Map backend validation field paths to frontend field names
+ */
+function mapValidationErrors(
+  validationErrors?: Record<string, Record<string, string>>,
+): Record<string, string> {
+  if (!validationErrors) return {};
+
+  const mapped: Record<string, string> = {};
+
+  if (validationErrors.body) {
+    Object.assign(mapped, validationErrors.body);
+  }
+
+  if (validationErrors.query) {
+    for (const [field, messages] of Object.entries(validationErrors.query)) {
+      mapped[`query.${field}`] = String(messages);
+    }
+  }
+
+  if (validationErrors.params) {
+    for (const [field, messages] of Object.entries(validationErrors.params)) {
+      mapped[`params.${field}`] = String(messages);
+    }
+  }
+
+  return mapped;
+}
+
+export const CreateKioskModal: React.FC<CreateKioskModalProps> = ({
+  open,
+  onClose,
+  onCreated,
+  defaultHotelId,
+}) => {
+  const { hotels } = useHotels() as { hotels: Hotel[] };
+  const { dashboards } = useKioskDashboards();
+  const createKioskMutation = useCreateKiosk();
+
+  const [hotelId, setHotelId] = useState<string>(defaultHotelId || "");
+  const [name, setName] = useState<string>("");
+  const [deviceId, setDeviceId] = useState<string>("");
+  const [location, setLocation] = useState<string>("Main Lobby");
+  const [targetDashboard, setTargetDashboard] =
+    useState<string>("GUEST_DASHBOARD");
+  const [tableId, setTableId] = useState<string>("");
+  const [roomId, setRoomId] = useState<string>("");
+  const [supportedFeatures, setSupportedFeatures] = useState<string[]>([
+    "CHECK_IN",
+    "KEY_DISPENSE",
+    "DOCUMENT_SCAN",
+  ]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { tables, isLoading: tablesLoading } = useHotelTables(hotelId);
+  const { rooms, isLoading: roomsLoading } = useHotelRooms(hotelId);
+
+  function resetForm() {
+    setHotelId(defaultHotelId || "");
+    setName("");
+    setDeviceId("");
+    setLocation("Main Lobby");
+    setTargetDashboard("GUEST_DASHBOARD");
+    setTableId("");
+    setRoomId("");
+    setSupportedFeatures(["CHECK_IN", "KEY_DISPENSE", "DOCUMENT_SCAN"]);
+    setErrors({});
+  }
+
+  function handleClose() {
+    resetForm();
+    onClose();
+  }
+
+  function toggleFeature(featId: string) {
+    setSupportedFeatures((prev) =>
+      prev.includes(featId)
+        ? prev.filter((f) => f !== featId)
+        : [...prev, featId],
+    );
+  }
+
+  function validate(): boolean {
+    const errs: Record<string, string> = {};
+    if (!hotelId) errs.hotelId = "Please select an assigned hotel";
+    if (!name.trim()) errs.name = "Terminal name is required";
+    if (!deviceId.trim()) errs.deviceId = "Device ID is required";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate()) return;
+
+    try {
+      const result = await createKioskMutation.mutateAsync({
+        hotelId,
+        name: name.trim(),
+        deviceId: deviceId.trim().toUpperCase(),
+        location: location.trim(),
+        targetDashboard,
+        tableId: targetDashboard === "DIGITAL_MENU" ? tableId || null : null,
+        roomId: targetDashboard === "GUEST_DASHBOARD" ? roomId || null : null,
+        supportedFeatures,
+      });
+
+      if (onCreated) {
+        onCreated(result as unknown as KioskDevice);
+      }
+      handleClose();
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.isValidationError) {
+        const fieldErrors = mapValidationErrors(
+          err.validationErrors as Record<string, Record<string, string>>,
+        );
+        setErrors(fieldErrors);
+      } else {
+        const msg =
+          (err as Error)?.message || "Failed to register kiosk terminal";
+        setErrors({ form: msg });
+      }
+    }
+  }
+
+  const selectedPreset = dashboards.find((d) => d.id === targetDashboard);
+
+  // Compute live preview of assigned URL
+  let resolvedUrl = selectedPreset?.url || "";
+  if (targetDashboard === "DIGITAL_MENU" && hotelId && tableId) {
+    resolvedUrl = `${resolvedUrl}/${hotelId}/table/${tableId}`;
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={handleClose}
+      title="Register Kiosk Terminal"
+      subtitle="Provision a new Android touchscreen terminal, assign its dashboard, and generate its one-time pairing key"
+      maxWidth="lg"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {errors.form && (
+          <div className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
+            {errors.form}
+          </div>
+        )}
+
+        {/* Assigned Hotel */}
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Associated Hotel *
+          </label>
+          <select
+            value={hotelId}
+            disabled={Boolean(defaultHotelId)}
+            onChange={(e) => {
+              setHotelId(e.target.value);
+              setTableId(""); // reset table selection when hotel changes
+              setRoomId(""); // reset room selection when hotel changes
+            }}
+            className="focus:border-brand-500 focus:ring-brand-500 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:ring-1 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+          >
+            <option value="">Select a hotel...</option>
+            {hotels.map((h) => (
+              <option key={h._id} value={h._id}>
+                {h.name} {h.city ? `(${h.city})` : ""}
+              </option>
+            ))}
+          </select>
+          {errors.hotelId && (
+            <p className="mt-1 text-xs text-rose-600">{errors.hotelId}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Terminal Name */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Terminal Name *
+            </label>
+            <Input
+              placeholder="e.g. Lobby Entrance Kiosk #1"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              error={errors.name}
+            />
+          </div>
+
+          {/* Device ID */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Hardware Device ID *
+            </label>
+            <Input
+              placeholder="e.g. KIOSK-LOBBY-01"
+              value={deviceId}
+              onChange={(e) => setDeviceId(e.target.value)}
+              error={errors.deviceId}
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Matches the Device ID shown on the kiosk setup screen.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Location */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Physical Location
+            </label>
+            <Input
+              placeholder="e.g. Main Lobby East"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          {/* Target Dashboard */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Target Dashboard / Mode *
+            </label>
+            <select
+              value={targetDashboard}
+              onChange={(e) => {
+                setTargetDashboard(e.target.value);
+                if (e.target.value !== "DIGITAL_MENU") {
+                  setTableId("");
+                }
+                if (e.target.value !== "GUEST_DASHBOARD") {
+                  setRoomId("");
+                }
+              }}
+              className="focus:border-brand-500 focus:ring-brand-500 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:ring-1 focus:outline-none"
+            >
+              {dashboards.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Room Selection when Guest Dashboard is selected */}
+        {targetDashboard === "GUEST_DASHBOARD" && (
+          <div className="space-y-2 rounded-xl border border-sky-200 bg-sky-50/60 p-3.5">
+            <label className="block text-xs font-bold tracking-wide text-sky-900 uppercase">
+              Assigned Hotel Room (Guest Dashboard)
+            </label>
+            <select
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value)}
+              disabled={!hotelId || roomsLoading}
+              className="w-full rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-sky-500 focus:outline-none"
+            >
+              <option value="">
+                {!hotelId
+                  ? "Select a hotel first..."
+                  : roomsLoading
+                    ? "Loading rooms..."
+                    : "No specific room (General Lobby/Unassigned Kiosk)"}
+              </option>
+              {rooms.map((r) => (
+                <option key={r.id || r._id} value={r.id || r._id}>
+                  Room {r.roomNumber} ({r.type || "Room"}, Floor {r.floor || 1})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-sky-800">
+              When assigned, this in-room terminal automatically logs in as the
+              guest when they check into this room, and logs out upon check-out.
+            </p>
+          </div>
+        )}
+
+        {/* Dining Table Selection when Digital Menu is selected */}
+        {targetDashboard === "DIGITAL_MENU" && (
+          <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/60 p-3.5">
+            <label className="block text-xs font-bold tracking-wide text-amber-900 uppercase">
+              Assigned Dining Table (Digital Menu)
+            </label>
+            <select
+              value={tableId}
+              onChange={(e) => setTableId(e.target.value)}
+              disabled={!hotelId || tablesLoading}
+              className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-amber-500 focus:outline-none"
+            >
+              <option value="">
+                {!hotelId
+                  ? "Select a hotel first..."
+                  : tablesLoading
+                    ? "Loading tables..."
+                    : "No specific table (Guest QR scan required)"}
+              </option>
+              {tables.map((t) => (
+                <option key={t.id || t._id} value={t.id || t._id}>
+                  Table {t.tableNumber} {t.section ? `(${t.section})` : ""} —{" "}
+                  {t.seats || t.capacity || 4} seats
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-amber-800">
+              When assigned, the kiosk loads this table's order menu directly.
+            </p>
+          </div>
+        )}
+
+        {/* Supported Hardware Features */}
+        <div>
+          <label className="mb-1.5 block text-xs font-bold tracking-wider text-gray-500 uppercase">
+            Supported Hardware & Peripheral Features
+          </label>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {KIOSK_SUPPORTED_FEATURES.map((feat) => {
+              const active = supportedFeatures.includes(feat.id);
+              return (
+                <button
+                  type="button"
+                  key={feat.id}
+                  onClick={() => toggleFeature(feat.id)}
+                  className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs font-medium transition ${
+                    active
+                      ? "border-brand-500 bg-brand-50 text-brand-800"
+                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      active ? "bg-brand-600" : "bg-gray-300"
+                    }`}
+                  />
+                  <span>{feat.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Live Resolved URL Preview */}
+        {selectedPreset && (
+          <div className="rounded-lg bg-gray-50 p-2.5 text-xs text-gray-600">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-gray-700">
+                Resolved Live URL:
+              </span>
+              <span className="text-[11px] text-gray-500">
+                {selectedPreset.name}
+              </span>
+            </div>
+            <code className="text-brand-700 mt-1 block font-mono break-all">
+              {resolvedUrl}
+            </code>
+            <p className="mt-1 text-gray-500">{selectedPreset.description}</p>
+          </div>
+        )}
+
+        <div className="rounded-lg bg-sky-50 p-3 text-xs text-sky-800">
+          <p className="font-semibold">One-time physical setup:</p>
+          <p>
+            The server generates a 6-digit pairing code. Enter that code on the
+            kiosk tablet once. Afterwards, all hotel reassignments, table
+            bindings, and dashboard changes apply remotely over the network.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-3">
+          <Button variant="secondary" onClick={handleClose} type="button">
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            type="submit"
+            icon={Plus}
+            loading={createKioskMutation.isPending}
+          >
+            Register & Generate Pair Code
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+export default CreateKioskModal;

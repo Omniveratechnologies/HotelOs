@@ -14,11 +14,13 @@ const ICON_TONES = {
  *  title, subtitle  heading (title can be a string or parts, see SectionHeading)
  *  items            [{ icon, title, description, tone? }]  tone: "rose" (default) | "orange"
  */
+const EMPTY_ITEMS = [];
+
 export default function BenefitGrid({
   theme = "rose",
   title,
   subtitle,
-  items = [],
+  items = EMPTY_ITEMS,
 }) {
   return (
     <section className="mx-auto max-w-[1400px] px-6 py-12 lg:px-10">

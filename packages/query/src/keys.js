@@ -76,12 +76,12 @@ export const queryKeys = {
     stats: () => [...queryKeys.dashboard.all, "stats"],
     health: () => [...queryKeys.dashboard.all, "health"],
   },
-  members: {
-    all: ["members"],
-    lists: () => [...queryKeys.members.all, "list"],
-    list: (role) => [...queryKeys.members.lists(), role || "RECEPTIONIST"],
-    details: () => [...queryKeys.members.all, "detail"],
-    detail: (id) => [...queryKeys.members.details(), id],
+  staff: {
+    all: ["staff"],
+    lists: () => [...queryKeys.staff.all, "list"],
+    list: (role) => [...queryKeys.staff.lists(), role || "RECEPTIONIST"],
+    details: () => [...queryKeys.staff.all, "detail"],
+    detail: (id) => [...queryKeys.staff.details(), id],
   },
   ratePlans: {
     all: ["rate-plans"],

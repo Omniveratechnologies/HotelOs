@@ -8,7 +8,15 @@ import { resolveKioskAssignedUrl } from "./config/kioskDashboards.js";
 import { updateKioskDevice } from "./controllers/kioskDevice.controller.js";
 import { getTables } from "#/modules/tables/controllers/table.controller.js";
 import { getRooms } from "#/modules/rooms/controllers/room.controller.js";
-import env from "#/config/env.js";
+import { env } from "#/config/env.js";
+
+const makeQuery = (data) => {
+  const q = {
+    populate: () => q,
+    lean: async () => data,
+  };
+  return q;
+};
 
 function createMockResponse() {
   const res = {
@@ -86,14 +94,6 @@ describe("Kiosk Dashboard Assignment & Role Authorization", () => {
         status: "ONLINE",
         targetDashboard: "GUEST_DASHBOARD",
         save: async () => {},
-      };
-
-      const makeQuery = (data) => {
-        const q = {
-          populate: () => q,
-          lean: async () => data,
-        };
-        return q;
       };
 
       KioskDevice.findById = () =>

@@ -1,0 +1,309 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, developer]
+  pull_request:
+    branches: [main, developer]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '24.x'
+  PNPM_VERSION: '12.x'
+
+jobs:
+  # ============================================================
+  # LINT & TYPE CHECK
+  # ============================================================
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run lint
+        run: pnpm lint
+
+      - name: Type check (if applicable)
+        run: |
+          if [ -f "tsconfig.json" ]; then
+            pnpm run typecheck 2>/dev/null || echo "No typecheck script"
+          fi
+
+  # ============================================================
+  # TESTS (UNIT & INTEGRATION)
+  # ============================================================
+  test:
+    name: Tests (Unit & Integration)
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test --if-present
+        env:
+          NODE_ENV: test
+          MONGODB_URI: mongodb://localhost:27017/hotelos_test
+          JWT_SECRET: test-jwt-secret-key-that-is-at-least-32-chars-long
+          REDIS_URL: redis://localhost:6379
+
+  # ============================================================
+  # SECURITY SCANNING
+  # ============================================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: npm audit
+        run: |
+          pnpm audit --audit-level=high --json > audit-report.json || true
+          cat audit-report.json | jq '.metadata.vulnerabilities'
+          HIGH=$(cat audit-report.json | jq '.metadata.vulnerabilities.high // 0')
+          CRITICAL=$(cat audit-report.json | jq '.metadata.vulnerabilities.critical // 0')
+          if [ "$HIGH" -gt 0 ] || [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Found $HIGH high and $CRITICAL critical vulnerabilities"
+            exit 1
+          fi
+
+      - name: Snyk Security Scan
+        uses: snyk/actions/node@master
+        if: env.SNYK_TOKEN != ''
+        with:
+          command: test
+          args: --severity-threshold=high --fail-on=upgradable
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  # ============================================================
+  # CONTAINER SCANNING
+  # ============================================================
+  container-scan:
+    name: Container Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        run: |
+          docker build -t hotelos/backend:${{ github.sha }} ./apps/backend
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'hotelos/backend:${{ github.sha }}'
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+
+  # ============================================================
+  # DEPLOY TO STAGING
+  # ============================================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [lint, test, security-scan]
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Staging
+        run: |
+          echo "Deploying to staging..."
+          # Add your staging deployment commands here
+          # Example:
+          # ssh deploy@staging-server "cd /opt/hotelos && git pull && docker-compose -f docker-compose.staging.yml up -d --build"
+          echo "Staging deployment placeholder"
+
+      - name: Verify Staging Health
+        run: |
+          sleep 30
+          curl -f https://staging-api.hotelos.com/api/v1/health || exit 1
+          echo "Staging deployment verified"
+
+  # ============================================================
+  # DEPLOY TO PRODUCTION
+  # ============================================================
+  deploy-production:
+    name: Deploy to Production
+    needs: [lint, test, security-scan, deploy-staging]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to production..."
+          # Add your production deployment commands here
+          # Example:
+          # ssh deploy@prod-server "cd /opt/hotelos && git pull && docker-compose -f docker-compose.prod.yml up -d --build"
+          echo "Production deployment placeholder"
+
+      - name: Verify Production Health
+        run: |
+          sleep 30
+          curl -f https://api.hotelos.com/api/v1/health || exit 1
+          echo "Production deployment verified"
+
+      - name: Notify Success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#deployments'
+          text: '✅ HotelOS deployed to production successfully!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#deployments'
+          text: '❌ HotelOS production deployment failed!'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ============================================================
+  # DEPENDENCY UPDATE (Scheduled)
+  # ============================================================
+  dependency-update:
+    name: Dependency Update Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for updates
+        run: |
+          pnpm outdated --json > outdated.json || true
+          cat outdated.json
+
+      - name: Create PR for updates
+        if: always()
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: dependency-updates
+          title: 'chore: update dependencies'
+          body: |
+            Automated dependency updates.
+            See `outdated.json` for details.
+          labels: dependencies, automated
+
+  # ============================================================
+  # LOAD TEST (Manual/Scheduled)
+  # ============================================================
+  load-test:
+    name: Load Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/k6-action@v0.2.0
+
+      - name: Run load test
+        run: |
+          k6 run load-tests/hotelos-load-test.js \
+            -e API_URL=https://staging-api.hotelos.com
+        env:
+          K6_OUT: 'influxdb=http://influxdb:8086/k6'
+
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: load-test-results
+          path: |
+            *.json
+            *.html

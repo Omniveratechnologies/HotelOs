@@ -20,16 +20,16 @@ import {
   submitCheckIn,
   uploadCheckInFile,
 } from "../api/checkInApi";
-import WelcomeStep from "../components/steps/WelcomeStep";
-import BookingStep from "../components/steps/BookingStep";
-import GuestStep from "../components/steps/GuestStep";
-import CaptureIdStep from "../components/steps/CaptureIdStep";
-import PhotoStep from "../components/steps/PhotoStep";
-import RegistrationCardStep from "../components/steps/RegistrationCardStep";
-import SignatureStep from "../components/steps/SignatureStep";
-import PreferencesStep from "../components/steps/PreferencesStep";
-import ReviewStep from "../components/steps/ReviewStep";
-import SuccessStep from "../components/steps/SuccessStep";
+import { WelcomeStep } from "../components/steps/WelcomeStep";
+import { BookingStep } from "../components/steps/BookingStep";
+import { GuestStep } from "../components/steps/GuestStep";
+import { CaptureIdStep } from "../components/steps/CaptureIdStep";
+import { PhotoStep } from "../components/steps/PhotoStep";
+import { RegistrationCardStep } from "../components/steps/RegistrationCardStep";
+import { SignatureStep } from "../components/steps/SignatureStep";
+import { PreferencesStep } from "../components/steps/PreferencesStep";
+import { ReviewStep } from "../components/steps/ReviewStep";
+import { SuccessStep } from "../components/steps/SuccessStep";
 import type {
   CheckInSessionData,
   FileRef,
@@ -90,6 +90,7 @@ export default function SelfCheckInPage() {
   } | null>(null);
   const [pendingSignature, setPendingSignature] = useState<string | null>(null);
   const [terms, setTerms] = useState(false);
+  const [termsAcceptedAt, setTermsAcceptedAt] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<string[]>([]);
   const [remarks, setRemarks] = useState("");
 
@@ -106,15 +107,13 @@ export default function SelfCheckInPage() {
   const guestNationality = guest.nationality || sessionGuest?.nationality || "";
 
   const isAlreadyCheckedIn = booking?.status === "checked-in";
+  // Captured once so the render stays pure while still reflecting "now".
+  const [mountedAt] = useState(() => Date.now());
   const isCheckOutPassed = useMemo(() => {
     if (booking?.status === "checked-out") return true;
     if (!booking?.checkOut) return false;
-    try {
-      return new Date() > new Date(booking.checkOut);
-    } catch {
-      return false;
-    }
-  }, [booking?.status, booking?.checkOut]);
+    return mountedAt > new Date(booking.checkOut).getTime();
+  }, [booking?.status, booking?.checkOut, mountedAt]);
 
   // Resolve check-in on mount
   useEffect(() => {
@@ -266,6 +265,9 @@ export default function SelfCheckInPage() {
         }
 
         setTerms(cachedDraft?.terms ?? Boolean(sd.termsAcceptedAt));
+        if (sd.termsAcceptedAt) {
+          setTermsAcceptedAt(sd.termsAcceptedAt);
+        }
         setPrefs(cachedDraft?.prefs || sd.preferences || []);
         setRemarks(cachedDraft?.remarks ?? (sd.remarks || ""));
 
@@ -1104,7 +1106,16 @@ export default function SelfCheckInPage() {
                   hasDrawing={Boolean(pendingSignature)}
                   onDrawingChange={onDrawingChange}
                   termsAccepted={terms}
-                  onTermsChange={setTerms}
+                  onTermsChange={(accepted) => {
+                    setTerms(accepted);
+                    if (accepted) {
+                      setTermsAcceptedAt(
+                        (prev) => prev || new Date().toISOString(),
+                      );
+                    } else {
+                      setTermsAcceptedAt(null);
+                    }
+                  }}
                   uploading={uploading}
                   error={stepError}
                 />
@@ -1260,9 +1271,10 @@ export default function SelfCheckInPage() {
                             : session?.stepData?.preferences,
                         remarks: remarks || session?.stepData?.remarks,
                         termsAcceptedAt: terms
-                          ? session?.stepData?.termsAcceptedAt ||
-                            new Date().toISOString()
-                          : session?.stepData?.termsAcceptedAt,
+                          ? termsAcceptedAt ||
+                            session?.stepData?.termsAcceptedAt ||
+                            null
+                          : null,
                       }}
                       correctionMessage={session?.correctionMessage}
                       rejectionMessage={

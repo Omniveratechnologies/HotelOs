@@ -1,4 +1,7 @@
 import express from "express";
+import { route } from "#/utils/http.js";
+import Coupon from "../models/Coupon.js";
+import { couponDTO } from "../dto/billing.dto.js";
 import {
   saveBill,
   listBills,
@@ -27,8 +30,6 @@ import { authorize } from "#/shared/middleware/role.middleware.js";
 import {
   getBillingDashboard,
   getPaymentsDashboard,
-} from "../controllers/billingDashboard.controller.js";
-import {
   listFolios,
   getFolioByBooking,
   getFolio,
@@ -124,28 +125,31 @@ import {
 
 const router = express.Router();
 
-router.get("/coupons/public/:hotelId/:code", async (req, res) => {
-  try {
-    const coupon = await Coupon.findOne({
-      hotelId: req.params.hotelId,
-      code: req.params.code.toUpperCase(),
-      status: true,
-    });
-    if (!coupon)
+router.get(
+  "/coupons/public/:hotelId/:code",
+  route(async (req, res) => {
+    try {
+      const coupon = await Coupon.findOne({
+        hotelId: req.params.hotelId,
+        code: req.params.code.toUpperCase(),
+        status: true,
+      });
+      if (!coupon)
+        return res
+          .status(404)
+          .json({ success: false, message: "Invalid coupon code" });
+      if (coupon.validTill && new Date() > coupon.validTill)
+        return res
+          .status(400)
+          .json({ success: false, message: "Coupon expired" });
+      return res.status(200).json({ success: true, data: couponDTO(coupon) });
+    } catch {
       return res
-        .status(404)
-        .json({ success: false, message: "Invalid coupon code" });
-    if (coupon.validTill && new Date() > coupon.validTill)
-      return res
-        .status(400)
-        .json({ success: false, message: "Coupon expired" });
-    return res.status(200).json({ success: true, data: couponDTO(coupon) });
-  } catch {
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to validate coupon" });
-  }
-});
+        .status(500)
+        .json({ success: false, message: "Failed to validate coupon" });
+    }
+  }),
+);
 // keep this ABOVE router.use(authenticate, authorize(...))
 router.use(authenticate, authorize("SUB_ADMIN", "KITCHEN", "RECEPTIONIST"));
 

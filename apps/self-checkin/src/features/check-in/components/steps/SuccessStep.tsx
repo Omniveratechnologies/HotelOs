@@ -519,5 +519,3 @@ export function SuccessStep({
     </div>
   );
 }
-
-export default SuccessStep;

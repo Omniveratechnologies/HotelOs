@@ -64,6 +64,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
   const [startDate, setStartDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
   );
+  const [today] = useState(() => new Date().toISOString().slice(0, 10));
   const [activeTab, setActiveTab] = useState("rates"); // "rates" | "inventory" | "restrictions"
 
   const endDate = addDays(startDate, 9);
@@ -558,7 +559,7 @@ export default function AiosellLiveMatrix({ hotelId, hotelName }) {
                   </th>
                   {dates.map((d) => {
                     const { day, weekday } = formatDateHeader(d);
-                    const isToday = d === new Date().toISOString().slice(0, 10);
+                    const isToday = d === today;
                     return (
                       <th
                         key={d}

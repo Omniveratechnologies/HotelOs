@@ -137,8 +137,7 @@ export function KioskRoomStandby({
       {/* Footer */}
       <footer className="border-border/50 text-muted-foreground flex flex-wrap items-center justify-between gap-4 border-t pt-6 text-xs">
         <p>
-          © {new Date().getFullYear()} {hotelName || "HotelOS"}. All rights
-          reserved.
+          © {now.getFullYear()} {hotelName || "HotelOS"}. All rights reserved.
         </p>
         <p className="tracking-wide">Touchscreen Suite Tablet Terminal</p>
       </footer>

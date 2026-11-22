@@ -5,6 +5,7 @@ import type {
   PaymentVerificationInput,
   ServiceRequestInput,
   TableDetails,
+  UpsellSuggestion,
 } from "../types";
 
 const raw = (import.meta.env.VITE_API_URL ?? "http://localhost:5001")
@@ -144,7 +145,7 @@ export const api = {
     request<FoodItem[]>(`/food-items/public/${hotelId}`),
 
   getUpsellSuggestions: (hotelId: string, foodItemIds: string[]) =>
-    request<any[]>(
+    request<UpsellSuggestion[]>(
       `/upselling/public/${hotelId}/suggest?foodItemIds=${foodItemIds.join(",")}`,
     ),
 

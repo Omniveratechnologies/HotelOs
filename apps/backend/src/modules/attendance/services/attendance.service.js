@@ -14,15 +14,15 @@ import { AttendanceRule } from "../models/attendanceRule.js";
 import { ApiError, isObjectId } from "../../../utils/http.js";
 import * as time from "../../../utils/attendanceTime.js";
 
-const NO_TIME_STATUSES = ["ABSENT", "ON_LEAVE", "HOLIDAY"];
-const SORT_KEYS = [
+const NO_TIME_STATUSES = new Set(["ABSENT", "ON_LEAVE", "HOLIDAY"]);
+const SORT_KEYS = new Set([
   "date",
   "checkInAt",
   "checkOutAt",
   "workMinutes",
   "status",
   "lastEventAt",
-];
+]);
 const MAX_LIMIT = 100;
 const MAX_EXPORT_ROWS = 50000;
 const MAX_OPEN_HOURS = 24;
@@ -213,6 +213,8 @@ const breakFor = (shift, rules) =>
     Number(shift?.breakMinutes ?? rules.defaultBreakMinutes ?? 0) || 0,
   );
 
+const toIdMap = (list) => new Map(list.map((item) => [String(item._id), item]));
+
 const hydrate = async (hotelId, records) => {
   const unique = (key) =>
     [
@@ -239,12 +241,11 @@ const hydrate = async (hotelId, records) => {
       .lean(),
   ]);
 
-  const byId = (list) => new Map(list.map((item) => [String(item._id), item]));
   return {
-    staff: byId(staff),
-    departments: byId(departments),
-    designations: byId(designations),
-    shifts: byId(shifts),
+    staff: toIdMap(staff),
+    departments: toIdMap(departments),
+    designations: toIdMap(designations),
+    shifts: toIdMap(shifts),
   };
 };
 
@@ -315,7 +316,7 @@ export const listAttendance = async (hotelId, query = {}) => {
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(MAX_LIMIT, Math.max(1, Number(query.limit) || 10));
 
-  const sortKey = SORT_KEYS.includes(query.sort) ? query.sort : "date";
+  const sortKey = SORT_KEYS.has(query.sort) ? query.sort : "date";
   const sign = String(query.direction).toLowerCase() === "asc" ? 1 : -1;
   const sort =
     sortKey === "date"
@@ -323,8 +324,7 @@ export const listAttendance = async (hotelId, query = {}) => {
       : { [sortKey]: sign, date: -1, _id: -1 };
 
   const [records, total] = await Promise.all([
-    AttendanceRecord.find(match)
-      .sort(sort)
+    AttendanceRecord.find(match, undefined, { sort })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean(),
@@ -637,7 +637,7 @@ const settle = (
   { statusGiven, timesGiven },
   statusFromShift,
 ) => {
-  if (NO_TIME_STATUSES.includes(status)) {
+  if (NO_TIME_STATUSES.has(status)) {
     if (timesGiven && (checkInAt || checkOutAt)) {
       throw new ApiError(
         400,
@@ -767,11 +767,7 @@ export const correctAttendance = async (hotelId, id, body = {}, actor = {}) => {
     });
   if (has("remarks")) next.remarks = readRemarks(body.remarks);
 
-  if (
-    !has("status") &&
-    NO_TIME_STATUSES.includes(next.status) &&
-    next.checkInAt
-  )
+  if (!has("status") && NO_TIME_STATUSES.has(next.status) && next.checkInAt)
     next.status = "PRESENT";
 
   const [shift, rules] = await Promise.all([
@@ -972,11 +968,13 @@ export const exportAttendance = async (hotelId, query = {}) => {
   const BATCH = 500;
   const batches = async function* () {
     for (let skip = 0; skip < total; skip += BATCH) {
+      // oxlint-disable-next-line no-await-in-loop -- cursor paging is sequential by design
       const records = await AttendanceRecord.find(match)
         .sort({ date: -1, _id: -1 })
         .skip(skip)
         .limit(BATCH)
         .lean();
+      // oxlint-disable-next-line no-await-in-loop -- must await the page before yielding it
       yield await toRows(hotelId, records);
     }
   };

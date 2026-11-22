@@ -33,13 +33,15 @@ const TONES = {
  *  cta          { label, to }
  *  image        { src, label }
  */
+const EMPTY_ITEMS = [];
+
 export default function SolutionCard({
   tone = "rose",
   icon,
   title,
   subtitle,
   description,
-  items = [],
+  items = EMPTY_ITEMS,
   cta,
   image,
 }) {

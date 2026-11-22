@@ -15,11 +15,14 @@ const t = THEMES.gold;
  *  badges       [{ icon, label }]  (label may contain \n for a line break)
  *  image        { src, label }
  */
+const EMPTY_TITLE = [];
+const EMPTY_BADGES = [];
+
 export default function PricingHero({
   tag,
-  title = [],
+  title = EMPTY_TITLE,
   description,
-  badges = [],
+  badges = EMPTY_BADGES,
   image,
 }) {
   const imageLabel = image?.label ?? "Hero image";

@@ -27,6 +27,7 @@ const buttonClass =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-brand-900 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer";
 
 export default function PaymentsPage() {
+  const [now] = useState(() => new Date());
   const [drawer, setDrawer] = useState("");
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [receiptPayment, setReceiptPayment] = useState(null);
@@ -361,7 +362,7 @@ export default function PaymentsPage() {
               receiptPayment.referenceNo ||
               receiptPayment.reference ||
               `RCT-${receiptPayment._id ? String(receiptPayment._id).slice(-6) : "PAY"}`,
-            createdAt: receiptPayment.createdAt || new Date(),
+            createdAt: receiptPayment.createdAt || now,
             guestName: receiptPayment.guestName || "Guest Payment",
             roomNumber: receiptPayment.roomNo || receiptPayment.roomNumber,
             bookingNo: receiptPayment.bookingNo || receiptPayment.folioNo,
@@ -392,12 +393,16 @@ function MethodBreakdown({ items }) {
   const gradient = useMemo(() => {
     if (!total) return "#e2e8f0";
     let acc = 0;
-    const stops = items.map((item, index) => {
+    const stops = [];
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
       const pct = (Number(item.amount || 0) / total) * 100;
       const start = acc;
       acc += pct;
-      return `${METHOD_COLORS[index % METHOD_COLORS.length]} ${start.toFixed(1)}% ${acc.toFixed(1)}%`;
-    });
+      stops.push(
+        `${METHOD_COLORS[index % METHOD_COLORS.length]} ${start.toFixed(1)}% ${acc.toFixed(1)}%`,
+      );
+    }
     return `conic-gradient(${stops.join(", ")})`;
   }, [items, total]);
 

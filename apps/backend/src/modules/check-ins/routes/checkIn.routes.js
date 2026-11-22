@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { rateLimit } from "express-rate-limit";
 import {
   createCheckInLink,
   getCheckInSessions,
@@ -34,10 +35,22 @@ checkInRouter.post(
   requestCheckInCorrection,
 );
 
+// Rate limiter for public kiosk endpoints (5 requests per 15 minutes per IP)
+const kioskLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: {
+    success: false,
+    message: "Too many requests. Please wait before trying again.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Public token-scoped and kiosk guest check-in routes.
 export const publicCheckInRouter = Router();
-publicCheckInRouter.post("/lookup", lookupBookingForCheckIn);
-publicCheckInRouter.post("/verify-otp", verifyCheckInOtp);
+publicCheckInRouter.post("/lookup", kioskLimiter, lookupBookingForCheckIn);
+publicCheckInRouter.post("/verify-otp", kioskLimiter, verifyCheckInOtp);
 publicCheckInRouter.get("/:token", resolveCheckIn);
 publicCheckInRouter.put("/:token/steps/:step", saveCheckInStep);
 publicCheckInRouter.post("/:token/uploads", getCheckInUploadUrls);

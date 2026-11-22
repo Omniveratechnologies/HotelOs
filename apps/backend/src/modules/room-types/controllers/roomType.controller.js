@@ -29,14 +29,6 @@ const roomTypeSnapshot = (roomType) => ({
   maxOccupancy: roomType.maxOccupancy,
 });
 
-function parseOccupancy(value, fallback) {
-  if (value === undefined || value === null || value === "") {
-    return fallback;
-  }
-  const num = Number(value);
-  return Number.isFinite(num) ? num : undefined;
-}
-
 // =====================================================
 // GET ALL ROOM TYPES (hotel-scoped)
 // =====================================================
@@ -77,97 +69,9 @@ export const createRoomType = async (req, res) => {
       minOccupancy,
       maxOccupancy,
       rooms,
-    } = req.body;
-
-    if (!roomCode?.trim() || !name?.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "roomCode and name are required",
-      });
-    }
+    } = req.validated.body;
 
     const code = roomCode.trim().toLowerCase();
-
-    const countValue = count === undefined ? undefined : Number(count);
-    if (
-      countValue === undefined ||
-      !Number.isFinite(countValue) ||
-      countValue < 1
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "count must be a positive number of at least 1",
-      });
-    }
-
-    if (
-      !Array.isArray(rooms) ||
-      rooms.length !== countValue ||
-      countValue === 0
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: `Provide details for exactly ${countValue} room${
-          countValue === 1 ? "" : "s"
-        }.`,
-      });
-    }
-
-    // Validate each room row.
-    const seenRoomNumbers = new Set();
-    for (let i = 0; i < rooms.length; i++) {
-      const r = rooms[i];
-      const roomNum = r?.roomNumber?.trim();
-
-      if (!roomNum) {
-        return res.status(400).json({
-          success: false,
-          message: `Room number is required for room ${i + 1}`,
-        });
-      }
-
-      const key = roomNum.toLowerCase();
-      if (seenRoomNumbers.has(key)) {
-        return res.status(400).json({
-          success: false,
-          message: `Duplicate room number: "${roomNum}"`,
-        });
-      }
-      seenRoomNumbers.add(key);
-
-      const rateVal = Number(r.rate);
-      if (r.rate == null || Number.isNaN(rateVal) || rateVal < 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Room "${roomNum}" has an invalid rate`,
-        });
-      }
-
-      const floorVal = Number(r.floor);
-      if (r.floor == null || Number.isNaN(floorVal) || floorVal < 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Room "${roomNum}" has an invalid floor`,
-        });
-      }
-    }
-
-    const minOcc = parseOccupancy(minOccupancy, 1);
-    if (minOcc === undefined || minOcc < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "minOccupancy must be a positive number",
-      });
-    }
-
-    const maxOcc = parseOccupancy(maxOccupancy, null);
-    if (maxOcc !== null && (maxOcc === undefined || maxOcc < minOcc)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "maxOccupancy must be a number greater than or equal to minOccupancy",
-      });
-    }
 
     const channelSyncStatus = await resolveChannelStatus(
       req.user.hotelId,
@@ -179,10 +83,10 @@ export const createRoomType = async (req, res) => {
       roomCode: code,
       name: name.trim(),
       description: description?.trim() || "",
-      count: countValue,
+      count,
       active: active === undefined ? true : Boolean(active),
-      minOccupancy: minOcc,
-      maxOccupancy: maxOcc,
+      minOccupancy,
+      maxOccupancy,
       channelSyncStatus,
       hotelId: req.user.hotelId,
     });
@@ -223,10 +127,10 @@ export const createRoomType = async (req, res) => {
       roomCode: code,
       name: roomType.name,
       description: roomType.description,
-      count: countValue,
+      count,
       active: roomType.active,
-      minOccupancy: minOcc,
-      maxOccupancy: maxOcc,
+      minOccupancy,
+      maxOccupancy,
       rooms: rooms.map((r) => r.roomNumber.trim()),
     };
 
@@ -265,110 +169,31 @@ export const createRoomType = async (req, res) => {
 
 export const updateRoomType = async (req, res) => {
   try {
+    const { id } = req.validated.params;
+    const { name, description, active, minOccupancy, maxOccupancy } =
+      req.validated.body;
+
     const allowedUpdates = {};
 
-    const {
-      roomCode,
-      name,
-      description,
-      count,
-      active,
-      minOccupancy,
-      maxOccupancy,
-    } = req.body;
-
-    if (roomCode !== undefined) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "The room code is locked once created — it identifies this type in Aiosell.",
-      });
-    }
-
-    if (count !== undefined) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Room count is managed from the Rooms section — add or delete rooms there.",
-      });
-    }
-
-    if (name !== undefined) {
-      if (!name.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Name cannot be empty",
-        });
-      }
-      allowedUpdates.name = name.trim();
-    }
-
-    if (description !== undefined) {
+    if (name !== undefined) allowedUpdates.name = name.trim();
+    if (description !== undefined)
       allowedUpdates.description = description.trim() || "";
-    }
-
-    if (active !== undefined) {
-      allowedUpdates.active = Boolean(active);
-    }
-
-    if (minOccupancy !== undefined) {
-      const minOcc = parseOccupancy(minOccupancy, undefined);
-      if (minOcc === undefined || minOcc < 1) {
-        return res.status(400).json({
-          success: false,
-          message: "minOccupancy must be a positive number",
-        });
-      }
-      allowedUpdates.minOccupancy = minOcc;
-    }
-
-    if (maxOccupancy !== undefined && maxOccupancy !== null) {
-      const maxOcc = parseOccupancy(maxOccupancy, undefined);
-      if (maxOcc === undefined) {
-        return res.status(400).json({
-          success: false,
-          message: "maxOccupancy must be a number",
-        });
-      }
-      allowedUpdates.maxOccupancy = maxOcc;
-    } else if (maxOccupancy === null) {
-      allowedUpdates.maxOccupancy = null;
-    }
-
-    if (Object.keys(allowedUpdates).length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "No valid fields to update",
-      });
-    }
-
-    if (
-      allowedUpdates.minOccupancy !== undefined &&
-      allowedUpdates.maxOccupancy !== undefined
-    ) {
-      if (
-        allowedUpdates.maxOccupancy !== null &&
-        allowedUpdates.maxOccupancy < allowedUpdates.minOccupancy
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "maxOccupancy must be greater than or equal to minOccupancy",
-        });
-      }
-    }
+    if (active !== undefined) allowedUpdates.active = Boolean(active);
+    if (minOccupancy !== undefined) allowedUpdates.minOccupancy = minOccupancy;
+    if (maxOccupancy !== undefined) allowedUpdates.maxOccupancy = maxOccupancy;
 
     const previousRoomType = CHANNEL_ROOM_TYPE_FIELDS.some(
       (field) => allowedUpdates[field] !== undefined,
     )
       ? await RoomType.findOne({
-          _id: req.params.id,
+          _id: id,
           hotelId: req.user.hotelId,
         })
       : null;
 
     const roomType = await RoomType.findOneAndUpdate(
       {
-        _id: req.params.id,
+        _id: id,
         hotelId: req.user.hotelId,
       },
       allowedUpdates,
@@ -438,8 +263,9 @@ export const updateRoomType = async (req, res) => {
 
 export const deleteRoomType = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const roomType = await RoomType.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
 

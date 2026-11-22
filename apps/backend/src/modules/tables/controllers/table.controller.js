@@ -14,13 +14,7 @@ export const createTable = async (req, res) => {
       status,
       coordinates,
       isOrderingEnabled,
-    } = req.body;
-    if (!tableNumber || !seats) {
-      return res.status(400).json({
-        success: false,
-        message: "tableNumber and seats are required",
-      });
-    }
+    } = req.validated.body;
 
     const table = await Table.create({
       tableNumber,
@@ -72,9 +66,28 @@ export const getTables = async (req, res) => {
 
 export const updateTable = async (req, res) => {
   try {
+    const { id } = req.validated.params;
+    const {
+      tableNumber,
+      seats,
+      section,
+      status,
+      coordinates,
+      isOrderingEnabled,
+    } = req.validated.body;
+
+    const updateData = {};
+    if (tableNumber !== undefined) updateData.tableNumber = tableNumber;
+    if (seats !== undefined) updateData.seats = seats;
+    if (section !== undefined) updateData.section = section;
+    if (status !== undefined) updateData.status = status;
+    if (coordinates !== undefined) updateData.coordinates = coordinates;
+    if (isOrderingEnabled !== undefined)
+      updateData.isOrderingEnabled = isOrderingEnabled;
+
     const table = await Table.findOneAndUpdate(
-      { _id: req.params.id, hotelId: req.user.hotelId },
-      req.body,
+      { _id: id, hotelId: req.user.hotelId },
+      { $set: updateData },
       { new: true },
     );
     if (!table)
@@ -92,8 +105,9 @@ export const updateTable = async (req, res) => {
 
 export const deleteTable = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const table = await Table.findOneAndDelete({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
     if (!table)
@@ -112,8 +126,9 @@ export const deleteTable = async (req, res) => {
 // Returns the QR as a downloadable PNG image
 export const getTableQr = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const table = await Table.findOne({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
     if (!table)
@@ -141,7 +156,7 @@ export const getTableQr = async (req, res) => {
 // PUBLIC — used by the guest-facing table-order app to resolve a scanned QR
 export const getPublicTable = async (req, res) => {
   try {
-    const { hotelId, tableId } = req.params;
+    const { hotelId, tableId } = req.validated.params;
     const table = await Table.findOne({ _id: tableId, hotelId });
     if (!table)
       return res
@@ -162,8 +177,9 @@ export const getPublicTable = async (req, res) => {
  */
 export const resetTable = async (req, res) => {
   try {
+    const id = req.validated?.params?.id || req.params?.id;
     const table = await Table.findOneAndUpdate(
-      { _id: req.params.id, hotelId: req.user.hotelId },
+      { _id: id, hotelId: req.user.hotelId },
       {
         $inc: { sessionGeneration: 1 },
         $set: { status: "AVAILABLE" },

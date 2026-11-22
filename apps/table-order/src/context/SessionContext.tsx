@@ -1,8 +1,7 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -14,39 +13,16 @@ import {
   setApiSessionCredentials,
   type SessionData,
 } from "../services/api";
+import {
+  SessionContext,
+  type Coordinates,
+  type LocationStatus,
+  type SessionContextType,
+} from "./useSession";
 
-export type LocationStatus =
-  | "IDLE"
-  | "PROMPTING"
-  | "ACQUIRING"
-  | "VERIFIED"
-  | "DENIED"
-  | "INACCURATE"
-  | "OUTSIDE_RADIUS"
-  | "ERROR";
-
-interface Coordinates {
-  latitude: number;
-  longitude: number;
-  accuracy?: number;
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
-
-interface SessionContextType {
-  sessionToken: string | null;
-  sessionType: "QR_GUEST" | "KIOSK" | null;
-  isKiosk: boolean;
-  isSessionReady: boolean;
-  locationStatus: LocationStatus;
-  locationError: string | null;
-  sessionError: string | null;
-  coordinates: Coordinates | null;
-  ensureAuthenticatedSession: () => Promise<string>;
-  clearSession: (reason?: string) => void;
-  promptLocationModal: boolean;
-  setPromptLocationModal: (open: boolean) => void;
-}
-
-const SessionContext = createContext<SessionContextType | null>(null);
 
 export function SessionProvider({
   hotelId,
@@ -169,10 +145,10 @@ export function SessionProvider({
 
           setIsSessionReady(true);
           return;
-        } catch (err: any) {
-          console.warn(
+        } catch (err) {
+          console.error(
             "[SessionProvider] Kiosk handoff exchange failed:",
-            err?.message,
+            errorMessage(err),
           );
         }
       }
@@ -200,14 +176,15 @@ export function SessionProvider({
               .then(() => {
                 if (isMounted) setIsSessionReady(true);
               })
-              .catch((err: any) => {
+              .catch((err: unknown) => {
                 if (!isMounted) return;
-                console.info(
+                console.error(
                   "[SessionProvider] Stored session invalid or expired:",
-                  err.message,
+                  errorMessage(err),
                 );
                 clearSession(
-                  err.code === "TABLE_SESSION_INVALIDATED"
+                  err instanceof ApiError &&
+                    err.code === "TABLE_SESSION_INVALIDATED"
                     ? "This table was reset by staff. Please re-scan QR."
                     : undefined,
                 );
@@ -327,10 +304,10 @@ export function SessionProvider({
           const result = await api.exchangeKioskHandoff(pendingCode);
           applyCredentials(result.token, result.csrfToken, "KIOSK");
           return result.token;
-        } catch (err: any) {
-          console.warn(
+        } catch (err) {
+          console.error(
             "[SessionProvider] Fallback handoff exchange failed:",
-            err?.message,
+            errorMessage(err),
           );
         }
       }
@@ -351,7 +328,7 @@ export function SessionProvider({
     let freshCoords: Coordinates;
     try {
       freshCoords = await acquireFreshCoordinates();
-    } catch (err: any) {
+    } catch (err) {
       setPromptLocationModal(true);
       throw err;
     }
@@ -370,7 +347,7 @@ export function SessionProvider({
       setPromptLocationModal(false);
       setSessionError(null);
       return result.token;
-    } catch (error: any) {
+    } catch (error) {
       if (error instanceof ApiError) {
         if (error.code === "LOCATION_OUTSIDE_RADIUS") {
           setLocationStatus("OUTSIDE_RADIUS");
@@ -382,7 +359,7 @@ export function SessionProvider({
           setSessionError(error.message);
         }
       } else {
-        setSessionError(error.message);
+        setSessionError(errorMessage(error));
       }
       setPromptLocationModal(true);
       throw error;
@@ -398,32 +375,38 @@ export function SessionProvider({
     applyCredentials,
   ]);
 
-  return (
-    <SessionContext.Provider
-      value={{
-        sessionToken,
-        sessionType,
-        isKiosk,
-        isSessionReady,
-        locationStatus,
-        locationError,
-        sessionError,
-        coordinates,
-        ensureAuthenticatedSession,
-        clearSession,
-        promptLocationModal,
-        setPromptLocationModal,
-      }}
-    >
-      {children}
-    </SessionContext.Provider>
+  const value = useMemo<SessionContextType>(
+    () => ({
+      sessionToken,
+      sessionType,
+      isKiosk,
+      isSessionReady,
+      locationStatus,
+      locationError,
+      sessionError,
+      coordinates,
+      ensureAuthenticatedSession,
+      clearSession,
+      promptLocationModal,
+      setPromptLocationModal,
+    }),
+    [
+      sessionToken,
+      sessionType,
+      isKiosk,
+      isSessionReady,
+      locationStatus,
+      locationError,
+      sessionError,
+      coordinates,
+      ensureAuthenticatedSession,
+      clearSession,
+      promptLocationModal,
+      setPromptLocationModal,
+    ],
   );
-}
 
-export function useSession() {
-  const context = useContext(SessionContext);
-  if (!context) {
-    throw new Error("useSession must be used within a SessionProvider");
-  }
-  return context;
+  return (
+    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+  );
 }

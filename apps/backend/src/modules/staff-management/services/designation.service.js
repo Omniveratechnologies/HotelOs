@@ -5,7 +5,13 @@ import { ApiError, isObjectId } from "../../../utils/http.js";
 const COLLATION = { locale: "en", strength: 2 };
 const CODE_RE = /^[A-Z0-9]{2,8}$/;
 const MAX_LIMIT = 500;
-const SORT_KEYS = ["name", "department", "staffCount", "status", "createdAt"];
+const SORT_KEYS = new Set([
+  "name",
+  "department",
+  "staffCount",
+  "status",
+  "createdAt",
+]);
 
 const escapeRegex = (value) =>
   String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -85,7 +91,7 @@ const textCompare = (a, b) =>
   String(a ?? "").localeCompare(String(b ?? ""), "en", { sensitivity: "base" });
 
 export const sortRows = (rows, sort = "name", direction = "asc") => {
-  const key = SORT_KEYS.includes(sort) ? sort : "name";
+  const key = SORT_KEYS.has(sort) ? sort : "name";
   const sign = direction === "desc" ? -1 : 1;
 
   const compare = {
@@ -96,7 +102,7 @@ export const sortRows = (rows, sort = "name", direction = "asc") => {
     createdAt: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
   }[key];
 
-  return [...rows].sort(
+  return [...rows].toSorted(
     (a, b) =>
       sign * compare(a, b) ||
       textCompare(a.name, b.name) ||

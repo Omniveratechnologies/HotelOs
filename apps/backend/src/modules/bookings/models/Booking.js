@@ -6,6 +6,7 @@ import {
   OTA_CHANNELS,
   PAYMENT_STATUSES,
 } from "../constants.js";
+import { encrypt, decrypt } from "#/shared/services/encryption.service.js";
 
 const addOnSchema = new mongoose.Schema(
   {
@@ -131,27 +132,28 @@ const roomAllocationSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    occupantName: {
+    // Encrypted sensitive occupant fields
+    occupantNameEncrypted: {
       type: String,
       trim: true,
       default: null,
     },
-    occupantPhone: {
+    occupantPhoneEncrypted: {
       type: String,
       trim: true,
       default: null,
     },
-    occupantEmail: {
+    occupantEmailEncrypted: {
       type: String,
       trim: true,
       default: null,
     },
-    occupantIdType: {
+    occupantIdTypeEncrypted: {
       type: String,
       trim: true,
       default: null,
     },
-    occupantIdNumber: {
+    occupantIdNumberEncrypted: {
       type: String,
       trim: true,
       default: null,
@@ -175,6 +177,81 @@ const roomAllocationSchema = new mongoose.Schema(
   },
   { _id: true },
 );
+
+// Virtual getters/setters for encrypted fields
+roomAllocationSchema
+  .virtual("occupantName")
+  .get(function () {
+    if (!this.occupantNameEncrypted) return null;
+    try {
+      return decrypt(this.occupantNameEncrypted);
+    } catch {
+      return this.occupantNameEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantNameEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+roomAllocationSchema
+  .virtual("occupantPhone")
+  .get(function () {
+    if (!this.occupantPhoneEncrypted) return null;
+    try {
+      return decrypt(this.occupantPhoneEncrypted);
+    } catch {
+      return this.occupantPhoneEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantPhoneEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+roomAllocationSchema
+  .virtual("occupantEmail")
+  .get(function () {
+    if (!this.occupantEmailEncrypted) return null;
+    try {
+      return decrypt(this.occupantEmailEncrypted);
+    } catch {
+      return this.occupantEmailEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantEmailEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+roomAllocationSchema
+  .virtual("occupantIdType")
+  .get(function () {
+    if (!this.occupantIdTypeEncrypted) return null;
+    try {
+      return decrypt(this.occupantIdTypeEncrypted);
+    } catch {
+      return this.occupantIdTypeEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantIdTypeEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+roomAllocationSchema
+  .virtual("occupantIdNumber")
+  .get(function () {
+    if (!this.occupantIdNumberEncrypted) return null;
+    try {
+      return decrypt(this.occupantIdNumberEncrypted);
+    } catch {
+      return this.occupantIdNumberEncrypted;
+    }
+  })
+  .set(function (value) {
+    this.occupantIdNumberEncrypted = value ? encrypt(String(value)) : null;
+  });
+
+// Ensure virtuals are included in JSON
+roomAllocationSchema.set("toJSON", { virtuals: true });
+roomAllocationSchema.set("toObject", { virtuals: true });
 
 const roomRequirementSchema = new mongoose.Schema(
   {
@@ -483,5 +560,60 @@ bookingSchema.index(
     partialFilterExpression: { aiosellBookingId: { $type: "string" } },
   },
 );
+
+function decryptRoomAllocations(doc) {
+  if (!doc) return;
+  const allocations = doc.roomAllocations || doc.allocatedRooms;
+  if (Array.isArray(allocations)) {
+    for (const room of allocations) {
+      if (room && room.occupantNameEncrypted && !room.occupantName) {
+        try {
+          room.occupantName = decrypt(room.occupantNameEncrypted);
+        } catch {
+          room.occupantName = room.occupantNameEncrypted;
+        }
+      }
+      if (room && room.occupantPhoneEncrypted && !room.occupantPhone) {
+        try {
+          room.occupantPhone = decrypt(room.occupantPhoneEncrypted);
+        } catch {
+          room.occupantPhone = room.occupantPhoneEncrypted;
+        }
+      }
+      if (room && room.occupantEmailEncrypted && !room.occupantEmail) {
+        try {
+          room.occupantEmail = decrypt(room.occupantEmailEncrypted);
+        } catch {
+          room.occupantEmail = room.occupantEmailEncrypted;
+        }
+      }
+      if (room && room.occupantIdTypeEncrypted && !room.occupantIdType) {
+        try {
+          room.occupantIdType = decrypt(room.occupantIdTypeEncrypted);
+        } catch {
+          room.occupantIdType = room.occupantIdTypeEncrypted;
+        }
+      }
+      if (room && room.occupantIdNumberEncrypted && !room.occupantIdNumber) {
+        try {
+          room.occupantIdNumber = decrypt(room.occupantIdNumberEncrypted);
+        } catch {
+          room.occupantIdNumber = room.occupantIdNumberEncrypted;
+        }
+      }
+    }
+  }
+}
+
+bookingSchema.post(["find", "findOne", "findOneAndUpdate"], function (result) {
+  if (!result) return;
+  if (Array.isArray(result)) {
+    for (const doc of result) {
+      decryptRoomAllocations(doc);
+    }
+  } else {
+    decryptRoomAllocations(result);
+  }
+});
 
 export default mongoose.model("Booking", bookingSchema);

@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { PageHeader } from "../components/Layout";
-import { useCart } from "../context/CartContext";
-import { useSession } from "../context/SessionContext";
+import { useCart } from "../context/useCart";
+import { useSession } from "../context/useSession";
 import { api } from "../services/api";
 import type { ServiceRequestType } from "../types";
 const actions: Array<[ServiceRequestType, string, string, typeof Bell]> = [

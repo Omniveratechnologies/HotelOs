@@ -53,9 +53,9 @@ export const router = createBrowserRouter([
                 ),
               },
               {
-                path: "/kiosks",
+                path: "/hotels/:id",
                 lazy: lazyPage(
-                  () => import("../features/kiosks/pages/KioskDevicesPage.jsx"),
+                  () => import("../features/hotels/pages/HotelDetailsPage.tsx"),
                 ),
               },
               {

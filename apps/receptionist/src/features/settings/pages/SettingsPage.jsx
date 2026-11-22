@@ -1,4 +1,8 @@
-import { Header } from "@hotelos/ui/components/Header";
+import {
+  Header,
+  TwoFactorSecurityCard,
+  ChangePasswordCard,
+} from "@hotelos/ui/components";
 import HotelInformationSection from "../components/HotelInformationSection.jsx";
 import NotificationsSection from "../components/NotificationsSection.jsx";
 
@@ -18,6 +22,8 @@ export default function SettingsPage() {
             icon="🔔"
             content={<NotificationsSection />}
           />
+          <TwoFactorSecurityCard />
+          <ChangePasswordCard />
         </div>
       </div>
     </>

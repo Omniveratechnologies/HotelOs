@@ -5,6 +5,8 @@
 
 const EARTH_RADIUS_METERS = 6371000;
 
+const toRad = (degree) => (degree * Math.PI) / 180;
+
 /**
  * Calculates great-circle distance between two geographic coordinates in metres.
  *
@@ -28,7 +30,6 @@ export function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
     throw new TypeError("All coordinates must be valid numbers");
   }
 
-  const toRad = (degree) => (degree * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
 

@@ -166,7 +166,7 @@ export default function RoomTypeFormModal({ roomType, onClose, onSaved }) {
 
       if (isEdit) {
         const saved = await updateRoomTypeMutation.mutateAsync({
-          id: roomType.id,
+          id: roomType.id || roomType._id,
           data: payload,
         });
 

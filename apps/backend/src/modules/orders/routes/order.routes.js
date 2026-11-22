@@ -17,6 +17,17 @@ import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
 import { authenticateSession } from "#/shared/middleware/sessionAuth.middleware.js";
 import { createRateLimiter } from "#/shared/middleware/rateLimiter.middleware.js";
+import { validate } from "#/shared/middleware/validate.middleware.js";
+import {
+  createOrderBodySchema,
+  verifyPaymentBodySchema,
+  createTableOrderBodySchema,
+  verifyTableOrderPaymentBodySchema,
+  markPaymentFailedBodySchema,
+  createDeskOrderBodySchema,
+  updateHotelOrderStatusBodySchema,
+  orderIdParamsSchema,
+} from "../schemas.js";
 
 const router = express.Router();
 
@@ -41,6 +52,7 @@ router.post(
   "/desk",
   authenticate,
   authorize("SUB_ADMIN", "RECEPTIONIST"),
+  validate({ body: createDeskOrderBodySchema }),
   createDeskOrder,
 );
 
@@ -48,6 +60,10 @@ router.patch(
   "/:id/status",
   authenticate,
   authorize("SUB_ADMIN", "RECEPTIONIST"),
+  validate({
+    params: orderIdParamsSchema,
+    body: updateHotelOrderStatusBodySchema,
+  }),
   updateHotelOrderStatus,
 );
 
@@ -56,6 +72,7 @@ router.post(
   "/table-order",
   authenticateSession({ requireLocation: true }),
   orderCreateLimiter,
+  validate({ body: createTableOrderBodySchema }),
   createTableOrder,
 );
 router.get(
@@ -66,6 +83,7 @@ router.get(
 router.post(
   "/table-order/verify-payment",
   authenticateSession({ requireLocation: false }),
+  validate({ body: verifyTableOrderPaymentBodySchema }),
   verifyTableOrderPayment,
 );
 router.get(
@@ -76,12 +94,31 @@ router.get(
 router.post(
   "/table-order/payment-failed",
   authenticateSession({ requireLocation: false }),
+  validate({ body: markPaymentFailedBodySchema }),
   markPaymentFailed,
 );
 
 // ---- In-room Guest routes ----
-router.post("/", authenticate, authorize("GUEST"), createOrder);
-router.post("/verify-payment", authenticate, authorize("GUEST"), verifyPayment);
+router.post(
+  "/",
+  authenticate,
+  authorize("GUEST"),
+  validate({ body: createOrderBodySchema }),
+  createOrder,
+);
+router.post(
+  "/verify-payment",
+  authenticate,
+  authorize("GUEST"),
+  validate({ body: verifyPaymentBodySchema }),
+  verifyPayment,
+);
 router.get("/", authenticate, authorize("GUEST"), getMyOrders);
-router.get("/:id", authenticate, authorize("GUEST"), getOrderById);
+router.get(
+  "/:id",
+  authenticate,
+  authorize("GUEST"),
+  validate({ params: orderIdParamsSchema }),
+  getOrderById,
+);
 export default router;

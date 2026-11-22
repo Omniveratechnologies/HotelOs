@@ -17,21 +17,24 @@ import {
 import { Button, Input } from "@hotelos/ui/components";
 import { formatCurrency } from "@hotelos/utils";
 
+const EMPTY_ARRAY = Object.freeze([]);
+const DEFAULT_ARRIVAL_TABS = Object.freeze([
+  { id: "all", label: "All Expected" },
+  { id: "guaranteed", label: "Guaranteed" },
+  { id: "deposit-due", label: "Deposit Due" },
+  { id: "express", label: "Express" },
+  { id: "repeat", label: "Repeat" },
+]);
+
 /**
  * Common Today's Arrivals Queue component (Screens 10, 11)
  */
 export function ArrivalsQueue({
-  arrivals = [],
+  arrivals = EMPTY_ARRAY,
   selectedId,
   onSelectArrival,
   onSelect,
-  tabs = [
-    { id: "all", label: "All Expected" },
-    { id: "guaranteed", label: "Guaranteed" },
-    { id: "deposit-due", label: "Deposit Due" },
-    { id: "express", label: "Express" },
-    { id: "repeat", label: "Repeat" },
-  ],
+  tabs = DEFAULT_ARRIVAL_TABS,
 }) {
   const handleItemSelect = onSelectArrival || onSelect || (() => {});
   const [activeTab, setActiveTab] = useState("all");
@@ -177,7 +180,7 @@ export function ArrivalsQueue({
  * Common Today's Departure Queue component (Screen 15)
  */
 export function DepartureQueue({
-  departures = [],
+  departures = EMPTY_ARRAY,
   selectedId,
   onSelectDeparture,
 }) {
@@ -348,15 +351,19 @@ export function IdVerificationConsole({
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*,application/pdf";
-    input.onchange = (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        handleDocChange(docIndex, side, reader.result);
-      };
-      reader.readAsDataURL(file);
-    };
+    input.addEventListener(
+      "change",
+      (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.addEventListener("load", () => {
+          handleDocChange(docIndex, side, reader.result);
+        });
+        reader.readAsDataURL(file);
+      },
+      { once: true },
+    );
     input.click();
   };
 
@@ -892,7 +899,10 @@ export function SignatureCaptureBox({
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => onSignatureChange && onSignatureChange(reader.result);
+    reader.addEventListener(
+      "load",
+      () => onSignatureChange && onSignatureChange(reader.result),
+    );
     reader.readAsDataURL(file);
   };
 
@@ -1101,9 +1111,15 @@ export function ReservationOverviewCard({ arrival, guest, onEditClick }) {
           </div>
           {roomRequirements.length > 0 ? (
             <div className="mt-1 flex flex-wrap gap-1">
-              {roomRequirements.map((r, i) => (
+              {roomRequirements.map((r) => (
                 <span
-                  key={`${r.roomTypeCode || "req"}-${i}`}
+                  key={
+                    r._id ||
+                    r.id ||
+                    r.roomTypeId ||
+                    r.roomTypeCode ||
+                    `${r.rooms}-${r.adultsPerRoom}`
+                  }
                   className="inline-block rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-800 uppercase"
                 >
                   {r.rooms}x {r.roomTypeCode}

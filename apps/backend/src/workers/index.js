@@ -1,7 +1,7 @@
 import "#/config/env.js";
 import connectDB from "#/config/db.js";
 import { registerAllModels } from "#/config/models.js";
-import redisConnection from "#/config/redis.js";
+import { redisConnection } from "#/config/redis.js";
 import { reconcileCheckInReminders } from "#/modules/check-ins/queues/checkInEmail.queue.js";
 import { initCheckInReminderWorker } from "./email/checkInReminder.worker.js";
 import logger from "#/utils/logger.js";

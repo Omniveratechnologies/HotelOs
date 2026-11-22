@@ -1,4 +1,4 @@
-import env from "#/config/env.js";
+import { env } from "#/config/env.js";
 
 export const tableDTO = (t) => ({
   id: t._id,

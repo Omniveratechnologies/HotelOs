@@ -100,12 +100,13 @@ const departmentHeadcount = async (hotelId, date, total) => {
       color: byId.get(key)?.color || null,
       count,
     }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    .toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
-  const top = ranked.slice(0, TOP_DEPARTMENTS).map((d, i) => ({
-    ...d,
-    color: d.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-  }));
+  const top = ranked.slice(0, TOP_DEPARTMENTS).map((d, i) =>
+    Object.assign({}, d, {
+      color: d.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
+    }),
+  );
   const others = ranked
     .slice(TOP_DEPARTMENTS)
     .reduce((sum, d) => sum + d.count, 0);
@@ -215,7 +216,7 @@ const deviceStatus = async (hotelId) => {
 
   return docs
     .map((doc) => readDevice(doc, now))
-    .sort(
+    .toSorted(
       (a, b) =>
         Number(b.online) - Number(a.online) ||
         new Date(b.lastSeenAt || 0) - new Date(a.lastSeenAt || 0),

@@ -26,6 +26,13 @@ export interface KioskInfo {
   hotelName?: string | null;
 }
 
+type KioskGuestCheckedInPayload = {
+  guestToken?: string;
+  user?: AuthUser;
+  booking?: { reservationNo?: string | null };
+  roomId?: string | null;
+};
+
 export type AuthState = {
   user: AuthUser | null;
   token: string | null;
@@ -63,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const urlParams = new URLSearchParams(window.location.search);
     return (
       urlParams.has("kioskHandoffCode") ||
-      Boolean((window as any).kiosk?.isKiosk) ||
+      Boolean(window.kiosk?.isKiosk) ||
       sessionStorage.getItem("is_kiosk_terminal") === "true"
     );
   });
@@ -101,10 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const performKioskExchange = useCallback(async (codeToExchange: string) => {
     // Prevent sending an already-consumed single-use handoff code
     if (sessionStorage.getItem("consumed_handoff_code") === codeToExchange) {
-      console.log(
-        "[AuthContext] Skipping already-consumed handoff code:",
-        codeToExchange,
-      );
       setLoading(false);
       return;
     }
@@ -156,10 +159,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setBookingStatus("none");
         setKioskIdle(true);
       }
-    } catch (err: any) {
-      console.warn(
+    } catch (err) {
+      console.error(
         "[AuthContext] Kiosk handoff exchange fallback:",
-        err?.message,
+        err instanceof Error ? err.message : String(err),
       );
       sessionStorage.removeItem("kiosk_handoff_code");
 
@@ -207,10 +210,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           } else {
             setKioskIdle(true);
           }
-        } catch (err: any) {
-          console.warn(
+        } catch (err) {
+          console.error(
             "[AuthContext] Kiosk room status check fallback:",
-            err?.message,
+            err instanceof Error ? err.message : String(err),
           );
         }
       }
@@ -240,8 +243,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const urlParams = new URLSearchParams(window.location.search);
     const handoffCodeFromUrl = urlParams.get("kioskHandoffCode");
-    const handoffCodeFromBridge = (window as any).kiosk?.handoffCode;
-    const isBridgeKiosk = Boolean((window as any).kiosk?.isKiosk);
+    const handoffCodeFromBridge = window.kiosk?.handoffCode;
+    const isBridgeKiosk = Boolean(window.kiosk?.isKiosk);
 
     const code = handoffCodeFromUrl || handoffCodeFromBridge;
 
@@ -279,24 +282,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const socket = connectGuestSocket({
       // Auto-login in-room kiosk tablet immediately when front desk completes check-in
-      onKioskGuestCheckedIn: (payload: any) => {
-        if (isKiosk) {
-          if (payload?.guestToken && payload?.user) {
-            const u = {
-              ...payload.user,
-              bookingStatus: "checked-in",
-              reservationNo: payload.booking?.reservationNo,
-              roomId: payload.roomId,
-            };
-            localStorage.setItem("auth_token", payload.guestToken);
-            localStorage.setItem("auth_user", JSON.stringify(u));
-            setToken(payload.guestToken);
-            setUser(u);
-            setBookingStatus("checked-in");
-            setKioskIdle(false);
-          } else {
-            refreshKioskSession();
-          }
+      onKioskGuestCheckedIn: (payload) => {
+        if (!isKiosk) return;
+        const data =
+          typeof payload === "object" && payload !== null
+            ? (payload as KioskGuestCheckedInPayload)
+            : null;
+        if (data?.guestToken && data.user) {
+          const u: AuthUser = {
+            ...data.user,
+            bookingStatus: "checked-in",
+            reservationNo: data.booking?.reservationNo,
+            roomId: data.roomId ?? data.user.roomId,
+          };
+          localStorage.setItem("auth_token", data.guestToken);
+          localStorage.setItem("auth_user", JSON.stringify(u));
+          setToken(data.guestToken);
+          setUser(u);
+          setBookingStatus("checked-in");
+          setKioskIdle(false);
+        } else {
+          refreshKioskSession();
         }
       },
       onKioskGuestCheckedOut: () => {
@@ -331,7 +337,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [isKiosk, refreshKioskSession]);
 
-  const login = async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string) => {
     setError(null);
     try {
       const result = await loginApi(username, password);
@@ -347,9 +353,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(err instanceof Error ? err.message : "Login failed");
       throw err;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await logoutApi();
     } catch {
@@ -363,7 +369,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isKiosk) {
       setKioskIdle(true);
     }
-  };
+  }, [isKiosk]);
 
   const value = useMemo<AuthState>(
     () => ({

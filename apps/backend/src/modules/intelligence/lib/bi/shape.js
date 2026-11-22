@@ -378,14 +378,15 @@ export function computeProfitability({ days, selectedStart }, raw) {
     }
   }
   const overheadPerDay = overheadTotal / Math.max(days, 1);
-  const series = [...byDay.values()].map((r) => ({
-    ...r,
-    cost: r.cost + overheadPerDay,
-    profit: r.revenue - (r.cost + overheadPerDay),
-    margin: r.revenue
-      ? ((r.revenue - (r.cost + overheadPerDay)) / r.revenue) * 100
-      : 0,
-  }));
+  const series = [...byDay.values()].map((r) =>
+    Object.assign({}, r, {
+      cost: r.cost + overheadPerDay,
+      profit: r.revenue - (r.cost + overheadPerDay),
+      margin: r.revenue
+        ? ((r.revenue - (r.cost + overheadPerDay)) / r.revenue) * 100
+        : 0,
+    }),
+  );
 
   const revenue = series.reduce((s, r) => s + r.revenue, 0);
   const totalCost = roomCostTotal + posCogsTotal + overheadTotal;
@@ -445,10 +446,11 @@ export function computeProfitability({ days, selectedStart }, raw) {
       cost: posCogsTotal,
       profit: posDailyRows.reduce((s, r) => s + r.amount, 0) - posCogsTotal,
     },
-  ].map((r) => ({
-    ...r,
-    margin: r.revenue ? (r.profit / r.revenue) * 100 : 0,
-  }));
+  ].map((r) =>
+    Object.assign({}, r, {
+      margin: r.revenue ? (r.profit / r.revenue) * 100 : 0,
+    }),
+  );
 
   const byOutlet = [
     { name: "Rooms (PMS)", revenue: pmsRevenueTotal, cost: roomCostTotal },
@@ -459,11 +461,12 @@ export function computeProfitability({ days, selectedStart }, raw) {
         r.revenue * dailyCogsPerRevenue +
         overheadTotal / (outletRowsPos.length + 1),
     })),
-  ].map((r) => ({
-    ...r,
-    profit: r.revenue - r.cost,
-    margin: r.revenue ? ((r.revenue - r.cost) / r.revenue) * 100 : 0,
-  }));
+  ].map((r) =>
+    Object.assign({}, r, {
+      profit: r.revenue - r.cost,
+      margin: r.revenue ? ((r.revenue - r.cost) / r.revenue) * 100 : 0,
+    }),
+  );
 
   return {
     metrics,
@@ -535,10 +538,11 @@ export function computeConversion({ days, selectedStart }, raw) {
       b.dined = r.dined;
     }
   }
-  const series = [...byDay.values()].map((r) => ({
-    ...r,
-    conversionRate: r.inHouse ? (r.dined / r.inHouse) * 100 : 0,
-  }));
+  const series = [...byDay.values()].map((r) =>
+    Object.assign({}, r, {
+      conversionRate: r.inHouse ? (r.dined / r.inHouse) * 100 : 0,
+    }),
+  );
 
   const conversionRate = totalInHouse ? (totalDined / totalInHouse) * 100 : 0;
   const prevRate = previousInHouse
@@ -648,10 +652,11 @@ export function computeGuestSpending({ days, selectedStart }, raw) {
       b.count = r.count;
     }
   }
-  const series = [...byDay.values()].map((r) => ({
-    ...r,
-    avgSpend: r.count ? r.totalSpend / r.count : 0,
-  }));
+  const series = [...byDay.values()].map((r) =>
+    Object.assign({}, r, {
+      avgSpend: r.count ? r.totalSpend / r.count : 0,
+    }),
+  );
 
   const avgSpend = totalGuests ? totalSpend / totalGuests : 0;
   const metrics = [
@@ -718,6 +723,8 @@ export function computeGuestSpending({ days, selectedStart }, raw) {
 }
 
 // ---------------- 6. Revenue Forecast (combined) ----------------
+const sum = (arr) => arr.reduce((s, v) => s + v, 0);
+
 export function computeRevenueForecast({ days, end }, raw) {
   const { pmsHistory, posHistory, occupancyHistory, coversHistory } = raw;
   const pmsF = forecastSeries(pmsHistory, days, { min: 0 });
@@ -729,7 +736,6 @@ export function computeRevenueForecast({ days, end }, raw) {
   const totalUpper = pmsF.upper.map((v, i) => v + posF.upper[i]);
   const totalPred = pmsF.predicted.map((v, i) => v + posF.predicted[i]);
 
-  const sum = (arr) => arr.reduce((s, v) => s + v, 0);
   const metrics = [
     {
       label: "Forecasted Total Revenue",
@@ -907,7 +913,7 @@ export function computeClv(_windows, raw) {
     .filter((r) => r.avgClv > 0);
 
   const top10 = [...guests]
-    .sort((a, b) => b.totalValue - a.totalValue)
+    .toSorted((a, b) => b.totalValue - a.totalValue)
     .slice(0, 10)
     .map((g) => ({
       name: g.name,
@@ -939,10 +945,11 @@ export function computeClv(_windows, raw) {
       guests: guests.filter((g) => g.totalValue >= lo && g.totalValue < hi)
         .length,
     }))
-    .map((r) => ({
-      ...r,
-      pct: totalGuests ? (r.guests / totalGuests) * 100 : 0,
-    }));
+    .map((r) =>
+      Object.assign({}, r, {
+        pct: totalGuests ? (r.guests / totalGuests) * 100 : 0,
+      }),
+    );
 
   return {
     metrics,
@@ -978,7 +985,7 @@ export function computeRecommendations(_windows, raw) {
   const potentialUplift = active
     .filter((r) => r.status === "new")
     .reduce((s, r) => s + r.estMonthlyImpact, 0);
-  const top = [...active].sort(
+  const top = [...active].toSorted(
     (a, b) => b.estMonthlyImpact - a.estMonthlyImpact,
   )[0];
 

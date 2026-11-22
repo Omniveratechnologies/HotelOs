@@ -1,4 +1,4 @@
-import PDFDocument from "pdfkit";
+import { PDFDocument } from "pdfkit";
 import QRCode from "qrcode";
 import logger from "#/utils/logger.js";
 

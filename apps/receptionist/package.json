@@ -5,24 +5,26 @@
   "description": "HotelOS Receptionist Dashboard",
   "author": "Omnivera",
   "private": true,
-  "main": "dist-electron/main.js",
+  "main": "out/main/index.js",
   "scripts": {
     "dev": "vite --port 5175",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "build:electron:scripts": "esbuild electron/main.ts electron/dev.ts --bundle --platform=node --format=esm --external:electron --outdir=dist-electron && esbuild electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist-electron/preload.cjs",
-    "dev:electron": "pnpm build:electron:scripts && node dist-electron/dev.js",
-    "build:electron": "pnpm build && pnpm build:electron:scripts && electron-builder",
-    "build:electron:win": "pnpm build && pnpm build:electron:scripts && electron-builder --win",
-    "build:electron:mac": "pnpm build && pnpm build:electron:scripts && electron-builder --mac",
-    "build:electron:linux": "pnpm build && pnpm build:electron:scripts && electron-builder --linux",
-    "pack:electron": "pnpm build && pnpm build:electron:scripts && electron-builder --dir",
+    "dev:electron": "electron-vite dev",
+    "build:electron": "electron-vite build && electron-builder",
+    "build:electron:portable": "electron-vite build && electron-builder --win portable",
+    "build:electron:nsis": "electron-vite build && electron-builder --win nsis",
+    "build:electron:win": "electron-vite build && electron-builder --win",
+    "build:electron:mac": "electron-vite build && electron-builder --mac",
+    "build:electron:linux": "electron-vite build && electron-builder --linux",
+    "pack:electron": "electron-vite build && electron-builder --dir",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix"
   },
   "dependencies": {
     "@hotelos/api": "workspace:*",
+    "@hotelos/platform": "workspace:*",
     "@hotelos/query": "workspace:*",
     "@hotelos/socket": "workspace:*",
     "@hotelos/stores": "workspace:*",
@@ -36,19 +38,20 @@
     "react-dom": "^19.2.8",
     "react-router": "^8.3.1",
     "recharts": "^3.10.1",
-    "socket.io-client": "^4.8.3",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@electron-toolkit/utils": "^4.0.0",
     "@hotelos/oxlint-config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "electron": "45.0.0",
     "electron-builder": "^26.18.0",
-    "esbuild": "^0.28.2",
+    "electron-vite": "^6.0.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.2"
+    "vite": "^8.3.4"
   }
 }

@@ -13,6 +13,13 @@ import {
 } from "../modules/leaveManagement/services/leave.service.js";
 import * as time from "../utils/attendanceTime.js";
 
+const workday = (key) => {
+  let day = key;
+  while (weeklyOffDays().includes(new Date(`${day}T00:00:00Z`).getUTCDay()))
+    day = time.addDays(day, 1);
+  return day;
+};
+
 export const DEFAULT_TYPES = [
   {
     name: "Casual Leave",
@@ -116,12 +123,6 @@ export const seedDemoRequests = async (hotelId, now = new Date()) => {
 
   const today = time.todayKey(time.hotelTimezone(), now);
   const at = (offset) => time.addDays(today, offset);
-  const workday = (key) => {
-    let day = key;
-    while (weeklyOffDays().includes(new Date(`${day}T00:00:00Z`).getUTCDay()))
-      day = time.addDays(day, 1);
-    return day;
-  };
   const plan = [
     ["Casual Leave", 2, 2, "Family function", "APPROVED"],
     ["Sick Leave", -3, -2, "Fever and cold", "APPROVED"],

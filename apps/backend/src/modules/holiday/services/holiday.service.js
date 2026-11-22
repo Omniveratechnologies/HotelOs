@@ -17,7 +17,7 @@ const WEEKDAY_NAMES = [
 const MAX_LIMIT = 100;
 const RECURRING_YEARS_AHEAD = 5;
 const MAX_IMPORT = 200;
-const SORT_KEYS = ["date", "name", "type"];
+const SORT_KEYS = new Set(["date", "name", "type"]);
 
 const escapeRegex = (value) =>
   String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -177,7 +177,7 @@ export const ensureRecurring = async (hotelId, throughYear) => {
     series.get(key).years.add(Number(row.date.slice(0, 4)));
   }
 
-  let created = 0;
+  const pending = [];
   for (const { first, years } of series.values()) {
     for (
       let year = Number(first.date.slice(0, 4)) + 1;
@@ -187,6 +187,12 @@ export const ensureRecurring = async (hotelId, throughYear) => {
       if (years.has(year)) continue;
       const date = sameDayInYear(first.date, year);
       if (!date) continue;
+      pending.push({ first, date });
+    }
+  }
+
+  const outcomes = await Promise.all(
+    pending.map(async ({ first, date }) => {
       try {
         await Holiday.create({
           hotelId,
@@ -200,13 +206,14 @@ export const ensureRecurring = async (hotelId, throughYear) => {
           appliesToDepartments: first.appliesToDepartments || [],
           holidayDuty: first.holidayDuty,
         });
-        created += 1;
+        return 1;
       } catch (error) {
         if (error?.code !== 11000) throw error;
+        return 0;
       }
-    }
-  }
-  return created;
+    }),
+  );
+  return outcomes.reduce((sum, outcome) => sum + outcome, 0);
 };
 export const listHolidays = async (hotelId, query = {}) => {
   const today = time.todayKey();
@@ -245,7 +252,7 @@ export const listHolidays = async (hotelId, query = {}) => {
     filter.$or = [{ name: pattern }, { description: pattern }];
   }
 
-  const sortKey = SORT_KEYS.includes(query.sort) ? query.sort : "date";
+  const sortKey = SORT_KEYS.has(query.sort) ? query.sort : "date";
   const sign = String(query.direction).toLowerCase() === "desc" ? -1 : 1;
   const sort =
     sortKey === "date"
@@ -254,8 +261,7 @@ export const listHolidays = async (hotelId, query = {}) => {
 
   const [total, rows, departments] = await Promise.all([
     Holiday.countDocuments(filter),
-    Holiday.find(filter)
-      .sort(sort)
+    Holiday.find(filter, undefined, { sort })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean(),
@@ -295,7 +301,7 @@ export const summary = async (hotelId, query = {}) => {
       year,
       ...known.map((row) => Number(row.date.slice(0, 4))),
     ]),
-  ].sort((a, b) => a - b);
+  ].toSorted((a, b) => a - b);
 
   return {
     year,
@@ -414,13 +420,15 @@ export const createHoliday = async (hotelId, body) => {
   const dates = instanceDates(input.date, input.isRecurring);
   const first = await insertOne(hotelId, input, dates[0], seriesId);
 
-  for (const date of dates.slice(1)) {
-    try {
-      await insertOne(hotelId, input, date, seriesId);
-    } catch (error) {
-      if (error.status !== 409) throw error;
-    }
-  }
+  await Promise.all(
+    dates.slice(1).map(async (date) => {
+      try {
+        await insertOne(hotelId, input, date, seriesId);
+      } catch (error) {
+        if (error.status !== 409) throw error;
+      }
+    }),
+  );
   return viewOf(first, time.todayKey(), await departmentMap(hotelId));
 };
 
@@ -485,14 +493,16 @@ export const updateHoliday = async (hotelId, id, body = {}) => {
   }
 
   try {
-    for (const copy of series) {
-      const date = moved
-        ? sameDayInYear(input.date, Number(copy.date.slice(0, 4)))
-        : copy.date;
-      if (!date) continue;
-      apply(copy, date);
-      await copy.save();
-    }
+    await Promise.all(
+      series.map(async (copy) => {
+        const date = moved
+          ? sameDayInYear(input.date, Number(copy.date.slice(0, 4)))
+          : copy.date;
+        if (!date) return;
+        apply(copy, date);
+        await copy.save();
+      }),
+    );
     apply(row, input.date);
     row.isRecurring = input.isRecurring;
     if (input.isRecurring && !row.seriesId)
@@ -506,13 +516,17 @@ export const updateHoliday = async (hotelId, id, body = {}) => {
   }
 
   if (input.isRecurring && !wasRecurring) {
-    for (const date of instanceDates(input.date, true).slice(1)) {
-      try {
-        await insertOne(hotelId, input, date, row.seriesId);
-      } catch (error) {
-        if (error.status !== 409) throw error;
-      }
-    }
+    await Promise.all(
+      instanceDates(input.date, true)
+        .slice(1)
+        .map(async (date) => {
+          try {
+            await insertOne(hotelId, input, date, row.seriesId);
+          } catch (error) {
+            if (error.status !== 409) throw error;
+          }
+        }),
+    );
   }
 
   return viewOf(
@@ -556,33 +570,47 @@ export const importHolidays = async (hotelId, body = {}) => {
   if (body.holidays.length > MAX_IMPORT)
     throw new ApiError(400, `Import at most ${MAX_IMPORT} holidays at a time.`);
 
+  const outcomes = await Promise.all(
+    body.holidays.map(async (item, index) => {
+      try {
+        const input = readInput({
+          type: body.type || "NATIONAL",
+          isRecurring: false,
+          ...item,
+          departmentIds: [],
+        });
+        await insertOne(hotelId, input, input.date, null);
+        return { kind: "created" };
+      } catch (error) {
+        if (error.status === 409)
+          return {
+            kind: "skipped",
+            row: {
+              row: index + 1,
+              name: item?.name,
+              date: item?.date,
+              reason: "Already exists.",
+            },
+          };
+        if (error.status === 400)
+          return {
+            kind: "error",
+            row: {
+              row: index + 1,
+              name: item?.name,
+              reason: error.message,
+            },
+          };
+        throw error;
+      }
+    }),
+  );
+
   const result = { created: 0, skipped: [], errors: [] };
-  for (const [index, item] of body.holidays.entries()) {
-    try {
-      const input = readInput({
-        type: body.type || "NATIONAL",
-        isRecurring: false,
-        ...item,
-        departmentIds: [],
-      });
-      await insertOne(hotelId, input, input.date, null);
-      result.created += 1;
-    } catch (error) {
-      if (error.status === 409)
-        result.skipped.push({
-          row: index + 1,
-          name: item?.name,
-          date: item?.date,
-          reason: "Already exists.",
-        });
-      else if (error.status === 400)
-        result.errors.push({
-          row: index + 1,
-          name: item?.name,
-          reason: error.message,
-        });
-      else throw error;
-    }
+  for (const outcome of outcomes) {
+    if (outcome.kind === "created") result.created += 1;
+    else if (outcome.kind === "skipped") result.skipped.push(outcome.row);
+    else result.errors.push(outcome.row);
   }
   return result;
 };
@@ -591,21 +619,27 @@ export const importHolidays = async (hotelId, body = {}) => {
 export const seedNational = async (hotelId, body = {}) => {
   const year = readYear(body.year, time.todayKey());
   const result = { created: 0, skipped: [] };
-  for (const item of NATIONAL_FIXED) {
-    const date = dateInYear(year, item.month, item.day);
-    try {
-      await createHoliday(hotelId, {
-        name: item.name,
-        date,
-        type: "NATIONAL",
-        description: item.description,
-        isRecurring: true,
-      });
-      result.created += 1;
-    } catch (error) {
-      if (error.status !== 409) throw error;
-      result.skipped.push(item.name);
-    }
+  const outcomes = await Promise.all(
+    NATIONAL_FIXED.map(async (item) => {
+      const date = dateInYear(year, item.month, item.day);
+      try {
+        await createHoliday(hotelId, {
+          name: item.name,
+          date,
+          type: "NATIONAL",
+          description: item.description,
+          isRecurring: true,
+        });
+        return true;
+      } catch (error) {
+        if (error.status !== 409) throw error;
+        return item.name;
+      }
+    }),
+  );
+  for (const outcome of outcomes) {
+    if (outcome === true) result.created += 1;
+    else result.skipped.push(outcome);
   }
   return result;
 };

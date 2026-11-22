@@ -105,10 +105,12 @@ function getTypeMeta(rawType, typeLabel) {
   };
 }
 
+const EMPTY_ARRAY = Object.freeze([]);
+
 export default function ServiceRequestsList({
-  serviceRequests = [],
-  rooms = [],
-  guests = [],
+  serviceRequests = EMPTY_ARRAY,
+  rooms = EMPTY_ARRAY,
+  guests = EMPTY_ARRAY,
   acknowledgeRequest,
   completeRequest,
 }) {

@@ -1,6 +1,8 @@
 import { cn } from "@hotelos/utils";
 import { EmptyState } from "./EmptyState.jsx";
 
+const EMPTY_COLUMNS = [];
+
 /**
  * Standard card-wrapped data table.
  *
@@ -22,7 +24,7 @@ export function DataTable({
   title,
   description,
   actions,
-  columns = [],
+  columns = EMPTY_COLUMNS,
   data,
   rows,
   onRowClick,

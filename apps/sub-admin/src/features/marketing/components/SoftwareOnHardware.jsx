@@ -11,13 +11,16 @@ import { Icon } from "./MarketingIcons.jsx";
  *  mainImage                    { src, label }
  *  thumbnails                   [{ src, title, caption }]
  */
+const EMPTY_POINTS = [];
+const EMPTY_THUMBNAILS = [];
+
 export default function SoftwareOnHardware({
   label,
   title,
   description,
-  points = [],
+  points = EMPTY_POINTS,
   mainImage,
-  thumbnails = [],
+  thumbnails = EMPTY_THUMBNAILS,
 }) {
   return (
     <section className="bg-[#fbf3e4]">

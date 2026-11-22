@@ -115,9 +115,9 @@ export const router = createBrowserRouter([
                 ),
               },
               {
-                path: "/members",
+                path: "/staff",
                 lazy: lazyPage(
-                  () => import("../../features/members/pages/MembersPage.jsx"),
+                  () => import("../../features/staff/pages/StaffPage.tsx"),
                 ),
               },
               {
@@ -147,18 +147,161 @@ export const router = createBrowserRouter([
                     import("../../features/settings/pages/SettingsPage.jsx"),
                 ),
               },
+              // PMS Intelligence
               {
-                path: "/intelligence/:module/:dashboard",
+                path: "/intelligence/pms/revenue",
                 lazy: lazyPage(
-                  () =>
-                    import("../../features/intelligence/pages/IntelligenceDashboardPage.jsx"),
+                  () => import("@/features/intelligence/pms/pages/RevenuePage"),
                 ),
               },
+              {
+                path: "/intelligence/pms/occupancy",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/pms/pages/OccupancyPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pms/adr",
+                lazy: lazyPage(
+                  () => import("@/features/intelligence/pms/pages/AdrPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pms/revpar",
+                lazy: lazyPage(
+                  () => import("@/features/intelligence/pms/pages/RevparPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pms/bookings",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/pms/pages/BookingsPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pms/guests",
+                lazy: lazyPage(
+                  () => import("@/features/intelligence/pms/pages/GuestsPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pms/cancellations",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/pms/pages/CancellationsPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pms/forecast",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/pms/pages/ForecastPage"),
+                ),
+              },
+              // POS Intelligence
+              {
+                path: "/intelligence/pos/sales",
+                lazy: lazyPage(
+                  () => import("@/features/intelligence/pos/pages/SalesPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pos/products",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/pos/pages/ProductsPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pos/customers",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/pos/pages/CustomersPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pos/orders",
+                lazy: lazyPage(
+                  () => import("@/features/intelligence/pos/pages/OrdersPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pos/upselling",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/pos/pages/UpsellingPage"),
+                ),
+              },
+              {
+                path: "/intelligence/pos/staff",
+                lazy: lazyPage(
+                  () => import("@/features/intelligence/pos/pages/StaffPage"),
+                ),
+              },
+              // BI Intelligence
+              {
+                path: "/intelligence/bi/total-revenue",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/bi/pages/TotalRevenuePage"),
+                ),
+              },
+              {
+                path: "/intelligence/bi/pms-pos-revenue",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/bi/pages/PmsPosRevenuePage"),
+                ),
+              },
+              {
+                path: "/intelligence/bi/profitability",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/bi/pages/ProfitabilityPage"),
+                ),
+              },
+              {
+                path: "/intelligence/bi/conversion",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/bi/pages/ConversionPage"),
+                ),
+              },
+              {
+                path: "/intelligence/bi/guest-spending",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/bi/pages/GuestSpendingPage"),
+                ),
+              },
+              {
+                path: "/intelligence/bi/revenue-forecast",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/bi/pages/RevenueForecastPage"),
+                ),
+              },
+              {
+                path: "/intelligence/bi/clv",
+                lazy: lazyPage(
+                  () => import("@/features/intelligence/bi/pages/ClvPage"),
+                ),
+              },
+              {
+                path: "/intelligence/bi/recommendations",
+                lazy: lazyPage(
+                  () =>
+                    import("@/features/intelligence/bi/pages/RecommendationsPage"),
+                ),
+              },
+              // Reports
               {
                 path: "/intelligence/reports",
                 lazy: lazyPage(
                   () =>
-                    import("../../features/intelligence/pages/IntelligenceReportsPage.jsx"),
+                    import("@/features/intelligence/reports/pages/IntelligenceReportsPage"),
                 ),
               },
             ],

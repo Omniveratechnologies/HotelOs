@@ -1,8 +1,22 @@
 import express from "express";
 import cors from "cors";
-// import pinoHttp from "pino-http";
+import helmet from "helmet";
+import pinoHttp from "pino-http";
+import compression from "compression";
 
 import logger from "#/utils/logger.js";
+import { env } from "#/config/env.js";
+import { getConnectionStatus } from "#/config/db.js";
+import { redisConnection } from "#/config/redis.js";
+import { sanitizeRequest } from "#/shared/middleware/sanitize.middleware.js";
+import {
+  correlationMiddleware,
+  requestLoggingMiddleware,
+} from "#/shared/middleware/correlation.middleware.js";
+import {
+  apiVersionMiddleware,
+  getVersionInfo,
+} from "#/shared/middleware/version.middleware.js";
 
 import hotelRoutes from "#/modules/hotels/index.js";
 import authRoutes from "#/modules/auth/index.js";
@@ -44,11 +58,86 @@ import manageStaffDashboardRoutes from "./modules/managestaff-dashboard/index.js
 
 const app = express();
 
-// app.use(pinoHttp({ logger }));
+// API Version middleware (early - before auth)
+app.use(apiVersionMiddleware());
+
+// Correlation ID middleware (for request tracing)
+app.use(correlationMiddleware());
+
+// Request logging middleware
+app.use(requestLoggingMiddleware());
+
+// Security headers
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: [
+          "'self'",
+          ...(env.socketCorsOrigins?.split(",").filter(Boolean) || []),
+        ],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }),
+);
+
+// Structured request logging
+app.use(
+  pinoHttp({
+    logger,
+    customLogLevel: (res, err) => {
+      if (res.statusCode >= 500 || err) return "error";
+      if (res.statusCode >= 400) return "warn";
+      return "info";
+    },
+    serializers: {
+      req: (req) => ({
+        id: req.id,
+        method: req.method,
+        url: req.url,
+        query: req.query,
+        headers: { "user-agent": req.headers["user-agent"] },
+        correlationId: req.correlationId,
+      }),
+      res: (res) => ({ statusCode: res.statusCode }),
+    },
+  }),
+);
+
+// CORS - only allow configured frontend origins
+const allowedOrigins = new Set(
+  [
+    env.frontendUrls.superAdmin,
+    env.frontendUrls.subAdmin,
+    env.frontendUrls.receptionist,
+    env.frontendUrls.kitchen,
+    env.frontendUrls.guest,
+    env.frontendUrls.selfCheckin,
+    env.frontendUrls.tableOrder,
+  ].filter(Boolean),
+);
 
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        allowedOrigins.has(origin) ||
+        (env.nodeEnv === "development" &&
+          (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+            /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||
+            /^https?:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/.test(origin)))
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   }),
 );
@@ -56,12 +145,46 @@ app.use(
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true }));
 
+// NoSQL injection prevention - sanitize all requests
+app.use(sanitizeRequest);
+
+// Compression middleware - compress responses > 1KB
+app.use(compression({ threshold: 1024 }));
+
 app.use("/api/v1/tables", tableRoutes);
 
-app.get("/api/v1/health", (req, res) => {
+const healthCheckHandler = (req, res, next) => {
+  try {
+    const mongoStatus = getConnectionStatus();
+    const redisStatus = redisConnection?.status || "disconnected";
+
+    const isHealthy = mongoStatus === "connected" && redisStatus === "ready";
+
+    res.status(isHealthy ? 200 : 503).json({
+      success: isHealthy,
+      message: isHealthy
+        ? "HotelOS backend is healthy"
+        : "HotelOS backend has degraded dependencies",
+      timestamp: new Date().toISOString(),
+      version: getVersionInfo(),
+      dependencies: {
+        mongodb: mongoStatus,
+        redis: redisStatus,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+app.get("/api/v1/health", healthCheckHandler);
+
+// Version endpoint
+app.get("/api/v1/version", (req, res) => {
   res.json({
     success: true,
-    message: "HotelOS backend is running",
+    message: "API version information",
+    data: getVersionInfo(),
   });
 });
 

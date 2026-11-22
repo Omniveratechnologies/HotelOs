@@ -186,7 +186,12 @@ export const parseCsv = (text) => {
   return rows;
 };
 
-const EMPLOYMENT_TYPES = ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERN"];
+const EMPLOYMENT_TYPES = new Set([
+  "FULL_TIME",
+  "PART_TIME",
+  "CONTRACT",
+  "INTERN",
+]);
 
 export const normalizePhone = (value) => {
   let digits = String(value ?? "").replace(/\D/g, "");
@@ -289,7 +294,7 @@ export const validateRow = (data, context) => {
   const employmentType = (data.employmentType || "FULL_TIME")
     .toUpperCase()
     .replace(/[^A-Z]+/g, "_");
-  if (!EMPLOYMENT_TYPES.includes(employmentType)) {
+  if (!EMPLOYMENT_TYPES.has(employmentType)) {
     messages.push(
       `invalid employmentType "${data.employmentType}" (FULL_TIME, PART_TIME, CONTRACT, INTERN)`,
     );
@@ -427,6 +432,7 @@ export const processImportJob = async (jobId) => {
 
     let created = 0;
 
+    /* oxlint-disable no-await-in-loop -- chunks are inserted sequentially to bound memory and DB load */
     for (let start = 0; start < valid.length; start += CHUNK_SIZE) {
       const chunk = valid.slice(start, start + CHUNK_SIZE);
 
@@ -459,6 +465,7 @@ export const processImportJob = async (jobId) => {
         }
       });
     }
+    /* oxlint-enable no-await-in-loop */
 
     errors.sort((a, b) => a.rowNumber - b.rowNumber);
 

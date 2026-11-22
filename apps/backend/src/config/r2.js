@@ -6,7 +6,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-import env from "./env.js";
+import { env } from "./env.js";
 
 // Cloudflare R2 is S3-compatible; use the S3 SDK pointed at the R2 endpoint.
 const r2Client = new S3Client({

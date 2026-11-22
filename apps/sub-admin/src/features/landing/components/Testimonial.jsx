@@ -25,11 +25,13 @@ const TESTIMONIALS = [
 
 const STARS = [1, 2, 3, 4, 5];
 
+const EMPTY_AVATARS = [];
+
 /**
  * Customer testimonials.
  * avatars: array of image URLs, one per testimonial (empty strings show placeholders)
  */
-export default function Testimonial({ avatars = [] }) {
+export default function Testimonial({ avatars = EMPTY_AVATARS }) {
   return (
     <section className="mx-auto max-w-[1400px] px-6 py-12 lg:px-10">
       <p className="text-center text-xs font-bold tracking-[0.18em] text-[#c9962c] uppercase">

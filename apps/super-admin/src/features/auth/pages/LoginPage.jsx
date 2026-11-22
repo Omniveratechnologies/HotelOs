@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Input } from "@hotelos/ui/components";
+import { Input, TwoFactorChallenge } from "@hotelos/ui/components";
 import { authApi } from "@hotelos/api";
+import RecoveryModal from "../components/RecoveryModal.jsx";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [recoveryMode, setRecoveryMode] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +27,16 @@ export default function LoginPage() {
     try {
       setLoading(true);
 
-      await authApi.login({ username, password, expectedRole: "SUPER_ADMIN" });
+      const res = await authApi.login({
+        username,
+        password,
+        expectedRole: "SUPER_ADMIN",
+      });
+
+      if (res?.requires2FA) {
+        setChallenge(res);
+        return;
+      }
 
       navigate("/dashboard", { replace: true });
     } catch (err) {
@@ -34,6 +46,20 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (challenge) {
+    return (
+      <div className="bg-background-50 flex min-h-screen items-center justify-center px-4">
+        <TwoFactorChallenge
+          userId={challenge.userId}
+          username={challenge.username}
+          expectedRole="SUPER_ADMIN"
+          onSuccess={() => navigate("/dashboard", { replace: true })}
+          onCancel={() => setChallenge(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background-50 flex min-h-screen items-center justify-center px-4">
@@ -97,8 +123,40 @@ export default function LoginPage() {
           >
             {loading ? "Logging in..." : "Login"}
           </button>
+
+          {/* Recovery links */}
+          <div className="flex items-center justify-between pt-1 text-sm">
+            <button
+              type="button"
+              onClick={() => {
+                setRecoveryMode("username");
+                setError("");
+              }}
+              className="text-brand-700/70 hover:text-brand-900 transition-colors"
+            >
+              Forgot username?
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setRecoveryMode("password");
+                setError("");
+              }}
+              className="text-brand-700/70 hover:text-brand-900 transition-colors"
+            >
+              Forgot password?
+            </button>
+          </div>
         </form>
       </div>
+
+      {recoveryMode && (
+        <RecoveryModal
+          mode={recoveryMode}
+          onClose={() => setRecoveryMode(null)}
+        />
+      )}
     </div>
   );
 }

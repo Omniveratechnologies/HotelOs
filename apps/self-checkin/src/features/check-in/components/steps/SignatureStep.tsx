@@ -99,5 +99,3 @@ export function SignatureStep({
     </div>
   );
 }
-
-export default SignatureStep;

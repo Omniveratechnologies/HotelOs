@@ -68,5 +68,3 @@ export function RoomSelection({
     </div>
   );
 }
-
-export default RoomSelection;

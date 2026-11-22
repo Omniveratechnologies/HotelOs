@@ -237,13 +237,15 @@ export const assembleReport = ({
       { status: "ON_LEAVE", count: now.onLeave },
       { status: "HALF_DAY", count: now.halfDay },
       ...(now.holiday ? [{ status: "HOLIDAY", count: now.holiday }] : []),
-    ].map((slice) => ({ ...slice, percent: pct(slice.count) })),
+    ].map((slice) => Object.assign({}, slice, { percent: pct(slice.count) })),
   };
 
   const daily = groupCounts(current.daily, (id) => id.d);
   const trend = time.eachDate(range.from, range.to).map((date) => {
     const counts = daily.get(date) || emptyCounts();
-    return { date, ...counts, attendancePercent: attendancePercent(counts) };
+    return Object.assign({ date }, counts, {
+      attendancePercent: attendancePercent(counts),
+    });
   });
 
   const departments = [
@@ -251,36 +253,42 @@ export const assembleReport = ({
   ]
     .map(([key, counts]) => {
       const doc = lookups.departments.get(key);
-      return {
-        _id: key || null,
-        name: doc?.name || "Unassigned",
-        color: doc?.color || "#3b82f6",
-        ...counts,
-        records: totalDaysOf(counts),
-        attendancePercent: attendancePercent(counts),
-      };
+      return Object.assign(
+        {
+          _id: key || null,
+          name: doc?.name || "Unassigned",
+          color: doc?.color || "#3b82f6",
+        },
+        counts,
+        {
+          records: totalDaysOf(counts),
+          attendancePercent: attendancePercent(counts),
+        },
+      );
     })
-    .sort((a, b) => b.records - a.records);
+    .toSorted((a, b) => b.records - a.records);
 
   const devices = [
     ...groupCounts(current.devices, (id) => idString(id.v) || "MANUAL"),
   ]
     .map(([key, counts]) => {
       const checkIns = counts.present + counts.late + counts.halfDay;
-      return {
-        _id: key === "MANUAL" ? null : key,
-        name:
-          key === "MANUAL"
-            ? "Manual entry"
-            : lookups.devices.get(key)?.name || "Unknown device",
-        checkIns,
-        onTimePercent: checkIns
-          ? round1(((counts.present + counts.halfDay) / checkIns) * 100)
-          : null,
-        ...counts,
-      };
+      return Object.assign(
+        {
+          _id: key === "MANUAL" ? null : key,
+          name:
+            key === "MANUAL"
+              ? "Manual entry"
+              : lookups.devices.get(key)?.name || "Unknown device",
+          checkIns,
+          onTimePercent: checkIns
+            ? round1(((counts.present + counts.halfDay) / checkIns) * 100)
+            : null,
+        },
+        counts,
+      );
     })
-    .sort((a, b) => b.checkIns - a.checkIns);
+    .toSorted((a, b) => b.checkIns - a.checkIns);
 
   return {
     month,
@@ -508,7 +516,9 @@ const loadDevices = async (ids) => {
   if (!Device || !ids.length) return new Map();
   const docs = await Device.find({ _id: { $in: ids } }).lean();
   return byId(
-    docs.map((d) => ({ ...d, name: d.name ?? d.deviceName ?? d.code ?? "" })),
+    docs.map((d) =>
+      Object.assign({}, d, { name: d.name ?? d.deviceName ?? d.code ?? "" }),
+    ),
   );
 };
 

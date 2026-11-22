@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useReports } from "../hooks/useReports.js";
 import { format } from "date-fns";
@@ -26,7 +26,6 @@ const formatCurrency = (val) => `₹${(val || 0).toLocaleString("en-IN")}`;
 
 const PrintTrigger = () => {
   useEffect(() => {
-    let printTimer;
     let hasPrinted = false;
 
     const handleAfterPrint = () => {
@@ -44,7 +43,7 @@ const PrintTrigger = () => {
     window.addEventListener("beforeprint", handleBeforePrint);
     window.addEventListener("afterprint", handleAfterPrint);
 
-    printTimer = setTimeout(() => {
+    const printTimer = setTimeout(() => {
       window.print();
     }, 500);
 
@@ -62,6 +61,7 @@ const PrintTrigger = () => {
 };
 
 export default function ReportsPrintPage() {
+  const [generatedDate] = useState(() => format(new Date(), "MMMM d, yyyy"));
   const [searchParams] = useSearchParams();
 
   const period = searchParams.get("period") || "today";
@@ -388,10 +388,7 @@ export default function ReportsPrintPage() {
 
       {/* Print Footer */}
       <div className="print-footer">
-        <p>
-          Generated on {format(new Date(), "MMMM d, yyyy")} • HotelOS Reporting
-          System
-        </p>
+        <p>Generated on {generatedDate} • HotelOS Reporting System</p>
         <p className="mt-1 text-xs text-gray-400">
           This report was generated from the HotelOS Receptionist Dashboard
         </p>

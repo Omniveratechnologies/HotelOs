@@ -18,8 +18,9 @@ export const getFoodItems = async (req, res) => {
 };
 export const getPublicFoodItems = async (req, res) => {
   try {
+    const { hotelId } = req.validated.params;
     const items = await FoodItem.find({
-      hotelId: req.params.hotelId,
+      hotelId,
       isAvailable: true,
     });
     return res
@@ -37,28 +38,25 @@ export const getPublicFoodItems = async (req, res) => {
 // Do not build guest-facing UI for this endpoint.
 export const createFoodItem = async (req, res) => {
   try {
-    const { name, description, price, category, image } = req.body;
-
-    if (!name || price === undefined) {
-      return res
-        .status(400)
-        .json({ success: false, message: "name and price are required" });
-    }
+    const payload = req.validated?.body || req.body;
+    const { name, description, price, category, image, isAvailable, ...rest } =
+      payload;
 
     const isVeg =
-      req.body.isVeg !== undefined
-        ? Boolean(req.body.isVeg)
-        : req.body.foodType
-          ? req.body.foodType === "veg"
+      payload.isVeg !== undefined
+        ? Boolean(payload.isVeg)
+        : payload.foodType
+          ? payload.foodType === "veg"
           : true;
-    const { hotelId, ...fields } = req.body;
+    const { hotelId: _hotelId, ...extraFields } = rest;
     const item = await FoodItem.create({
-      ...fields,
+      ...extraFields,
       name,
       description,
       price,
       category,
       image,
+      isAvailable: isAvailable !== undefined ? isAvailable : true,
       isVeg,
       foodType: isVeg ? "veg" : "non-veg",
       hotelId: req.user.hotelId,
@@ -79,7 +77,9 @@ export const createFoodItem = async (req, res) => {
 
 export const updateFoodItem = async (req, res) => {
   try {
-    const { hotelId, ...fields } = req.body;
+    const id = req.validated?.params?.id || req.params.id;
+    const payload = req.validated?.body || req.body;
+    const { hotelId: _hotelId, ...fields } = payload;
     if (fields.isVeg !== undefined) {
       fields.isVeg = Boolean(fields.isVeg);
       fields.foodType = fields.isVeg ? "veg" : "non-veg";
@@ -88,7 +88,7 @@ export const updateFoodItem = async (req, res) => {
       fields.foodType = fields.isVeg ? "veg" : "non-veg";
     }
     const item = await FoodItem.findOneAndUpdate(
-      { _id: req.params.id, hotelId: req.user.hotelId },
+      { _id: id, hotelId: req.user.hotelId },
       { $set: fields },
       { new: true, runValidators: true },
     );
@@ -107,8 +107,9 @@ export const updateFoodItem = async (req, res) => {
 
 export const deleteFoodItem = async (req, res) => {
   try {
+    const { id } = req.validated.params;
     const item = await FoodItem.findOneAndDelete({
-      _id: req.params.id,
+      _id: id,
       hotelId: req.user.hotelId,
     });
     if (!item)

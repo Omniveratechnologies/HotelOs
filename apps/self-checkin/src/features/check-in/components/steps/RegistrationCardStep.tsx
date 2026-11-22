@@ -104,5 +104,3 @@ export function RegistrationCardStep({
     </div>
   );
 }
-
-export default RegistrationCardStep;

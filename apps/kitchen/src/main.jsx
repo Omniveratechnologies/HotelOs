@@ -1,11 +1,10 @@
-import { BrowserRouter } from "react-router-dom";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import App from "@/app/App.jsx";
 import "./index.css";
-import App from "./App.jsx";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>,
-);
+window.addEventListener("hotelos:unauthorized", () => {
+  window.location.href = "/login";
+});
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);

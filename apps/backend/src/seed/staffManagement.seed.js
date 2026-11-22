@@ -255,6 +255,13 @@ const mulberry32 = (seed) => () => {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 
+const dayStart = (timestamp) => {
+  const date = new Date(timestamp);
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+};
+
 export const buildSeedData = (now = new Date()) => {
   const rand = mulberry32(20261011);
   const pick = (list) => list[Math.floor(rand() * list.length)];
@@ -295,13 +302,6 @@ export const buildSeedData = (now = new Date()) => {
     } while (usedPhones.has(phone));
     usedPhones.add(phone);
     return phone;
-  };
-
-  const dayStart = (timestamp) => {
-    const date = new Date(timestamp);
-    return new Date(
-      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-    );
   };
 
   const person = ({
@@ -520,7 +520,7 @@ const main = async () => {
           !data.staff[index].deletedAt &&
           String(doc.departmentId) === String(department._id),
       )
-      .sort((a, b) => a.joinedOn - b.joinedOn);
+      .toSorted((a, b) => a.joinedOn - b.joinedOn);
 
     if (members.length > 1) {
       managerOps.push({

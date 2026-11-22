@@ -1,5 +1,4 @@
-import "./lib/error-capture";
-
+// Importing error-capture first installs the global error hooks as a side effect.
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 

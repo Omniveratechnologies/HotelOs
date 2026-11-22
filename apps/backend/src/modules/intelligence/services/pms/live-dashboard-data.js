@@ -239,7 +239,7 @@ function addPaymentToDailyMap(map, payment) {
 
 function dailyRowsFromMap(map) {
   return [...map.values()]
-    .sort((a, b) => a.date - b.date)
+    .toSorted((a, b) => a.date - b.date)
     .map((row) => ({
       _id: row.date,
       total: row.totalRevenue,
@@ -254,7 +254,7 @@ function dailyRowsFromMap(map) {
 
 function occupancyRowsFromMap(map, totalRooms) {
   return [...map.values()]
-    .sort((a, b) => a.date - b.date)
+    .toSorted((a, b) => a.date - b.date)
     .map((row) => ({
       _id: row.date,
       occupied: row.occupiedRooms,
@@ -265,7 +265,7 @@ function occupancyRowsFromMap(map, totalRooms) {
 
 function adrRowsFromMap(map) {
   return [...map.values()]
-    .sort((a, b) => a.date - b.date)
+    .toSorted((a, b) => a.date - b.date)
     .map((row) => ({
       _id: row.date,
       roomRevenue: row.roomRevenue,
@@ -369,11 +369,8 @@ function buildRoomTypeRows(bookings, selectedStart, end) {
   }
 
   return [...groups.entries()]
-    .map(([roomType, row]) => ({
-      _id: roomType,
-      ...row,
-    }))
-    .sort((a, b) => b.amount - a.amount);
+    .map(([roomType, row]) => Object.assign({ _id: roomType }, row))
+    .toSorted((a, b) => b.amount - a.amount);
 }
 
 function buildSourceRows(bookings, selectedStart, end) {
@@ -407,11 +404,8 @@ function buildSourceRows(bookings, selectedStart, end) {
   }
 
   return [...groups.entries()]
-    .map(([source, row]) => ({
-      _id: source,
-      ...row,
-    }))
-    .sort((a, b) => b.count - a.count);
+    .map(([source, row]) => Object.assign({ _id: source }, row))
+    .toSorted((a, b) => b.count - a.count);
 }
 
 function buildPaymentRows(payments, start, end) {
@@ -444,11 +438,8 @@ function buildPaymentRows(payments, start, end) {
   }
 
   return [...groups.entries()]
-    .map(([method, row]) => ({
-      _id: method,
-      ...row,
-    }))
-    .sort((a, b) => b.amount - a.amount);
+    .map(([method, row]) => Object.assign({ _id: method }, row))
+    .toSorted((a, b) => b.amount - a.amount);
 }
 
 function buildWeekdayRows(bookings, selectedStart, end) {
@@ -486,12 +477,9 @@ function buildWeekdayRows(bookings, selectedStart, end) {
     row.roomNights += bookingNights(booking);
   }
 
-  return [...groups.entries()].map(([day, row]) => ({
-    _id: {
-      day,
-    },
-    ...row,
-  }));
+  return [...groups.entries()].map(([day, row]) =>
+    Object.assign({ _id: { day } }, row),
+  );
 }
 
 function buildBookingLeadRows(bookings, selectedStart, end) {
@@ -552,7 +540,7 @@ function buildPurposeRows(bookings, selectedStart, end) {
       _id: purpose,
       count,
     }))
-    .sort((a, b) => b.count - a.count);
+    .toSorted((a, b) => b.count - a.count);
 }
 
 function buildStayDurationRows(bookings, selectedStart, end) {
@@ -628,7 +616,7 @@ function buildCancellationRows(bookings, start, end) {
   }
 
   return [...groups.values()]
-    .sort((a, b) => a.date - b.date)
+    .toSorted((a, b) => a.date - b.date)
     .map((row) => ({
       _id: {
         date: row.date,
@@ -664,7 +652,7 @@ function buildCancellationSourceRows(bookings, start, end) {
       _id: source,
       count,
     }))
-    .sort((a, b) => b.count - a.count);
+    .toSorted((a, b) => b.count - a.count);
 }
 
 function buildCancellationLeadRows(bookings, start, end) {
@@ -734,11 +722,8 @@ function buildCancellationReasonRows(bookings, start, end) {
   }
 
   return [...groups.entries()]
-    .map(([reason, row]) => ({
-      _id: reason,
-      ...row,
-    }))
-    .sort((a, b) => b.count - a.count);
+    .map(([reason, row]) => Object.assign({ _id: reason }, row))
+    .toSorted((a, b) => b.count - a.count);
 }
 
 function buildRoomTypeHeatmap(bookings, start, end) {

@@ -8,15 +8,15 @@ import { AppProviders } from "../providers/AppProviders.jsx";
 import {
   DASHBOARD_IDS,
   DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/intelligence-data.js";
+} from "@/features/intelligence/pms/data/pmsData";
 import {
   POS_DASHBOARD_IDS,
   POS_DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/pos/intelligence-data.js";
+} from "@/features/intelligence/pos/data/posData";
 import {
   BI_DASHBOARD_IDS,
   BI_DASHBOARDS,
-} from "../../features/intelligence/legacy/lib/bi/intelligence-data.js";
+} from "@/features/intelligence/bi/data/biData";
 
 const icon = (paths) => (
   <svg
@@ -118,8 +118,8 @@ const items = [
     ),
   },
   {
-    label: "Members",
-    path: "/members",
+    label: "Staff",
+    path: "/staff",
     icon: icon(
       <path
         d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"

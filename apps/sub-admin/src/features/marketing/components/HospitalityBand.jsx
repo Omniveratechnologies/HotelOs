@@ -9,11 +9,13 @@ import { Icon } from "./MarketingIcons.jsx";
  *  cards                        [{ icon, title, description }]
  *  backgroundSrc                background image URL (empty shows a dark placeholder)
  */
+const EMPTY_CARDS = [];
+
 export default function HospitalityBand({
   label,
   title,
   description,
-  cards = [],
+  cards = EMPTY_CARDS,
   backgroundSrc,
 }) {
   return (

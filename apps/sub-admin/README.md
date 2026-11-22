@@ -66,7 +66,7 @@ Feature hooks under `src/features/<feature>/hooks/`:
 | Feature Hook           | Purpose                                          | Backend                                          |
 | ---------------------- | ------------------------------------------------ | ------------------------------------------------ |
 | `useSubAdminDashboard` | Dashboard stats & recent activity                | `GET /dashboard/stats`                           |
-| `useMembers`           | Staff listing, invitations, deletion             | `GET/DELETE /users`, `POST /invites`             |
+| `useStaff`             | Staff listing, invitations, deletion             | `GET/DELETE /users`, `POST /invites`             |
 | `useRooms`             | Room CRUD & roomCode mappings                    | `GET/POST/PATCH/DELETE /rooms`                   |
 | `useRoomTypes`         | Room types CRUD & channel approval               | `GET/POST/PATCH/DELETE /room-types`              |
 | `useRatePlans`         | Rate plans CRUD & Aiosell live matrix            | `GET/POST/PATCH/DELETE /rate-plans`, sync        |

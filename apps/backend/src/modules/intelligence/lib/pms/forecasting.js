@@ -5,9 +5,10 @@
 
 const SEASON = 7;
 
+const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+
 function fitHW(y, alpha, beta, gamma, m = SEASON) {
   const n = y.length;
-  const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
   const first = mean(y.slice(0, m));
   const second = mean(y.slice(m, 2 * m));
   let level = first;

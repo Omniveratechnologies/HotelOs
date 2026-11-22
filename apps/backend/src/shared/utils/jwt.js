@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { env } from "#/config/env.js";
 
 export const generateToken = (user) => {
   return jwt.sign(
@@ -7,9 +8,9 @@ export const generateToken = (user) => {
       role: user.role,
       hotelId: user.hotelId,
     },
-    process.env.JWT_SECRET,
+    env.jwtSecret,
     {
-      expiresIn: process.env.JWT_EXPIRES_IN || "1d",
+      expiresIn: env.jwtExpiresIn,
     },
   );
 };
@@ -22,9 +23,35 @@ export const generateKioskToken = (kiosk) => {
       hotelId: kiosk.hotelId,
       role: "KIOSK",
     },
-    process.env.JWT_SECRET,
+    env.jwtSecret,
     {
       expiresIn: "365d",
     },
   );
+};
+
+export const generateAccountSelectionToken = ({ email, portal }) => {
+  return jwt.sign(
+    {
+      email,
+      portal,
+      purpose: "account_selection",
+    },
+    env.jwtSecret,
+    {
+      expiresIn: "15m",
+    },
+  );
+};
+
+export const verifyAccountSelectionToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, env.jwtSecret);
+    if (!decoded || decoded.purpose !== "account_selection") {
+      return null;
+    }
+    return decoded;
+  } catch {
+    return null;
+  }
 };

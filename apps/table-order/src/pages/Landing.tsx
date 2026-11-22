@@ -8,8 +8,8 @@ import {
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../services/api";
-import { useCart } from "../context/CartContext";
-import { useMenu } from "../components/Layout";
+import { useCart } from "../context/useCart";
+import { useMenu } from "../context/useMenu";
 import type { TableDetails } from "../types";
 
 export default function Landing() {
@@ -26,7 +26,7 @@ export default function Landing() {
         setTable(t);
         setTableNumber(t.tableNumber);
       })
-      .catch((error: Error) => setError(error.message));
+      .catch((err: Error) => setError(err.message));
   }, [hotelId, tableId, setTableNumber]);
 
   if (error)
