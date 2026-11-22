@@ -19,15 +19,16 @@ const RecipesLists = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: recipes = [], loading, refresh } = useAsyncData(
-    async (signal) => {
-      const res = await fetch(`${API_BASE_URL}/inventory/recipes`, { signal });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message);
-      return data.data || [];
-    },
-    [],
-  );
+  const {
+    data: recipes = [],
+    loading,
+    refresh,
+  } = useAsyncData(async (signal) => {
+    const res = await fetch(`${API_BASE_URL}/inventory/recipes`, { signal });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message);
+    return data.data || [];
+  }, []);
 
   const handleDelete = async (row) => {
     if (!window.confirm(`Delete "${row.menuItemName}"?`)) return;
@@ -127,11 +128,7 @@ const RecipesLists = () => {
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-      <div
-        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      <div className="h-full overflow-y-auto transition-[margin] duration-300 ease-in-out lg:ml-64">
         <Navbar
           icon={<MdFastfood />}
           iconColor="text-emerald-500"
@@ -155,7 +152,7 @@ const RecipesLists = () => {
           }
         />
 
-        <main className="px-4 py-4">
+        <main className="p-3 sm:p-4 lg:p-6">
           <div className="bg-slate rounded-xl border border-gray-800/70 p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-white">

@@ -16,7 +16,7 @@ const foodItemSchema = new mongoose.Schema(
     },
     images: { type: [String], default: [] },
     image: { type: String, default: "" },
-    foodType: { type: String, enum: ["veg", "non-veg", "egg"], default: "veg" },
+    foodType: { type: String, enum: ["veg", "non-veg"], default: "veg" },
     gst: { type: Number, default: 5, min: 0 },
     gstMode: {
       type: String,
@@ -50,7 +50,7 @@ const foodItemSchema = new mongoose.Schema(
     maxStock: { type: Number, default: 0, min: 0 },
     trackInventory: { type: Boolean, default: false },
     availability: { type: String, default: "Always" },
-    isVeg: { type: Boolean, default: false },
+    isVeg: { type: Boolean, default: true },
     isSpicy: { type: Boolean, default: false },
     isChefSpecial: { type: Boolean, default: false },
     isBestseller: { type: Boolean, default: false },

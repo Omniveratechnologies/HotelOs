@@ -139,9 +139,7 @@ const RegisterFace = () => {
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-      <div
-        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${isMenuOpen ? "ml-64" : "ml-0"}`}
-      >
+      <div className="h-full overflow-y-auto transition-[margin] duration-300 ease-in-out lg:ml-64">
         <Navbar
           icon={<FiSmile size={20} />}
           iconColor="text-emerald-400"
@@ -163,7 +161,7 @@ const RegisterFace = () => {
           }
         />
 
-        <main className="space-y-5 px-4 py-5">
+        <main className="space-y-5 p-3 sm:p-4 lg:p-6">
           <FaceStatusCards summary={summary} />
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">

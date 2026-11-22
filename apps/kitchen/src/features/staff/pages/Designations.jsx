@@ -77,7 +77,7 @@ const Designations = () => {
   }, [searchInput]);
 
   // oxlint-disable-next-line react/set-state-in-effect
-// oxlint-disable-next-line react-hooks/exhaustive-deps
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -237,11 +237,7 @@ const Designations = () => {
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-      <div
-        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      <div className="h-full overflow-y-auto transition-[margin] duration-300 ease-in-out lg:ml-64">
         <Navbar
           icon={<FiBriefcase />}
           iconColor="text-emerald-500"
@@ -266,7 +262,7 @@ const Designations = () => {
         />
 
         <main
-          className={`grid items-start gap-5 px-4 py-5 ${
+          className={`grid items-start gap-5 p-3 sm:p-4 lg:p-6 ${
             isWide ? "grid-cols-[minmax(0,1fr)_340px]" : "grid-cols-1"
           }`}
         >

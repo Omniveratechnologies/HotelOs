@@ -594,11 +594,7 @@ const AddStaff = () => {
     <div className="relative min-h-screen bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-      <div
-        className={`min-h-screen transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      <div className="min-h-screen transition-[margin] duration-300 ease-in-out lg:ml-64">
         <Navbar
           icon={<UserPlus size={18} />}
           iconColor="text-emerald-400"
@@ -626,7 +622,7 @@ const AddStaff = () => {
           }
         />
 
-        <main className="mx-auto max-w-[1500px] space-y-5 px-4 py-5 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-[1500px] space-y-5 p-3 sm:p-4 sm:px-6 lg:p-6 lg:px-8">
           {pageError && (
             <div
               role="alert"

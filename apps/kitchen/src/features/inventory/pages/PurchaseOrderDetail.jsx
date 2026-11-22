@@ -22,9 +22,16 @@ const PurchaseOrderDetail = () => {
   const [receiveNotes, setReceiveNotes] = useState("");
   const [receiving, setReceiving] = useState(false);
 
-  const { data: po, loading, refresh } = useAsyncData(
+  const {
+    data: po,
+    loading,
+    refresh,
+  } = useAsyncData(
     async (signal) => {
-      const res = await fetch(`${API_BASE_URL}/inventory/purchase-orders/${id}`, { signal });
+      const res = await fetch(
+        `${API_BASE_URL}/inventory/purchase-orders/${id}`,
+        { signal },
+      );
       if (!res.ok) throw new Error("Failed to fetch purchase order");
       const data = await res.json();
       return data.data;
@@ -178,11 +185,7 @@ const PurchaseOrderDetail = () => {
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-      <div
-        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      <div className="h-full overflow-y-auto transition-[margin] duration-300 ease-in-out lg:ml-64">
         <Navbar
           icon={<MdInventory />}
           iconColor="text-yellow-500"
@@ -200,7 +203,7 @@ const PurchaseOrderDetail = () => {
           setIsMenuOpen={setIsMenuOpen}
         />
 
-        <main className="mt-3 px-4">
+        <main className="mt-3 p-3 sm:p-4 lg:p-6">
           <div className="flex w-full items-start gap-6">
             <div className="min-w-0 flex-1">
               <PurchaseOrderDetailCard

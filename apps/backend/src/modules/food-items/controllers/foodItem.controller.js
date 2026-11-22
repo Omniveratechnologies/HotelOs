@@ -38,16 +38,27 @@ export const getPublicFoodItems = async (req, res) => {
 // Do not build guest-facing UI for this endpoint.
 export const createFoodItem = async (req, res) => {
   try {
-    const { name, description, price, category, image, isAvailable } =
-      req.validated.body;
+    const payload = req.validated?.body || req.body;
+    const { name, description, price, category, image, isAvailable, ...rest } =
+      payload;
 
+    const isVeg =
+      payload.isVeg !== undefined
+        ? Boolean(payload.isVeg)
+        : payload.foodType
+          ? payload.foodType === "veg"
+          : true;
+    const { hotelId: _hotelId, ...extraFields } = rest;
     const item = await FoodItem.create({
+      ...extraFields,
       name,
       description,
       price,
       category,
       image,
-      isAvailable,
+      isAvailable: isAvailable !== undefined ? isAvailable : true,
+      isVeg,
+      foodType: isVeg ? "veg" : "non-veg",
       hotelId: req.user.hotelId,
     });
 
@@ -66,21 +77,19 @@ export const createFoodItem = async (req, res) => {
 
 export const updateFoodItem = async (req, res) => {
   try {
-    const { id } = req.validated.params;
-    const { name, description, price, category, image, isAvailable } =
-      req.validated.body;
-
-    const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (description !== undefined) updateData.description = description;
-    if (price !== undefined) updateData.price = price;
-    if (category !== undefined) updateData.category = category;
-    if (image !== undefined) updateData.image = image;
-    if (isAvailable !== undefined) updateData.isAvailable = isAvailable;
-
+    const id = req.validated?.params?.id || req.params.id;
+    const payload = req.validated?.body || req.body;
+    const { hotelId: _hotelId, ...fields } = payload;
+    if (fields.isVeg !== undefined) {
+      fields.isVeg = Boolean(fields.isVeg);
+      fields.foodType = fields.isVeg ? "veg" : "non-veg";
+    } else if (fields.foodType !== undefined) {
+      fields.isVeg = fields.foodType === "veg";
+      fields.foodType = fields.isVeg ? "veg" : "non-veg";
+    }
     const item = await FoodItem.findOneAndUpdate(
       { _id: id, hotelId: req.user.hotelId },
-      { $set: updateData },
+      { $set: fields },
       { new: true, runValidators: true },
     );
     if (!item)

@@ -246,11 +246,7 @@ const AllStaff = () => {
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-      <div
-        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      <div className="h-full overflow-y-auto transition-[margin] duration-300 ease-in-out lg:ml-64">
         <Navbar
           icon={<FiUsers />}
           iconColor="text-emerald-500"
@@ -303,7 +299,7 @@ const AllStaff = () => {
           }
         />
 
-        <main className="space-y-5 px-4 py-5">
+        <main className="space-y-5 p-3 sm:p-4 lg:p-6">
           <AllStaffStatusCards stats={stats} />
 
           <AllStaffTable

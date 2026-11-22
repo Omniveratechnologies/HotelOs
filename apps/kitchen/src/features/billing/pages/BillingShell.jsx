@@ -31,9 +31,7 @@ export default function BillingShell({ section, children }) {
   return (
     <div className="relative h-screen overflow-hidden bg-[#07131f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
-      <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ${isMenuOpen ? "translate-x-64" : "translate-x-0"}`}
-      >
+      <div className="h-full overflow-y-auto transition-transform duration-300 lg:ml-64">
         <div className="px-4 lg:px-6">
           <Navbar
             title={title}

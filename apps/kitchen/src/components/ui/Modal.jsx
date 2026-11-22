@@ -81,7 +81,7 @@ const Modal = ({
         aria-label={title}
         className={`max-h-[90vh] w-full ${maxWidth} overflow-y-auto rounded-xl border border-gray-800 bg-[#151515] text-white shadow-2xl`}
       >
-        <div className="flex items-center justify-between border-b border-gray-800 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3 sm:px-5 sm:py-4">
           <h2 className="text-sm font-semibold">{title}</h2>
           <button
             type="button"
@@ -94,7 +94,7 @@ const Modal = ({
           </button>
         </div>
 
-        <div className="px-5 py-4">{children}</div>
+        <div className="px-4 py-3 sm:px-5 sm:py-4">{children}</div>
 
         {footer && (
           <div className="flex items-center justify-end gap-2 border-t border-gray-800 px-5 py-3">

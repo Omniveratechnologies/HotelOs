@@ -103,9 +103,6 @@ const PurchaseOrder = () => {
 
         const result = await response.json();
 
-        
-        
-
         if (response.ok && result.success && Array.isArray(result.data)) {
           setPurchaseOrders(result.data);
         } else {
@@ -146,7 +143,6 @@ const PurchaseOrder = () => {
     }));
 
     setCurrentPage(1);
-    
   };
 
   const filteredPurchaseOrders = useMemo(() => {
@@ -233,18 +229,13 @@ const PurchaseOrder = () => {
   };
 
   const handleViewOrderPage = (row) => {
-    
     navigate(`/purchase-orders/${row._id}`);
   };
   return (
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-      <div
-        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      <div className="h-full overflow-y-auto transition-[margin] duration-300 ease-in-out lg:ml-64">
         <Navbar
           icon={<MdInventory />}
           iconColor="text-red-500"
@@ -270,7 +261,7 @@ const PurchaseOrder = () => {
           }
         />
 
-        <main className="mt-3 px-4 pb-6">
+        <main className="mt-3 p-3 pb-6 sm:p-4 lg:p-6">
           <PurchaseOrderCards summary={summary} />
 
           <div className="mt-5 flex flex-wrap items-center gap-3">

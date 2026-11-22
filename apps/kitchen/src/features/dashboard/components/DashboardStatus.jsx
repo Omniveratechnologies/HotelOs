@@ -68,7 +68,7 @@ const DashboardStatus = ({ orders }) => {
   ];
 
   return (
-    <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
+    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map((stat) => (
         <StatusCard
           key={stat.title}

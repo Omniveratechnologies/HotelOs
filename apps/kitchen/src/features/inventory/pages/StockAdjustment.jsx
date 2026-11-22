@@ -74,11 +74,7 @@ const StockAdjustment = () => {
     <div className="relative h-screen overflow-hidden bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
-      <div
-        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      <div className="h-full overflow-y-auto transition-[margin] duration-300 ease-in-out lg:ml-64">
         <Navbar
           icon={<MdInventory />}
           iconColor="text-emerald-500"
@@ -113,7 +109,7 @@ const StockAdjustment = () => {
           }
         />
 
-        <main className="mt-3 px-4">
+        <main className="mt-3 p-3 sm:p-4 lg:p-6">
           <StockAdjustmentForm
             inventoryItems={inventoryItems}
             onSubmit={handleAdjustmentSubmit}

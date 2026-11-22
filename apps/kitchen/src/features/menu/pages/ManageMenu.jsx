@@ -21,7 +21,7 @@ const blank = {
   subCategory: "",
   categoryId: null,
   price: 0,
-  foodType: "veg",
+  isVeg: true,
   gst: 5,
   gstMode: "percentage",
   charges: 0,
@@ -105,7 +105,7 @@ export default function ManageMenu() {
     [query, setQuery] = useState(""),
     [category, setCategory] = useState(""),
     [status, setStatus] = useState(""),
-    [foodType, setFoodType] = useState(""),
+    [vegFilter, setVegFilter] = useState(""),
     [editing, setEditing] = useState(null),
     [tab, setTab] = useState(tabs[0]),
     [error, setError] = useState("");
@@ -140,9 +140,12 @@ export default function ManageMenu() {
               categories.find((row) => row.id === category)?.name) &&
           (!status ||
             (status === "active" ? item.isAvailable : !item.isAvailable)) &&
-          (!foodType || item.foodType === foodType),
+          (!vegFilter ||
+            (vegFilter === "veg"
+              ? item.isVeg !== false
+              : item.isVeg === false)),
       ),
-    [items, categories, query, category, status, foodType],
+    [items, categories, query, category, status, vegFilter],
   );
   const patch = (value) => setEditing((current) => ({ ...current, ...value }));
   const save = async () => {
@@ -202,6 +205,14 @@ export default function ManageMenu() {
           label="Active Items"
           value={items.filter((item) => item.isAvailable).length}
         />
+        <Stat
+          label="Veg Items"
+          value={items.filter((item) => item.isVeg !== false).length}
+        />
+        <Stat
+          label="Non-Veg Items"
+          value={items.filter((item) => item.isVeg === false).length}
+        />
       </div>
       <div className="rounded-xl border border-slate-800 bg-slate-900/60">
         <div className="flex flex-wrap gap-2 border-b border-slate-800 p-3">
@@ -240,13 +251,12 @@ export default function ManageMenu() {
           </select>
           <select
             className={css}
-            value={foodType}
-            onChange={(event) => setFoodType(event.target.value)}
+            value={vegFilter}
+            onChange={(event) => setVegFilter(event.target.value)}
           >
             <option value="">All Food Type</option>
             <option value="veg">Veg</option>
             <option value="non-veg">Non-Veg</option>
-            <option value="egg">Egg</option>
           </select>
         </div>
         <div className="overflow-x-auto">
@@ -290,6 +300,15 @@ export default function ManageMenu() {
                         <small className="block text-xs text-slate-500">
                           {item.subCategory || item.shortDescription}
                         </small>
+                        <span
+                          className={`mt-1 inline-flex rounded border px-1.5 py-0.5 text-[10px] ${
+                            item.isVeg !== false
+                              ? "border-emerald-500/40 text-emerald-400"
+                              : "border-red-500/40 text-red-400"
+                          }`}
+                        >
+                          {item.isVeg !== false ? "Veg" : "Non-Veg"}
+                        </span>
                       </span>
                     </button>
                   </td>
@@ -480,18 +499,25 @@ function Editor({
                   onChange={(e) => patch({ description: e.target.value })}
                 />
               </Field>
-              <Field label="Food Type">
+              <Field label="Item Type *">
                 <div className="flex gap-2">
-                  {["veg", "non-veg", "egg"].map((type) => (
+                  {[
+                    ["veg", "Veg"],
+                    ["non-veg", "Non-Veg"],
+                  ].map(([type, label]) => (
                     <button
                       type="button"
                       key={type}
-                      onClick={() =>
-                        patch({ foodType: type, isVeg: type === "veg" })
-                      }
-                      className={`flex-1 rounded-lg border p-2 text-xs ${item.foodType === type ? "border-emerald-400 text-emerald-400" : "border-slate-700"}`}
+                      onClick={() => patch({ isVeg: type === "veg" })}
+                      className={`flex-1 rounded-lg border p-2 text-xs ${
+                        (item.isVeg !== false) === (type === "veg")
+                          ? type === "veg"
+                            ? "border-emerald-400 text-emerald-400"
+                            : "border-red-400 text-red-400"
+                          : "border-slate-700"
+                      }`}
                     >
-                      {type}
+                      {label}
                     </button>
                   ))}
                 </div>
