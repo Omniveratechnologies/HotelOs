@@ -1,8 +1,8 @@
-import nodemailer from "nodemailer";
+import { createTransport } from "nodemailer";
 import logger from "#/utils/logger.js";
 import { env } from "#/config/env.js";
 
-const transporter = nodemailer.createTransport({
+const transporter = createTransport({
   host: env.email.host,
 
   port: env.email.port,

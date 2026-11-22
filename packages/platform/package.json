@@ -17,9 +17,6 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix"
   },
-  "dependencies": {
-    "@electron-toolkit/utils": "^4.0.0"
-  },
   "peerDependencies": {
     "electron": "*"
   },
