@@ -12,36 +12,41 @@ import {
 } from "lucide-react";
 import { Button } from "@hotelos/ui/components";
 import type {
-  HotelMember,
-  MemberRoleFilter,
-  MemberStatusFilter,
+  HotelStaffMember,
+  StaffRoleFilter,
+  StaffStatusFilter,
 } from "../types.ts";
 
-export interface HotelMembersTabProps {
-  members: HotelMember[];
+export interface HotelStaffTabProps {
+  staff: HotelStaffMember[];
   loading: boolean;
-  onAddMember: () => void;
-  onEditMember: (member: HotelMember) => void;
-  onDeleteMember: (member: HotelMember, permanent: boolean) => void;
-  onRestoreMember: (member: HotelMember) => void;
+  onAddStaff: () => void;
+  onEditStaff: (staff: HotelStaffMember) => void;
+  onDeleteStaff: (staff: HotelStaffMember, permanent: boolean) => void;
+  onRestoreStaff: (staff: HotelStaffMember) => void;
 }
 
-export const HotelMembersTab: React.FC<HotelMembersTabProps> = ({
-  members,
+export const HotelStaffTab: React.FC<HotelStaffTabProps> = ({
+  staff,
   loading,
-  onAddMember,
-  onEditMember,
-  onDeleteMember,
-  onRestoreMember,
+  onAddStaff,
+  onEditStaff,
+  onDeleteStaff,
+  onRestoreStaff,
 }) => {
-  const [roleFilter, setRoleFilter] = useState<MemberRoleFilter>("ALL");
-  const [statusFilter, setStatusFilter] = useState<MemberStatusFilter>("ALL");
+  const handleAdd = onAddStaff;
+  const handleEdit = onEditStaff;
+  const handleDelete = onDeleteStaff;
+  const handleRestore = onRestoreStaff;
+
+  const [roleFilter, setRoleFilter] = useState<StaffRoleFilter>("ALL");
+  const [statusFilter, setStatusFilter] = useState<StaffStatusFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter out any GUEST accounts for defense-in-depth
   const staffMembers = useMemo(() => {
-    return members.filter((m) => m.role !== "GUEST");
-  }, [members]);
+    return (staff || []).filter((m) => m.role !== "GUEST");
+  }, [staff]);
 
   const memberStats = useMemo(() => {
     return {
@@ -235,7 +240,7 @@ export const HotelMembersTab: React.FC<HotelMembersTabProps> = ({
           <select
             value={statusFilter}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              setStatusFilter(e.target.value as MemberStatusFilter)
+              setStatusFilter(e.target.value as StaffStatusFilter)
             }
             className="border-surface-200 text-brand-700 rounded-xl border bg-white px-3 py-1.5 text-xs font-semibold shadow-2xs outline-none"
           >
@@ -245,8 +250,8 @@ export const HotelMembersTab: React.FC<HotelMembersTabProps> = ({
             <option value="DELETED">Soft Deleted Only</option>
           </select>
 
-          <Button icon={Plus} onClick={onAddMember}>
-            Add Member
+          <Button icon={Plus} onClick={handleAdd}>
+            Add Staff Member
           </Button>
         </div>
       </div>
@@ -374,7 +379,7 @@ export const HotelMembersTab: React.FC<HotelMembersTabProps> = ({
                           <>
                             <button
                               type="button"
-                              onClick={() => onRestoreMember(member)}
+                              onClick={() => handleRestore(member)}
                               className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-700 shadow-2xs transition-colors hover:bg-emerald-50"
                               title="Restore user account"
                             >
@@ -384,7 +389,7 @@ export const HotelMembersTab: React.FC<HotelMembersTabProps> = ({
 
                             <button
                               type="button"
-                              onClick={() => onDeleteMember(member, true)}
+                              onClick={() => handleDelete(member, true)}
                               className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-600 shadow-2xs transition-colors hover:bg-red-50"
                               title="Permanently remove from database"
                             >
@@ -396,7 +401,7 @@ export const HotelMembersTab: React.FC<HotelMembersTabProps> = ({
                           <>
                             <button
                               type="button"
-                              onClick={() => onEditMember(member)}
+                              onClick={() => handleEdit(member)}
                               className="border-surface-200 text-brand-600 hover:border-surface-300 hover:bg-surface-50 hover:text-brand-900 inline-flex items-center gap-1 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-semibold shadow-2xs transition-colors"
                             >
                               <Pencil size={13} />
@@ -405,7 +410,7 @@ export const HotelMembersTab: React.FC<HotelMembersTabProps> = ({
 
                             <button
                               type="button"
-                              onClick={() => onDeleteMember(member, false)}
+                              onClick={() => handleDelete(member, false)}
                               className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/50 px-2.5 py-1.5 text-xs font-semibold text-red-600 shadow-2xs transition-colors hover:bg-red-100"
                               title="Soft delete user account"
                             >
@@ -427,4 +432,4 @@ export const HotelMembersTab: React.FC<HotelMembersTabProps> = ({
   );
 };
 
-export default HotelMembersTab;
+export default HotelStaffTab;

@@ -28,18 +28,18 @@ export interface Hotel {
   updatedAt?: string;
 }
 
-export type MemberRole = "SUB_ADMIN" | "RECEPTIONIST" | "KITCHEN" | string;
-export type MemberRoleFilter = "ALL" | "SUB_ADMIN" | "RECEPTIONIST" | "KITCHEN";
-export type MemberStatusFilter = "ALL" | "ACTIVE" | "INACTIVE" | "DELETED";
+export type StaffRole = "SUB_ADMIN" | "RECEPTIONIST" | "KITCHEN" | string;
+export type StaffRoleFilter = "ALL" | "SUB_ADMIN" | "RECEPTIONIST" | "KITCHEN";
+export type StaffStatusFilter = "ALL" | "ACTIVE" | "INACTIVE" | "DELETED";
 
-export interface HotelMember {
+export interface HotelStaffMember {
   id?: string;
   _id?: string;
   name: string;
   username: string;
   originalUsername?: string | null;
   email?: string;
-  role: MemberRole;
+  role: StaffRole;
   hotelId?: string | null;
   isActive: boolean;
   isDeleted?: boolean;
@@ -144,4 +144,4 @@ export interface KioskFilters {
 export type HotelEditSection =
   "identity" | "contact" | "tax" | "operations" | "policies" | "subscription";
 
-export type HotelDetailsTab = "members" | "profile" | "subscription" | "kiosks";
+export type HotelDetailsTab = "staff" | "profile" | "subscription" | "kiosks";

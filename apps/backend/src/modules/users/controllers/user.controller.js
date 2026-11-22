@@ -197,10 +197,25 @@ export const getUsers = async (req, res) => {
         });
       }
 
+      // Sub-Admins and Receptionists can only view RECEPTIONIST and KITCHEN staff
+      if (req.user.role === "SUB_ADMIN" || req.user.role === "RECEPTIONIST") {
+        if (![ROLES.RECEPTIONIST, ROLES.KITCHEN].includes(role)) {
+          return res.status(403).json({
+            success: false,
+            message: "You can only view Receptionist and Kitchen staff",
+          });
+        }
+      }
+
       filter.role = role;
     } else {
-      // By default, staff/members endpoint excludes GUEST accounts unless explicitly queried with ?role=GUEST
-      filter.role = { $ne: ROLES.GUEST };
+      if (req.user.role === "SUB_ADMIN" || req.user.role === "RECEPTIONIST") {
+        // Sub-Admins and Receptionists only manage operational staff (RECEPTIONIST, KITCHEN) - excludes SUB_ADMIN, SUPER_ADMIN, and GUEST
+        filter.role = { $in: [ROLES.RECEPTIONIST, ROLES.KITCHEN] };
+      } else {
+        // By default, staff/members endpoint excludes GUEST accounts unless explicitly queried with ?role=GUEST
+        filter.role = { $ne: ROLES.GUEST };
+      }
     }
 
     // Search filter across name, username, email

@@ -25,11 +25,10 @@ export const createUserBodySchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .optional(),
   email: z
-    .string()
+    .string({ required_error: "Email is required" })
     .trim()
-    .email("Invalid email address")
-    .optional()
-    .or(z.literal("")),
+    .min(1, "Email is required")
+    .email("Invalid email address"),
   role: z.enum(["SUB_ADMIN", "KITCHEN", "RECEPTIONIST"], {
     message: "Invalid user role",
   }),
@@ -46,9 +45,9 @@ export const updateUserBodySchema = z.object({
   email: z
     .string()
     .trim()
+    .min(1, "Email cannot be empty")
     .email("Invalid email address")
-    .optional()
-    .or(z.literal("")),
+    .optional(),
   role: z
     .enum(["SUB_ADMIN", "KITCHEN", "RECEPTIONIST"], {
       message: "Invalid user role",

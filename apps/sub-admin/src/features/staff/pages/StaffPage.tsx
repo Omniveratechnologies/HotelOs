@@ -2,28 +2,28 @@ import React, { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Header, Button, ConfirmDialog } from "@hotelos/ui/components";
 
-import { useMembers, useDeleteMember } from "../hooks/useMembers.js";
-import { MemberKpiStats } from "../components/MemberKpiStats.tsx";
-import { MemberTable } from "../components/MemberTable.tsx";
-import { MemberFormModal } from "../components/MemberFormModal.tsx";
-import { ResetMemberPasswordModal } from "../components/ResetMemberPasswordModal.tsx";
+import { useStaff, useDeleteStaff } from "../hooks/useStaff.ts";
+import { StaffKpiStats } from "../components/StaffKpiStats.tsx";
+import { StaffTable } from "../components/StaffTable.tsx";
+import { StaffFormModal } from "../components/StaffFormModal.tsx";
+import { ResetStaffPasswordModal } from "../components/ResetStaffPasswordModal.tsx";
 import type {
-  SubAdminMember,
-  MemberRoleFilter,
-  MemberStatusFilter,
-  MemberStats,
+  SubAdminStaff,
+  StaffRoleFilter,
+  StaffStatusFilter,
+  StaffStats,
 } from "../types.ts";
 
-export const MembersPage: React.FC = () => {
-  const [roleFilter, setRoleFilter] = useState<MemberRoleFilter>("ALL");
-  const [statusFilter, setStatusFilter] = useState<MemberStatusFilter>("ALL");
+export const StaffPage: React.FC = () => {
+  const [roleFilter, setRoleFilter] = useState<StaffRoleFilter>("ALL");
+  const [statusFilter, setStatusFilter] = useState<StaffStatusFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { members = [], isLoading: loading } = useMembers(roleFilter) as {
-    members: SubAdminMember[];
+  const { staff = [], isLoading: loading } = useStaff(roleFilter) as {
+    staff: SubAdminStaff[];
     isLoading: boolean;
   };
-  const deleteMemberMut = useDeleteMember();
+  const deleteStaffMut = useDeleteStaff();
 
   const [toast, setToast] = useState<{
     message: string;
@@ -33,23 +33,23 @@ export const MembersPage: React.FC = () => {
     type: "success",
   });
   const [formModalOpen, setFormModalOpen] = useState(false);
-  const [selectedMemberForEdit, setSelectedMemberForEdit] =
-    useState<SubAdminMember | null>(null);
-  const [selectedMemberForReset, setSelectedMemberForReset] =
-    useState<SubAdminMember | null>(null);
-  const [memberToDelete, setMemberToDelete] = useState<SubAdminMember | null>(
+  const [selectedStaffForEdit, setSelectedStaffForEdit] =
+    useState<SubAdminStaff | null>(null);
+  const [selectedStaffForReset, setSelectedStaffForReset] =
+    useState<SubAdminStaff | null>(null);
+  const [staffToDelete, setStaffToDelete] = useState<SubAdminStaff | null>(
     null,
   );
   const [deleting, setDeleting] = useState(false);
 
-  // Filter out any GUEST accounts for defense-in-depth
-  const staffMembers = useMemo(() => {
-    return members.filter((m) => m.role !== "GUEST");
-  }, [members]);
+  // Filter out any GUEST or SUB_ADMIN accounts for defense-in-depth
+  const operationalStaff = useMemo(() => {
+    return staff.filter((s) => s.role !== "GUEST" && s.role !== "SUB_ADMIN");
+  }, [staff]);
 
-  // Filter members in-memory for instant feedback
-  const filteredMembers = useMemo(() => {
-    return staffMembers.filter((member) => {
+  // Filter staff in-memory for instant feedback
+  const filteredStaff = useMemo(() => {
+    return operationalStaff.filter((member) => {
       // Role filter
       if (roleFilter !== "ALL" && member.role !== roleFilter) {
         return false;
@@ -71,18 +71,18 @@ export const MembersPage: React.FC = () => {
       }
       return true;
     });
-  }, [staffMembers, roleFilter, statusFilter, searchQuery]);
+  }, [operationalStaff, roleFilter, statusFilter, searchQuery]);
 
   // Compute staff KPIs
-  const stats: MemberStats = useMemo(() => {
+  const stats: StaffStats = useMemo(() => {
     return {
-      total: staffMembers.length,
-      receptionists: staffMembers.filter((m) => m.role === "RECEPTIONIST")
+      total: operationalStaff.length,
+      receptionists: operationalStaff.filter((m) => m.role === "RECEPTIONIST")
         .length,
-      kitchen: staffMembers.filter((m) => m.role === "KITCHEN").length,
-      active: staffMembers.filter((m) => m.isActive).length,
+      kitchen: operationalStaff.filter((m) => m.role === "KITCHEN").length,
+      active: operationalStaff.filter((m) => m.isActive).length,
     };
-  }, [staffMembers]);
+  }, [operationalStaff]);
 
   function showToast(message: string, type: "success" | "error" = "success") {
     setToast({ message, type });
@@ -91,21 +91,21 @@ export const MembersPage: React.FC = () => {
     }, 4000);
   }
 
-  // Handle member deletion
+  // Handle staff deletion
   const handleDeleteConfirm = async () => {
-    if (!memberToDelete) return;
-    const memberId = memberToDelete.id || memberToDelete._id;
-    if (!memberId) return;
+    if (!staffToDelete) return;
+    const staffId = staffToDelete.id || staffToDelete._id;
+    if (!staffId) return;
 
     try {
       setDeleting(true);
-      await deleteMemberMut.mutateAsync(memberId);
+      await deleteStaffMut.mutateAsync(staffId);
       showToast(
-        `${memberToDelete.name || "Member"}'s account deleted successfully.`,
+        `${staffToDelete.name || "Staff member"}'s account deleted successfully.`,
       );
-      setMemberToDelete(null);
+      setStaffToDelete(null);
     } catch (err: unknown) {
-      console.error("Delete member error:", err);
+      console.error("Delete staff error:", err);
       const errMessage =
         err instanceof Error ? err.message : "Failed to delete account.";
       showToast(errMessage, "error");
@@ -117,17 +117,17 @@ export const MembersPage: React.FC = () => {
   return (
     <div className="bg-background-50 min-h-screen">
       <Header
-        pageTitle="Hotel Members Management"
-        pageDescription="Create, update, and manage staff accounts and dashboard credentials."
+        pageTitle="Hotel Staff Management"
+        pageDescription="Create, update, and manage hotel operational staff accounts and credentials."
       >
         <Button
           icon={Plus}
           onClick={() => {
-            setSelectedMemberForEdit(null);
+            setSelectedStaffForEdit(null);
             setFormModalOpen(true);
           }}
         >
-          Add Member
+          Add Staff Member
         </Button>
       </Header>
 
@@ -153,11 +153,11 @@ export const MembersPage: React.FC = () => {
         )}
 
         {/* KPI STATS ROW */}
-        <MemberKpiStats stats={stats} />
+        <StaffKpiStats stats={stats} />
 
-        {/* MEMBERS TABLE & FILTERS */}
-        <MemberTable
-          members={filteredMembers}
+        {/* STAFF TABLE & FILTERS */}
+        <StaffTable
+          staff={filteredStaff}
           loading={loading}
           roleFilter={roleFilter}
           statusFilter={statusFilter}
@@ -165,53 +165,53 @@ export const MembersPage: React.FC = () => {
           onRoleFilterChange={setRoleFilter}
           onStatusFilterChange={setStatusFilter}
           onSearchQueryChange={setSearchQuery}
-          onAddMember={() => {
-            setSelectedMemberForEdit(null);
+          onAddStaff={() => {
+            setSelectedStaffForEdit(null);
             setFormModalOpen(true);
           }}
-          onEditMember={(member) => {
-            setSelectedMemberForEdit(member);
+          onEditStaff={(item) => {
+            setSelectedStaffForEdit(item);
             setFormModalOpen(true);
           }}
-          onResetPassword={(member) => {
-            setSelectedMemberForReset(member);
+          onResetPassword={(item) => {
+            setSelectedStaffForReset(item);
           }}
-          onDeleteMember={(member) => {
-            setMemberToDelete(member);
+          onDeleteStaff={(item) => {
+            setStaffToDelete(item);
           }}
         />
       </main>
 
-      {/* CREATE / EDIT MEMBER MODAL */}
-      <MemberFormModal
+      {/* CREATE / EDIT STAFF MODAL */}
+      <StaffFormModal
         open={formModalOpen}
         onClose={() => {
           setFormModalOpen(false);
-          setSelectedMemberForEdit(null);
+          setSelectedStaffForEdit(null);
         }}
-        member={selectedMemberForEdit}
+        staff={selectedStaffForEdit}
         onSaved={(msg) => showToast(msg)}
       />
 
       {/* RESET PASSWORD MODAL */}
-      {selectedMemberForReset && (
-        <ResetMemberPasswordModal
-          open={!!selectedMemberForReset}
-          onClose={() => setSelectedMemberForReset(null)}
-          member={selectedMemberForReset}
+      {selectedStaffForReset && (
+        <ResetStaffPasswordModal
+          open={!!selectedStaffForReset}
+          onClose={() => setSelectedStaffForReset(null)}
+          staff={selectedStaffForReset}
           onResetSuccess={(msg) => showToast(msg)}
         />
       )}
 
       {/* DELETE CONFIRM DIALOG */}
       <ConfirmDialog
-        open={!!memberToDelete}
-        onClose={() => setMemberToDelete(null)}
+        open={!!staffToDelete}
+        onClose={() => setStaffToDelete(null)}
         title="Delete Staff Member Account?"
         message={
           <>
             Are you sure you want to delete the account for{" "}
-            <strong>{memberToDelete?.name || memberToDelete?.username}</strong>?
+            <strong>{staffToDelete?.name || staffToDelete?.username}</strong>?
             They will immediately lose access to their dashboard.
           </>
         }
@@ -225,4 +225,4 @@ export const MembersPage: React.FC = () => {
   );
 };
 
-export default MembersPage;
+export default StaffPage;

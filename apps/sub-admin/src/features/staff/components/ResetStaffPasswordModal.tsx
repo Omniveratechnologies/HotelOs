@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Sparkles, KeyRound } from "lucide-react";
 import { Modal, Input, Button } from "@hotelos/ui/components";
-import { useResetMemberPassword } from "../hooks/useMembers.js";
-import type { SubAdminMember } from "../types.ts";
+import { useResetStaffPassword } from "../hooks/useStaff.ts";
+import type { SubAdminStaff } from "../types.ts";
 
 function generateSecurePassword(): string {
   const chars =
@@ -14,16 +14,16 @@ function generateSecurePassword(): string {
   return pass;
 }
 
-interface ResetMemberPasswordModalContentProps {
+interface ResetStaffPasswordModalContentProps {
   onClose: () => void;
-  member: SubAdminMember;
+  staff: SubAdminStaff;
   onResetSuccess?: (message: string) => void;
 }
 
-const ResetMemberPasswordModalContent: React.FC<
-  ResetMemberPasswordModalContentProps
-> = ({ onClose, member, onResetSuccess }) => {
-  const resetPasswordMut = useResetMemberPassword();
+const ResetStaffPasswordModalContent: React.FC<
+  ResetStaffPasswordModalContentProps
+> = ({ onClose, staff, onResetSuccess }) => {
+  const resetPasswordMut = useResetStaffPassword();
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -45,9 +45,9 @@ const ResetMemberPasswordModalContent: React.FC<
       return;
     }
 
-    const memberId = member.id || member._id;
-    if (!memberId) {
-      setError("Member ID is missing.");
+    const staffId = staff.id || staff._id;
+    if (!staffId) {
+      setError("Staff ID is missing.");
       return;
     }
 
@@ -55,10 +55,10 @@ const ResetMemberPasswordModalContent: React.FC<
       setSubmitting(true);
       setError("");
       await resetPasswordMut.mutateAsync({
-        id: memberId,
+        id: staffId,
         password: password.trim(),
       });
-      onResetSuccess?.(`Password for ${member.name} reset successfully.`);
+      onResetSuccess?.(`Password for ${staff.name} reset successfully.`);
       onClose();
     } catch (err: unknown) {
       console.error("Password reset error:", err);
@@ -75,7 +75,7 @@ const ResetMemberPasswordModalContent: React.FC<
       open
       onClose={onClose}
       title="Reset Staff Password"
-      subtitle={`Set a new login password for ${member.name || "staff member"}.`}
+      subtitle={`Set a new login password for ${staff.name || "staff member"}.`}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,21 +85,22 @@ const ResetMemberPasswordModalContent: React.FC<
           </div>
         )}
 
-        {/* MEMBER DETAILS BRIEF */}
+        {/* STAFF DETAILS BRIEF */}
         <div className="border-surface-200 bg-surface-50 flex items-center gap-3 rounded-xl border p-3.5">
           <div className="bg-primary-100 text-primary-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
             <KeyRound size={20} />
           </div>
           <div>
             <span className="text-brand-900 block text-sm font-semibold">
-              {member.name}
+              {staff.name}
             </span>
             <span className="text-brand-500 block text-xs">
-              @{member.username} · {member.role}
+              @{staff.username} · {staff.role}
             </span>
           </div>
         </div>
 
+        {/* NEW PASSWORD */}
         <div>
           <div className="mb-1.5 flex items-center justify-between">
             <label className="text-brand-900 block text-sm font-semibold">
@@ -135,6 +136,7 @@ const ResetMemberPasswordModalContent: React.FC<
           </div>
         </div>
 
+        {/* MODAL ACTIONS */}
         <div className="border-surface-200 mt-6 flex items-center justify-end gap-3 border-t pt-4">
           <Button
             type="button"
@@ -153,26 +155,29 @@ const ResetMemberPasswordModalContent: React.FC<
   );
 };
 
-export interface ResetMemberPasswordModalProps {
+export interface StaffPasswordModalProps {
   open: boolean;
   onClose: () => void;
-  member: SubAdminMember | null;
+  staff?: SubAdminStaff | null;
   onResetSuccess?: (message: string) => void;
 }
 
-export const ResetMemberPasswordModal: React.FC<
-  ResetMemberPasswordModalProps
-> = ({ open, onClose, member, onResetSuccess }) => {
-  if (!open || !member) return null;
+export const ResetStaffPasswordModal: React.FC<StaffPasswordModalProps> = ({
+  open,
+  onClose,
+  staff,
+  onResetSuccess,
+}) => {
+  if (!open || !staff) return null;
 
   return (
-    <ResetMemberPasswordModalContent
-      key={member.id || member._id}
+    <ResetStaffPasswordModalContent
+      key={staff.id || staff._id}
       onClose={onClose}
-      member={member}
+      staff={staff}
       onResetSuccess={onResetSuccess}
     />
   );
 };
 
-export default ResetMemberPasswordModal;
+export default ResetStaffPasswordModal;

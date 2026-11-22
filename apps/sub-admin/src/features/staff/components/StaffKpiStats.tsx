@@ -1,12 +1,12 @@
 import React from "react";
 import { Users, UserCheck, UtensilsCrossed, CheckCircle2 } from "lucide-react";
-import type { MemberStats } from "../types.ts";
+import type { StaffStats } from "../types.ts";
 
-export interface MemberKpiStatsProps {
-  stats: MemberStats;
+export interface StaffKpiStatsProps {
+  stats: StaffStats;
 }
 
-export const MemberKpiStats: React.FC<MemberKpiStatsProps> = ({ stats }) => {
+export const StaffKpiStats: React.FC<StaffKpiStatsProps> = ({ stats }) => {
   return (
     <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div className="border-surface-200 flex items-center gap-4 rounded-2xl border bg-white p-5 shadow-2xs">
@@ -68,4 +68,4 @@ export const MemberKpiStats: React.FC<MemberKpiStatsProps> = ({ stats }) => {
   );
 };
 
-export default MemberKpiStats;
+export default StaffKpiStats;

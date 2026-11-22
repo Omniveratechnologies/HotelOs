@@ -70,11 +70,11 @@ export const sendSubAdminInvite = async (inviteData) => {
 };
 
 /**
- * Sends a team member invitation.
+ * Sends a staff invitation.
  * @param {object} inviteData
  * @returns {Promise<object>}
  */
-export const sendMemberInvitation = async (inviteData) => {
+export const sendStaffInvitation = async (inviteData) => {
   const result = await api.post("/api/v1/invites", inviteData, { auth: true });
   return result.data;
 };
@@ -88,7 +88,7 @@ export const sendMemberInvitation = async (inviteData) => {
  * @returns {Promise<object>}
  */
 export const sendReceptionistInvitation = async ({ name, email, username }) => {
-  return sendMemberInvitation({
+  return sendStaffInvitation({
     name: name?.trim(),
     email: email?.trim().toLowerCase(),
     username: username?.trim().toLowerCase(),

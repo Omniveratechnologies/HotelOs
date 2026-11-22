@@ -178,6 +178,26 @@ describe("User CRUD & Soft Deletion", () => {
     assert.equal(body.data.role, "KITCHEN");
   });
 
+  it("rejects user creation when email address is omitted or empty", async () => {
+    const res = await fetch("http://localhost:5002/api/v1/users", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${subAdminToken}`,
+      },
+      body: JSON.stringify({
+        name: "Chef No Email",
+        role: "KITCHEN",
+        username: "chef_no_email",
+        password: "SecurePass123!",
+      }),
+    });
+
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.success, false);
+  });
+
   it("prevents duplicate active usernames", async () => {
     await User.create({
       name: "Chef Sanjay",
@@ -199,6 +219,7 @@ describe("User CRUD & Soft Deletion", () => {
         role: "KITCHEN",
         username: "chef_sanjay",
         password: "SecurePass123!",
+        email: "another@hotel.com",
       }),
     });
 
@@ -239,13 +260,12 @@ describe("User CRUD & Soft Deletion", () => {
     assert.equal(dbUser.originalUsername, "chef_sanjay");
     assert.match(dbUser.username, /^chef_sanjay_deleted_\d+$/);
 
-    // Verify Sub-Admin query does NOT return the soft-deleted user
+    // Verify Sub-Admin query does NOT return soft-deleted user AND excludes SUB_ADMIN
     const queryRes = await fetch("http://localhost:5002/api/v1/users", {
       headers: { Authorization: `Bearer ${subAdminToken}` },
     });
     const queryBody = await queryRes.json();
-    assert.equal(queryBody.data.length, 1); // Only Sub-Admin themselves
-    assert.equal(queryBody.data[0].role, "SUB_ADMIN");
+    assert.equal(queryBody.data.length, 0); // SUB_ADMIN is excluded, staff was soft-deleted
 
     // Recreate another user with the original username -> MUST succeed
     const recreateRes = await fetch("http://localhost:5002/api/v1/users", {
@@ -259,6 +279,7 @@ describe("User CRUD & Soft Deletion", () => {
         role: "KITCHEN",
         username: "chef_sanjay",
         password: "NewPass12345!",
+        email: "newchef@hotel.com",
       }),
     });
 

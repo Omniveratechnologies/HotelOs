@@ -1,13 +1,13 @@
 export type SubAdminRole = "RECEPTIONIST" | "KITCHEN";
-export type MemberRoleFilter = "ALL" | "RECEPTIONIST" | "KITCHEN";
-export type MemberStatusFilter = "ALL" | "ACTIVE" | "INACTIVE";
+export type StaffRoleFilter = "ALL" | "RECEPTIONIST" | "KITCHEN";
+export type StaffStatusFilter = "ALL" | "ACTIVE" | "INACTIVE";
 
-export interface SubAdminMember {
+export interface SubAdminStaff {
   id?: string;
   _id?: string;
   name: string;
   username: string;
-  email?: string;
+  email: string;
   role: SubAdminRole | string;
   hotelId?: string | null;
   isActive: boolean;
@@ -15,26 +15,26 @@ export interface SubAdminMember {
   updatedAt?: string;
 }
 
-export interface MemberStats {
+export interface StaffStats {
   total: number;
   receptionists: number;
   kitchen: number;
   active: number;
 }
 
-export interface CreateMemberPayload {
+export interface CreateStaffPayload {
   name: string;
   role: SubAdminRole | string;
   username: string;
   password: string;
-  email?: string;
+  email: string;
   isActive: boolean;
 }
 
-export interface UpdateMemberPayload {
+export interface UpdateStaffPayload {
   name: string;
   role: SubAdminRole | string;
-  email?: string;
+  email: string;
   password?: string;
   isActive: boolean;
 }

@@ -19,10 +19,10 @@ import {
   useSyncRatePlans,
 } from "../features/rate-plans/hooks/useRatePlans.js";
 import {
-  useMembers,
-  useDeleteMember,
-  useSendMemberInvitation,
-} from "../features/members/hooks/useMembers.js";
+  useStaff,
+  useDeleteStaff,
+  useSendStaffInvitation,
+} from "../features/staff/hooks/useStaff.ts";
 import {
   useReservations,
   useCreateReservation,
@@ -61,11 +61,7 @@ export function useSubAdminOS() {
     isLoading: ratePlansLoading,
     error: ratePlansError,
   } = useRatePlans();
-  const {
-    members,
-    isLoading: membersLoading,
-    error: membersError,
-  } = useMembers();
+  const { staff, isLoading: staffLoading, error: staffError } = useStaff();
   const {
     reservations,
     isLoading: reservationsLoading,
@@ -102,8 +98,8 @@ export function useSubAdminOS() {
   const deleteRatePlanMut = useDeleteRatePlan();
   const syncRatePlansMut = useSyncRatePlans();
 
-  const deleteMemberMut = useDeleteMember();
-  const sendInviteMut = useSendMemberInvitation();
+  const deleteMemberMut = useDeleteStaff();
+  const sendInviteMut = useSendStaffInvitation();
 
   const updateHotelMut = useUpdateMyHotel();
 
@@ -114,7 +110,7 @@ export function useSubAdminOS() {
       queryClient.invalidateQueries({ queryKey: queryKeys.guests.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.roomTypes.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.ratePlans.all }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.members.all }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.all }),
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() }),
       queryClient.invalidateQueries({ queryKey: queryKeys.hotels.me() }),
     ]);
@@ -137,9 +133,9 @@ export function useSubAdminOS() {
     ratePlans,
     ratePlansLoading,
     ratePlansError,
-    members,
-    membersLoading,
-    membersError,
+    staff,
+    staffLoading,
+    staffError,
     stats,
     statsLoading,
     statsError,
@@ -171,8 +167,8 @@ export function useSubAdminOS() {
     updateRatePlan: (id, data) => updateRatePlanMut.mutateAsync({ id, data }),
     deleteRatePlan: (id) => deleteRatePlanMut.mutateAsync(id),
     syncRatePlans: (range) => syncRatePlansMut.mutateAsync(range),
-    deleteMember: (id) => deleteMemberMut.mutateAsync(id),
-    sendMemberInvite: (data) => sendInviteMut.mutateAsync(data),
+    deleteStaff: (id) => deleteMemberMut.mutateAsync(id),
+    sendStaffInvite: (data) => sendInviteMut.mutateAsync(data),
     updateHotel: (data) => updateHotelMut.mutateAsync(data),
   };
 }

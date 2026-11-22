@@ -12,20 +12,20 @@ import {
 } from "lucide-react";
 
 import { Header, Button, ConfirmDialog } from "@hotelos/ui/components";
-import { membersApi } from "@hotelos/api";
+import { staffApi } from "@hotelos/api";
 import { EditHotelSectionModal } from "../components/EditHotelSectionModal.tsx";
 import { HotelHeroCard } from "../components/HotelHeroCard.tsx";
-import { HotelMembersTab } from "../components/HotelMembersTab.tsx";
+import { HotelStaffTab } from "../components/HotelStaffTab.tsx";
 import { HotelProfileTab } from "../components/HotelProfileTab.tsx";
 import { HotelSubscriptionTab } from "../components/HotelSubscriptionTab.tsx";
 import { HotelKiosksTab } from "../components/HotelKiosksTab.tsx";
-import { HotelMemberFormModal } from "../components/HotelMemberFormModal.tsx";
-import { RestoreMemberModal } from "../components/RestoreMemberModal.tsx";
+import { HotelStaffFormModal } from "../components/HotelStaffFormModal.tsx";
+import { RestoreStaffModal } from "../components/RestoreStaffModal.tsx";
 import { useHotel, useUpdateHotelStatus } from "../hooks/useHotels.js";
 import { useKiosks } from "../hooks/useKiosks.ts";
 import type {
   Hotel,
-  HotelMember,
+  HotelStaffMember,
   KioskDevice,
   HotelDetailsTab,
   HotelEditSection,
@@ -53,22 +53,22 @@ export const HotelDetailsPage: React.FC = () => {
   const updateHotelStatusMutation = useUpdateHotelStatus();
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<HotelDetailsTab>("members");
+  const [activeTab, setActiveTab] = useState<HotelDetailsTab>("staff");
 
   // Modals state
   const [activeEditSection, setActiveEditSection] =
     useState<HotelEditSection | null>(null);
-  const [memberModalOpen, setMemberModalOpen] = useState(false);
-  const [selectedMemberForEdit, setSelectedMemberForEdit] =
-    useState<HotelMember | null>(null);
-  const [restoreConflictMember, setRestoreConflictMember] =
-    useState<HotelMember | null>(null);
-  const [memberToDelete, setMemberToDelete] = useState<HotelMember | null>(
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+  const [selectedStaffForEdit, setSelectedStaffForEdit] =
+    useState<HotelStaffMember | null>(null);
+  const [restoreConflictStaff, setRestoreConflictStaff] =
+    useState<HotelStaffMember | null>(null);
+  const [staffToDelete, setStaffToDelete] = useState<HotelStaffMember | null>(
     null,
   );
   const [deletePermanent, setDeletePermanent] = useState(false);
-  const [deletingMember, setDeletingMember] = useState(false);
-  const [restoringMember, setRestoringMember] = useState(false);
+  const [deletingStaff, setDeletingStaff] = useState(false);
+  const [restoringStaff, setRestoringStaff] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -77,27 +77,27 @@ export const HotelDetailsPage: React.FC = () => {
     type: "success",
   });
 
-  // Query Hotel Members
+  // Query Hotel Staff
   const {
-    data: members = [],
-    isLoading: membersLoading,
-    refetch: refetchMembers,
-  } = useQuery<HotelMember[]>({
-    queryKey: ["super-admin", "hotel-members", id],
+    data: staff = [],
+    isLoading: staffLoading,
+    refetch: refetchStaff,
+  } = useQuery<HotelStaffMember[]>({
+    queryKey: ["super-admin", "hotel-staff", id],
     queryFn: async () => {
-      const data = await membersApi.fetchMembers({
+      const data = await staffApi.fetchStaff({
         hotelId: id,
         includeDeleted: true,
       });
-      return (data || []) as HotelMember[];
+      return (data || []) as HotelStaffMember[];
     },
     enabled: !!id,
   });
 
   // Filter out any GUEST accounts for staff tab & count
-  const staffMembers = useMemo(() => {
-    return members.filter((m) => m.role !== "GUEST");
-  }, [members]);
+  const hotelStaff = useMemo(() => {
+    return staff.filter((s) => s.role !== "GUEST");
+  }, [staff]);
 
   // Query Hotel Kiosks via useKiosks
   const {
@@ -164,52 +164,52 @@ export const HotelDetailsPage: React.FC = () => {
     );
   }
 
-  // Delete Member Action (Soft or Permanent)
-  async function handleDeleteMemberConfirm() {
-    if (!memberToDelete) return;
-    const memberId = memberToDelete.id || memberToDelete._id;
-    if (!memberId) return;
+  // Delete Staff Action (Soft or Permanent)
+  async function handleDeleteStaffConfirm() {
+    if (!staffToDelete) return;
+    const staffId = staffToDelete.id || staffToDelete._id;
+    if (!staffId) return;
 
     try {
-      setDeletingMember(true);
-      await membersApi.deleteMember(memberId, {
+      setDeletingStaff(true);
+      await staffApi.deleteStaff(staffId, {
         permanent: deletePermanent,
       });
       showToast(
         deletePermanent
-          ? `${memberToDelete.name || "Member"} permanently deleted.`
-          : `${memberToDelete.name || "Member"} soft-deleted successfully.`,
+          ? `${staffToDelete.name || "Staff"} permanently deleted.`
+          : `${staffToDelete.name || "Staff"} soft-deleted successfully.`,
       );
-      setMemberToDelete(null);
-      refetchMembers();
+      setStaffToDelete(null);
+      refetchStaff();
     } catch (err: unknown) {
-      console.error("Delete member error:", err);
+      console.error("Delete staff error:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Failed to delete account.";
       showToast(errorMessage, "error");
     } finally {
-      setDeletingMember(false);
+      setDeletingStaff(false);
     }
   }
 
-  // Restore Member Action
-  async function handleRestoreMember(
-    member: HotelMember,
+  // Restore Staff Action
+  async function handleRestoreStaff(
+    staffItem: HotelStaffMember,
     newUsername?: string,
   ) {
-    const memberId = member.id || member._id;
-    if (!memberId) return;
+    const staffId = staffItem.id || staffItem._id;
+    if (!staffId) return;
 
     try {
-      setRestoringMember(true);
-      await membersApi.restoreMember(memberId, {
+      setRestoringStaff(true);
+      await staffApi.restoreStaff(staffId, {
         newUsername: newUsername || undefined,
       });
-      showToast(`${member.name || "Member"} restored successfully.`);
-      setRestoreConflictMember(null);
-      refetchMembers();
+      showToast(`${staffItem.name || "Staff"} restored successfully.`);
+      setRestoreConflictStaff(null);
+      refetchStaff();
     } catch (err: unknown) {
-      console.error("Restore member error:", err);
+      console.error("Restore staff error:", err);
       const apiErr = err as ApiErrorShape;
       if (
         apiErr?.status === 409 ||
@@ -217,12 +217,12 @@ export const HotelDetailsPage: React.FC = () => {
         apiErr?.message?.includes("already taken") ||
         apiErr?.message?.includes("already in use")
       ) {
-        setRestoreConflictMember(member);
+        setRestoreConflictStaff(staffItem);
       } else {
         showToast(apiErr?.message || "Failed to restore account.", "error");
       }
     } finally {
-      setRestoringMember(false);
+      setRestoringStaff(false);
     }
   }
 
@@ -317,15 +317,15 @@ export const HotelDetailsPage: React.FC = () => {
         <div className="border-surface-200 mb-6 flex border-b">
           <button
             type="button"
-            onClick={() => setActiveTab("members")}
+            onClick={() => setActiveTab("staff")}
             className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-all ${
-              activeTab === "members"
+              activeTab === "staff"
                 ? "border-primary-600 text-primary-700"
                 : "text-brand-600 hover:text-brand-900 border-transparent"
             }`}
           >
             <Users size={16} />
-            Staff & Members ({staffMembers.length})
+            Staff & Admins ({hotelStaff.length})
           </button>
 
           <button
@@ -369,24 +369,24 @@ export const HotelDetailsPage: React.FC = () => {
         </div>
 
         {/* TAB CONTENTS */}
-        {activeTab === "members" && (
-          <HotelMembersTab
-            members={staffMembers}
-            loading={membersLoading}
-            onAddMember={() => {
-              setSelectedMemberForEdit(null);
-              setMemberModalOpen(true);
+        {activeTab === "staff" && (
+          <HotelStaffTab
+            staff={hotelStaff}
+            loading={staffLoading}
+            onAddStaff={() => {
+              setSelectedStaffForEdit(null);
+              setStaffModalOpen(true);
             }}
-            onEditMember={(member) => {
-              setSelectedMemberForEdit(member);
-              setMemberModalOpen(true);
+            onEditStaff={(item) => {
+              setSelectedStaffForEdit(item);
+              setStaffModalOpen(true);
             }}
-            onDeleteMember={(member, permanent) => {
-              setMemberToDelete(member);
+            onDeleteStaff={(item, permanent) => {
+              setStaffToDelete(item);
               setDeletePermanent(permanent);
             }}
-            onRestoreMember={(member) => {
-              handleRestoreMember(member);
+            onRestoreStaff={(item) => {
+              handleRestoreStaff(item);
             }}
           />
         )}
@@ -424,72 +424,68 @@ export const HotelDetailsPage: React.FC = () => {
         />
       )}
 
-      {/* ADD / EDIT HOTEL MEMBER MODAL */}
-      <HotelMemberFormModal
-        open={memberModalOpen}
+      {/* ADD / EDIT HOTEL STAFF & ADMIN MODAL */}
+      <HotelStaffFormModal
+        open={staffModalOpen}
         hotelId={id || ""}
-        member={selectedMemberForEdit}
+        staff={selectedStaffForEdit}
         onClose={() => {
-          setMemberModalOpen(false);
-          setSelectedMemberForEdit(null);
+          setStaffModalOpen(false);
+          setSelectedStaffForEdit(null);
         }}
         onSaved={(msg) => {
           showToast(msg);
-          refetchMembers();
+          refetchStaff();
         }}
       />
 
       {/* RESTORE WITH NEW USERNAME MODAL (CONFLICT RESOLUTION) */}
-      {restoreConflictMember && (
-        <RestoreMemberModal
-          open={!!restoreConflictMember}
-          member={restoreConflictMember}
-          onClose={() => setRestoreConflictMember(null)}
+      {restoreConflictStaff && (
+        <RestoreStaffModal
+          open={!!restoreConflictStaff}
+          staff={restoreConflictStaff}
+          onClose={() => setRestoreConflictStaff(null)}
           onConfirm={(newUsername) =>
-            handleRestoreMember(restoreConflictMember, newUsername)
+            handleRestoreStaff(restoreConflictStaff, newUsername)
           }
-          loading={restoringMember}
+          loading={restoringStaff}
         />
       )}
 
       {/* DELETE CONFIRM DIALOG */}
       <ConfirmDialog
-        open={!!memberToDelete}
+        open={!!staffToDelete}
         onClose={() => {
-          setMemberToDelete(null);
+          setStaffToDelete(null);
           setDeletePermanent(false);
         }}
         title={
           deletePermanent
-            ? "Permanently Delete Member?"
-            : "Delete Member Account?"
+            ? "Permanently Delete Staff / Admin Account?"
+            : "Delete Staff / Admin Account?"
         }
         message={
           deletePermanent ? (
             <>
               Are you sure you want to <strong>permanently delete</strong> the
               account for{" "}
-              <strong>
-                {memberToDelete?.name || memberToDelete?.username}
-              </strong>
-              ? This action completely purges the user from the database and
+              <strong>{staffToDelete?.name || staffToDelete?.username}</strong>?
+              This action completely purges the user from the database and
               cannot be undone.
             </>
           ) : (
             <>
               Are you sure you want to delete the account for{" "}
-              <strong>
-                {memberToDelete?.name || memberToDelete?.username}
-              </strong>
-              ? They will lose dashboard access, but you can restore them later.
+              <strong>{staffToDelete?.name || staffToDelete?.username}</strong>?
+              They will lose dashboard access, but you can restore them later.
             </>
           )
         }
-        confirmLabel={deletePermanent ? "Permanent Delete" : "Delete Member"}
+        confirmLabel={deletePermanent ? "Permanent Delete" : "Delete Account"}
         cancelLabel="Cancel"
         tone="danger"
-        loading={deletingMember}
-        onConfirm={handleDeleteMemberConfirm}
+        loading={deletingStaff}
+        onConfirm={handleDeleteStaffConfirm}
       />
     </div>
   );

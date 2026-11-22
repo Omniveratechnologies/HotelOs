@@ -5,11 +5,15 @@ import {
   Sparkles,
   UtensilsCrossed,
   UserCheck,
-  ShieldCheck,
 } from "lucide-react";
 import { Modal, Input, Button } from "@hotelos/ui/components";
-import { membersApi } from "@hotelos/api";
-import type { HotelMember, MemberRole } from "../types.ts";
+import { useCreateStaff, useUpdateStaff } from "../hooks/useStaff.ts";
+import type {
+  SubAdminStaff,
+  SubAdminRole,
+  CreateStaffPayload,
+  UpdateStaffPayload,
+} from "../types.ts";
 
 function generateSecurePassword(): string {
   const chars =
@@ -21,28 +25,33 @@ function generateSecurePassword(): string {
   return pass;
 }
 
-interface HotelMemberFormModalContentProps {
-  hotelId: string;
-  member?: HotelMember | null;
+interface StaffFormModalContentProps {
   onClose: () => void;
+  staff?: SubAdminStaff | null;
   onSaved?: (message: string) => void;
 }
 
-const HotelMemberFormModalContent: React.FC<
-  HotelMemberFormModalContentProps
-> = ({ hotelId, member = null, onClose, onSaved }) => {
-  const isEdit = !!member;
+const StaffFormModalContent: React.FC<StaffFormModalContentProps> = ({
+  onClose,
+  staff = null,
+  onSaved,
+}) => {
+  const isEdit = !!staff;
+  const createStaffMut = useCreateStaff();
+  const updateStaffMut = useUpdateStaff();
 
-  const [name, setName] = useState(member?.name || "");
-  const [role, setRole] = useState<MemberRole>(member?.role || "SUB_ADMIN");
-  const [username, setUsername] = useState(member?.username || "");
-  const [email, setEmail] = useState(member?.email || "");
+  const [name, setName] = useState(staff?.name || "");
+  const [role, setRole] = useState<SubAdminRole>(
+    (staff?.role as SubAdminRole) || "RECEPTIONIST",
+  );
+  const [username, setUsername] = useState(staff?.username || "");
+  const [email, setEmail] = useState(staff?.email || "");
   const [password, setPassword] = useState(() =>
     isEdit ? "" : generateSecurePassword(),
   );
   const [showPassword, setShowPassword] = useState(false);
   const [isActive, setIsActive] = useState(
-    member?.isActive !== undefined ? member.isActive : true,
+    staff?.isActive !== undefined ? staff.isActive : true,
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -71,7 +80,9 @@ const HotelMemberFormModalContent: React.FC<
       }
     }
 
-    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!email.trim()) {
+      next.email = "Email address is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       next.email = "Please enter a valid email address.";
     }
 
@@ -87,43 +98,37 @@ const HotelMemberFormModalContent: React.FC<
       setSubmitting(true);
       setErrors({});
 
-      if (isEdit && member) {
-        const payload: {
-          name: string;
-          email?: string;
-          role: MemberRole;
-          isActive: boolean;
-          password?: string;
-        } = {
+      if (isEdit && staff) {
+        const payload: UpdateStaffPayload = {
           name: name.trim(),
-          email: email.trim() || undefined,
+          email: email.trim(),
           role,
           isActive,
         };
         if (password.trim()) {
           payload.password = password.trim();
         }
-        await membersApi.updateMember(member.id || member._id, payload);
-        onSaved?.("Member updated successfully.");
+        await updateStaffMut.mutateAsync({
+          id: (staff.id || staff._id) as string,
+          data: payload,
+        });
+        if (onSaved) onSaved("Staff member updated successfully.");
       } else {
-        const payload = {
-          hotelId,
+        const payload: CreateStaffPayload = {
           name: name.trim(),
-          role,
           username: username.trim().toLowerCase(),
           password: password.trim(),
-          email: email.trim() || undefined,
+          email: email.trim(),
+          role,
           isActive,
         };
-        await membersApi.createMember(payload);
-        onSaved?.("Member created successfully.");
+        await createStaffMut.mutateAsync(payload);
+        if (onSaved) onSaved("Staff member created successfully.");
       }
       onClose();
     } catch (err: unknown) {
-      console.error("Super Admin member save error:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to save member account.";
-      setErrors({ form: errorMessage });
+      const msg = (err as Error)?.message || "Failed to save staff member.";
+      setErrors({ form: msg });
     } finally {
       setSubmitting(false);
     }
@@ -133,77 +138,53 @@ const HotelMemberFormModalContent: React.FC<
     <Modal
       open
       onClose={onClose}
-      title={isEdit ? "Edit Hotel Staff" : "Add Hotel Staff Member"}
+      title={
+        isEdit ? `Edit Staff Member: ${staff?.name}` : "Add New Staff Member"
+      }
       subtitle={
         isEdit
-          ? "Update details or access status for this account."
-          : "Create dedicated login credentials for a staff member of this hotel."
+          ? "Modify login credentials, assigned role, or account status."
+          : "Assign an operational role, username, and password for front desk or kitchen staff."
       }
-      maxWidth="lg"
+      maxWidth="md"
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4 pt-2">
         {errors.form && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
             {errors.form}
           </div>
         )}
 
         {/* ROLE SELECTION */}
         <div>
-          <label className="text-brand-900 mb-2 block text-sm font-semibold">
-            Select Member Role <span className="text-red-500">*</span>
+          <label className="text-brand-900 mb-1.5 block text-xs font-bold tracking-wider uppercase">
+            Staff Role & Department <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-3 gap-2.5">
-            <button
-              type="button"
-              onClick={() => setRole("SUB_ADMIN")}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-all ${
-                role === "SUB_ADMIN"
-                  ? "border-purple-600 bg-purple-50/50 text-purple-900 ring-2 ring-purple-500/20"
-                  : "border-surface-200 text-brand-700 hover:border-surface-300 bg-white"
-              }`}
-            >
-              <div
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  role === "SUB_ADMIN"
-                    ? "bg-purple-600 text-white"
-                    : "bg-surface-100 text-brand-600"
-                }`}
-              >
-                <ShieldCheck size={18} />
-              </div>
-              <div>
-                <span className="block text-xs font-semibold">Sub-Admin</span>
-                <span className="text-brand-500/80 block text-[10px]">
-                  Hotel Manager
-                </span>
-              </div>
-            </button>
-
+          <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setRole("RECEPTIONIST")}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-all ${
+              className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
                 role === "RECEPTIONIST"
-                  ? "border-primary-600 bg-primary-50/50 text-primary-900 ring-primary-500/20 ring-2"
-                  : "border-surface-200 text-brand-700 hover:border-surface-300 bg-white"
+                  ? "border-primary-500 bg-primary-50/50 ring-primary-500/20 ring-2"
+                  : "border-surface-200 hover:border-surface-300 bg-white"
               }`}
             >
               <div
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                   role === "RECEPTIONIST"
                     ? "bg-primary-600 text-white"
                     : "bg-surface-100 text-brand-600"
                 }`}
               >
-                <UserCheck size={18} />
+                <UserCheck size={20} />
               </div>
               <div>
-                <span className="block text-xs font-semibold">
+                <span className="text-brand-900 block text-sm font-bold">
                   Receptionist
                 </span>
-                <span className="text-brand-500/80 block text-[10px]">
-                  Front Desk
+                <span className="text-brand-600/70 block text-xs">
+                  Front desk & check-in
                 </span>
               </div>
             </button>
@@ -211,25 +192,27 @@ const HotelMemberFormModalContent: React.FC<
             <button
               type="button"
               onClick={() => setRole("KITCHEN")}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-all ${
+              className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
                 role === "KITCHEN"
-                  ? "border-amber-600 bg-amber-50/50 text-amber-900 ring-2 ring-amber-500/20"
-                  : "border-surface-200 text-brand-700 hover:border-surface-300 bg-white"
+                  ? "border-primary-500 bg-primary-50/50 ring-primary-500/20 ring-2"
+                  : "border-surface-200 hover:border-surface-300 bg-white"
               }`}
             >
               <div
-                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                   role === "KITCHEN"
-                    ? "bg-amber-600 text-white"
+                    ? "bg-primary-600 text-white"
                     : "bg-surface-100 text-brand-600"
                 }`}
               >
-                <UtensilsCrossed size={18} />
+                <UtensilsCrossed size={20} />
               </div>
               <div>
-                <span className="block text-xs font-semibold">Kitchen</span>
-                <span className="text-brand-500/80 block text-[10px]">
-                  Orders & Food
+                <span className="text-brand-900 block text-sm font-bold">
+                  Kitchen Staff
+                </span>
+                <span className="text-brand-600/70 block text-xs">
+                  Food orders & kitchen terminal
                 </span>
               </div>
             </button>
@@ -240,7 +223,7 @@ const HotelMemberFormModalContent: React.FC<
         <div>
           <Input
             label="Full Name"
-            placeholder="e.g. Anand Sharma"
+            placeholder="e.g. Ramesh Kumar"
             value={name}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setName(e.target.value)
@@ -254,7 +237,7 @@ const HotelMemberFormModalContent: React.FC<
         <div>
           <Input
             label="Username"
-            placeholder="e.g. anand_admin"
+            placeholder="e.g. chef_ramesh"
             value={username}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setUsername(e.target.value)
@@ -265,12 +248,12 @@ const HotelMemberFormModalContent: React.FC<
             hint={
               isEdit
                 ? "Usernames cannot be changed once created."
-                : "Unique username for signing in."
+                : "Unique ID used to log in to the respective dashboard."
             }
           />
         </div>
 
-        {/* PASSWORD */}
+        {/* PASSWORD (Only required on create) */}
         {!isEdit && (
           <div>
             <div className="mb-1.5 flex items-center justify-between">
@@ -309,18 +292,19 @@ const HotelMemberFormModalContent: React.FC<
           </div>
         )}
 
-        {/* EMAIL */}
+        {/* EMAIL - MANDATORY */}
         <div>
           <Input
             type="email"
-            label="Email Address (Optional)"
-            placeholder="member@example.com"
+            label="Email Address"
+            placeholder="staff@hotel.com"
             value={email}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setEmail(e.target.value)
             }
             error={errors.email}
-            hint="Used for communication and password resets."
+            required
+            hint="Mandatory for account authentication, recovery, and alerts."
           />
         </div>
 
@@ -328,10 +312,10 @@ const HotelMemberFormModalContent: React.FC<
         <div className="border-surface-200 bg-surface-50/50 flex items-center justify-between rounded-xl border p-4">
           <div>
             <span className="text-brand-900 block text-sm font-semibold">
-              Account Active
+              Account Status
             </span>
             <span className="text-brand-500 block text-xs">
-              Allow this user to access their dashboard.
+              Allow this staff member to sign in to their dashboard.
             </span>
           </div>
           <label className="relative inline-flex cursor-pointer items-center">
@@ -358,7 +342,7 @@ const HotelMemberFormModalContent: React.FC<
             Cancel
           </Button>
           <Button type="submit" loading={submitting}>
-            {isEdit ? "Save Changes" : "Create Member"}
+            {isEdit ? "Save Changes" : "Create Staff Member"}
           </Button>
         </div>
       </form>
@@ -366,32 +350,29 @@ const HotelMemberFormModalContent: React.FC<
   );
 };
 
-export interface HotelMemberFormModalProps {
+export interface StaffFormModalProps {
   open: boolean;
-  hotelId: string;
-  member?: HotelMember | null;
   onClose: () => void;
+  staff?: SubAdminStaff | null;
   onSaved?: (message: string) => void;
 }
 
-export const HotelMemberFormModal: React.FC<HotelMemberFormModalProps> = ({
+export const StaffFormModal: React.FC<StaffFormModalProps> = ({
   open,
-  hotelId,
-  member = null,
   onClose,
+  staff = null,
   onSaved,
 }) => {
   if (!open) return null;
 
   return (
-    <HotelMemberFormModalContent
-      key={member?.id || member?._id || "create"}
-      hotelId={hotelId}
-      member={member}
+    <StaffFormModalContent
+      key={staff?.id || staff?._id || "create"}
       onClose={onClose}
+      staff={staff}
       onSaved={onSaved}
     />
   );
 };
 
-export default HotelMemberFormModal;
+export default StaffFormModal;

@@ -1,35 +1,35 @@
 import React, { useState } from "react";
 import { AlertTriangle, UserCheck } from "lucide-react";
 import { Modal, Input, Button } from "@hotelos/ui/components";
-import type { HotelMember } from "../types.ts";
+import type { HotelStaffMember } from "../types.ts";
 
-export interface RestoreMemberModalProps {
+export interface RestoreStaffModalProps {
   open: boolean;
-  member: HotelMember | null;
+  staff: HotelStaffMember | null;
   initialNewUsername?: string;
   onClose: () => void;
   onConfirm: (newUsername: string) => void;
   loading?: boolean;
 }
 
-interface RestoreMemberModalContentProps {
-  member: HotelMember;
+interface RestoreStaffModalContentProps {
+  staff: HotelStaffMember;
   initialNewUsername?: string;
   onClose: () => void;
   onConfirm: (newUsername: string) => void;
   loading?: boolean;
 }
 
-const RestoreMemberModalContent: React.FC<RestoreMemberModalContentProps> = ({
-  member,
+const RestoreStaffModalContent: React.FC<RestoreStaffModalContentProps> = ({
+  staff,
   initialNewUsername = "",
   onClose,
   onConfirm,
   loading = false,
 }) => {
   const originalUsername =
-    member.originalUsername ||
-    member.username?.replace(/_deleted_\d+$/, "") ||
+    staff.originalUsername ||
+    staff.username?.replace(/_deleted_\d+$/, "") ||
     "user";
   const [newUsername, setNewUsername] = useState(
     () => initialNewUsername || `${originalUsername}_new`,
@@ -44,7 +44,6 @@ const RestoreMemberModalContent: React.FC<RestoreMemberModalContentProps> = ({
     }
     if (newUsername.trim().length < 3) {
       setError("Username must be at least 3 characters.");
-      return;
     }
     if (!/^[a-zA-Z0-9_.-]+$/.test(newUsername.trim())) {
       setError(
@@ -73,7 +72,7 @@ const RestoreMemberModalContent: React.FC<RestoreMemberModalContentProps> = ({
               The username{" "}
               <strong className="font-mono">{originalUsername}</strong> has
               already been assigned to another active account. To restore{" "}
-              <strong>{member.name || "this user"}</strong>, please assign a new
+              <strong>{staff.name || "this user"}</strong>, please assign a new
               unique username.
             </p>
           </div>
@@ -111,20 +110,20 @@ const RestoreMemberModalContent: React.FC<RestoreMemberModalContentProps> = ({
   );
 };
 
-export const RestoreMemberModal: React.FC<RestoreMemberModalProps> = ({
+export const RestoreStaffModal: React.FC<RestoreStaffModalProps> = ({
   open,
-  member,
+  staff,
   initialNewUsername = "",
   onClose,
   onConfirm,
   loading = false,
 }) => {
-  if (!open || !member) return null;
+  if (!open || !staff) return null;
 
   return (
-    <RestoreMemberModalContent
-      key={member.id || member._id}
-      member={member}
+    <RestoreStaffModalContent
+      key={staff.id || staff._id}
+      staff={staff}
       initialNewUsername={initialNewUsername}
       onClose={onClose}
       onConfirm={onConfirm}
@@ -133,4 +132,4 @@ export const RestoreMemberModal: React.FC<RestoreMemberModalProps> = ({
   );
 };
 
-export default RestoreMemberModal;
+export default RestoreStaffModal;

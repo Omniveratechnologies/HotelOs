@@ -69,9 +69,9 @@ export const router = createBrowserRouter([
                 ),
               },
               {
-                path: "/members",
+                path: "/staff",
                 lazy: lazyPage(
-                  () => import("../../features/members/pages/MembersPage.tsx"),
+                  () => import("../../features/staff/pages/StaffPage.tsx"),
                 ),
               },
               {

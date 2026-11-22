@@ -1,8 +1,8 @@
 export {
-  fetchMembers as getUsers,
-  createMember as createUser,
-  updateMember as updateUser,
-  deleteMember as deleteUser,
-  restoreMember as restoreUser,
-  resetMemberPassword as resetUserPassword,
-} from "./members.js";
+  fetchStaff as getUsers,
+  createStaff as createUser,
+  updateStaff as updateUser,
+  deleteStaff as deleteUser,
+  restoreStaff as restoreUser,
+  resetStaffPassword as resetUserPassword,
+} from "./staff.js";
