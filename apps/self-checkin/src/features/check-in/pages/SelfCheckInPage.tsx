@@ -90,6 +90,7 @@ export default function SelfCheckInPage() {
   } | null>(null);
   const [pendingSignature, setPendingSignature] = useState<string | null>(null);
   const [terms, setTerms] = useState(false);
+  const [termsAcceptedAt, setTermsAcceptedAt] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<string[]>([]);
   const [remarks, setRemarks] = useState("");
 
@@ -264,6 +265,9 @@ export default function SelfCheckInPage() {
         }
 
         setTerms(cachedDraft?.terms ?? Boolean(sd.termsAcceptedAt));
+        if (sd.termsAcceptedAt) {
+          setTermsAcceptedAt(sd.termsAcceptedAt);
+        }
         setPrefs(cachedDraft?.prefs || sd.preferences || []);
         setRemarks(cachedDraft?.remarks ?? (sd.remarks || ""));
 
@@ -1102,7 +1106,16 @@ export default function SelfCheckInPage() {
                   hasDrawing={Boolean(pendingSignature)}
                   onDrawingChange={onDrawingChange}
                   termsAccepted={terms}
-                  onTermsChange={setTerms}
+                  onTermsChange={(accepted) => {
+                    setTerms(accepted);
+                    if (accepted) {
+                      setTermsAcceptedAt(
+                        (prev) => prev || new Date().toISOString(),
+                      );
+                    } else {
+                      setTermsAcceptedAt(null);
+                    }
+                  }}
                   uploading={uploading}
                   error={stepError}
                 />
@@ -1258,9 +1271,10 @@ export default function SelfCheckInPage() {
                             : session?.stepData?.preferences,
                         remarks: remarks || session?.stepData?.remarks,
                         termsAcceptedAt: terms
-                          ? session?.stepData?.termsAcceptedAt ||
-                            new Date().toISOString()
-                          : session?.stepData?.termsAcceptedAt,
+                          ? termsAcceptedAt ||
+                            session?.stepData?.termsAcceptedAt ||
+                            null
+                          : null,
                       }}
                       correctionMessage={session?.correctionMessage}
                       rejectionMessage={

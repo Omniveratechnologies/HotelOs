@@ -40,14 +40,6 @@ const createTestSuperAdmin = async (overrides = {}) => {
   return createTestUser({ role: "SUPER_ADMIN", ...overrides });
 };
 
-const _createTestSubAdmin = async (overrides = {}) => {
-  return createTestUser({ role: "SUB_ADMIN", ...overrides });
-};
-
-const _createTestReceptionist = async (overrides = {}) => {
-  return createTestUser({ role: "RECEPTIONIST", ...overrides });
-};
-
 // Setup and teardown
 before(async () => {
   // Start in-memory MongoDB

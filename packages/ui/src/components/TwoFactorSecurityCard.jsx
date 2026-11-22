@@ -49,9 +49,8 @@ export function TwoFactorSecurityCard({ className = "", theme = "light" }) {
 
   const fetchStatus = async () => {
     try {
-      setLoading(true);
-      setError("");
       const res = await authApi.get2FAStatus();
+      setError("");
       setStatus({
         enabled: Boolean(res?.enabled),
         required: Boolean(res?.required),
@@ -65,7 +64,32 @@ export function TwoFactorSecurityCard({ className = "", theme = "light" }) {
   };
 
   useEffect(() => {
-    fetchStatus();
+    let ignore = false;
+
+    async function loadStatus() {
+      try {
+        const res = await authApi.get2FAStatus();
+        if (ignore) return;
+        setStatus({
+          enabled: Boolean(res?.enabled),
+          required: Boolean(res?.required),
+          backupCodesRemaining: res?.backupCodesRemaining ?? 0,
+        });
+      } catch (err) {
+        if (ignore) return;
+        setError(err.message || "Failed to load 2FA status.");
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadStatus();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const handleStartSetup = async () => {
@@ -387,9 +411,9 @@ export function TwoFactorSecurityCard({ className = "", theme = "light" }) {
               </p>
 
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3 sm:grid-cols-5">
-                {setupData.backupCodes?.map((code, idx) => (
+                {setupData.backupCodes?.map((code) => (
                   <div
-                    key={idx}
+                    key={code}
                     className="rounded border border-amber-100 bg-white px-2 py-1 text-center font-mono text-xs font-medium text-gray-800 shadow-2xs"
                   >
                     {code}
@@ -490,9 +514,9 @@ export function TwoFactorSecurityCard({ className = "", theme = "light" }) {
                 invalidated.
               </div>
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                {newBackupCodes.map((code, idx) => (
+                {newBackupCodes.map((code) => (
                   <div
-                    key={idx}
+                    key={code}
                     className="rounded border border-gray-200 bg-white p-2 text-center font-mono text-xs font-semibold text-gray-800 shadow-2xs"
                   >
                     {code}

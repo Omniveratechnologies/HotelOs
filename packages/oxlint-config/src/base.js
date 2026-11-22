@@ -29,17 +29,21 @@ export const baseConfig = {
     "import/no-duplicates": "warn",
 
     // Enabled by the suspicious category; Mongo documents use `_id`.
-    "no-underscore-dangle": ["warn", { allow: ["_id", "__v"] }],
+    "no-underscore-dangle": [
+      "warn",
+      { allow: ["_id", "__v", "_doc", "_def", "__filename", "__dirname"] },
+    ],
   },
   env: {
     es2024: true,
   },
   overrides: [
     {
-      files: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**"],
+      files: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**", "tests/**"],
       rules: {
         "no-console": "off",
         "typescript/no-explicit-any": "off",
+        "no-await-in-loop": "off",
       },
     },
   ],
