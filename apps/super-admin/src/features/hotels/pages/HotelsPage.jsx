@@ -66,12 +66,16 @@ export default function HotelsPage() {
       const name = hotel.name?.toLowerCase() || "";
       const email = hotel.email?.toLowerCase() || "";
       const city = hotel.city?.toLowerCase() || "";
+      const state = hotel.state?.toLowerCase() || "";
+      const gstin = hotel.gstin?.toLowerCase() || "";
       const hotelCode = hotel.hotelCode?.toLowerCase() || "";
 
       return (
         name.includes(q) ||
         email.includes(q) ||
         city.includes(q) ||
+        state.includes(q) ||
+        gstin.includes(q) ||
         hotelCode.includes(q)
       );
     });
@@ -202,9 +206,24 @@ export default function HotelsPage() {
                             {hotel.name}
                           </span>
 
-                          {hotel.city && (
-                            <span className="text-brand-700/60 block text-xs">
-                              {hotel.city}
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                            {(hotel.city || hotel.state) && (
+                              <span className="text-brand-700/60 text-xs">
+                                {[hotel.city, hotel.state]
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </span>
+                            )}
+                            {hotel.taxPercent != null && (
+                              <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                                GST {hotel.taxPercent}%
+                              </span>
+                            )}
+                          </div>
+
+                          {hotel.gstin && (
+                            <span className="text-brand-700/60 mt-0.5 block font-mono text-[10px]">
+                              GSTIN: {hotel.gstin}
                             </span>
                           )}
                         </div>

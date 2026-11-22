@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import { MdInventory } from "react-icons/md";
 import { FaPlus } from "react-icons/fa6";
 import SuppliersCard from "../../components/suppliers/SuppliersCard.jsx";
@@ -26,8 +26,8 @@ const Suppliers = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar
@@ -38,6 +38,7 @@ const Suppliers = () => {
           subtitle="Manage your suppliers, contacts and purchase history."
           isMenuOpen={isMenuOpen}
           breadcrumb="Inventory → Suppliers"
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <button
               type="button"

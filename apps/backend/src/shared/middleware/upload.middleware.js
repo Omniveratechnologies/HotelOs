@@ -8,7 +8,7 @@ export const ALLOWED_MIME_TYPES = [
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
-export const MAX_FILES = 5;
+export const MAX_FILES = 20;
 
 // Validate a single document's MIME type and size against the upload rules.
 // Returns an error message string, or null when valid.

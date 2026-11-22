@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import logger from "#/utils/logger.js";
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
@@ -194,6 +195,88 @@ export const sendGuestCredentialsEmail = async ({
 };
 
 // =====================================================
+// GENERIC CHECK-IN EMAIL (link / correction / reject / approve)
+// =====================================================
+
+/**
+ * Sends a check-in notification email (link, correction, approval, rejection).
+ *
+ * @param {Object} input
+ * @param {string} input.email
+ * @param {string} input.name - Guest name.
+ * @param {string} input.hotelName
+ * @param {string} input.subject
+ * @param {string} input.heading
+ * @param {string} input.body - Plain-text-ish body (rendered as a paragraph).
+ * @param {string|null} [input.actionUrl] - CTA link.
+ * @param {string} [input.actionLabel] - CTA button label.
+ */
+export const sendCheckInEmail = async ({
+  email,
+  name,
+  hotelName,
+  subject,
+  heading,
+  body,
+  actionUrl,
+  actionLabel,
+}) => {
+  const html = `
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+      "
+    >
+      <h2>${heading}</h2>
+
+      <p>Hello ${name},</p>
+
+      <p>${body}</p>
+
+      ${
+        actionUrl
+          ? `<p>
+        <a
+          href="${actionUrl}"
+          style="
+            display: inline-block;
+            padding: 12px 20px;
+            background: #0f1f3d;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+          "
+        >
+          ${actionLabel || "Open"}
+        </a>
+      </p>
+
+      <p style="color: #6b7280; font-size: 12px;">
+        If the button does not work, copy this link into your browser:<br />
+        ${actionUrl}
+      </p>`
+          : ""
+      }
+
+      <p>If you need help, please contact the reception desk.</p>
+
+      <br />
+
+      <p>${hotelName} Team</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: `${subject} - ${hotelName}`,
+    html,
+  });
+};
+
+// =====================================================
 // PASSWORD RESET EMAIL
 // =====================================================
 
@@ -259,4 +342,247 @@ export const sendPasswordResetEmail = async ({ email, name, resetUrl }) => {
     subject,
     html,
   });
+};
+
+// =====================================================
+// KIOSK / SELF-CHECKIN OTP VERIFICATION EMAIL
+// =====================================================
+
+export const sendCheckInOtpEmail = async ({
+  email,
+  name,
+  otp,
+  hotelName = "HotelOS",
+}) => {
+  const subject = `${otp} is your Self Check-In Verification Code - ${hotelName}`;
+
+  const html = `
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 24px;
+        background-color: #f9fafb;
+        border-radius: 8px;
+      "
+    >
+      <h2 style="color: #0f1f3d; margin-top: 0;">Self Check-In Verification</h2>
+
+      <p>Hello ${name || "Guest"},</p>
+
+      <p>
+        Use the verification code below on the kiosk terminal to access your check-in:
+      </p>
+
+      <div
+        style="
+          margin: 24px 0;
+          padding: 16px;
+          background-color: #ffffff;
+          border: 2px dashed #0284c7;
+          border-radius: 8px;
+          text-align: center;
+        "
+      >
+        <span
+          style="
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 6px;
+            color: #0f1f3d;
+            font-family: monospace;
+          "
+        >
+          ${otp}
+        </span>
+      </div>
+
+      <p style="color: #64748b; font-size: 14px;">
+        This code is valid for <strong>10 minutes</strong>. If you did not initiate this check-in request, please contact the front desk.
+      </p>
+
+      <br />
+      <p style="color: #334155; font-weight: 500;">${hotelName} Team</p>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject,
+    html,
+  });
+};
+
+// =====================================================
+// GUEST FOLIO STATEMENT EMAIL
+// =====================================================
+
+export const sendFolioStatementEmail = async ({
+  email,
+  guestName = "Guest",
+  folioNo = "FL-1001",
+  roomNumber = "101",
+  totalAmount = 0,
+  balanceDue = 0,
+  hotelName = "Stayscape Dev",
+}) => {
+  const subject = `Your Folio Statement [${folioNo}] - ${hotelName}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background-color: #0f172a; padding: 24px; color: #ffffff;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px;">${hotelName}</h2>
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: #94a3b8;">Guest Billing & Folio Statement</p>
+      </div>
+
+      <div style="padding: 24px; background-color: #ffffff;">
+        <p style="font-size: 15px; margin-top: 0;">Dear <strong>${guestName}</strong>,</p>
+        <p style="font-size: 14px; line-height: 1.5; color: #475569;">
+          Thank you for choosing ${hotelName}. Please find below the summary of your folio charges and settlement status:
+        </p>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Folio Number:</td>
+              <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0f172a;">${folioNo}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Room Number:</td>
+              <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0f172a;">Room ${roomNumber}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Total Charges:</td>
+              <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0f172a;">₹${Number(totalAmount).toFixed(2)}</td>
+            </tr>
+            <tr style="border-top: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0 2px 0; font-size: 14px; font-weight: bold; color: #0f172a;">Balance Due:</td>
+              <td style="padding: 8px 0 2px 0; text-align: right; font-size: 14px; font-weight: bold; color: ${Number(balanceDue) > 0 ? "#dc2626" : "#059669"};">
+                ₹${Number(balanceDue).toFixed(2)}
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #64748b; line-height: 1.5;">
+          If you have any questions or require an updated copy of your itemized tax invoice, please visit our front desk or reply directly to this email.
+        </p>
+
+        <p style="margin-top: 24px; font-size: 14px; color: #334155;">
+          Warm regards,<br />
+          <strong>${hotelName} Front Desk & Accounts</strong>
+        </p>
+      </div>
+    </div>
+  `;
+
+  if (!email) {
+    logger.warn({ folioNo }, "No recipient email provided for folio statement");
+    return { success: false, error: "Recipient email is required" };
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject,
+      html,
+    });
+    logger.info(
+      { email, folioNo, messageId: info?.messageId },
+      "Folio statement email sent successfully",
+    );
+    return { success: true, messageId: info?.messageId };
+  } catch (err) {
+    logger.warn(
+      { err: err.message, email, folioNo },
+      "Failed to deliver folio email via SMTP (logged for fallback)",
+    );
+    return { success: false, error: err.message };
+  }
+};
+
+// =====================================================
+// GST TAX INVOICE EMAIL
+// =====================================================
+
+export const sendTaxInvoiceEmail = async ({
+  email,
+  guestName = "Guest",
+  invoiceNo = "INV-2026-1001",
+  totalAmount = 0,
+  hotelName = "Stayscape Dev",
+}) => {
+  const subject = `Tax Invoice [${invoiceNo}] - ${hotelName}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background-color: #0f172a; padding: 24px; color: #ffffff;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: bold;">${hotelName}</h2>
+        <p style="margin: 4px 0 0 0; font-size: 13px; color: #f59e0b; font-weight: 600;">Official GST Tax Invoice</p>
+      </div>
+
+      <div style="padding: 24px; background-color: #ffffff;">
+        <p style="font-size: 15px; margin-top: 0;">Dear <strong>${guestName}</strong>,</p>
+        <p style="font-size: 14px; line-height: 1.5; color: #475569;">
+          Please find details of your official GST Tax Invoice from ${hotelName}:
+        </p>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Invoice Number:</td>
+              <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0f172a;">${invoiceNo}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Invoice Date:</td>
+              <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0f172a;">${new Date().toLocaleDateString("en-IN")}</td>
+            </tr>
+            <tr style="border-top: 1px solid #e2e8f0;">
+              <td style="padding: 8px 0 2px 0; font-size: 14px; font-weight: bold; color: #0f172a;">Total Invoice Value:</td>
+              <td style="padding: 8px 0 2px 0; text-align: right; font-size: 14px; font-weight: bold; color: #059669;">
+                ₹${Number(totalAmount).toFixed(2)}
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #64748b; line-height: 1.5;">
+          This is an authorized GST computer-generated tax invoice. You can download or print your PDF statement anytime from your guest portal.
+        </p>
+
+        <p style="margin-top: 24px; font-size: 14px; color: #334155;">
+          Warm regards,<br />
+          <strong>${hotelName} Accounts Team</strong>
+        </p>
+      </div>
+    </div>
+  `;
+
+  if (!email) {
+    logger.warn({ invoiceNo }, "No recipient email provided for tax invoice");
+    return { success: false, error: "Recipient email is required" };
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject,
+      html,
+    });
+    logger.info(
+      { email, invoiceNo, messageId: info?.messageId },
+      "Tax invoice email sent successfully",
+    );
+    return { success: true, messageId: info?.messageId };
+  } catch (err) {
+    logger.warn(
+      { err: err.message, email, invoiceNo },
+      "Failed to deliver tax invoice email via SMTP (logged for fallback)",
+    );
+    return { success: false, error: err.message };
+  }
 };

@@ -19,6 +19,7 @@ Capabilities exercised in this app:
 - Set subscription dates & plan for each hotel
 - Send Sub Admin invitations
 - Manage hotels (details, credentials)
+- Centralized fleet management for Android touchscreen kiosks and hardware terminals (registration, pairing keys, hotel assignment, dashboard switching, remote reload, remote exit kiosk, and maintenance mode controls)
 
 > The backend enforces authorization (`authorize("SUPER_ADMIN")`) on the
 > hotel-management endpoints. A non-Super-Admin login is rejected by this
@@ -33,6 +34,7 @@ Capabilities exercised in this app:
 | `/login`             | Login             | Super Admin sign-in; rejects non-`SUPER_ADMIN` roles                |
 | `/`                  | Overview          | Dashboard home with summary stats + health check                    |
 | `/hotels`            | Hotels            | Create hotels, list, activate/deactivate, credentials, Aiosell cfg  |
+| `/kiosks`            | Kiosks            | Hardware terminal fleet control, pairing, remote commands, status   |
 | `/channel-manager`   | Channel Manager   | Aiosell Live Matrix (rates, inventory, restrictions, property sync) |
 | `/channel-approvals` | Channel Approvals | Verify queued roomCode & ratePlanCode mappings across hotels        |
 | `/transactions`      | Transactions      | Food-transaction revenue per hotel (TanStack Query + mock data)     |
@@ -49,13 +51,14 @@ All API calls go through the shared **`@hotelos/api`** package (`packages/api`) 
 
 Feature hooks under `src/features/<feature>/hooks/`:
 
-| Feature Hook                   | Purpose                                     | Backend / Source                                 |
-| ------------------------------ | ------------------------------------------- | ------------------------------------------------ |
-| `useHotels`                    | CRUD hotels, status, credentials, invites   | `GET/POST/PATCH/DELETE /hotels`, `POST /invites` |
-| `useChannelManager`            | Channel config, live rates, inventory, sync | `/channel-manager/*` endpoints                   |
-| `useSuperAdminDashboard`       | Platform overview metrics & system health   | `GET /health`, `/dashboard/*`                    |
-| `useSuperAdminTransactions`    | Transaction summary metrics                 | `src/data/mockData.js` (Query hook wrapped)      |
-| `useSuperAdminServiceRequests` | Platform service requests inbox             | `src/data/mockData.js` (Query hook wrapped)      |
+| Feature Hook                   | Purpose                                     | Backend / Source                                  |
+| ------------------------------ | ------------------------------------------- | ------------------------------------------------- |
+| `useHotels`                    | CRUD hotels, status, credentials, invites   | `GET/POST/PATCH/DELETE /hotels`, `POST /invites`  |
+| `useKiosks`                    | Fleet management, pairing, remote commands  | `GET/POST/PATCH/DELETE /kiosks`, `/command`, etc. |
+| `useChannelManager`            | Channel config, live rates, inventory, sync | `/channel-manager/*` endpoints                    |
+| `useSuperAdminDashboard`       | Platform overview metrics & system health   | `GET /health`, `/dashboard/*`                     |
+| `useSuperAdminTransactions`    | Transaction summary metrics                 | `src/data/mockData.js` (Query hook wrapped)       |
+| `useSuperAdminServiceRequests` | Platform service requests inbox             | `src/data/mockData.js` (Query hook wrapped)       |
 
 Real-time cache invalidation is managed by `<RealtimeSubscriber />` via `@hotelos/socket`.
 
@@ -187,6 +190,7 @@ src/
 │   ├── channel-manager/    AiosellLiveMatrix, rates, inventory & sync
 │   ├── dashboard/          Overview cards, metrics, health status
 │   ├── hotels/             HotelsPage, CreateHotelModal, EditHotelModal
+│   ├── kiosks/             KioskDevicesPage, CreateKioskModal, EditKioskModal, useKiosks
 │   ├── service-requests/   Service request inbox & details
 │   ├── settings/           Admin profile & preferences
 │   ├── subscriptions/      Subscription plans & expiry management

@@ -1,8 +1,11 @@
 import { Router } from "express";
 import {
   getGuests,
+  searchGuests,
   getGuestById,
   updateGuest,
+  deleteGuest,
+  restoreGuest,
   getDocumentUploadUrls,
   updateGuestCredentials,
   deleteGuestDocument,
@@ -24,6 +27,8 @@ router.use(authenticate, authorize("SUB_ADMIN", "RECEPTIONIST"));
 
 router.get("/", getGuests);
 
+router.get("/search", searchGuests);
+
 router.post("/documents/upload-urls", getDocumentUploadUrls);
 
 router.get("/:id", getGuestById);
@@ -31,6 +36,10 @@ router.get("/:id", getGuestById);
 router.patch("/:id", updateGuest);
 
 router.patch("/:id/credentials", updateGuestCredentials);
+
+router.delete("/:id", deleteGuest);
+
+router.patch("/:id/restore", restoreGuest);
 
 router.delete("/:guestId/documents/:docId", deleteGuestDocument);
 

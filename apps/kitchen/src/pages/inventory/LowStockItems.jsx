@@ -1,9 +1,10 @@
+/* oxlint-disable react/set-state-in-effect */
 import { useEffect, useState } from "react";
 
 import API_BASE_URL from "../../config/api.js";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/Sidebar.jsx";
 
 import { IoWarning } from "react-icons/io5";
 import { FiDownload, FiShoppingCart } from "react-icons/fi";
@@ -38,8 +39,8 @@ const LowStockItems = () => {
 
   const [lowStockItems, setLowStockItems] = useState([]);
   const [purchaseHistory, setPurchaseHistory] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [, setLoading] = useState(false);
+  const [, setIsFilterOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
 
   const [filterValues, setFilterValues] = useState({
@@ -278,8 +279,8 @@ const LowStockItems = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { FiFileText } from "react-icons/fi";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/Sidebar.jsx";
 import API_BASE_URL from "../../config/api.js";
 
 import WastageForm from "../../components/wastage/WastageForm.jsx";
@@ -55,8 +55,8 @@ const WastagePage = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar

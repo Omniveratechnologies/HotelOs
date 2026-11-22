@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "#/modules/users/models/User.js";
+import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
 
 export const socketAuth = async (socket, next) => {
   try {
@@ -10,6 +11,34 @@ export const socketAuth = async (socket, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.role === "KIOSK") {
+      const kiosk = await KioskDevice.findById(decoded.kioskId);
+
+      if (!kiosk || !kiosk.isActive) {
+        return next(new Error("Kiosk terminal is not authorized"));
+      }
+
+      socket.data.kioskId = kiosk._id.toString();
+      socket.data.deviceId = kiosk.deviceId;
+      socket.data.role = "KIOSK";
+      socket.data.hotelId = kiosk.hotelId.toString();
+
+      // Channel subscriptions:
+      // - hotel:* allows hotel-wide broadcasts (e.g. maintenance alerts)
+      // - kiosk:* / device:* allows hardware-specific commands (e.g. status changes)
+      // - room:* allows in-room terminals in standby mode to receive Front Desk check-in/out events
+      socket.join(`hotel:${kiosk.hotelId}`);
+      socket.join(`kiosk:${kiosk._id}`);
+      socket.join(`device:${kiosk.deviceId}`);
+
+      const assignedRoom = kiosk.roomId || decoded.roomId;
+      if (assignedRoom) {
+        socket.join(`room:${assignedRoom}`);
+      }
+
+      return next();
+    }
 
     const user = await User.findById(decoded.userId);
 

@@ -15,7 +15,7 @@ const ViewOrderModal = ({ isOpen, onClose, order }) => {
     },
     {
       label: "Room Number",
-      value: order.roomNumber || "-",
+      value: order.locationLabel || "-",
     },
     {
       label: "Food Item",

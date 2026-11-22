@@ -1,11 +1,13 @@
 import { api } from "../apiFetch.js";
 
 /**
- * Fetches all rooms belonging to current hotel.
+ * Fetches all rooms belonging to current hotel or filtered by hotelId.
+ * @param {object} [params]
+ * @param {string} [params.hotelId]
  * @returns {Promise<Array<object>>}
  */
-export const getRooms = async () => {
-  const result = await api.get("/api/v1/rooms", { auth: true });
+export const getRooms = async (params = {}) => {
+  const result = await api.get("/api/v1/rooms", { params, auth: true });
   return result.data || [];
 };
 
@@ -70,4 +72,17 @@ export const updateRoom = async (roomId, updates) => {
 export const deleteRoom = async (roomId) => {
   const result = await api.delete(`/api/v1/rooms/${roomId}`, { auth: true });
   return result.data || result;
+};
+
+/**
+ * Checks out a room and any active reservations assigned to it.
+ * @param {string} roomId
+ * @param {object} [data] - { settlementMode, notes }
+ * @returns {Promise<object>}
+ */
+export const checkOutRoom = async (roomId, data = {}) => {
+  const result = await api.post(`/api/v1/rooms/${roomId}/check-out`, data, {
+    auth: true,
+  });
+  return result.data;
 };

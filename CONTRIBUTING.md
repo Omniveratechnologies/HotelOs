@@ -100,26 +100,36 @@ cp apps/guest/.env.example apps/guest/.env
 # Backend
 Copy-Item apps/backend/.env.example apps/backend/.env
 
-# Frontends
+# Frontends & Hardware
 Copy-Item apps/super-admin/.env.example apps/super-admin/.env
 Copy-Item apps/sub-admin/.env.example apps/sub-admin/.env
 Copy-Item apps/receptionist/.env.example apps/receptionist/.env
 Copy-Item apps/kitchen/.env.example apps/kitchen/.env
 Copy-Item apps/guest/.env.example apps/guest/.env
+Copy-Item apps/self-checkin/.env.example apps/self-checkin/.env
+Copy-Item apps/table-order/.env.example apps/table-order/.env
+Copy-Item apps/kiosk/.env.example apps/kiosk/.env
 ```
 
-Configure `apps/backend/.env` with your active database URI and authentication secrets:
+Configure `apps/backend/.env` with your active database URI, redis connection, and authentication secrets:
 
 - `MONGODB_URI`: e.g. `mongodb://localhost:27017/hotel-os`
 - `JWT_SECRET`: A secure random secret string
+- `REDIS_URL`: Redis connection for BullMQ queues & email workers (e.g. `redis://localhost:6379`)
 - `PORT`: `5001`
-- `CLIENT_URL`: `http://localhost:5173`
+- `SUPER_ADMIN_FRONTEND_URL`: `http://localhost:5173`
+- `SUB_ADMIN_FRONTEND_URL`: `http://localhost:5174`
+- `RECEPTIONIST_FRONTEND_URL`: `http://localhost:5175`
+- `KITCHEN_FRONTEND_URL`: `http://localhost:5176`
+- `GUEST_FRONTEND_URL`: `http://localhost:5177`
+- `SELF_CHECKIN_FRONTEND_URL`: `http://localhost:5178`
+- `TABLE_ORDER_FRONTEND_URL`: `http://localhost:5179`
 
 Frontend environment variables configure the API base URLs:
 
-- `apps/super-admin`, `apps/sub-admin`, and `apps/receptionist`: `VITE_API_URL=http://localhost:5001` (consumed by `@hotelos/api`)
+- All frontends (`super-admin`, `sub-admin`, `receptionist`, `guest`, `self-checkin`, `table-order`): `VITE_API_URL=http://localhost:5001`
 - `apps/kitchen`: `VITE_API_BASE_URL=http://localhost:5001/api`
-- `apps/guest`: `VITE_API_URL=http://localhost:5001/api/v1`
+- `apps/kiosk`: `EXPO_PUBLIC_API_URL=http://10.0.2.2:5001` (Android Emulator) or LAN IP
 
 > ⚠️ **Warning:** Never commit `.env` files with production or sensitive credentials to Git. Only commit updates to `.env.example`.
 
@@ -141,14 +151,23 @@ pnpm dev
 
 The apps will spin up at the following local addresses:
 
-| App              | Scope / Role                | Local URL               |
-| :--------------- | :-------------------------- | :---------------------- |
-| **Backend API**  | Express 5 REST API & DB     | `http://localhost:5001` |
-| **Super Admin**  | Platform Operator Dashboard | `http://localhost:5173` |
-| **Sub Admin**    | Hotel Admin Dashboard       | `http://localhost:5174` |
-| **Receptionist** | Front-Desk Operations       | `http://localhost:5175` |
-| **Kitchen**      | Kitchen Display System      | `http://localhost:5176` |
-| **Guest**        | Guest Harmony Portal        | `http://localhost:5177` |
+| App               | Scope / Role                | Local URL               |
+| :---------------- | :-------------------------- | :---------------------- |
+| **Backend API**   | Express 5 REST API & DB     | `http://localhost:5001` |
+| **Super Admin**   | Platform Operator Dashboard | `http://localhost:5173` |
+| **Sub Admin**     | Hotel Admin Dashboard       | `http://localhost:5174` |
+| **Receptionist**  | Front-Desk Operations       | `http://localhost:5175` |
+| **Kitchen**       | Kitchen Display System      | `http://localhost:5176` |
+| **Guest**         | Guest Harmony Portal        | `http://localhost:5177` |
+| **Self Check-In** | Standalone Guest Check-In   | `http://localhost:5178` |
+| **Table Order**   | Digital Dining Menu Orders  | `http://localhost:5179` |
+
+For physical Android kiosk tablet testing or guest mobile phone testing over local Wi-Fi:
+
+```bash
+# Automatically sync host machine's LAN IP, launch Expo in a separate interactive terminal, and run remaining apps via Turbo:
+pnpm dev:kiosk
+```
 
 ### 6. Verifying Your Setup
 

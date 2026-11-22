@@ -1,11 +1,13 @@
-import { AlertCircle, ShieldCheck } from "lucide-react";
+import { AlertCircle, ShieldCheck, LogOut } from "lucide-react";
 import { DNDToggle } from "./DNDToggle";
 import { useRoomClock } from "@/hooks/useRoomClock";
 import { useGuestDashboard } from "@/context/useGuestDashboard";
+import { useAuth } from "@/context/useAuth";
 
 export function DashboardHeader() {
   const { guest, guestState, refetchGuest, dnd, dndPending, toggleDND } =
     useGuestDashboard();
+  const { isKiosk, logout } = useAuth();
   const now = useRoomClock();
 
   if (guestState === "loading") {
@@ -59,7 +61,7 @@ export function DashboardHeader() {
             </span>
             <div>
               <p className="font-display text-lg leading-none">
-                Grandview Hotel
+                {guest.hotelName || "The Hotel"}
               </p>
               <p className="text-primary-foreground/65 mt-1 text-[0.55rem] tracking-[0.2em] uppercase">
                 Stay · Dine · Relax
@@ -88,12 +90,23 @@ export function DashboardHeader() {
               "Loading room clock…"
             )}
           </div>
-          <div className="flex flex-wrap items-start gap-2 md:justify-end">
+          <div className="flex flex-wrap items-center gap-2 md:justify-end">
             <DNDToggle
               enabled={dnd}
               pending={dndPending}
               onChange={toggleDND}
             />
+            {!isKiosk && (
+              <button
+                type="button"
+                onClick={() => void logout()}
+                className="hover:bg-primary-foreground/20 text-primary-foreground/80 border-primary-foreground/20 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur-xs transition"
+                title="Sign out from personal device"
+              >
+                <LogOut className="size-3.5" />
+                Sign Out
+              </button>
+            )}
           </div>
         </div>
         <div className="max-w-[620px] pt-2 sm:pt-8">

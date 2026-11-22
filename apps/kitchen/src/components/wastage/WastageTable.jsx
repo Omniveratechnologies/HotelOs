@@ -1,3 +1,4 @@
+/* oxlint-disable react/set-state-in-effect */
 import { useEffect, useState } from "react";
 import Table from "../ui/Table.jsx";
 import Tabs from "../ui/Tabs.jsx";

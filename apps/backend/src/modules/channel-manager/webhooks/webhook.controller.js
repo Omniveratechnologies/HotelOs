@@ -9,6 +9,11 @@ import {
 } from "#/shared/utils/generateCredentials.js";
 import { aiosellSyncInventory } from "#/shared/services/inventory.service.js";
 import { emitToHotel } from "#/shared/services/socket.service.js";
+import {
+  OTA_CHANNELS,
+  ACTIVE_STAY_STATUSES,
+} from "#/modules/bookings/constants.js";
+import { nextReservationNo } from "#/modules/bookings/services/reservationNo.service.js";
 
 import logger from "#/utils/logger.js";
 
@@ -55,7 +60,7 @@ async function findAvailableRoom(
   const conflicts = await Booking.find({
     hotelId,
     roomId: { $in: rooms.map((room) => room._id) },
-    status: { $in: ["reserved", "checked-in"] },
+    status: { $in: ACTIVE_STAY_STATUSES },
     // A checkout date is available for the next guest's check-in, so these
     // bounds must be exclusive rather than inclusive.
     checkIn: { $lt: checkOut },
@@ -71,15 +76,42 @@ function parseReservationDates(checkin, checkout) {
   const checkIn = new Date(checkin);
   const checkOut = new Date(checkout);
 
-  if (
-    Number.isNaN(checkIn.getTime()) ||
-    Number.isNaN(checkOut.getTime()) ||
-    checkOut <= checkIn
-  ) {
+  if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
+    return null;
+  }
+
+  // Day-granular stay dates (see booking.controller parseDate).
+  checkIn.setHours(0, 0, 0, 0);
+  checkOut.setHours(0, 0, 0, 0);
+
+  if (checkOut <= checkIn) {
     return null;
   }
 
   return { checkIn, checkOut };
+}
+
+// Normalizes an inbound OTA channel label to the otaInfo.channel enum.
+function mapOtaChannel(channel) {
+  const normalized = String(channel || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  const known = {
+    BOOKING_COM: ["BOOKING_COM", "BOOKING", "BOOKINGCOM"],
+    AIRBNB: ["AIRBNB"],
+    AGODA: ["AGODA"],
+    EXPEDIA: ["EXPEDIA"],
+    GOIBIBO: ["GOIBIBO"],
+    MAKEMYTRIP: ["MAKEMYTRIP", "MMT"],
+  };
+
+  for (const [key, aliases] of Object.entries(known)) {
+    if (aliases.includes(normalized)) return key;
+  }
+
+  return OTA_CHANNELS.includes(normalized) ? normalized : "OTHER";
 }
 
 async function claimRoom(roomId, { guestName, checkIn, checkOut, reserved }) {
@@ -207,21 +239,72 @@ async function handleBooking(payload) {
 
   const guestUser = await createOtaGuest(hotel, guest, bookingId);
 
+  const grossAmount = (amount?.amountBeforeTax || 0) + (amount?.tax || 0);
+  const commissionAmount = amount?.commission || 0;
+
   const booking = await Booking.create({
+    reservationNo: await nextReservationNo(hotel._id),
+    source: "OTA",
     guestId: guestUser?._id,
     hotelId: hotel._id,
     roomId: room._id,
+    roomTypeCode: roomData.roomCode || null,
     checkIn: reservationDates.checkIn,
     checkOut: reservationDates.checkOut,
-    status: "reserved",
+    status: "confirmed",
     channel: channel || "OTA",
     aiosellBookingId: bookingId,
     bookedOn: bookedOn ? new Date(bookedOn) : new Date(),
     totalAmountBeforeTax: amount?.amountBeforeTax || 0,
     tax: amount?.tax || 0,
-    commission: amount?.commission || 0,
+    commission: commissionAmount,
     currency: amount?.currency || "INR",
     specialRequests: specialRequests || null,
+    paymentStatus: "unpaid",
+    otaInfo: {
+      channel: mapOtaChannel(channel),
+      otaBookingId: bookingId,
+      confirmationCode: payload.confirmationCode || bookingId,
+      otaRoomName: roomData.roomName || null,
+      commissionPercent: amount?.commissionPercent || null,
+      commissionAmount,
+      netAmount: grossAmount - commissionAmount,
+      paymentStatus: "prepaid-by-ota",
+      cancellationPolicy: payload.cancellationPolicy
+        ? {
+            freeUntil: payload.cancellationPolicy.freeUntil
+              ? new Date(payload.cancellationPolicy.freeUntil)
+              : null,
+            penalty: payload.cancellationPolicy.penalty || null,
+          }
+        : undefined,
+    },
+    pricing: {
+      nightlyRate: Math.round(
+        (amount?.amountBeforeTax || 0) /
+          Math.max(
+            1,
+            Math.round(
+              (reservationDates.checkOut - reservationDates.checkIn) / 86400000,
+            ),
+          ),
+      ),
+      rateSource: "override",
+      roomCharge: amount?.amountBeforeTax || 0,
+      addOns: [],
+      addOnsTotal: 0,
+      discount: { type: null, value: 0, amount: 0 },
+      taxableBase: amount?.amountBeforeTax || 0,
+      taxPercent: amount?.amountBeforeTax
+        ? Math.round(((amount?.tax || 0) / amount.amountBeforeTax) * 100)
+        : 0,
+      taxAmount: amount?.tax || 0,
+      grandTotal: grossAmount,
+      currency: amount?.currency || "INR",
+    },
+    auditTrail: [
+      { by: null, action: "created", to: "confirmed", note: "OTA import" },
+    ],
   });
 
   await claimRoom(room._id, {
@@ -311,7 +394,29 @@ async function handleModification(payload) {
       amount.amountBeforeTax ?? booking.totalAmountBeforeTax;
     booking.tax = amount.tax ?? booking.tax;
     booking.commission = amount.commission ?? booking.commission;
+
+    const gross = booking.totalAmountBeforeTax + booking.tax;
+    if (booking.otaInfo) {
+      booking.otaInfo.commissionAmount = booking.commission;
+      booking.otaInfo.netAmount = gross - booking.commission;
+      if (amount.commissionPercent != null) {
+        booking.otaInfo.commissionPercent = amount.commissionPercent;
+      }
+    }
+    if (booking.pricing) {
+      booking.pricing.taxableBase = booking.totalAmountBeforeTax;
+      booking.pricing.taxAmount = booking.tax;
+      booking.pricing.roomCharge = booking.totalAmountBeforeTax;
+      booking.pricing.grandTotal = gross;
+    }
   }
+
+  booking.roomTypeCode = rooms[0].roomCode || booking.roomTypeCode;
+  booking.auditTrail.push({
+    by: null,
+    action: "ota-modified",
+    note: "OTA modification webhook",
+  });
 
   await booking.save();
 
@@ -323,14 +428,14 @@ async function handleModification(payload) {
     guestName: guestUser?.name || "OTA Guest",
     checkIn: booking.checkIn,
     checkOut: booking.checkOut,
-    reserved: booking.status === "reserved",
+    reserved: booking.status !== "checked-in",
   });
 
   if (previousRoomId && String(previousRoomId) !== String(booking.roomId)) {
     const stillHeld = await Booking.exists({
       roomId: previousRoomId,
       hotelId: hotel._id,
-      status: { $in: ["reserved", "checked-in"] },
+      status: { $in: ACTIVE_STAY_STATUSES },
       _id: { $ne: booking._id },
     });
     if (!stillHeld) await freeRoom(previousRoomId);
@@ -376,14 +481,22 @@ async function handleCancellation(payload) {
     return { success: false, message: "Booking not found" };
   }
 
+  const previousStatus = booking.status;
   booking.status = "cancelled";
+  booking.auditTrail.push({
+    by: null,
+    action: "status-changed",
+    from: previousStatus,
+    to: "cancelled",
+    note: "OTA cancellation webhook",
+  });
   await booking.save();
 
   if (booking.roomId) {
     const stillHeld = await Booking.exists({
       roomId: booking.roomId,
       hotelId: hotel._id,
-      status: { $in: ["reserved", "checked-in"] },
+      status: { $in: ACTIVE_STAY_STATUSES },
       _id: { $ne: booking._id },
     });
 

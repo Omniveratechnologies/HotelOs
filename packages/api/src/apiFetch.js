@@ -32,6 +32,7 @@ export class ApiError extends Error {
  * @param {object} [options.params] - Alias for query parameters
  * @param {string} [options.credentials='include'] - Credentials mode
  * @param {number} [options.timeout=30000] - Request timeout in milliseconds
+ * @param {string} [options.responseType='json'] - Expected response type ('json', 'blob', 'text')
  * @param {AbortSignal} [options.signal] - Optional abort signal
  * @returns {Promise<any>} Parsed response data
  */
@@ -47,6 +48,7 @@ export async function apiFetch(
     credentials = "include",
     timeout = 30000,
     signal,
+    responseType = "json",
   } = {},
 ) {
   const controller = new AbortController();
@@ -68,8 +70,9 @@ export async function apiFetch(
     });
   }
 
+  const defaultAccept = responseType === "blob" ? "*/*" : "application/json";
   const requestHeaders = {
-    Accept: "application/json",
+    Accept: defaultAccept,
     ...headers,
   };
 
@@ -125,7 +128,14 @@ export async function apiFetch(
 
   let data = null;
 
-  if (contentType.includes("application/json")) {
+  if (
+    response.ok &&
+    (responseType === "blob" ||
+      contentType.includes("application/pdf") ||
+      contentType.includes("application/octet-stream"))
+  ) {
+    data = await response.blob();
+  } else if (contentType.includes("application/json")) {
     try {
       data = await response.json();
     } catch {
@@ -224,5 +234,18 @@ export const api = {
     apiFetch(url, {
       ...options,
       method: "DELETE",
+    }),
+
+  /**
+   * Performs a GET request expecting a binary Blob response.
+   * @param {string} url - Request URL or path
+   * @param {object} [options] - Request options
+   * @returns {Promise<Blob>}
+   */
+  blob: (url, options) =>
+    apiFetch(url, {
+      ...options,
+      method: "GET",
+      responseType: "blob",
     }),
 };

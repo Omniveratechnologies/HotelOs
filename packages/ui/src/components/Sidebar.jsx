@@ -65,7 +65,12 @@ export function Sidebar({
   onClose,
   className = "",
 }) {
-  const [expandedMenuKey, setExpandedMenuKey] = useState(null);
+  const [expandedMenuKey, setExpandedMenuKey] = useState(
+    () =>
+      items.find((item) => item.defaultOpen)?.id ??
+      items.find((item) => item.defaultOpen)?.label ??
+      null,
+  );
   const activeExpandedKey = isOpen ? expandedMenuKey : null;
 
   // Close mobile drawer when resizing to mobile, and restore desktop preference when resizing back
@@ -240,6 +245,20 @@ export function Sidebar({
             <ul className="space-y-1">
               {items.map((item) => {
                 const itemKey = item.id ?? item.label;
+                if (item.section) {
+                  return (
+                    <li
+                      key={itemKey}
+                      className={cn(
+                        "text-brand-700/50 px-3 pt-4 pb-1 text-[10px] font-semibold tracking-wider",
+                        !isOpen && "hidden",
+                      )}
+                    >
+                      {item.section}
+                    </li>
+                  );
+                }
+
                 return (
                   <SidebarItem
                     key={itemKey}
@@ -358,7 +377,8 @@ export function SidebarItem({
     item.subMenu?.some((sub) => {
       const subTo = sub.path ?? sub.url;
       if (!subTo) return false;
-      return sub.end
+      const subEnd = sub.end ?? (subTo === item.path || subTo === "/");
+      return subEnd
         ? location.pathname === subTo
         : location.pathname === subTo ||
             location.pathname.startsWith(`${subTo}/`);
@@ -540,12 +560,14 @@ export function SidebarItem({
               <ul className="border-surface-200 ml-5 space-y-1 border-l py-1 pl-3">
                 {item.subMenu.map((sub, index) => {
                   const subTo = sub.path ?? sub.url;
+                  const subEnd =
+                    sub.end ?? (subTo === item.path || subTo === "/");
 
                   return (
                     <li key={sub.id ?? sub.label ?? index}>
                       <NavLink
                         to={subTo}
-                        end={sub.end}
+                        end={subEnd}
                         onClick={onNavigate}
                         className={({ isActive }) =>
                           cn(
@@ -605,11 +627,13 @@ export function SidebarItem({
               <ul className="mt-1 space-y-0.5">
                 {item.subMenu.map((sub, index) => {
                   const subTo = sub.path ?? sub.url;
+                  const subEnd =
+                    sub.end ?? (subTo === item.path || subTo === "/");
                   return (
                     <li key={sub.id ?? sub.label ?? index}>
                       <NavLink
                         to={subTo}
-                        end={sub.end}
+                        end={subEnd}
                         onClick={handleItemNavigate}
                         className={({ isActive }) =>
                           cn(

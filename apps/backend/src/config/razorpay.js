@@ -11,7 +11,12 @@ export function getRazorpay() {
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
-    if (!keyId || !keySecret) {
+    if (
+      !keyId ||
+      !keySecret ||
+      keyId === "your_razorpay_key_id" ||
+      keySecret === "your_razorpay_key_secret"
+    ) {
       const error = new Error(
         "Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.",
       );

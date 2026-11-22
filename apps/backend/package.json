@@ -8,8 +8,16 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "dev": "concurrently -n \"server,worker\" -c \"blue,magenta\" \"nodemon src/server.js\" \"nodemon src/workers/index.js\"",
+    "dev:server": "nodemon src/server.js",
+    "dev:worker": "nodemon src/workers/index.js",
+    "start": "node src/server.js",
+    "start:worker": "node src/workers/index.js",
+    "seed": "node src/seed/superAdmin.seed.js",
+    "seed:guest": "node src/seed/testGuest.seed.js",
+    "seed:reservations": "node src/seed/reservations.seed.js",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
   },
   "keywords": [
     "hospitalos",
@@ -25,19 +33,29 @@
     "@aws-sdk/s3-request-presigner": "^3.700.0",
     "@hotelos/utils": "workspace:*",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.4.2",
     "cors": "^2.8.6",
+    "csv-parse": "^7.0.3",
+    "csv-stringify": "^6.9.0",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "8.24.2",
+    "multer": "^2.4.0",
     "nodemailer": "^9.0.5",
+    "pdfkit": "^0.20.2",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
+    "qrcode": "^1.5.4",
     "razorpay": "^2.9.8",
     "socket.io": "^4.8.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@hotelos/oxlint-config": "workspace:*",
+    "concurrently": "^9.1.2",
     "nodemon": "^3.1.14",
     "pino-pretty": "^13.1.3"
   }

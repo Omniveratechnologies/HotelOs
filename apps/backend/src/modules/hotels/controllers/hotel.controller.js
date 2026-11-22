@@ -27,6 +27,14 @@ const HOTEL_REQUEST_FIELDS = [
   "phone",
   "address",
   "city",
+  "state",
+  "pincode",
+  "country",
+  "currency",
+  "gstin",
+  "taxPercent",
+  "cancellationPolicy",
+  "termsAndConditions",
   "checkInTime",
   "checkOutTime",
   "wifiNetworkName",
@@ -119,10 +127,20 @@ export const createHotel = async (req, res) => {
       phone,
       address,
       city,
-      subscriptionStartDate,
-      subscriptionEndDate,
+      state,
+      pincode,
+      country,
+      currency,
+      gstin,
+      taxPercent,
       checkInTime,
       checkOutTime,
+      cancellationPolicy,
+      termsAndConditions,
+      wifiNetworkName,
+      wifiPassword,
+      subscriptionStartDate,
+      subscriptionEndDate,
       aiosellHotelCode,
     } = req.body;
 
@@ -135,6 +153,35 @@ export const createHotel = async (req, res) => {
         success: false,
         message:
           "Hotel name, email, subscription start date and subscription end date are required",
+      });
+    }
+
+    const parsedTax = Number(taxPercent);
+    if (
+      taxPercent === undefined ||
+      taxPercent === null ||
+      taxPercent === "" ||
+      Number.isNaN(parsedTax) ||
+      parsedTax < 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "A valid tax percentage (e.g. 12 or 18) is required for hotel billing and reservations.",
+      });
+    }
+
+    if (!checkInTime?.trim() || !checkOutTime?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Both check-in time and check-out time are required.",
+      });
+    }
+
+    if (checkInTime.trim() === checkOutTime.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Check-out time must differ from check-in time.",
       });
     }
 
@@ -204,13 +251,33 @@ export const createHotel = async (req, res) => {
 
       city: city?.trim() || "",
 
+      state: state?.trim() || "",
+
+      pincode: pincode?.trim() || "",
+
+      country: country?.trim() || "India",
+
+      currency: currency?.trim() || "INR",
+
+      gstin: gstin?.trim().toUpperCase() || "",
+
+      taxPercent: parsedTax,
+
+      checkInTime: checkInTime.trim(),
+
+      checkOutTime: checkOutTime.trim(),
+
+      cancellationPolicy: cancellationPolicy?.trim() || "",
+
+      termsAndConditions: termsAndConditions?.trim() || "",
+
+      wifiNetworkName: wifiNetworkName?.trim() || "",
+
+      wifiPassword: wifiPassword?.trim() || "",
+
       subscriptionStartDate: startDate,
 
       subscriptionEndDate: endDate,
-
-      checkInTime: checkInTime?.trim() || "14:00",
-
-      checkOutTime: checkOutTime?.trim() || "12:00",
 
       // Optional: map the new hotel straight to an Aiosell property
       aiosellHotelCode: aiosellHotelCode?.trim() || null,
@@ -407,6 +474,18 @@ export const updateHotel = async (req, res) => {
       phone,
       address,
       city,
+      state,
+      pincode,
+      country,
+      currency,
+      gstin,
+      taxPercent,
+      checkInTime,
+      checkOutTime,
+      cancellationPolicy,
+      termsAndConditions,
+      wifiNetworkName,
+      wifiPassword,
       subscriptionStartDate,
       subscriptionEndDate,
       aiosellHotelCode,
@@ -427,6 +506,18 @@ export const updateHotel = async (req, res) => {
       phone: hotel.phone,
       address: hotel.address,
       city: hotel.city,
+      state: hotel.state,
+      pincode: hotel.pincode,
+      country: hotel.country,
+      currency: hotel.currency,
+      gstin: hotel.gstin,
+      taxPercent: hotel.taxPercent,
+      cancellationPolicy: hotel.cancellationPolicy,
+      termsAndConditions: hotel.termsAndConditions,
+      checkInTime: hotel.checkInTime,
+      checkOutTime: hotel.checkOutTime,
+      wifiNetworkName: hotel.wifiNetworkName,
+      wifiPassword: hotel.wifiPassword,
       aiosellHotelCode: hotel.aiosellHotelCode,
     };
 
@@ -470,27 +561,97 @@ export const updateHotel = async (req, res) => {
     }
 
     // =================================================
-    // UPDATE PHONE
+    // UPDATE PHONE & LOCATION
     // =================================================
 
     if (phone !== undefined) {
       hotel.phone = phone?.trim() || "";
     }
 
-    // =================================================
-    // UPDATE ADDRESS
-    // =================================================
-
     if (address !== undefined) {
       hotel.address = address?.trim() || "";
     }
 
-    // =================================================
-    // UPDATE CITY
-    // =================================================
-
     if (city !== undefined) {
       hotel.city = city?.trim() || "";
+    }
+
+    if (state !== undefined) {
+      hotel.state = state?.trim() || "";
+    }
+
+    if (pincode !== undefined) {
+      hotel.pincode = pincode?.trim() || "";
+    }
+
+    if (country !== undefined) {
+      hotel.country = country?.trim() || "India";
+    }
+
+    if (currency !== undefined) {
+      hotel.currency = currency?.trim() || "INR";
+    }
+
+    if (gstin !== undefined) {
+      hotel.gstin = gstin?.trim().toUpperCase() || "";
+    }
+
+    if (taxPercent !== undefined && taxPercent !== null && taxPercent !== "") {
+      const parsedTax = Number(taxPercent);
+      if (Number.isNaN(parsedTax) || parsedTax < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Tax percentage must be a valid non-negative number",
+        });
+      }
+      hotel.taxPercent = parsedTax;
+    }
+
+    if (checkInTime !== undefined) {
+      if (!checkInTime.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Check-in time cannot be empty",
+        });
+      }
+      hotel.checkInTime = checkInTime.trim();
+    }
+
+    if (checkOutTime !== undefined) {
+      if (!checkOutTime.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Check-out time cannot be empty",
+        });
+      }
+      hotel.checkOutTime = checkOutTime.trim();
+    }
+
+    if (
+      hotel.checkInTime &&
+      hotel.checkOutTime &&
+      hotel.checkInTime === hotel.checkOutTime
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Check-out time must differ from check-in time",
+      });
+    }
+
+    if (cancellationPolicy !== undefined) {
+      hotel.cancellationPolicy = cancellationPolicy?.trim() || "";
+    }
+
+    if (termsAndConditions !== undefined) {
+      hotel.termsAndConditions = termsAndConditions?.trim() || "";
+    }
+
+    if (wifiNetworkName !== undefined) {
+      hotel.wifiNetworkName = wifiNetworkName?.trim() || "";
+    }
+
+    if (wifiPassword !== undefined) {
+      hotel.wifiPassword = wifiPassword?.trim() || "";
     }
 
     // =================================================
@@ -563,6 +724,18 @@ export const updateHotel = async (req, res) => {
       phone: hotel.phone,
       address: hotel.address,
       city: hotel.city,
+      state: hotel.state,
+      pincode: hotel.pincode,
+      country: hotel.country,
+      currency: hotel.currency,
+      gstin: hotel.gstin,
+      taxPercent: hotel.taxPercent,
+      cancellationPolicy: hotel.cancellationPolicy,
+      termsAndConditions: hotel.termsAndConditions,
+      checkInTime: hotel.checkInTime,
+      checkOutTime: hotel.checkOutTime,
+      wifiNetworkName: hotel.wifiNetworkName,
+      wifiPassword: hotel.wifiPassword,
       aiosellHotelCode: hotel.aiosellHotelCode,
     };
 
@@ -719,6 +892,14 @@ export const updateMyHotel = async (req, res) => {
       phone,
       address,
       city,
+      state,
+      pincode,
+      country,
+      currency,
+      gstin,
+      taxPercent,
+      cancellationPolicy,
+      termsAndConditions,
       checkInTime,
       checkOutTime,
       wifiNetworkName,
@@ -730,6 +911,14 @@ export const updateMyHotel = async (req, res) => {
       phone: hotel.phone,
       address: hotel.address,
       city: hotel.city,
+      state: hotel.state,
+      pincode: hotel.pincode,
+      country: hotel.country,
+      currency: hotel.currency,
+      gstin: hotel.gstin,
+      taxPercent: hotel.taxPercent,
+      cancellationPolicy: hotel.cancellationPolicy,
+      termsAndConditions: hotel.termsAndConditions,
       checkInTime: hotel.checkInTime,
       checkOutTime: hotel.checkOutTime,
       wifiNetworkName: hotel.wifiNetworkName,
@@ -774,6 +963,61 @@ export const updateMyHotel = async (req, res) => {
     }
 
     // =================================================
+    // UPDATE STATE & PINCODE
+    // =================================================
+
+    if (state !== undefined) {
+      hotel.state = String(state || "").trim();
+    }
+
+    if (pincode !== undefined) {
+      hotel.pincode = String(pincode || "").trim();
+    }
+
+    if (country !== undefined) {
+      hotel.country = String(country || "").trim();
+    }
+
+    if (currency !== undefined) {
+      hotel.currency = String(currency || "")
+        .trim()
+        .toUpperCase();
+    }
+
+    // =================================================
+    // UPDATE GSTIN & TAX
+    // =================================================
+
+    if (gstin !== undefined) {
+      hotel.gstin = String(gstin || "")
+        .trim()
+        .toUpperCase();
+    }
+
+    if (taxPercent !== undefined) {
+      const parsedTax = Number(taxPercent);
+      if (Number.isNaN(parsedTax) || parsedTax < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Tax percentage must be a non-negative number",
+        });
+      }
+      hotel.taxPercent = parsedTax;
+    }
+
+    // =================================================
+    // UPDATE POLICIES
+    // =================================================
+
+    if (cancellationPolicy !== undefined) {
+      hotel.cancellationPolicy = String(cancellationPolicy || "").trim();
+    }
+
+    if (termsAndConditions !== undefined) {
+      hotel.termsAndConditions = String(termsAndConditions || "").trim();
+    }
+
+    // =================================================
     // UPDATE CHECK-IN TIME
     // =================================================
 
@@ -808,6 +1052,14 @@ export const updateMyHotel = async (req, res) => {
       phone: hotel.phone,
       address: hotel.address,
       city: hotel.city,
+      state: hotel.state,
+      pincode: hotel.pincode,
+      country: hotel.country,
+      currency: hotel.currency,
+      gstin: hotel.gstin,
+      taxPercent: hotel.taxPercent,
+      cancellationPolicy: hotel.cancellationPolicy,
+      termsAndConditions: hotel.termsAndConditions,
       checkInTime: hotel.checkInTime,
       checkOutTime: hotel.checkOutTime,
       wifiNetworkName: hotel.wifiNetworkName,

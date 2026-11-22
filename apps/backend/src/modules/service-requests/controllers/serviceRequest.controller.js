@@ -1,5 +1,6 @@
 import ServiceRequest from "../models/ServiceRequest.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
 import {
@@ -40,6 +41,16 @@ async function publishRequest(
 
 export const createServiceRequest = async (req, res) => {
   try {
+    if (req.user.role === "GUEST") {
+      if (!req.currentBooking || req.currentBooking.status !== "checked-in") {
+        return res.status(403).json({
+          success: false,
+          message:
+            "In-room service requests are only available after completing check-in for an active stay",
+        });
+      }
+    }
+
     const { type, description, items, details } = req.body;
     if (!type)
       return res
@@ -118,13 +129,48 @@ export const getHotelRequests = async (req, res) => {
     const roomMap = new Map(rooms.map((r) => [r._id.toString(), r]));
     const guestMap = new Map(guests.map((g) => [g._id.toString(), g]));
 
-    const data = requests.map((request) =>
-      staffServiceRequestDTO(
-        request,
-        roomMap.get(request.roomId?.toString()),
-        guestMap.get(request.guestId?.toString()),
+    // Find any active bookings for requests that don't have a resolved room yet
+    const missingRoomGuestIds = [
+      ...new Set(
+        requests
+          .filter((r) => !roomMap.has(r.roomId?.toString()) && r.guestId)
+          .map((r) => r.guestId.toString()),
       ),
-    );
+    ];
+
+    let guestBookingRoomMap = new Map();
+    if (missingRoomGuestIds.length) {
+      const activeBookings = await Booking.find({
+        hotelId: req.user.hotelId,
+        guestId: { $in: missingRoomGuestIds },
+        roomId: { $ne: null },
+      })
+        .populate("roomId", "roomNumber")
+        .sort({ updatedAt: -1 });
+
+      for (const b of activeBookings) {
+        if (
+          b.guestId &&
+          b.roomId &&
+          !guestBookingRoomMap.has(b.guestId.toString())
+        ) {
+          guestBookingRoomMap.set(b.guestId.toString(), b.roomId);
+        }
+      }
+    }
+
+    const data = requests.map((request) => {
+      const directRoom = roomMap.get(request.roomId?.toString());
+      const fallbackRoom =
+        !directRoom && request.guestId
+          ? guestBookingRoomMap.get(request.guestId.toString())
+          : null;
+      return staffServiceRequestDTO(
+        request,
+        directRoom || fallbackRoom,
+        guestMap.get(request.guestId?.toString()),
+      );
+    });
 
     return res.status(200).json({
       success: true,
@@ -156,7 +202,7 @@ export const createDeskRequest = async (req, res) => {
     const booking = await Booking.findOne({
       roomId,
       hotelId: req.user.hotelId,
-      status: { $in: ["reserved", "checked-in"] },
+      status: { $in: ACTIVE_STAY_STATUSES },
     }).sort({ createdAt: -1 });
 
     if (!booking) {
@@ -190,6 +236,40 @@ export const createDeskRequest = async (req, res) => {
       success: false,
       message: "Failed to create service request",
     });
+  }
+};
+
+export const createTableServiceRequest = async (req, res) => {
+  try {
+    const { hotelId, tableId, type, description } = req.body;
+    if (!hotelId || !tableId || !type) {
+      return res.status(400).json({
+        success: false,
+        message: "hotelId, tableId and type are required",
+      });
+    }
+
+    const request = await ServiceRequest.create({
+      hotelId,
+      tableId,
+      guestId: null,
+      type,
+      description,
+      status: "REQUESTED",
+    });
+
+    getIo()
+      .to(`hotel:${hotelId}`)
+      .emit("request:update", serviceRequestDTO(request));
+
+    return res
+      .status(201)
+      .json({ success: true, data: serviceRequestDTO(request) });
+  } catch (error) {
+    logger.error(error, "Create table service request error");
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to send request" });
   }
 };
 
@@ -233,6 +313,66 @@ export const updateHotelRequestStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to update service request",
+    });
+  }
+};
+
+/**
+ * Creates an assistance request originating from a dining table or kiosk.
+ */
+export const createTableOrderServiceRequest = async (req, res) => {
+  try {
+    const { type, description, items, details } = req.body;
+    if (!type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Request type is required" });
+    }
+
+    const session = req.session;
+    const hotelId = session ? session.hotelId : req.body.hotelId;
+    const tableId =
+      session && session.type === "QR_GUEST"
+        ? session.tableId
+        : req.body.tableId || session?.tableId;
+
+    const serviceRequest = await ServiceRequest.create({
+      hotelId,
+      tableId,
+      guestId: null,
+      roomId: null,
+      type,
+      description: description || null,
+      items: items || [],
+      details: details || {},
+      status: "REQUESTED",
+      priority: type === "EMERGENCY" ? "high" : "normal",
+    });
+
+    const populated = await ServiceRequest.findById(serviceRequest._id)
+      .populate("tableId", "tableNumber section")
+      .lean();
+
+    try {
+      emitToHotel(
+        hotelId,
+        SOCKET_EVENTS.SERVICE_REQUEST_CREATED,
+        serviceRequestDTO(populated),
+      );
+    } catch {
+      // Socket may not be initialized in test environment
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Assistance request submitted successfully",
+      data: serviceRequestDTO(populated),
+    });
+  } catch (error) {
+    logger.error(error, "Create table order service request error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create assistance request",
     });
   }
 };

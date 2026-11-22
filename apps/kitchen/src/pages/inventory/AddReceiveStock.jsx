@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import API_BASE_URL from "../../config/api.js";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import ReceiveStock from "../../components/inventory/ReceiveStock.jsx";
 
 import { FiPackage, FiDownload } from "react-icons/fi";
@@ -13,7 +13,7 @@ import {
   generatePurchaseOrderPDF,
 } from "../../utils/addReceivePurchaseOrderUtils.js";
 
-const AddReceiveStock = ({ onClose }) => {
+const AddReceiveStock = ({ onClose: _onClose }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [navbarSearchTerm, setNavbarSearchTerm] = useState("");
   const [purchaseOrder, setPurchaseOrder] = useState([]);
@@ -40,8 +40,8 @@ const AddReceiveStock = ({ onClose }) => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar
@@ -52,6 +52,7 @@ const AddReceiveStock = ({ onClose }) => {
           subtitle="Record new stock received from the suppliers and update your inventory."
           isMenuOpen={isMenuOpen}
           breadcrumb="Inventory → Add/Receive Stock"
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <button
               type="button"

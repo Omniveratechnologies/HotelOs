@@ -192,6 +192,11 @@ export function GuestDashboardProvider({ children }: { children: ReactNode }) {
         setRequests((prev) =>
           prev.map((r) => (r.id === request.id ? request : r)),
         ),
+      onDndUpdated: (newDnd) => {
+        setGuest((current) =>
+          current ? { ...current, dndEnabled: newDnd } : current,
+        );
+      },
     });
 
     socket.on("connect", () => {

@@ -5,11 +5,20 @@ import {
   getHotelRequests,
   createDeskRequest,
   updateHotelRequestStatus,
+  createTableOrderServiceRequest,
 } from "../controllers/serviceRequest.controller.js";
 import { authenticate } from "#/shared/middleware/auth.middleware.js";
 import { authorize } from "#/shared/middleware/role.middleware.js";
+import { authenticateSession } from "#/shared/middleware/sessionAuth.middleware.js";
 
 const router = express.Router();
+
+// ---- Table / Kiosk guest assistance route ----
+router.post(
+  "/table-order",
+  authenticateSession({ requireLocation: true }),
+  createTableOrderServiceRequest,
+);
 
 // ---- Staff-facing routes (registered before /:id so they aren't captured) ----
 router.get(

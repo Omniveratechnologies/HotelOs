@@ -49,7 +49,7 @@ const OrdersHeader = ({
     const tableData = orders.map((order) => [
       order.orderNumber || "-",
       order.guestName || "-",
-      order.roomNumber || "-",
+      order.locationLabel || "-",
       order.foodItem || "-",
       order.quantity || 0,
       order.status || "-",

@@ -12,6 +12,7 @@ import {
 import { sendInvitationEmail } from "#/shared/services/email.service.js";
 
 import { ROLES } from "#/shared/constants/roles.js";
+import env from "#/config/env.js";
 import logger from "#/utils/logger.js";
 
 // =====================================================
@@ -267,10 +268,7 @@ export const sendInvite = async (req, res) => {
     // FRONTEND URL
     // =================================================
 
-    const frontendUrl =
-      process.env.SUB_ADMIN_FRONTEND_URL || "http://localhost:5175";
-
-    const inviteUrl = `${frontendUrl}/accept-invitation?token=${token}`;
+    const inviteUrl = `${env.frontendUrls.subAdmin}/accept-invitation?token=${token}`;
 
     logger.info({ inviteUrl }, "Invitation URL");
 

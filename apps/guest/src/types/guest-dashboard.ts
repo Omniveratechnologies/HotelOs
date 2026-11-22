@@ -26,9 +26,12 @@ export interface GuestInfo {
   username: string;
   role: string;
   hotelId: string;
+  hotelName?: string | null;
   checkIn: string | null;
   checkOut: string | null;
   dndEnabled: boolean;
+  bookingStatus?: string;
+  reservationNo?: string | null;
   room: RoomInfo | null;
   wifi: { networkName: string | null; password: string | null } | null;
 }

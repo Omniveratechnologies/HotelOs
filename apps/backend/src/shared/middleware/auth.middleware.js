@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import User from "#/modules/users/models/User.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
+import { CURRENT_STAY_STATUSES } from "#/modules/bookings/constants.js";
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -16,6 +18,28 @@ export const authenticate = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.role === "KIOSK") {
+      const kiosk = await KioskDevice.findById(decoded.kioskId);
+
+      if (!kiosk || !kiosk.isActive || kiosk.status === "DISABLED") {
+        return res.status(401).json({
+          success: false,
+          message: "Kiosk terminal is not authorized or has been disabled",
+        });
+      }
+
+      req.kiosk = kiosk;
+      req.user = {
+        _id: kiosk._id,
+        role: "KIOSK",
+        hotelId: kiosk.hotelId,
+        deviceId: kiosk.deviceId,
+        name: kiosk.name,
+      };
+
+      return next();
+    }
 
     const user = await User.findById(decoded.userId);
 
@@ -33,7 +57,7 @@ export const authenticate = async (req, res, next) => {
     if (user.role === "GUEST") {
       req.currentBooking = await Booking.findOne({
         guestId: user._id,
-        status: { $in: ["reserved", "checked-in"] },
+        status: { $in: CURRENT_STAY_STATUSES },
       }).sort({ createdAt: -1 });
     }
 

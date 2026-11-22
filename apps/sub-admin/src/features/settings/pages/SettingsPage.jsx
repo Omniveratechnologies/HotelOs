@@ -47,10 +47,16 @@ function SettingsForm({ hotel, onSave, saving }) {
       "phone",
       "address",
       "city",
+      "state",
+      "pincode",
+      "gstin",
+      "taxPercent",
       "checkInTime",
       "checkOutTime",
       "wifiNetworkName",
       "wifiPassword",
+      "cancellationPolicy",
+      "termsAndConditions",
     ]) {
       if (draft[field] !== hotel[field]) {
         payload[field] =
@@ -154,6 +160,45 @@ function SettingsForm({ hotel, onSave, saving }) {
             />
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              name="state"
+              label="State / Province"
+              value={valueOf("state")}
+              onChange={(e) => setField("state", e.target.value)}
+            />
+
+            <Input
+              name="pincode"
+              label="Pincode / Postal code"
+              value={valueOf("pincode")}
+              onChange={(e) => setField("pincode", e.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              name="gstin"
+              label="GSTIN (Tax ID)"
+              value={valueOf("gstin")}
+              onChange={(e) => setField("gstin", e.target.value.toUpperCase())}
+            />
+
+            <Input
+              name="taxPercent"
+              label="Default Tax Rate (%)"
+              type="number"
+              min="0"
+              value={valueOf("taxPercent")}
+              onChange={(e) =>
+                setField(
+                  "taxPercent",
+                  e.target.value ? Number(e.target.value) : "",
+                )
+              }
+            />
+          </div>
+
           <Input
             name="address"
             label="Address"
@@ -195,6 +240,20 @@ function SettingsForm({ hotel, onSave, saving }) {
               onChange={(e) => setField("wifiPassword", e.target.value)}
             />
           </div>
+
+          <Input
+            name="cancellationPolicy"
+            label="Standard cancellation policy"
+            value={valueOf("cancellationPolicy")}
+            onChange={(e) => setField("cancellationPolicy", e.target.value)}
+          />
+
+          <Input
+            name="termsAndConditions"
+            label="Terms & conditions (printed on GRC)"
+            value={valueOf("termsAndConditions")}
+            onChange={(e) => setField("termsAndConditions", e.target.value)}
+          />
         </div>
 
         <div className="flex items-center justify-end gap-2.5 border-t border-gray-100 px-6 py-4">

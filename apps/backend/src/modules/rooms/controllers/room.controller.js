@@ -1,5 +1,14 @@
 import Room from "../models/Room.js";
 import RoomType from "#/modules/room-types/models/RoomType.js";
+import Booking from "#/modules/bookings/models/Booking.js";
+import KeyCard from "#/modules/key-cards/models/KeyCard.js";
+import ServiceRequest from "#/modules/service-requests/models/ServiceRequest.js";
+import KioskDevice from "#/modules/kiosks/models/KioskDevice.js";
+import { getIo } from "#/config/socket.js";
+import {
+  aiosellSyncInventory,
+  calculateSyncDateRange,
+} from "#/shared/services/inventory.service.js";
 import { refreshRoomTypeCount } from "#/modules/room-types/services/roomType.service.js";
 import { roomResponseDTO } from "../dto/room.dto.js";
 import logger from "#/utils/logger.js";
@@ -18,14 +27,32 @@ const ROOM_STATUSES = new Set([
 ]);
 
 // =====================================================
-// GET ALL ROOMS (hotel-scoped)
+// GET ALL ROOMS (hotel-scoped, optional status filtering)
 // =====================================================
 
+/**
+ * Fetches all rooms belonging to a hotel, optionally filtered by status (e.g. 'available', 'occupied', 'cleaning').
+ * Used by Receptionist Front Desk Check-In to list only clean vacant rooms ready for assignment,
+ * and by Super Admin to configure kiosk room mapping.
+ */
 export const getRooms = async (req, res) => {
   try {
-    const rooms = await Room.find({
-      hotelId: req.user.hotelId,
-    }).sort({ roomNumber: 1 });
+    const hotelId = req.query.hotelId || req.user.hotelId;
+    if (!hotelId) {
+      return res.status(400).json({
+        success: false,
+        message: "hotelId is required",
+      });
+    }
+
+    const filter = { hotelId };
+
+    // Apply status filter if explicitly provided and valid
+    if (req.query.status && ROOM_STATUSES.has(req.query.status)) {
+      filter.status = req.query.status;
+    }
+
+    const rooms = await Room.find(filter).sort({ roomNumber: 1 });
 
     return res.status(200).json({
       success: true,
@@ -282,14 +309,10 @@ export const updateRoom = async (req, res) => {
       });
     }
 
-    const previousRoom = CHANNEL_ROOM_FIELDS.some(
-      (field) => field in allowedUpdates,
-    )
-      ? await Room.findOne({
-          _id: req.params.id,
-          hotelId: req.user.hotelId,
-        })
-      : null;
+    const previousRoom = await Room.findOne({
+      _id: req.params.id,
+      hotelId: req.user.hotelId,
+    });
 
     const room = await Room.findOneAndUpdate(
       {
@@ -308,6 +331,41 @@ export const updateRoom = async (req, res) => {
         success: false,
         message: "Room not found",
       });
+    }
+
+    // Defensive check: If room is being released/marked as cleaning or available while previously occupied,
+    // ensure any active checked-in booking for this room is also cleanly checked out to prevent orphaned active stays.
+    if (
+      allowedUpdates.status &&
+      ["cleaning", "available"].includes(allowedUpdates.status) &&
+      previousRoom?.status === "occupied"
+    ) {
+      try {
+        const staleBookings = await Booking.find({
+          hotelId: req.user.hotelId,
+          roomId: req.params.id,
+          status: "checked-in",
+        });
+
+        for (const stale of staleBookings) {
+          stale.status = "checked-out";
+          stale.paymentStatus = "paid";
+          stale.auditTrail.push({
+            at: new Date(),
+            by: req.user._id,
+            action: "checked-out",
+            from: "checked-in",
+            to: "checked-out",
+            note: `Auto checked-out: Room ${room.roomNumber} status updated to ${allowedUpdates.status}`,
+          });
+          await stale.save();
+        }
+      } catch (autoCheckoutErr) {
+        logger.warn(
+          autoCheckoutErr,
+          "Failed to auto-checkout active stays during room status update",
+        );
+      }
     }
 
     // Any edit that changes the Aiosell mapping (code/type/rate/floor) re-opens
@@ -366,6 +424,166 @@ export const updateRoom = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to update room",
+    });
+  }
+};
+
+// =====================================================
+// FRONT DESK CHECK-OUT ROOM (from Room Grid)
+// =====================================================
+export const checkOutRoom = async (req, res) => {
+  try {
+    const roomId = req.params.id;
+    const hotelId = req.user.hotelId;
+    const { settlementMode = "CASH", notes = "" } = req.body || {};
+
+    const room = await Room.findOne({ _id: roomId, hotelId });
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: "Room not found",
+      });
+    }
+
+    // 1. Locate all active checked-in bookings for this room (handles duplicates cleanly)
+    const activeBookings = await Booking.find({
+      hotelId,
+      roomId,
+      status: "checked-in",
+    }).sort({ createdAt: -1 });
+
+    const checkedOutBookingIds = [];
+    for (const booking of activeBookings) {
+      const prevStatus = booking.status;
+      booking.status = "checked-out";
+      booking.paymentStatus = "paid";
+      booking.auditTrail.push({
+        at: new Date(),
+        by: req.user._id,
+        action: "checked-out",
+        from: prevStatus,
+        to: "checked-out",
+        note: `Front desk check-out from Room Grid (${room.roomNumber}). Settlement: ${settlementMode}. ${notes}`,
+      });
+      await booking.save();
+      checkedOutBookingIds.push(booking._id);
+
+      // Return & deactivate assigned key cards
+      await KeyCard.updateMany(
+        { hotelId, currentBookingId: booking._id, status: "ACTIVE" },
+        {
+          $set: {
+            status: "AVAILABLE",
+            currentBookingId: null,
+            assignedRoomId: null,
+            assignedGuestId: null,
+            issuedAt: null,
+            expiresAt: null,
+          },
+          $push: {
+            auditLog: {
+              action: "RETURNED",
+              performedBy: req.user._id,
+              performedAt: new Date(),
+              bookingId: booking._id,
+              note: "Key card returned on room checkout via Room Grid",
+            },
+          },
+        },
+      );
+
+      // Emit stay status updated to guest
+      if (booking.guestId) {
+        try {
+          const io = getIo();
+          io.to(`guest:${booking.guestId}`).emit("stay:status-updated", {
+            status: "checked-out",
+            roomId,
+          });
+        } catch {
+          // ignore socket error
+        }
+      }
+    }
+
+    // 2. Release room to cleaning state
+    room.status = "cleaning";
+    room.currentGuest = null;
+    room.checkIn = null;
+    room.checkOut = null;
+    await room.save();
+
+    // 3. Automatically create Housekeeping turnover task
+    const primaryBooking = activeBookings.length > 0 ? activeBookings[0] : null;
+    try {
+      await ServiceRequest.create({
+        hotelId,
+        guestId: primaryBooking?.guestId || req.user._id,
+        roomId,
+        type: "HOUSEKEEPING",
+        priority: "high",
+        description: `Room turnover cleaning after guest check-out (Room ${room.roomNumber})`,
+        status: "REQUESTED",
+        details: {
+          source: "CHECK_OUT_TURNOVER",
+          bookingId: primaryBooking?._id || null,
+        },
+      });
+    } catch (housekeepingErr) {
+      logger.warn(
+        housekeepingErr,
+        "Failed to create turnover service request during room checkout",
+      );
+    }
+
+    // 4. Notify in-room kiosk terminals for this room to auto-logout and return to standby mode
+    try {
+      const io = getIo();
+      const kiosks = await KioskDevice.find({
+        hotelId,
+        roomId,
+        targetDashboard: "GUEST_DASHBOARD",
+      });
+      for (const k of kiosks) {
+        io.to(`device:${k.deviceId}`).emit("kiosk:guest-checked-out", {
+          roomId,
+        });
+      }
+      io.to(`room:${roomId}`).emit("kiosk:guest-checked-out", { roomId });
+    } catch (kioskErr) {
+      logger.warn(
+        kioskErr,
+        "Failed to push real-time auto-logout event to in-room kiosks during room checkout",
+      );
+    }
+
+    // 5. Sync inventory with channel manager if primary booking had checkIn and checkOut
+    if (primaryBooking && primaryBooking.checkIn && primaryBooking.checkOut) {
+      try {
+        const [syncStart, syncEnd] = calculateSyncDateRange(
+          primaryBooking.checkIn,
+          primaryBooking.checkOut,
+        );
+        await aiosellSyncInventory(hotelId, syncStart, syncEnd);
+      } catch (syncErr) {
+        logger.warn(syncErr, "Failed to sync inventory during room checkout");
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Room ${room.roomNumber} successfully checked out!`,
+      data: {
+        room: roomResponseDTO(room),
+        checkedOutBookingsCount: checkedOutBookingIds.length,
+        checkedOutBookingIds,
+      },
+    });
+  } catch (error) {
+    logger.error(error, "Check Out Room Error");
+    return res.status(500).json({
+      success: false,
+      message: "Failed to check out room",
     });
   }
 };

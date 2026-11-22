@@ -1,9 +1,15 @@
 import "dotenv/config";
 import mongoose from "mongoose";
+import dns from "node:dns";
+
+// Atlas SRV lookups need public DNS (matches config/db.js).
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 import Hotel from "#/modules/hotels/models/Hotel.js";
 import Room from "#/modules/rooms/models/Room.js";
 import User from "#/modules/users/models/User.js";
 import Booking from "#/modules/bookings/models/Booking.js";
+import { ACTIVE_STAY_STATUSES } from "#/modules/bookings/constants.js";
 import FoodItem from "#/modules/food-items/models/FoodItem.js";
 import logger from "#/utils/logger.js";
 
@@ -17,7 +23,58 @@ const seed = async () => {
       name: "Test Hotel",
       email: "test@hotelos.com",
       hotelCode: "TEST",
+      checkInTime: "14:00",
+      checkOutTime: "12:00",
+      taxPercent: 12,
+      gstin: "29AABCU9603R1ZM",
+      address: "12, Residency Road",
+      city: "Bengaluru",
+      state: "Karnataka",
+      pincode: "560001",
+      country: "India",
+      currency: "INR",
+      cancellationPolicy: "Free cancellation up to 24 hours prior to check-in.",
+      termsAndConditions:
+        "Valid government-issued photo ID is required upon check-in. The hotel reserves the right of admission.",
     });
+  } else {
+    let updated = false;
+    if (!hotel.checkInTime) {
+      hotel.checkInTime = "14:00";
+      updated = true;
+    }
+    if (!hotel.checkOutTime) {
+      hotel.checkOutTime = "12:00";
+      updated = true;
+    }
+    if (hotel.taxPercent == null) {
+      hotel.taxPercent = 12;
+      updated = true;
+    }
+    if (!hotel.gstin) {
+      hotel.gstin = "29AABCU9603R1ZM";
+      updated = true;
+    }
+    if (!hotel.city) {
+      hotel.city = "Bengaluru";
+      updated = true;
+    }
+    if (!hotel.state) {
+      hotel.state = "Karnataka";
+      updated = true;
+    }
+    if (!hotel.pincode) {
+      hotel.pincode = "560001";
+      updated = true;
+    }
+    if (!hotel.termsAndConditions) {
+      hotel.termsAndConditions =
+        "Valid government-issued photo ID is required upon check-in. The hotel reserves the right of admission.";
+      updated = true;
+    }
+    if (updated) {
+      await hotel.save();
+    }
   }
 
   if (!hotel.wifiNetworkName || !hotel.wifiPassword) {
@@ -69,7 +126,7 @@ const seed = async () => {
 
   const activeBooking = await Booking.findOne({
     guestId: guest._id,
-    status: { $in: ["reserved", "checked-in"] },
+    status: { $in: ACTIVE_STAY_STATUSES },
   });
 
   if (!activeBooking) {

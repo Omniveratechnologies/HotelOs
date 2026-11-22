@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import API_BASE_URL from "../../config/api.js";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import { MdInventory } from "react-icons/md";
 
 import StockAdjustmentForm from "../../components/stockAdjustment/StockAdjustmentForm.jsx";
@@ -75,8 +75,8 @@ const StockAdjustment = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar
@@ -89,6 +89,7 @@ const StockAdjustment = () => {
           setIsMenuOpen={setIsMenuOpen}
           breadcrumb="Inventory → Stock Adjustment"
           showPageHeading
+          placeholder="Search ingredients, suppliers, categories..."
           pageAction={
             <div className="flex items-center gap-3">
               <button

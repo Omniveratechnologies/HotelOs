@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MdInventory } from "react-icons/md";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import PurchaseOrderCards from "../../components/purchaseOrders/PurchaseOrderCards.jsx";
 import PurchaseOrderTable from "../../components/purchaseOrders/PurchaseOrderTable.jsx";
 import Pagination from "../../components/ui/Pagination.jsx";
@@ -241,8 +241,8 @@ const PurchaseOrder = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar
@@ -254,6 +254,7 @@ const PurchaseOrder = () => {
           isMenuOpen={isMenuOpen}
           breadcrumb="Inventory → Purchase Order"
           showPageHeading
+          placeholder="Search ingredients, suppliers, categories..."
           setIsMenuOpen={setIsMenuOpen}
           navbarSearchTerm={navbarSearchTerm}
           setNavbarSearchTerm={setNavbarSearchTerm}

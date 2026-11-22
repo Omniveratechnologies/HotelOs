@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Navbar from "../../components/ui/Navbar.jsx";
-import Sidebar from "../../components/Hamburger/SideBar.jsx";
+import Sidebar from "../../components/hamburger/SideBar.jsx";
 import { MdInventory } from "react-icons/md";
 import API_BASE_URL from "../../config/api.js";
 import CreatePurchaseOrderHeader from "../../components/purchaseOrders/CreatePurchaseOrderHeader.jsx";
@@ -11,8 +11,6 @@ const CreatePurchaseOrder = () => {
   const { id } = useParams();
 
   const isEditMode = Boolean(id);
-
-  const title = isEditMode ? "Edit Purchase Order" : "Create Purchase Order";
 
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -160,8 +158,8 @@ const CreatePurchaseOrder = () => {
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
       <div
-        className={`h-full overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? "translate-x-64" : "translate-x-0"
+        className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+          isMenuOpen ? "ml-64" : "ml-0"
         }`}
       >
         <Navbar
@@ -173,6 +171,7 @@ const CreatePurchaseOrder = () => {
           isMenuOpen={isMenuOpen}
           setIsMenuOpen={setIsMenuOpen}
           breadcrumb="Inventory → Purchase Order → PO"
+          placeholder="Search ingredients, suppliers, categories..."
           showPageHeading
           pageAction={
             <div className="flex items-center gap-2">

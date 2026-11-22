@@ -8,7 +8,7 @@ const StatusCard = ({
   subtitleColor = "text-emerald-400",
 }) => {
   return (
-    <div className="flex flex-1 items-center gap-3 rounded-lg border border-gray-800 px-4 py-3">
+    <div className="flex min-w-0 flex-1 items-center gap-3 rounded-lg border border-gray-800 px-4 py-3">
       <div
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconBg} ${iconColor}`}
       >

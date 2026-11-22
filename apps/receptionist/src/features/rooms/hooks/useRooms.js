@@ -103,3 +103,26 @@ export function useDeleteRoom() {
     },
   });
 }
+
+/**
+ * Mutation hook to check out a room and any active reservations assigned to it.
+ * Refreshes room grid, reservations table, front desk queues, and stats.
+ *
+ * @returns {import("@tanstack/react-query").UseMutationResult}
+ */
+export function useCheckOutRoom() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ roomId, settlementMode = "CASH", notes = "" }) =>
+      roomsApi.checkOutRoom(roomId, { settlementMode, notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.rooms.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reservations.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.guests.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
+      queryClient.invalidateQueries({ queryKey: ["front-desk"] });
+      queryClient.invalidateQueries({ queryKey: ["key-cards"] });
+    },
+  });
+}

@@ -1,0 +1,308 @@
+import { useMemo } from "react";
+import ReservationWizardLayout from "../components/ReservationWizardLayout.jsx";
+import { useReservationWizard } from "../hooks/useReservationWizard.js";
+import { StayDetailsSection } from "../sections/StayDetailsSection.jsx";
+import { RoomTypePicker } from "../sections/RoomTypePicker.jsx";
+import { RatePlanPicker } from "../sections/RatePlanPicker.jsx";
+import { RoomSelection } from "../sections/RoomSelection.jsx";
+import { GuestSection } from "../sections/GuestSection.jsx";
+import { AdditionalOptionsSection } from "../sections/AdditionalOptionsSection.jsx";
+import { BookingSummary } from "../sections/BookingSummary.jsx";
+import { RoomRequirementsMatrix } from "../components/RoomRequirementsMatrix.jsx";
+import { SectionCard } from "@hotelos/ui/components";
+import { formatDate } from "@hotelos/utils";
+
+const STEPS = [
+  { id: "stay", title: "Stay Details", subtitle: "Dates, guests, purpose" },
+  { id: "room", title: "Select Room", subtitle: "Room type & rate" },
+  { id: "guest", title: "Guest Details", subtitle: "Contact & ID" },
+  {
+    id: "options",
+    title: "Additional Options",
+    subtitle: "Add-ons & requests",
+  },
+  { id: "confirm", title: "Confirm & Create", subtitle: "Review booking" },
+];
+
+export default function NewReservationPage() {
+  const wizard = useReservationWizard({
+    source: "DIRECT",
+    steps: STEPS,
+  });
+
+  const {
+    editId,
+    form,
+    onFieldChange,
+    onRequirementsChange,
+    onGuestField,
+    onSelectExistingGuest,
+    currentStep,
+    nextStep,
+    prevStep,
+    goToStep,
+    errors,
+    submitError,
+    nights,
+    typeItems,
+    ratePlanOptions,
+    typesLoading,
+    roomsLoading,
+    availableRooms,
+    quote,
+    guestSearch,
+    saveAsDraft,
+    submitReservation,
+    isSubmitting,
+    navigate,
+  } = wizard;
+
+  const currentType = useMemo(
+    () => typeItems.find((t) => t.roomTypeCode === form.roomTypeCode),
+    [typeItems, form.roomTypeCode],
+  );
+
+  const isMultiRoom =
+    form.rooms > 1 ||
+    (form.roomRequirements && form.roomRequirements.length > 0);
+
+  const media = useMemo(() => {
+    const hasReqs = form.roomRequirements?.length > 0;
+    const typeSummary = hasReqs
+      ? `${form.rooms} Rooms (${form.roomRequirements.map((r) => `${r.rooms}x ${r.roomTypeCode}`).join(", ")})`
+      : currentType?.name || form.roomTypeCode || "Not selected";
+
+    return {
+      roomTypeName: typeSummary,
+      guestsLine: `${form.rooms} Room${form.rooms > 1 ? "s" : ""}, ${form.adults} Adult${form.adults > 1 ? "s" : ""}`,
+      datesLine:
+        form.checkIn && form.checkOut
+          ? `${formatDate(form.checkIn)} → ${formatDate(form.checkOut)} (${nights} night${nights === 1 ? "" : "s"})`
+          : "Dates pending",
+    };
+  }, [
+    currentType,
+    form.roomTypeCode,
+    form.roomRequirements,
+    form.rooms,
+    form.adults,
+    form.checkIn,
+    form.checkOut,
+    nights,
+  ]);
+
+  const summaryPanel = (
+    <BookingSummary
+      quote={quote.data}
+      quoteLoading={quote.isPending}
+      media={media}
+      editMode={Boolean(editId)}
+      onEdit={() => goToStep(0)}
+      onSaveDraft={saveAsDraft}
+      onCreate={submitReservation}
+      creating={isSubmitting}
+      disabled={
+        nights < 1 ||
+        (!form.roomTypeCode &&
+          (!form.roomRequirements || form.roomRequirements.length === 0))
+      }
+    />
+  );
+
+  return (
+    <ReservationWizardLayout
+      title={editId ? "Edit Reservation" : "New Reservation"}
+      subtitle="Direct front desk reservation booking with real-time room holds and rate calculation"
+      steps={STEPS}
+      currentStep={currentStep}
+      onStepClick={goToStep}
+      onBack={() => navigate("/reservations")}
+      onPrevStep={prevStep}
+      onNextStep={nextStep}
+      onSaveDraft={saveAsDraft}
+      onSubmit={submitReservation}
+      isSubmitting={isSubmitting}
+      submitText={editId ? "Update Reservation" : "Create Reservation"}
+      submitError={submitError}
+      summaryPanel={summaryPanel}
+    >
+      {currentStep === 0 && (
+        <StayDetailsSection
+          value={form}
+          onChange={onFieldChange}
+          roomRequirements={form.roomRequirements}
+          onRequirementsChange={onRequirementsChange}
+          roomTypes={typeItems}
+          errors={errors}
+          open={true}
+        />
+      )}
+
+      {currentStep === 1 && (
+        <div className="space-y-6">
+          {isMultiRoom ? (
+            <SectionCard
+              number="2"
+              title="Room Allocation & Rate Plan"
+              subtitle="Configure room type blocks, guest distribution, and select rate plan"
+              open={true}
+              action={
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRequirementsChange([]);
+                    onFieldChange("rooms", 1);
+                  }}
+                  className="text-brand-700 hover:text-brand-900 text-xs font-semibold"
+                >
+                  Switch to Single Room
+                </button>
+              }
+            >
+              <div className="space-y-6">
+                <RoomRequirementsMatrix
+                  roomRequirements={form.roomRequirements}
+                  onChange={onRequirementsChange}
+                  roomTypes={typeItems}
+                  targetRooms={form.rooms}
+                  error={errors.roomRequirements}
+                />
+                <div className="border-t border-gray-100 pt-4">
+                  <RatePlanPicker
+                    plans={ratePlanOptions}
+                    value={form.ratePlanId}
+                    onSelect={(pid) => onFieldChange("ratePlanId", pid)}
+                    roomTypeName={
+                      currentType?.name || form.roomTypeCode || "Multi-Room"
+                    }
+                    open={true}
+                  />
+                </div>
+              </div>
+            </SectionCard>
+          ) : (
+            <>
+              <RoomTypePicker
+                items={typeItems}
+                value={form.roomTypeCode}
+                onSelect={(code) => {
+                  onFieldChange("roomTypeCode", code);
+                  onFieldChange("ratePlanId", "");
+                  onFieldChange("roomId", "");
+                }}
+                range={{
+                  checkIn: form.checkIn,
+                  checkOut: form.checkOut,
+                  nights,
+                }}
+                loading={typesLoading}
+                open={true}
+              />
+
+              {form.roomTypeCode && (
+                <RatePlanPicker
+                  plans={ratePlanOptions}
+                  value={form.ratePlanId}
+                  onSelect={(pid) => onFieldChange("ratePlanId", pid)}
+                  roomTypeName={currentType?.name || form.roomTypeCode}
+                  open={true}
+                />
+              )}
+
+              {form.roomTypeCode && (
+                <RoomSelection
+                  roomTypeCode={form.roomTypeCode}
+                  rooms={availableRooms}
+                  selectedRoomId={form.roomId}
+                  preferSpecificRoom={form.preferSpecificRoom}
+                  onPreferSpecificRoomChange={(prefer) =>
+                    onFieldChange("preferSpecificRoom", prefer)
+                  }
+                  onSelectRoom={(rid) => onFieldChange("roomId", rid)}
+                  loading={roomsLoading}
+                  error={errors.roomId}
+                  open={true}
+                />
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {currentStep === 2 && (
+        <GuestSection
+          mode={form.guestMode}
+          onModeChange={(m) => onFieldChange("guestMode", m)}
+          form={form.guest}
+          onField={onGuestField}
+          errors={errors}
+          searchQuery={form.guestQuery}
+          onSearchChange={(q) => onFieldChange("guestQuery", q)}
+          searchResults={guestSearch.results}
+          onSelectGuest={onSelectExistingGuest}
+          searching={guestSearch.isLoading}
+          open={true}
+        />
+      )}
+
+      {currentStep === 3 && (
+        <AdditionalOptionsSection
+          form={form}
+          onChange={onFieldChange}
+          open={true}
+        />
+      )}
+
+      {currentStep === 4 && (
+        <div className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-xs">
+          <h3 className="border-b border-gray-100 pb-3 text-lg font-bold text-gray-900">
+            Review Booking Details
+          </h3>
+          <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+            <div className="rounded-xl bg-gray-50 p-4">
+              <span className="text-xs font-semibold text-gray-500 uppercase">
+                Stay Details
+              </span>
+              <p className="mt-1 font-semibold text-gray-900">
+                {form.checkIn} → {form.checkOut} ({nights} nights)
+              </p>
+              <p className="text-gray-600">
+                {form.rooms} Room(s), {form.adults} Adult(s)
+              </p>
+              {form.roomRequirements?.length > 0 && (
+                <div className="mt-2 space-y-1 border-t border-gray-200/60 pt-2 text-xs text-gray-700">
+                  {form.roomRequirements.map((r, idx) => (
+                    <div key={r.id || idx} className="flex justify-between">
+                      <span className="text-brand-900 font-medium">
+                        {r.roomTypeCode}
+                      </span>
+                      <span>
+                        {r.rooms} room(s) · {r.adultsPerRoom} adults/rm
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Source: {form.source}
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-gray-50 p-4">
+              <span className="text-xs font-semibold text-gray-500 uppercase">
+                Primary Guest
+              </span>
+              <p className="mt-1 font-semibold text-gray-900">
+                {form.guest.name || "—"}
+              </p>
+              <p className="text-gray-600">{form.guest.phone || "—"}</p>
+              <p className="mt-1 text-xs text-gray-500">
+                {form.guest.email || "No email provided"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </ReservationWizardLayout>
+  );
+}
