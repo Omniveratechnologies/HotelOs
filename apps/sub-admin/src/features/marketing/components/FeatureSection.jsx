@@ -16,13 +16,15 @@ import { THEMES } from "../data/themes.js";
  *  image        { src, label }
  *  imageSide    "left" | "right"
  */
+const EMPTY_ITEMS = [];
+
 export default function FeatureSection({
   id,
   theme = "gold",
   label,
   title,
   description,
-  items = [],
+  items = EMPTY_ITEMS,
   image,
   imageSide = "right",
 }) {

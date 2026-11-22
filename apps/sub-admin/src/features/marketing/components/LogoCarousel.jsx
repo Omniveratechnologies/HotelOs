@@ -13,10 +13,12 @@ import { Icon } from "./MarketingIcons.jsx";
  *  className         extra classes for the outer section (for example a background)
  *  variant           "default" | "compact"  (compact = small title between two lines)
  */
+const EMPTY_LOGOS = [];
+
 export default function LogoCarousel({
   title,
   subtitle,
-  logos = [],
+  logos = EMPTY_LOGOS,
   className = "",
   variant = "default",
 }) {
@@ -42,7 +44,7 @@ export default function LogoCarousel({
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [measure, logos.length]);
+  }, [measure]);
 
   const goToPage = (target) => {
     const track = trackRef.current;

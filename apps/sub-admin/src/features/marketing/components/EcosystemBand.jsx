@@ -15,10 +15,12 @@ const TILE_TONES = {
  *  items                 [{ icon, label, tone? }]  tone: "rose" | "blue" | "white" (default)
  *  backgroundSrc         background image URL (empty shows a dark placeholder)
  */
+const EMPTY_ITEMS = [];
+
 export default function EcosystemBand({
   title,
   description,
-  items = [],
+  items = EMPTY_ITEMS,
   backgroundSrc,
   backgroundLabel = "Band background",
 }) {

@@ -29,11 +29,17 @@ const FOCUSABLE =
  *   images,        [url, ...]  gallery (empty strings show placeholders)
  * }
  */
+const DEFAULT_QUOTE_CTA = { label: "Get a Quote", to: ROUTES.requestDemo };
+const DEFAULT_EXPERT_CTA = {
+  label: "Talk to Our Expert",
+  to: ROUTES.requestDemo,
+};
+
 export default function ProductDetailsModal({
   product,
   onClose,
-  quoteCta = { label: "Get a Quote", to: ROUTES.requestDemo },
-  expertCta = { label: "Talk to Our Expert", to: ROUTES.requestDemo },
+  quoteCta = DEFAULT_QUOTE_CTA,
+  expertCta = DEFAULT_EXPERT_CTA,
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const dialogRef = useRef(null);

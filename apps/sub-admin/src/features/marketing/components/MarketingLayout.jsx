@@ -13,7 +13,7 @@ export default function MarketingLayout() {
 
   // /#section links scroll to that section, any other page change scrolls to the top.
   useEffect(() => {
-    if (hash) {
+    if (pathname && hash) {
       const target = document.getElementById(hash.slice(1));
       if (target) {
         target.scrollIntoView({ behavior: "smooth", block: "start" });

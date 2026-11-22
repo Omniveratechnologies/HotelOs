@@ -34,6 +34,10 @@ const TITLE_ACCENT = {
  *  sideImage        { src, label }     optional image on the right instead of perks
  *  backgroundSrc    banner background image URL (empty shows a dark placeholder)
  */
+const EMPTY_PERKS = [];
+const EMPTY_STATS = [];
+const EMPTY_CHECKS = [];
+
 export default function CtaBanner({
   theme = "gold",
   eyebrow,
@@ -41,9 +45,9 @@ export default function CtaBanner({
   description,
   primaryCta,
   secondaryCta,
-  perks = [],
-  stats = [],
-  checks = [],
+  perks = EMPTY_PERKS,
+  stats = EMPTY_STATS,
+  checks = EMPTY_CHECKS,
   showBackground = true,
   sideImage,
   backgroundSrc,

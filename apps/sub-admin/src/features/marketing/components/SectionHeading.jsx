@@ -8,11 +8,8 @@ import { THEMES } from "../data/themes.js";
 export function RichTitle({ title, accentClass }) {
   if (typeof title === "string") return title;
 
-  return title.map((part, index) => (
-    <span
-      key={`part-${index}`}
-      className={part.accent ? accentClass : undefined}
-    >
+  return title.map((part) => (
+    <span key={part.text} className={part.accent ? accentClass : undefined}>
       {part.text}
     </span>
   ));

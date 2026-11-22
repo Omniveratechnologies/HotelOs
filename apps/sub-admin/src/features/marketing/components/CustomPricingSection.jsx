@@ -13,14 +13,17 @@ import { Icon } from "./MarketingIcons.jsx";
  *  cta                                   { label, to }
  *  cards                                 [{ icon, title, tag, description, image: { src, label }, cta: { label, to } }]
  */
+const EMPTY_POINTS = [];
+const EMPTY_CARDS = [];
+
 export default function CustomPricingSection({
   chip,
   title,
   subtitle,
   description,
-  points = [],
+  points = EMPTY_POINTS,
   cta,
-  cards = [],
+  cards = EMPTY_CARDS,
 }) {
   return (
     <section className="mx-auto max-w-[1400px] px-6 py-6 lg:px-10">

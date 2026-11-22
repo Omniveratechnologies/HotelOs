@@ -9,11 +9,14 @@ import { Icon } from "./MarketingIcons.jsx";
  *  rows              [{ label, values }]       one value per column:
  *                      true  = tick, false = dash, a string = text
  */
+const EMPTY_COLUMNS = [];
+const EMPTY_ROWS = [];
+
 export default function ComparisonTable({
   title,
   subtitle,
-  columns = [],
-  rows = [],
+  columns = EMPTY_COLUMNS,
+  rows = EMPTY_ROWS,
 }) {
   return (
     <section className="mx-auto max-w-[1400px] px-6 py-12 lg:px-10">

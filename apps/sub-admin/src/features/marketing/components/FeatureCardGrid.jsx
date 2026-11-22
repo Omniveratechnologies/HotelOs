@@ -9,11 +9,13 @@ import { THEMES } from "../data/themes.js";
  *  title, subtitle  heading above the cards
  *  items            [{ icon, label }]
  */
+const EMPTY_ITEMS = [];
+
 export default function FeatureCardGrid({
   theme = "gold",
   title,
   subtitle,
-  items = [],
+  items = EMPTY_ITEMS,
 }) {
   const t = THEMES[theme];
 

@@ -7,11 +7,13 @@ import { Icon } from "./MarketingIcons.jsx";
  *  label, title, description   text block
  *  items                        [{ icon, title, description }]
  */
+const EMPTY_ITEMS = [];
+
 export default function ModuleShowcase({
   label,
   title,
   description,
-  items = [],
+  items = EMPTY_ITEMS,
 }) {
   return (
     <section className="mx-auto max-w-[1400px] px-6 py-12 lg:px-10">

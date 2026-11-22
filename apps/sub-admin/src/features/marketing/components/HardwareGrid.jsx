@@ -13,13 +13,16 @@ import { Icon } from "./MarketingIcons.jsx";
  *  images                       { [imageKey]: url }  (empty strings show placeholders)
  *  onViewDetails                called with the clicked item
  */
+const EMPTY_ITEMS = [];
+const EMPTY_IMAGES = {};
+
 export default function HardwareGrid({
   label,
   title,
   description,
   ctaLabel,
-  items = [],
-  images = {},
+  items = EMPTY_ITEMS,
+  images = EMPTY_IMAGES,
   detailsLabel = "View Details",
   onViewDetails,
 }) {

@@ -7,7 +7,9 @@ import { useState } from "react";
  *  title   heading
  *  items   [{ question, answer }]  (read left to right, row by row)
  */
-export default function FaqAccordion({ title, items = [] }) {
+const EMPTY_ITEMS = [];
+
+export default function FaqAccordion({ title, items = EMPTY_ITEMS }) {
   const [openIds, setOpenIds] = useState([]);
 
   const toggle = (id) =>
@@ -20,12 +22,18 @@ export default function FaqAccordion({ title, items = [] }) {
   // Left column gets items 1, 3, 5 and the right column 2, 4, 6, so opening
   // one answer never stretches the card next to it.
   const columns = [
-    items
-      .map((item, index) => ({ item, index }))
-      .filter((entry) => entry.index % 2 === 0),
-    items
-      .map((item, index) => ({ item, index }))
-      .filter((entry) => entry.index % 2 === 1),
+    {
+      id: "faq-left-column",
+      entries: items
+        .map((item, index) => ({ item, index }))
+        .filter((entry) => entry.index % 2 === 0),
+    },
+    {
+      id: "faq-right-column",
+      entries: items
+        .map((item, index) => ({ item, index }))
+        .filter((entry) => entry.index % 2 === 1),
+    },
   ];
 
   return (
@@ -35,9 +43,9 @@ export default function FaqAccordion({ title, items = [] }) {
       </h2>
 
       <div className="mt-6 grid items-start gap-4 sm:grid-cols-2">
-        {columns.map((column, columnIndex) => (
-          <div key={`faq-column-${columnIndex}`} className="space-y-4">
-            {column.map(({ item, index }) => {
+        {columns.map(({ id, entries }) => (
+          <div key={id} className="space-y-4">
+            {entries.map(({ item, index }) => {
               const open = openIds.includes(index);
               const buttonId = `faq-question-${index}`;
               const panelId = `faq-answer-${index}`;

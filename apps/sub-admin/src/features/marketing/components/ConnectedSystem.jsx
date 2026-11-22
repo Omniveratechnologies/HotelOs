@@ -52,13 +52,16 @@ function ModuleNode({ node }) {
  *  benefitsTitle, benefits      "Key Benefits" list
  *  nodes                        [{ icon, title, subtitle }]  (up to 8)
  */
+const EMPTY_BENEFITS = [];
+const EMPTY_NODES = [];
+
 export default function ConnectedSystem({
   label,
   title,
   description,
   benefitsTitle = "Key Benefits",
-  benefits = [],
-  nodes = [],
+  benefits = EMPTY_BENEFITS,
+  nodes = EMPTY_NODES,
 }) {
   return (
     <section className="mx-auto max-w-[1400px] px-6 py-12 lg:px-10">

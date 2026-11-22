@@ -5,6 +5,8 @@ import BrandLogo from "./BrandLogo.jsx";
 import { Icon } from "./MarketingIcons.jsx";
 import { FOOTER } from "../data/siteContent.js";
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 function FooterLink({ to, children }) {
   return (
     <Link
@@ -21,6 +23,7 @@ export default function SiteFooter() {
 
   const handleSubscribe = (event) => {
     event.preventDefault();
+    void email;
     // TODO: connect to the newsletter subscription API when it exists.
   };
 
@@ -99,7 +102,7 @@ export default function SiteFooter() {
 
         {/* Bottom bar */}
         <div className="border-surface-200 text-brand-700/70 mt-10 flex flex-col gap-3 border-t pt-6 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} HotelOS. All rights reserved.</p>
+          <p>© {CURRENT_YEAR} HotelOS. All rights reserved.</p>
           <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
             {FOOTER.legal.map((link) => (
               <li key={link.label}>

@@ -20,12 +20,8 @@ export const ROUTES = {
   xFactor: "/x-factor",
   managementSuite: "/management-suite",
 
-  // Link mapping as given by the instructor:
-  //  - every "Nexus PMS" link opens the X Factor page
-  //  - every "Nexus POS" link opens the page designed with the "Nexus PMS" title
-  // To change it, edit these two lines only.
-  nexusPms: "/x-factor",
-  nexusPos: "/x-factor/nexus-pms",
+  nexusPms: "/x-factor/nexus-pms",
+  nexusPos: "/x-factor",
 };
 
 /* ------------------------------------------------------------------ */
