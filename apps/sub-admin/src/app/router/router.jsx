@@ -21,10 +21,56 @@ export const router = createBrowserRouter([
     HydrateFallback: LoadingScreen,
     children: [
       {
-        path: "/",
+        // Public marketing pages share one layout (header + footer).
         lazy: lazyPage(
-          () => import("../../features/landing/pages/LandingPage.jsx"),
+          () =>
+            import("../../features/marketing/components/MarketingLayout.jsx"),
         ),
+        children: [
+          {
+            path: "/",
+            lazy: lazyPage(
+              () => import("../../features/landing/pages/LandingPage.jsx"),
+            ),
+          },
+          {
+            path: "/solutions/pos",
+            lazy: lazyPage(
+              () => import("../../features/marketing/pages/PosPage.jsx"),
+            ),
+          },
+          {
+            path: "/solutions/pms",
+            lazy: lazyPage(
+              () => import("../../features/marketing/pages/PmsPage.jsx"),
+            ),
+          },
+          {
+            path: "/pricing",
+            lazy: lazyPage(
+              () => import("../../features/marketing/pages/PricingPage.jsx"),
+            ),
+          },
+          {
+            path: "/management-suite",
+            lazy: lazyPage(
+              () =>
+                import("../../features/marketing/pages/ManagementSuitePage.jsx"),
+            ),
+          },
+          {
+            path: "/x-factor",
+            lazy: lazyPage(
+              () => import("../../features/marketing/pages/XFactorPage.jsx"),
+            ),
+          },
+          {
+            path: "/x-factor/nexus-pms",
+            lazy: lazyPage(
+              () => import("../../features/marketing/pages/NexusPmsPage.jsx"),
+            ),
+          },
+        ],
       },
       {
         path: "/login",
