@@ -291,8 +291,8 @@ importers:
         specifier: ^9.1.2
         version: 9.2.5
       mongodb-memory-server:
-        specifier: ^11.4.0
-        version: 11.4.0(bare-buffer@3.7.3)(supports-color@5.5.0)
+        specifier: ^11.3.0
+        version: 11.3.0(bare-buffer@3.7.3)(supports-color@5.5.0)
       nodemon:
         specifier: ^3.1.14
         version: 3.1.14
@@ -963,13 +963,13 @@ importers:
     dependencies:
       '@tanstack/react-query':
         specifier: ^5.101.1
-        version: 5.102.8(react@19.3.1)
+        version: 5.102.8(react@19.2.8)
       react:
         specifier: '>=18.0.0'
-        version: 19.3.1
+        version: 19.2.8
       react-dom:
         specifier: '>=18.0.0'
-        version: 19.2.8(react@19.3.1)
+        version: 19.2.8(react@19.2.8)
     devDependencies:
       '@hotelos/oxlint-config':
         specifier: workspace:*
@@ -985,7 +985,7 @@ importers:
         version: link:../utils
       react:
         specifier: '>=18.0.0'
-        version: 19.3.1
+        version: 19.2.8
       socket.io-client:
         specifier: ^4.8.3
         version: 4.8.3(supports-color@8.1.1)
@@ -998,10 +998,10 @@ importers:
     dependencies:
       react:
         specifier: '>=18.0.0'
-        version: 19.3.1
+        version: 19.2.8
       zustand:
         specifier: ^5.0.3
-        version: 5.0.15(@types/react@19.2.18)(immer@11.1.18)(react@19.3.1)(use-sync-external-store@1.6.0(react@19.3.1))
+        version: 5.0.15(@types/react@19.2.18)(immer@11.1.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
     devDependencies:
       '@hotelos/oxlint-config':
         specifier: workspace:*
@@ -6848,12 +6848,12 @@ packages:
     resolution: {integrity: sha512-5I/pX3C2gPEz1EDdYMdZwBx1b/jE/f+J+KItSUJ02uQZ66bbe7kHKjv2uqCHJWaMCagem3dyfWqoAcv+XYZ6aw==}
     engines: {node: '>=20.19.0'}
 
-  mongodb-memory-server-core@11.4.0:
-    resolution: {integrity: sha512-I4pmBybIQeTzeIfVO/CGyrgqVMZM/rBeYSvVgJTcYD9W+AUj4G8vNHvTPyX89/qI1ip1GiQoaqZxySylRbBHxQ==}
+  mongodb-memory-server-core@11.3.0:
+    resolution: {integrity: sha512-QBu/RsRpBfcNd5CrBDfCzqcaFPaYpivUzGYUy9YgVc3up78ff0gIHQVD9PLmBLOOxFX6BM9hU6YT0HocZH+s1g==}
     engines: {node: '>=20.19.0'}
 
-  mongodb-memory-server@11.4.0:
-    resolution: {integrity: sha512-yi/NFqse40EcRkCLMp+jPiPvGdDwFSRHQdIT7SfA/JPdg5avl7Gj36/0CCMp8NoVfr2bOMi5dwGQI0aeSdR4AQ==}
+  mongodb-memory-server@11.3.0:
+    resolution: {integrity: sha512-8ZCDrraqKqmAikoeKuEq+16jeWdVKwjtEAuMxxeQctHiGSGYt17W9LmoRzV1Nwnz7owyxwDKMhow4IVkNYYRKw==}
     engines: {node: '>=20.19.0'}
 
   mongodb@6.20.0:
@@ -7731,10 +7731,6 @@ packages:
 
   react@19.2.8:
     resolution: {integrity: sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw==}
-    engines: {node: '>=0.10.0'}
-
-  react@19.3.1:
-    resolution: {integrity: sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==}
     engines: {node: '>=0.10.0'}
 
   read-binary-file-arch@1.0.6:
@@ -12016,11 +12012,6 @@ snapshots:
       '@tanstack/query-core': 5.102.8
       react: 19.2.8
 
-  '@tanstack/react-query@5.102.8(react@19.3.1)':
-    dependencies:
-      '@tanstack/query-core': 5.102.8
-      react: 19.3.1
-
   '@tanstack/react-router@1.170.32(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       '@tanstack/history': 1.162.1
@@ -16243,7 +16234,7 @@ snapshots:
       '@types/whatwg-url': 13.0.0
       whatwg-url: 15.1.0
 
-  mongodb-memory-server-core@11.4.0(bare-buffer@3.7.3)(supports-color@5.5.0):
+  mongodb-memory-server-core@11.3.0(bare-buffer@3.7.3)(supports-color@5.5.0):
     dependencies:
       async-mutex: 0.5.0
       camelcase: 6.3.0
@@ -16270,9 +16261,9 @@ snapshots:
       - socks
       - supports-color
 
-  mongodb-memory-server@11.4.0(bare-buffer@3.7.3)(supports-color@5.5.0):
+  mongodb-memory-server@11.3.0(bare-buffer@3.7.3)(supports-color@5.5.0):
     dependencies:
-      mongodb-memory-server-core: 11.4.0(bare-buffer@3.7.3)(supports-color@5.5.0)
+      mongodb-memory-server-core: 11.3.0(bare-buffer@3.7.3)(supports-color@5.5.0)
       tslib: 2.9.1
     transitivePeerDependencies:
       - '@aws-sdk/credential-providers'
@@ -16933,11 +16924,6 @@ snapshots:
       react: 19.2.8
       scheduler: 0.27.0
 
-  react-dom@19.2.8(react@19.3.1):
-    dependencies:
-      react: 19.3.1
-      scheduler: 0.27.0
-
   react-fast-compare@3.2.2: {}
 
   react-freeze@1.0.4(react@19.2.3):
@@ -17195,8 +17181,6 @@ snapshots:
   react@19.2.3: {}
 
   react@19.2.8: {}
-
-  react@19.3.1: {}
 
   read-binary-file-arch@1.0.6(supports-color@8.1.1):
     dependencies:
@@ -18320,11 +18304,6 @@ snapshots:
     dependencies:
       react: 19.2.8
 
-  use-sync-external-store@1.6.0(react@19.3.1):
-    dependencies:
-      react: 19.3.1
-    optional: true
-
   utf8-byte-length@1.0.5: {}
 
   util-deprecate@1.0.2: {}
@@ -18637,10 +18616,3 @@ snapshots:
       immer: 11.1.18
       react: 19.2.8
       use-sync-external-store: 1.6.0(react@19.2.8)
-
-  zustand@5.0.15(@types/react@19.2.18)(immer@11.1.18)(react@19.3.1)(use-sync-external-store@1.6.0(react@19.3.1)):
-    optionalDependencies:
-      '@types/react': 19.2.18
-      immer: 11.1.18
-      react: 19.3.1
-      use-sync-external-store: 1.6.0(react@19.3.1)
