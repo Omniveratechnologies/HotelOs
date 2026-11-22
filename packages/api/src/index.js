@@ -37,6 +37,7 @@ export {
   getResetPasswordAccounts,
   selectResetPasswordAccount,
   resetPassword,
+  changePassword,
 } from "./endpoints/auth.js";
 export * from "./endpoints/auth.js";
 export * from "./endpoints/hotels.js";

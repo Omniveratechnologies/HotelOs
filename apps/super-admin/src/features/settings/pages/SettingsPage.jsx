@@ -5,6 +5,7 @@ import {
   Input,
   Button,
   TwoFactorSecurityCard,
+  ChangePasswordCard,
 } from "@hotelos/ui/components";
 import { currentAdmin } from "../../../data/mockData.js";
 
@@ -126,8 +127,6 @@ export default function SettingsPage() {
             </div>
           </SectionCard>
 
-          <TwoFactorSecurityCard />
-
           <div className="flex items-center gap-3">
             <Button type="submit" icon={Save}>
               Save changes
@@ -139,6 +138,9 @@ export default function SettingsPage() {
             )}
           </div>
         </form>
+
+        <TwoFactorSecurityCard />
+        <ChangePasswordCard />
       </main>
     </>
   );

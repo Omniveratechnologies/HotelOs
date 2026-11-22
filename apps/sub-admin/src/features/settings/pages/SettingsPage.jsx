@@ -4,6 +4,7 @@ import {
   Button,
   Input,
   TwoFactorSecurityCard,
+  ChangePasswordCard,
 } from "@hotelos/ui/components";
 
 import { useMyHotel, useUpdateMyHotel } from "../hooks/useHotelSettings.js";
@@ -328,10 +329,12 @@ export default function SettingsPage() {
               saving={updateMyHotelMutation.isPending}
             />
             <TwoFactorSecurityCard />
+            <ChangePasswordCard />
           </div>
         ) : (
           <div className="space-y-8">
             <TwoFactorSecurityCard />
+            <ChangePasswordCard />
           </div>
         )}
       </main>

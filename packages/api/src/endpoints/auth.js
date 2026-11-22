@@ -303,3 +303,24 @@ export const resetPassword = async ({ token, password }) => {
   });
   return result.data;
 };
+
+/**
+ * Changes the authenticated user's password.
+ * @param {object} params
+ * @param {string} params.currentPassword
+ * @param {string} params.newPassword
+ * @param {string} params.confirmPassword
+ * @returns {Promise<{ success: boolean, message: string }>}
+ */
+export const changePassword = async ({
+  currentPassword,
+  newPassword,
+  confirmPassword,
+}) => {
+  const result = await api.post(
+    "/api/v1/auth/change-password",
+    { currentPassword, newPassword, confirmPassword },
+    { auth: true },
+  );
+  return result;
+};

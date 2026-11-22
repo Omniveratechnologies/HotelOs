@@ -27,3 +27,4 @@ export { ReceiptModal } from "./ReceiptModal.jsx";
 export { DataTable } from "./DataTable.jsx";
 export { TwoFactorSecurityCard } from "./TwoFactorSecurityCard.jsx";
 export { TwoFactorChallenge } from "./TwoFactorChallenge.jsx";
+export { ChangePasswordCard } from "./ChangePasswordCard.jsx";

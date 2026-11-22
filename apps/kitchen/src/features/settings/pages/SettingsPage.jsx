@@ -1,7 +1,10 @@
 import { useState } from "react";
 import Navbar from "@/components/ui/Navbar.jsx";
 import Sidebar from "@/components/hamburger/SideBar.jsx";
-import { TwoFactorSecurityCard } from "@hotelos/ui/components";
+import {
+  TwoFactorSecurityCard,
+  ChangePasswordCard,
+} from "@hotelos/ui/components";
 
 export default function SettingsPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -33,6 +36,7 @@ export default function SettingsPage() {
             </div>
 
             <TwoFactorSecurityCard theme="dark" />
+            <ChangePasswordCard theme="dark" />
           </div>
         </main>
       </div>
