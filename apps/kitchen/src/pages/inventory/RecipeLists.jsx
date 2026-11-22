@@ -139,7 +139,7 @@ const RecipesLists = () => {
 
       <div
         className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
+          "lg:ml-64"
         }`}
       >
         <Navbar
@@ -165,7 +165,7 @@ const RecipesLists = () => {
           }
         />
 
-        <main className="px-4 py-4">
+        <main className="p-3 sm:p-4 lg:p-6">
           <div className="bg-slate rounded-xl border border-gray-800/70 p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-white">

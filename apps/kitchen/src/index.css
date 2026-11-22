@@ -18,6 +18,17 @@ body {
   );
 
   background-size: 18px 18px;
+  overflow-x: hidden;
+}
+
+main {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  body:has(aside[data-collapsed="true"]) .lg\:ml-64 {
+    margin-left: 5rem;
+  }
 }
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FiChevronRight,
   FiChevronDown,
@@ -13,7 +13,7 @@ import {
   FiBarChart2,
   FiSettings,
 } from "react-icons/fi";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const menuItems = [
   {
@@ -210,8 +210,28 @@ const menuItems = [
 const baseItemClass =
   "flex w-full items-center rounded-lg px-3 py-3 text-sm text-gray-300 transition hover:bg-gray-800 hover:text-white";
 
-const SideBarMenu = () => {
+const containsActivePath = (item, pathname) =>
+  item.path === pathname ||
+  item.submenu?.some((child) => containsActivePath(child, pathname));
+
+const SideBarMenu = ({ isCollapsed = false }) => {
   const [openSubmenus, setOpenSubmenus] = useState({});
+  const location = useLocation();
+
+  useEffect(() => {
+    const activeSubmenus = {};
+    const collect = (items, parentKey = "") => {
+      items.forEach((item) => {
+        const key = parentKey ? `${parentKey}/${item.name}` : item.name;
+        if (item.submenu?.length && containsActivePath(item, location.pathname)) {
+          activeSubmenus[key] = true;
+          collect(item.submenu, key);
+        }
+      });
+    };
+    collect(menuItems);
+    setOpenSubmenus((current) => ({ ...current, ...activeSubmenus }));
+  }, [location.pathname]);
 
   const handleSubmenu = (key) => {
     setOpenSubmenus((prev) => ({
@@ -225,14 +245,15 @@ const SideBarMenu = () => {
     const hasSubmenu =
       Array.isArray(menuItem.submenu) && menuItem.submenu.length > 0;
     const isOpen = Boolean(openSubmenus[key]);
+    const isActive = menuItem.path === location.pathname;
 
     const label = (
-      <div className="flex items-center gap-3">
+      <div className={`flex min-w-0 items-center gap-3 ${isCollapsed ? "lg:justify-center" : ""}`}>
         {level === 0 && menuItem.icon && (
           <span className="text-lg">{menuItem.icon}</span>
         )}
         {level > 0 && <span className="text-gray-500">•</span>}
-        <span>{menuItem.name}</span>
+        <span className={isCollapsed ? "lg:hidden" : ""}>{menuItem.name}</span>
       </div>
     );
 
@@ -241,7 +262,10 @@ const SideBarMenu = () => {
         <Link
           key={key}
           to={menuItem.path}
-          className={`${baseItemClass} ${level > 0 ? "text-xs" : ""}`}
+          className={`${baseItemClass} ${level > 0 ? "text-xs" : ""} ${
+            isActive ? "bg-gray-800 text-white" : ""
+          } ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}
+          title={isCollapsed ? menuItem.name : undefined}
         >
           {label}
         </Link>
@@ -256,7 +280,8 @@ const SideBarMenu = () => {
           aria-expanded={isOpen}
           className={`${baseItemClass} justify-between ${
             level > 0 ? "text-xs" : ""
-          }`}
+          } ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}
+          title={isCollapsed ? menuItem.name : undefined}
         >
           {label}
           {isOpen ? <FiChevronDown size={16} /> : <FiChevronRight size={16} />}
@@ -266,7 +291,7 @@ const SideBarMenu = () => {
           <div
             className={`mt-1 flex flex-col gap-1 border-l border-gray-700 pl-3 ${
               level === 0 ? "ml-9" : "ml-4"
-            }`}
+            } ${isCollapsed ? "lg:hidden" : ""}`}
           >
             {menuItem.submenu.map((subItem) =>
               renderMenuItem(subItem, key, level + 1),

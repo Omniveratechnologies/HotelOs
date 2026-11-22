@@ -150,7 +150,7 @@ const AddTables = () => {
     <div className="relative min-h-screen bg-[#0f0f0f] text-white">
       <Sidebar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       <div
-        className={`min-h-screen transition-transform duration-300 ${isMenuOpen ? "translate-x-64" : "translate-x-0"}`}
+        className={`min-h-screen transition-transform duration-300 ${"lg:ml-64"}`}
       >
         <Navbar
           title="Add Tables"
@@ -158,7 +158,7 @@ const AddTables = () => {
           isMenuOpen={isMenuOpen}
           setIsMenuOpen={setIsMenuOpen}
         />
-        <main className="space-y-5 px-4 py-4 md:px-6">
+        <main className="space-y-5 p-3 sm:p-4 lg:p-6">
           {error && (
             <div className="flex items-center justify-between rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-300">
               <span>{error}</span>
@@ -167,7 +167,7 @@ const AddTables = () => {
               </button>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatusCard
               title="Total Tables"
               value={tables.length}

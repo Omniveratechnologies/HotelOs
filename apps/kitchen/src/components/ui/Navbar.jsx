@@ -52,8 +52,8 @@ const Navbar = ({
 
   return (
     <header className="w-full">
-      <div className="relative flex items-center justify-between py-3">
-        <div className="flex items-center gap-4">
+      <div className="relative flex flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
           <Hamburger isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
 
           {showPageHeading ? (
@@ -71,7 +71,7 @@ const Navbar = ({
               </div> */}
 
               <div>
-                <h1 className="text-xl font-bold tracking-[4px] text-white uppercase md:text-2xl lg:text-3xl">
+                <h1 className="truncate text-lg font-bold tracking-[2px] text-white uppercase sm:text-xl md:text-2xl lg:text-3xl">
                   {title}
                 </h1>
 
@@ -81,7 +81,7 @@ const Navbar = ({
           )}
         </div>
 
-        <div className="flex items-center gap-5">
+        <div className="flex w-full items-center gap-3 sm:w-auto sm:gap-5">
           {!showPageHeading && (
             <SearchBar
               searchTerm={searchTerm}
@@ -90,8 +90,8 @@ const Navbar = ({
             />
           )}
 
-          <div className="p-2 leading-tight">
-            <div className="text-lg font-bold tracking-wider text-yellow-400 md:text-xl lg:text-2xl">
+          <div className="hidden p-2 leading-tight sm:block">
+            <div className="text-base font-bold tracking-wider text-yellow-400 md:text-xl lg:text-2xl">
               {time}
             </div>
 
@@ -105,7 +105,7 @@ const Navbar = ({
       <div className="border-b-2 border-dotted border-gray-600"></div>
 
       {showPageHeading && (
-        <div className="mx-8 mt-5">
+        <div className="mt-4 px-2 sm:mt-5 sm:px-4 lg:px-8">
           {breadcrumb && (
             <p className="mb-2 text-xs text-gray-500">{breadcrumb}</p>
           )}

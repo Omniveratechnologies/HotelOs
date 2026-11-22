@@ -2,7 +2,7 @@ import { FiSearch } from "react-icons/fi";
 
 const SearchBar = ({ searchTerm, setSearchTerm, placeholder }) => {
   return (
-    <div className="relative w-40 sm:w-52 md:w-64">
+    <div className="relative w-full min-w-0 sm:w-52 md:w-64">
       <FiSearch className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
 
       <input

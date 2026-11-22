@@ -317,7 +317,7 @@ const Departments = () => {
 
       <div
         className={`h-full overflow-y-auto transition-[margin] duration-300 ease-in-out ${
-          isMenuOpen ? "ml-64" : "ml-0"
+          "lg:ml-64"
         }`}
       >
         <Navbar
@@ -344,7 +344,7 @@ const Departments = () => {
         />
 
         <main
-          className={`grid gap-5 px-4 py-5 ${
+          className={`grid gap-5 p-3 sm:p-4 lg:p-6 ${
             isWide && selectedKey
               ? "grid-cols-[minmax(0,1fr)_340px]"
               : "grid-cols-1"
