@@ -1,17 +1,16 @@
 import { cn } from "@hotelos/utils";
 
 /**
+ * @typedef {React.InputHTMLAttributes<HTMLInputElement> & {
+ *   label?: string,
+ *   error?: string,
+ *   hint?: string,
+ *   containerClassName?: string
+ * }} InputProps
+ *
  * Self-closing form input component with optional label, hint, and validation error messages.
  *
- * @param {Object} props - Component properties.
- * @param {string} [props.label] - Label text displayed above the input.
- * @param {string} [props.error] - Validation error message displayed below the input.
- * @param {string} [props.hint] - Informational helper text displayed below the input when there is no error.
- * @param {string} [props.id] - Element ID for input and label associations. Falls back to `name`.
- * @param {string} [props.name] - Form field name attribute.
- * @param {string} [props.className=''] - Additional CSS classes for the `<input>` element.
- * @param {string} [props.containerClassName=''] - Additional CSS classes for the outer wrapper `<div>`.
- * @param {boolean} [props.required=false] - Indicates whether the field is required.
+ * @param {InputProps} props
  * @returns {React.ReactElement} The rendered input component.
  */
 export function Input({

@@ -302,7 +302,7 @@ HotelOS includes an enterprise-grade hardware kiosk and in-room tablet subsystem
 
 ### 1. Dynamic Kiosk Routing (3 Dashboard Presets)
 
-Kiosk devices are enrolled once via Super Admin (`apps/super-admin`, `/kiosks`) with a 6-digit pairing code. Each tablet is assigned a target dashboard:
+Kiosk devices are enrolled once via Super Admin (`apps/super-admin`, Hotel Details > Kiosks & Hardware) with a 6-digit pairing code. Each tablet is assigned a target dashboard:
 
 - `GUEST_DASHBOARD`: Pointed at `apps/guest` (`http://<LAN_IP>:5177?kioskCode=...`).
 - `SELF_CHECKIN`: Pointed at `apps/self-checkin` (`http://<LAN_IP>:5178`).

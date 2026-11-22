@@ -21,17 +21,16 @@ const SIZES = {
 };
 
 /**
+ * @typedef {React.ButtonHTMLAttributes<HTMLButtonElement> & {
+ *   variant?: 'primary' | 'secondary' | 'danger' | 'dangerGhost' | 'ghost' | 'outline',
+ *   size?: 'sm' | 'md' | 'lg',
+ *   loading?: boolean,
+ *   icon?: React.ComponentType<{ size?: number, className?: string }>
+ * }} ButtonProps
+ *
  * Interactive button component supporting variants, sizes, loading states, and icons.
  *
- * @param {Object} props - Component properties.
- * @param {'primary' | 'secondary' | 'danger' | 'dangerGhost' | 'ghost' | 'outline'} [props.variant='primary'] - Visual style variant.
- * @param {'sm' | 'md' | 'lg'} [props.size='md'] - Button size preset.
- * @param {'button' | 'submit' | 'reset'} [props.type='button'] - Native HTML button type.
- * @param {boolean} [props.loading=false] - Whether to show a loading spinner and disable interaction.
- * @param {boolean} [props.disabled=false] - Whether the button is disabled.
- * @param {string} [props.className=''] - Additional CSS classes for the button.
- * @param {React.ReactNode} [props.children] - Button content or label.
- * @param {React.ComponentType<{ size?: number, className?: string }>} [props.icon] - Optional Lucide or SVG icon component.
+ * @param {ButtonProps} props
  * @returns {React.ReactElement} The rendered button element.
  */
 export function Button({

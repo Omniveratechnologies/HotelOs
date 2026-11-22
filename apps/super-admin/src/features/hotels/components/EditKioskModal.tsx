@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { RotateCw, RefreshCw, LogOut, Check } from "lucide-react";
 import { Modal, Input, Button } from "@hotelos/ui/components";
 import { KIOSK_SUPPORTED_FEATURES, formatTime } from "@hotelos/utils";
@@ -8,17 +8,20 @@ import {
   useKioskDashboards,
   useHotelTables,
   useHotelRooms,
-} from "../hooks/useKiosks.js";
-import { useHotels } from "../../hotels/hooks/useHotels.js";
+} from "../hooks/useKiosks.ts";
+import { useHotels } from "../hooks/useHotels.js";
 import { ApiError } from "@hotelos/api";
+import type { Hotel, KioskDevice, EditKioskModalProps } from "../types.ts";
 
 /**
  * Map backend validation field paths to frontend field names
  */
-function mapValidationErrors(validationErrors) {
+function mapValidationErrors(
+  validationErrors?: Record<string, Record<string, string>>,
+): Record<string, string> {
   if (!validationErrors) return {};
 
-  const mapped = {};
+  const mapped: Record<string, string> = {};
 
   if (validationErrors.body) {
     Object.assign(mapped, validationErrors.body);
@@ -26,65 +29,81 @@ function mapValidationErrors(validationErrors) {
 
   if (validationErrors.query) {
     for (const [field, messages] of Object.entries(validationErrors.query)) {
-      mapped[`query.${field}`] = messages;
+      mapped[`query.${field}`] = String(messages);
     }
   }
 
   if (validationErrors.params) {
     for (const [field, messages] of Object.entries(validationErrors.params)) {
-      mapped[`params.${field}`] = messages;
+      mapped[`params.${field}`] = String(messages);
     }
   }
 
   return mapped;
 }
 
-export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
-  const { hotels } = useHotels();
+export const EditKioskModal: React.FC<EditKioskModalProps> = ({
+  kiosk,
+  open,
+  onClose,
+  onUpdated,
+}) => {
+  const { hotels } = useHotels() as { hotels: Hotel[] };
   const { dashboards } = useKioskDashboards();
   const updateKioskMutation = useUpdateKiosk();
   const sendCommandMutation = useSendKioskCommand();
 
-  const [hotelId, setHotelId] = useState(
-    kiosk?.hotelId?._id || kiosk?.hotelId || "",
+  const getInitialHotelId = () => {
+    if (!kiosk?.hotelId) return "";
+    if (typeof kiosk.hotelId === "object") return kiosk.hotelId._id;
+    return kiosk.hotelId;
+  };
+
+  const [hotelId, setHotelId] = useState<string>(getInitialHotelId());
+  const [name, setName] = useState<string>(kiosk?.name || "");
+  const [location, setLocation] = useState<string>(
+    kiosk?.location || "Main Lobby",
   );
-  const [name, setName] = useState(kiosk?.name || "");
-  const [location, setLocation] = useState(kiosk?.location || "Main Lobby");
-  const [status, setStatus] = useState(kiosk?.status || "ONLINE");
-  const [targetDashboard, setTargetDashboard] = useState(
+  const [status, setStatus] = useState<string>(kiosk?.status || "ONLINE");
+  const [targetDashboard, setTargetDashboard] = useState<string>(
     kiosk?.targetDashboard || "GUEST_DASHBOARD",
   );
-  const [tableId, setTableId] = useState(
-    kiosk?.tableId?._id || kiosk?.tableId || "",
+  const [tableId, setTableId] = useState<string>(kiosk?.tableId?._id || "");
+  const [roomId, setRoomId] = useState<string>(kiosk?.roomId?._id || "");
+  const [supportedFeatures, setSupportedFeatures] = useState<string[]>(
+    Array.isArray(
+      (kiosk as unknown as { supportedFeatures?: string[] })?.supportedFeatures,
+    ) &&
+      ((kiosk as unknown as { supportedFeatures?: string[] })?.supportedFeatures
+        ?.length || 0) > 0
+      ? (kiosk as unknown as { supportedFeatures: string[] }).supportedFeatures
+      : ["CHECK_IN", "KEY_DISPENSE", "DOCUMENT_SCAN"],
   );
-  const [roomId, setRoomId] = useState(
-    kiosk?.roomId?._id || kiosk?.roomId || "",
-  );
-  const [supportedFeatures, setSupportedFeatures] = useState(
-    kiosk?.supportedFeatures || ["CHECK_IN", "KEY_DISPENSE", "DOCUMENT_SCAN"],
-  );
-  const [commandFeedback, setCommandFeedback] = useState("");
-  const [errors, setErrors] = useState({});
+  const [commandFeedback, setCommandFeedback] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { tables, isLoading: tablesLoading } = useHotelTables(hotelId);
   const { rooms, isLoading: roomsLoading } = useHotelRooms(hotelId);
 
-  const [prevKioskId, setPrevKioskId] = useState(kiosk?._id);
-  if (kiosk?._id && kiosk._id !== prevKioskId) {
-    setPrevKioskId(kiosk._id);
-    setHotelId(kiosk?.hotelId?._id || kiosk?.hotelId || "");
+  const [prevKioskId, setPrevKioskId] = useState<string | undefined>(
+    kiosk?._id || kiosk?.id,
+  );
+  const currentKioskId = kiosk?._id || kiosk?.id;
+
+  if (currentKioskId && currentKioskId !== prevKioskId) {
+    setPrevKioskId(currentKioskId);
+    setHotelId(getInitialHotelId());
     setName(kiosk?.name || "");
     setLocation(kiosk?.location || "Main Lobby");
     setStatus(kiosk?.status || "ONLINE");
     setTargetDashboard(kiosk?.targetDashboard || "GUEST_DASHBOARD");
-    setTableId(
-      kiosk?.tableId?._id || kiosk?.tableId?.id || kiosk?.tableId || "",
-    );
-    setRoomId(kiosk?.roomId?._id || kiosk?.roomId?.id || kiosk?.roomId || "");
+    setTableId(kiosk?.tableId?._id || "");
+    setRoomId(kiosk?.roomId?._id || "");
+    const feats = (kiosk as unknown as { supportedFeatures?: string[] })
+      ?.supportedFeatures;
     setSupportedFeatures(
-      Array.isArray(kiosk?.supportedFeatures) &&
-        kiosk.supportedFeatures.length > 0
-        ? kiosk.supportedFeatures
+      Array.isArray(feats) && feats.length > 0
+        ? feats
         : ["CHECK_IN", "KEY_DISPENSE", "DOCUMENT_SCAN"],
     );
     setCommandFeedback("");
@@ -93,7 +112,7 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
 
   if (!kiosk) return null;
 
-  function toggleFeature(featId) {
+  function toggleFeature(featId: string) {
     setSupportedFeatures((prev) =>
       prev.includes(featId)
         ? prev.filter((f) => f !== featId)
@@ -101,7 +120,7 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
     );
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
       setErrors({ name: "Terminal name is required" });
@@ -110,7 +129,7 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
 
     try {
       const updated = await updateKioskMutation.mutateAsync({
-        id: kiosk._id,
+        id: (kiosk?._id || kiosk?.id) as string,
         data: {
           hotelId,
           name: name.trim(),
@@ -123,33 +142,40 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
         },
       });
 
-      if (onUpdated) onUpdated(updated);
+      if (onUpdated) onUpdated(updated as unknown as KioskDevice);
       onClose();
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof ApiError && err.isValidationError) {
-        const fieldErrors = mapValidationErrors(err.validationErrors);
+        const fieldErrors = mapValidationErrors(
+          err.validationErrors as Record<string, Record<string, string>>,
+        );
         setErrors(fieldErrors);
       } else {
-        setErrors({ form: err?.message || "Failed to update kiosk terminal" });
+        const msg =
+          (err as Error)?.message || "Failed to update kiosk terminal";
+        setErrors({ form: msg });
       }
     }
   }
 
-  async function handleSendCommand(command, label) {
+  async function handleSendCommand(command: string, label: string) {
     try {
       setCommandFeedback("");
       await sendCommandMutation.mutateAsync({
-        id: kiosk._id,
+        id: (kiosk?._id || kiosk?.id) as string,
         command,
       });
       setCommandFeedback(`Command "${label}" dispatched successfully.`);
       setTimeout(() => setCommandFeedback(""), 4000);
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof ApiError && err.isValidationError) {
-        const fieldErrors = mapValidationErrors(err.validationErrors);
+        const fieldErrors = mapValidationErrors(
+          err.validationErrors as Record<string, Record<string, string>>,
+        );
         setErrors(fieldErrors);
       } else {
-        setErrors({ command: err?.message || "Failed to dispatch command" });
+        const msg = (err as Error)?.message || "Failed to dispatch command";
+        setErrors({ command: msg });
       }
     }
   }
@@ -162,13 +188,18 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
     resolvedUrl = `${resolvedUrl}/${hotelId}/table/${tableId}`;
   }
 
+  const hotelNameFallback =
+    typeof kiosk.hotelId === "object" && kiosk.hotelId?.name
+      ? kiosk.hotelId.name
+      : "Assigned Hotel";
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       title={`Configure Terminal: ${kiosk.name}`}
-      description={`Device ID: ${kiosk.deviceId} • Firmware: ${kiosk.firmwareVersion || "v1.4.0"}`}
-      size="lg"
+      subtitle={`Device ID: ${kiosk.deviceId} • Firmware: ${kiosk.firmwareVersion || "v1.4.0"}`}
+      maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {errors.form && (
@@ -183,7 +214,7 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
           </div>
         )}
 
-        {/* Reassign Hotel */}
+        {/* Assigned Hotel */}
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
             Assigned Hotel *
@@ -198,15 +229,11 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
             className="focus:border-brand-500 focus:ring-brand-500 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:ring-1 focus:outline-none"
           >
             {hotelId &&
-              !hotels.some(
-                (h) => String(h._id || h.id) === String(hotelId),
-              ) && (
-                <option value={hotelId}>
-                  {kiosk?.hotelId?.name || "Assigned Hotel"}
-                </option>
+              !hotels.some((h) => String(h._id) === String(hotelId)) && (
+                <option value={hotelId}>{hotelNameFallback}</option>
               )}
             {hotels.map((h) => (
-              <option key={h._id || h.id} value={h._id || h.id}>
+              <option key={h._id} value={h._id}>
                 {h.name} {h.city ? `(${h.city})` : ""}
               </option>
             ))}
@@ -514,4 +541,6 @@ export default function EditKioskModal({ kiosk, open, onClose, onUpdated }) {
       </form>
     </Modal>
   );
-}
+};
+
+export default EditKioskModal;

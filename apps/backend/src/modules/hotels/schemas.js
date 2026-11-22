@@ -69,13 +69,14 @@ export const updateHotelBodySchema = z
     taxPercent: z
       .number()
       .nonnegative("Tax percentage must be non-negative")
+      .nullable()
       .optional(),
-    checkInTime: timeSchema.optional(),
-    checkOutTime: timeSchema.optional(),
+    checkInTime: timeSchema.nullable().optional(),
+    checkOutTime: timeSchema.nullable().optional(),
     cancellationPolicy: z.string().optional(),
     termsAndConditions: z.string().optional(),
-    wifiNetworkName: z.string().optional(),
-    wifiPassword: z.string().optional(),
+    wifiNetworkName: z.string().nullable().optional(),
+    wifiPassword: z.string().nullable().optional(),
     subscriptionStartDate: dateSchema.optional(),
     subscriptionEndDate: dateSchema.optional(),
     aiosellHotelCode: z.string().nullable().optional(),
@@ -184,7 +185,7 @@ export const updateChannelManagerConfigBodySchema = z
 // =====================================================
 
 export const setHotelAiosellCodeBodySchema = z.object({
-  aiosellHotelCode: z.string().optional(),
+  aiosellHotelCode: z.string().nullable().optional(),
 });
 
 // =====================================================

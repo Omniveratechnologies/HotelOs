@@ -1,24 +1,12 @@
 import { useMemo, useState, useEffect } from "react";
-
-import {
-  Plus,
-  Search,
-  MoreVertical,
-  Power,
-  Mail,
-  Building2,
-  Pencil,
-} from "lucide-react";
+import { Link } from "react-router";
+import { Plus, Search, Building2, ArrowRight } from "lucide-react";
 
 import { Header, Button } from "@hotelos/ui/components";
 import Badge from "../../../components/ui/Badge.jsx";
-
 import { EmptyState, TableSkeleton } from "../../../components/ui/States.jsx";
-
 import CreateHotelModal from "../components/CreateHotelModal.jsx";
-import EditHotelModal from "../components/EditHotelModal.jsx";
-
-import { useHotels, useUpdateHotelStatus } from "../hooks/useHotels.js";
+import { useHotels } from "../hooks/useHotels.js";
 
 function formatDate(date) {
   if (!date) {
@@ -36,11 +24,8 @@ function formatDate(date) {
 
 export default function HotelsPage() {
   const { hotels, isLoading: loading } = useHotels();
-  const updateHotelStatusMutation = useUpdateHotelStatus();
   const [query, setQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [menuOpenId, setMenuOpenId] = useState(null);
-  const [editHotel, setEditHotel] = useState(null);
   const [toast, setToast] = useState("");
 
   useEffect(() => {
@@ -80,47 +65,6 @@ export default function HotelsPage() {
       );
     });
   }, [hotels, query]);
-
-  async function handleToggleStatus(hotel) {
-    setMenuOpenId(null);
-
-    const nextStatus = hotel.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-    const action = nextStatus === "INACTIVE" ? "deactivate" : "reactivate";
-
-    const confirmed = window.confirm(
-      `Are you sure you want to ${action} "${hotel.name}"?`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await updateHotelStatusMutation.mutateAsync({
-        id: hotel._id,
-        status: nextStatus,
-      });
-
-      setToast(
-        nextStatus === "INACTIVE"
-          ? `${hotel.name} has been deactivated.`
-          : `${hotel.name} has been reactivated.`,
-      );
-    } catch (error) {
-      console.error("Failed to update hotel status:", error);
-      setToast(error.message || "Failed to update hotel status.");
-    }
-  }
-
-  function handleResendInvite(hotel) {
-    setMenuOpenId(null);
-    setToast(`Resend invite for ${hotel.name} will be added next.`);
-  }
-
-  function handleEdit(hotel) {
-    setMenuOpenId(null);
-    setEditHotel(hotel);
-  }
 
   return (
     <>
@@ -174,7 +118,7 @@ export default function HotelsPage() {
             }
           />
         ) : (
-          <div className="border-surface-200 overflow-visible rounded-2xl border bg-white shadow-xs">
+          <div className="border-surface-200 overflow-hidden rounded-2xl border bg-white shadow-xs">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-surface-200 text-brand-700/60 border-b text-xs font-semibold tracking-wide uppercase">
@@ -197,14 +141,20 @@ export default function HotelsPage() {
                   >
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="bg-primary-100 text-primary-800 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold">
+                        <Link
+                          to={`/hotels/${hotel._id}`}
+                          className="bg-primary-100 text-primary-800 hover:bg-primary-200 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors"
+                        >
                           {hotel.name?.charAt(0)?.toUpperCase() || "H"}
-                        </div>
+                        </Link>
 
                         <div>
-                          <span className="text-brand-900 block font-semibold">
+                          <Link
+                            to={`/hotels/${hotel._id}`}
+                            className="text-brand-900 group-hover:text-primary-700 block font-semibold transition-colors"
+                          >
                             {hotel.name}
-                          </span>
+                          </Link>
 
                           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                             {(hotel.city || hotel.state) && (
@@ -255,64 +205,14 @@ export default function HotelsPage() {
                       {formatDate(hotel.createdAt)}
                     </td>
 
-                    <td className="relative px-5 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setMenuOpenId(
-                            menuOpenId === hotel._id ? null : hotel._id,
-                          )
-                        }
-                        className="text-brand-700/60 hover:bg-brand-950/5 hover:text-brand-900 rounded-lg p-1.5"
-                        aria-label="Hotel actions"
+                    <td className="px-5 py-4 text-right">
+                      <Link
+                        to={`/hotels/${hotel._id}`}
+                        className="border-surface-200 text-brand-700 hover:bg-background-50 hover:text-brand-900 hover:border-brand-300 inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold shadow-2xs transition-all"
                       >
-                        <MoreVertical size={17} />
-                      </button>
-
-                      {menuOpenId === hotel._id && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setMenuOpenId(null)}
-                          />
-
-                          <div className="border-surface-200 absolute top-12 right-5 z-20 w-56 overflow-hidden rounded-xl border bg-white text-left shadow-lg">
-                            <button
-                              type="button"
-                              onClick={() => handleEdit(hotel)}
-                              className="text-brand-900 hover:bg-background-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium"
-                            >
-                              <Pencil size={15} className="text-brand-700/60" />
-                              Edit hotel
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleResendInvite(hotel)}
-                              className="text-brand-900 hover:bg-background-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium"
-                            >
-                              <Mail size={15} className="text-brand-700/60" />
-                              Resend Sub Admin invite
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleToggleStatus(hotel)}
-                              className={`hover:bg-background-50 flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium ${
-                                hotel.status === "ACTIVE"
-                                  ? "text-rose-600"
-                                  : "text-emerald-700"
-                              }`}
-                            >
-                              <Power size={15} />
-
-                              {hotel.status === "ACTIVE"
-                                ? "Deactivate hotel"
-                                : "Reactivate hotel"}
-                            </button>
-                          </div>
-                        </>
-                      )}
+                        Manage Hotel
+                        <ArrowRight size={13} />
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -333,16 +233,6 @@ export default function HotelsPage() {
           );
         }}
       />
-
-      {editHotel && (
-        <EditHotelModal
-          hotel={editHotel}
-          onClose={() => setEditHotel(null)}
-          onSaved={(updatedHotel) => {
-            setToast(`${updatedHotel?.name || "Hotel"} updated successfully.`);
-          }}
-        />
-      )}
 
       {toast && (
         <div className="bg-brand-950 fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg px-4 py-2.5 text-sm font-medium text-white shadow-lg">

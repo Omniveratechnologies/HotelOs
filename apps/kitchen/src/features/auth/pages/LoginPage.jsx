@@ -42,6 +42,7 @@ export default function LoginPage() {
         <TwoFactorChallenge
           userId={challenge.userId}
           username={challenge.username}
+          expectedRole="KITCHEN"
           theme="dark"
           onSuccess={() => {
             const from = location.state?.from?.pathname || "/";

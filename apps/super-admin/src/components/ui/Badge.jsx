@@ -29,7 +29,13 @@ const LABELS = {
   completed: "Completed",
 };
 
-export default function Badge({ status, children }) {
+/**
+ * @param {Object} props
+ * @param {string} props.status
+ * @param {React.ReactNode} [props.children]
+ * @returns {React.ReactElement}
+ */
+export default function Badge({ status, children = undefined }) {
   const variant = VARIANTS[status] || VARIANTS.neutral;
   const label = children ?? LABELS[status] ?? status;
   return (

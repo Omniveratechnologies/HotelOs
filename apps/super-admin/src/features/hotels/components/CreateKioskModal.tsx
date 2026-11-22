@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import { Modal, Input, Button } from "@hotelos/ui/components";
 import { KIOSK_SUPPORTED_FEATURES } from "@hotelos/utils";
@@ -7,17 +7,20 @@ import {
   useKioskDashboards,
   useHotelTables,
   useHotelRooms,
-} from "../hooks/useKiosks.js";
-import { useHotels } from "../../hotels/hooks/useHotels.js";
+} from "../hooks/useKiosks.ts";
+import { useHotels } from "../hooks/useHotels.js";
 import { ApiError } from "@hotelos/api";
+import type { Hotel, KioskDevice, CreateKioskModalProps } from "../types.ts";
 
 /**
  * Map backend validation field paths to frontend field names
  */
-function mapValidationErrors(validationErrors) {
+function mapValidationErrors(
+  validationErrors?: Record<string, Record<string, string>>,
+): Record<string, string> {
   if (!validationErrors) return {};
 
-  const mapped = {};
+  const mapped: Record<string, string> = {};
 
   if (validationErrors.body) {
     Object.assign(mapped, validationErrors.body);
@@ -25,43 +28,49 @@ function mapValidationErrors(validationErrors) {
 
   if (validationErrors.query) {
     for (const [field, messages] of Object.entries(validationErrors.query)) {
-      mapped[`query.${field}`] = messages;
+      mapped[`query.${field}`] = String(messages);
     }
   }
 
   if (validationErrors.params) {
     for (const [field, messages] of Object.entries(validationErrors.params)) {
-      mapped[`params.${field}`] = messages;
+      mapped[`params.${field}`] = String(messages);
     }
   }
 
   return mapped;
 }
 
-export default function CreateKioskModal({ open, onClose, onCreated }) {
-  const { hotels } = useHotels();
+export const CreateKioskModal: React.FC<CreateKioskModalProps> = ({
+  open,
+  onClose,
+  onCreated,
+  defaultHotelId,
+}) => {
+  const { hotels } = useHotels() as { hotels: Hotel[] };
   const { dashboards } = useKioskDashboards();
   const createKioskMutation = useCreateKiosk();
 
-  const [hotelId, setHotelId] = useState("");
-  const [name, setName] = useState("");
-  const [deviceId, setDeviceId] = useState("");
-  const [location, setLocation] = useState("Main Lobby");
-  const [targetDashboard, setTargetDashboard] = useState("GUEST_DASHBOARD");
-  const [tableId, setTableId] = useState("");
-  const [roomId, setRoomId] = useState("");
-  const [supportedFeatures, setSupportedFeatures] = useState([
+  const [hotelId, setHotelId] = useState<string>(defaultHotelId || "");
+  const [name, setName] = useState<string>("");
+  const [deviceId, setDeviceId] = useState<string>("");
+  const [location, setLocation] = useState<string>("Main Lobby");
+  const [targetDashboard, setTargetDashboard] =
+    useState<string>("GUEST_DASHBOARD");
+  const [tableId, setTableId] = useState<string>("");
+  const [roomId, setRoomId] = useState<string>("");
+  const [supportedFeatures, setSupportedFeatures] = useState<string[]>([
     "CHECK_IN",
     "KEY_DISPENSE",
     "DOCUMENT_SCAN",
   ]);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { tables, isLoading: tablesLoading } = useHotelTables(hotelId);
   const { rooms, isLoading: roomsLoading } = useHotelRooms(hotelId);
 
   function resetForm() {
-    setHotelId("");
+    setHotelId(defaultHotelId || "");
     setName("");
     setDeviceId("");
     setLocation("Main Lobby");
@@ -77,7 +86,7 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
     onClose();
   }
 
-  function toggleFeature(featId) {
+  function toggleFeature(featId: string) {
     setSupportedFeatures((prev) =>
       prev.includes(featId)
         ? prev.filter((f) => f !== featId)
@@ -85,8 +94,8 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
     );
   }
 
-  function validate() {
-    const errs = {};
+  function validate(): boolean {
+    const errs: Record<string, string> = {};
     if (!hotelId) errs.hotelId = "Please select an assigned hotel";
     if (!name.trim()) errs.name = "Terminal name is required";
     if (!deviceId.trim()) errs.deviceId = "Device ID is required";
@@ -94,7 +103,7 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
     return Object.keys(errs).length === 0;
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
 
@@ -111,17 +120,19 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
       });
 
       if (onCreated) {
-        onCreated(result);
+        onCreated(result as unknown as KioskDevice);
       }
       handleClose();
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof ApiError && err.isValidationError) {
-        const fieldErrors = mapValidationErrors(err.validationErrors);
+        const fieldErrors = mapValidationErrors(
+          err.validationErrors as Record<string, Record<string, string>>,
+        );
         setErrors(fieldErrors);
       } else {
-        setErrors({
-          form: err?.message || "Failed to register kiosk terminal",
-        });
+        const msg =
+          (err as Error)?.message || "Failed to register kiosk terminal";
+        setErrors({ form: msg });
       }
     }
   }
@@ -139,8 +150,8 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
       open={open}
       onClose={handleClose}
       title="Register Kiosk Terminal"
-      description="Provision a new Android touchscreen terminal, assign its dashboard, and generate its one-time pairing key"
-      size="lg"
+      subtitle="Provision a new Android touchscreen terminal, assign its dashboard, and generate its one-time pairing key"
+      maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {errors.form && (
@@ -156,12 +167,13 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
           </label>
           <select
             value={hotelId}
+            disabled={Boolean(defaultHotelId)}
             onChange={(e) => {
               setHotelId(e.target.value);
               setTableId(""); // reset table selection when hotel changes
               setRoomId(""); // reset room selection when hotel changes
             }}
-            className="focus:border-brand-500 focus:ring-brand-500 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:ring-1 focus:outline-none"
+            className="focus:border-brand-500 focus:ring-brand-500 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:ring-1 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
           >
             <option value="">Select a hotel...</option>
             {hotels.map((h) => (
@@ -384,4 +396,6 @@ export default function CreateKioskModal({ open, onClose, onCreated }) {
       </form>
     </Modal>
   );
-}
+};
+
+export default CreateKioskModal;

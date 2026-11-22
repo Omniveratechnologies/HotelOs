@@ -29,19 +29,19 @@ Capabilities exercised in this app:
 
 ## Features / pages
 
-| Route                | Page              | Notes                                                               |
-| -------------------- | ----------------- | ------------------------------------------------------------------- |
-| `/login`             | Login             | Super Admin sign-in; rejects non-`SUPER_ADMIN` roles                |
-| `/`                  | Overview          | Dashboard home with summary stats + health check                    |
-| `/hotels`            | Hotels            | Create hotels, list, activate/deactivate, credentials, Aiosell cfg  |
-| `/kiosks`            | Kiosks            | Hardware terminal fleet control, pairing, remote commands, status   |
-| `/channel-manager`   | Channel Manager   | Aiosell Live Matrix (rates, inventory, restrictions, property sync) |
-| `/channel-approvals` | Channel Approvals | Verify queued roomCode & ratePlanCode mappings across hotels        |
-| `/transactions`      | Transactions      | Food-transaction revenue per hotel (TanStack Query + mock data)     |
-| `/subscriptions`     | Subscriptions     | Per-hotel plan & subscription dates (from backend hotels)           |
-| `/service-requests`  | Service Requests  | Platform service request inbox (TanStack Query + mock data)         |
-| `/settings`          | Settings          | Admin profile & preferences                                         |
-| `/reset-password`    | ResetPassword     | Password reset                                                      |
+| Route                | Page              | Notes                                                                 |
+| -------------------- | ----------------- | --------------------------------------------------------------------- |
+| `/login`             | Login             | Super Admin sign-in; rejects non-`SUPER_ADMIN` roles                  |
+| `/`                  | Overview          | Dashboard home with summary stats + health check                      |
+| `/hotels`            | Hotels            | Create hotels, list, activate/deactivate, credentials, Aiosell cfg    |
+| `/hotels/:id`        | Hotel Details     | Hotel tabs: Staff & Members, Profile, Subscription, Kiosks & Hardware |
+| `/channel-manager`   | Channel Manager   | Aiosell Live Matrix (rates, inventory, restrictions, property sync)   |
+| `/channel-approvals` | Channel Approvals | Verify queued roomCode & ratePlanCode mappings across hotels          |
+| `/transactions`      | Transactions      | Food-transaction revenue per hotel (TanStack Query + mock data)       |
+| `/subscriptions`     | Subscriptions     | Per-hotel plan & subscription dates (from backend hotels)             |
+| `/service-requests`  | Service Requests  | Platform service request inbox (TanStack Query + mock data)           |
+| `/settings`          | Settings          | Admin profile & preferences                                           |
+| `/reset-password`    | ResetPassword     | Password reset                                                        |
 
 ---
 
@@ -189,8 +189,7 @@ src/
 │   ├── channel-approvals/  Approval queue, filter bar, verification actions
 │   ├── channel-manager/    AiosellLiveMatrix, rates, inventory & sync
 │   ├── dashboard/          Overview cards, metrics, health status
-│   ├── hotels/             HotelsPage, CreateHotelModal, EditHotelModal
-│   ├── kiosks/             KioskDevicesPage, CreateKioskModal, EditKioskModal, useKiosks
+│   ├── hotels/             HotelsPage, HotelDetailsPage, HotelKiosksTab, CreateKioskModal, EditKioskModal, useKiosks
 │   ├── service-requests/   Service request inbox & details
 │   ├── settings/           Admin profile & preferences
 │   ├── subscriptions/      Subscription plans & expiry management

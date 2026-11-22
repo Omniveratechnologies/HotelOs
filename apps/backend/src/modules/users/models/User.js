@@ -92,6 +92,22 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+
+    originalUsername: {
+      type: String,
+      default: null,
+    },
+
     mustChangePassword: {
       type: Boolean,
       default: true,

@@ -5,32 +5,58 @@ import {
   queryKeys,
 } from "@hotelos/query";
 import { kioskDevicesApi, tablesApi, roomsApi } from "@hotelos/api";
+import type {
+  KioskDevice,
+  KioskStats,
+  KioskDashboardPreset,
+  KioskTable,
+  KioskRoom,
+  KioskFilters,
+} from "../types.ts";
 
 /**
  * Fetch all kiosks with optional filters (hotelId, status, q)
  */
-export function useKiosks(filters = {}) {
+export function useKiosks(filters: KioskFilters = {}) {
   const query = useQuery({
     queryKey: queryKeys.kiosks.list(filters),
-    queryFn: async () => {
+    queryFn: async (): Promise<{
+      devices: KioskDevice[];
+      stats: KioskStats;
+    }> => {
       const data = await kioskDevicesApi.getKioskDevices(filters);
-      return data || { devices: [], stats: {} };
+      return (
+        data || {
+          devices: [],
+          stats: {
+            total: 0,
+            online: 0,
+            offline: 0,
+            maintenance: 0,
+            disabled: 0,
+          },
+        }
+      );
     },
     refetchInterval: 10000,
   });
 
+  const defaultStats: KioskStats = {
+    total: 0,
+    online: 0,
+    offline: 0,
+    maintenance: 0,
+    disabled: 0,
+  };
+
   return {
     ...query,
-    devices: query.data?.devices || [],
-    stats: query.data?.stats || {
-      total: 0,
-      online: 0,
-      offline: 0,
-      maintenance: 0,
-      disabled: 0,
-    },
+    devices: (query.data?.devices || []) as KioskDevice[],
+    stats: (query.data?.stats || defaultStats) as KioskStats,
     isLoading: query.isLoading,
-    error: query.error ? query.error.message || "Failed to load kiosks" : null,
+    error: query.error
+      ? (query.error as Error).message || "Failed to load kiosks"
+      : null,
   };
 }
 
@@ -40,15 +66,15 @@ export function useKiosks(filters = {}) {
 export function useKioskDashboards() {
   const query = useQuery({
     queryKey: queryKeys.kiosks.dashboards(),
-    queryFn: async () => {
+    queryFn: async (): Promise<KioskDashboardPreset[]> => {
       const data = await kioskDevicesApi.getKioskDashboards();
-      return data || [];
+      return (data || []) as KioskDashboardPreset[];
     },
   });
 
   return {
     ...query,
-    dashboards: query.data || [],
+    dashboards: (query.data || []) as KioskDashboardPreset[],
     isLoading: query.isLoading,
   };
 }
@@ -56,20 +82,22 @@ export function useKioskDashboards() {
 /**
  * Fetch dining tables for a selected hotel (used for Digital Menu table assignment)
  */
-export function useHotelTables(hotelId) {
+export function useHotelTables(hotelId?: string) {
   const query = useQuery({
     queryKey: queryKeys.tables.list({ hotelId }),
-    queryFn: async () => {
+    queryFn: async (): Promise<KioskTable[]> => {
       if (!hotelId) return [];
-      const res = await tablesApi.getTables({ hotelId });
-      return res?.data || res || [];
+      const res = (await tablesApi.getTables({ hotelId })) as
+        { data?: KioskTable[] } | KioskTable[];
+      if (Array.isArray(res)) return res;
+      return res?.data || [];
     },
     enabled: Boolean(hotelId),
   });
 
   return {
     ...query,
-    tables: query.data || [],
+    tables: (query.data || []) as KioskTable[],
     isLoading: query.isLoading,
   };
 }
@@ -77,20 +105,22 @@ export function useHotelTables(hotelId) {
 /**
  * Fetch rooms for a selected hotel (used for Guest Dashboard room assignment)
  */
-export function useHotelRooms(hotelId) {
+export function useHotelRooms(hotelId?: string) {
   const query = useQuery({
     queryKey: queryKeys.rooms.list({ hotelId }),
-    queryFn: async () => {
+    queryFn: async (): Promise<KioskRoom[]> => {
       if (!hotelId) return [];
-      const res = await roomsApi.getRooms({ hotelId });
-      return res?.data || res || [];
+      const res = (await roomsApi.getRooms({ hotelId })) as
+        { data?: KioskRoom[] } | KioskRoom[];
+      if (Array.isArray(res)) return res;
+      return res?.data || [];
     },
     enabled: Boolean(hotelId),
   });
 
   return {
     ...query,
-    rooms: query.data || [],
+    rooms: (query.data || []) as KioskRoom[],
     isLoading: query.isLoading,
   };
 }
@@ -102,7 +132,8 @@ export function useCreateKiosk() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data) => kioskDevicesApi.createKioskDevice(data),
+    mutationFn: (data: Record<string, unknown>) =>
+      kioskDevicesApi.createKioskDevice(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.kiosks.all });
     },
@@ -116,7 +147,8 @@ export function useUpdateKiosk() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }) => kioskDevicesApi.updateKioskDevice(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      kioskDevicesApi.updateKioskDevice(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.kiosks.all });
     },
@@ -130,7 +162,7 @@ export function useRegeneratePairCode() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id) => kioskDevicesApi.regenerateKioskPairCode(id),
+    mutationFn: (id: string) => kioskDevicesApi.regenerateKioskPairCode(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.kiosks.all });
     },
@@ -142,8 +174,15 @@ export function useRegeneratePairCode() {
  */
 export function useSendKioskCommand() {
   return useMutation({
-    mutationFn: ({ id, command, payload }) =>
-      kioskDevicesApi.sendKioskCommand(id, { command, payload }),
+    mutationFn: ({
+      id,
+      command,
+      payload,
+    }: {
+      id: string;
+      command: string;
+      payload?: Record<string, unknown>;
+    }) => kioskDevicesApi.sendKioskCommand(id, { command, payload }),
   });
 }
 
@@ -154,7 +193,7 @@ export function useDeleteKiosk() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id) => kioskDevicesApi.deleteKioskDevice(id),
+    mutationFn: (id: string) => kioskDevicesApi.deleteKioskDevice(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.kiosks.all });
     },

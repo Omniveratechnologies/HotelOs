@@ -38,6 +38,7 @@ export const login = async ({ username, password }) => {
   const result = await api.post("/api/v1/auth/login", {
     username: username.trim(),
     password,
+    expectedRole: "KITCHEN",
   });
 
   if (result.requires2FA) {
@@ -48,14 +49,12 @@ export const login = async ({ username, password }) => {
   }
 
   // =================================================
-  // KITCHEN AND RECEPTIONIST CAN BOTH ACCESS THIS DASHBOARD
+  // STRICT KITCHEN ROLE ISOLATION
   // =================================================
 
-  const allowedRoles = ["KITCHEN", "RECEPTIONIST"];
-
-  if (!allowedRoles.includes(result.data?.user?.role)) {
+  if (result.data?.user?.role !== "KITCHEN") {
     throw new Error(
-      "This account does not have access to the Kitchen dashboard.",
+      "This account does not have access to the Kitchen dashboard. Only Kitchen accounts can log in.",
     );
   }
 
@@ -68,14 +67,14 @@ export const login = async ({ username, password }) => {
 export const verify2FALogin = async ({ userId, token, backupCode }) => {
   const result = await api.post("/api/v1/auth/2fa/verify-login", {
     userId,
+    expectedRole: "KITCHEN",
     ...(token ? { token: token.trim() } : {}),
     ...(backupCode ? { backupCode: backupCode.trim() } : {}),
   });
 
-  const allowedRoles = ["KITCHEN", "RECEPTIONIST"];
-  if (!allowedRoles.includes(result.data?.user?.role)) {
+  if (result.data?.user?.role !== "KITCHEN") {
     throw new Error(
-      "This account does not have access to the Kitchen dashboard.",
+      "This account does not have access to the Kitchen dashboard. Only Kitchen accounts can log in.",
     );
   }
 

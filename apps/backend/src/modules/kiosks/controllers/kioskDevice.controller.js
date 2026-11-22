@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import mongoose from "mongoose";
 import { SESSION_POLICIES } from "@hotelos/utils";
 import KioskDevice from "../models/KioskDevice.js";
 import Session from "#/modules/sessions/models/Session.js";
@@ -79,14 +80,14 @@ export const getKioskDevices = async (req, res) => {
 
     const statsMatch =
       req.user.role === "SUPER_ADMIN"
-        ? hotelId && hotelId !== "ALL"
-          ? {
-              hotelId: new (await import("mongoose")).default.Types.ObjectId(
-                hotelId,
-              ),
-            }
+        ? hotelId &&
+          hotelId !== "ALL" &&
+          mongoose.Types.ObjectId.isValid(hotelId)
+          ? { hotelId: new mongoose.Types.ObjectId(hotelId) }
           : {}
-        : { hotelId: req.user.hotelId };
+        : req.user.hotelId
+          ? { hotelId: req.user.hotelId }
+          : {};
 
     const [devices, stats] = await Promise.all([
       KioskDevice.find(filter)

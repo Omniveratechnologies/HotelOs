@@ -25,9 +25,10 @@ import { compare } from "bcryptjs";
  * Always performs the same operations regardless of user existence
  */
 async function findUserForLogin(username) {
-  const user = await User.findOne({ username }).select(
-    "+password +failedLoginAttempts +lockUntil +passwordHistory",
-  );
+  const user = await User.findOne({
+    username,
+    isDeleted: { $ne: true },
+  }).select("+password +failedLoginAttempts +lockUntil +passwordHistory");
 
   // If user not found, still do a dummy bcrypt comparison to normalize timing
   if (!user) {

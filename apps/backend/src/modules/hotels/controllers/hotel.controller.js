@@ -478,8 +478,14 @@ export const updateHotel = async (req, res) => {
     if (currency !== undefined) hotel.currency = currency?.trim() || "INR";
     if (gstin !== undefined) hotel.gstin = gstin?.trim().toUpperCase() || "";
     if (taxPercent !== undefined) hotel.taxPercent = taxPercent;
-    if (checkInTime !== undefined) hotel.checkInTime = checkInTime.trim();
-    if (checkOutTime !== undefined) hotel.checkOutTime = checkOutTime.trim();
+    if (checkInTime !== undefined)
+      hotel.checkInTime = checkInTime
+        ? String(checkInTime).trim()
+        : hotel.checkInTime;
+    if (checkOutTime !== undefined)
+      hotel.checkOutTime = checkOutTime
+        ? String(checkOutTime).trim()
+        : hotel.checkOutTime;
     if (cancellationPolicy !== undefined)
       hotel.cancellationPolicy = cancellationPolicy?.trim() || "";
     if (termsAndConditions !== undefined)
@@ -489,12 +495,17 @@ export const updateHotel = async (req, res) => {
     if (wifiPassword !== undefined)
       hotel.wifiPassword = wifiPassword?.trim() || "";
     if (subscriptionStartDate !== undefined)
-      hotel.subscriptionStartDate = new Date(subscriptionStartDate);
+      hotel.subscriptionStartDate = subscriptionStartDate
+        ? new Date(subscriptionStartDate)
+        : null;
     if (subscriptionEndDate !== undefined)
-      hotel.subscriptionEndDate = new Date(subscriptionEndDate);
+      hotel.subscriptionEndDate = subscriptionEndDate
+        ? new Date(subscriptionEndDate)
+        : null;
     if (aiosellHotelCode !== undefined)
-      hotel.aiosellHotelCode =
-        aiosellHotelCode === "" ? null : aiosellHotelCode.trim();
+      hotel.aiosellHotelCode = !aiosellHotelCode
+        ? null
+        : String(aiosellHotelCode).trim() || null;
 
     await hotel.save();
 
