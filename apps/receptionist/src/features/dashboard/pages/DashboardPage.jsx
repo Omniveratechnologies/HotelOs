@@ -7,6 +7,7 @@ import RoomGrid from "../components/RoomGrid.jsx";
 import ServiceRequestsList from "../components/ServiceRequestsList.jsx";
 import FoodOrdersList from "../components/FoodOrdersList.jsx";
 import RecentActivity from "../components/RecentActivity.jsx";
+import DashboardSkeleton from "../components/DashboardSkeleton.jsx";
 import { Header } from "@hotelos/ui/components/Header";
 
 import { useNavigate } from "react-router";
@@ -37,6 +38,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const {
     rooms,
+    roomsLoading,
     serviceRequests,
     foodOrders,
     updateRoomStatus,
@@ -46,16 +48,21 @@ export default function Dashboard() {
     completeRequest,
     guests,
     stats,
+    statsLoading,
     statsError,
   } = useHotelOS();
   const [selectedRoom, setSelectedRoom] = useState(null);
 
   const user = useMemo(() => getStoredUser() || {}, []);
   const firstName = user.name?.trim().split(" ")[0] || "Receptionist";
-  const hotelName = stats?.hotelName || "your hotel";
+  const hotelName =
+    stats?.hotelName || (statsLoading ? "Loading..." : "your hotel");
   const recentActivity = stats?.recentActivities || [];
 
   const { greeting, date } = getGreetingInfo();
+  const isInitialLoading =
+    (roomsLoading && (!rooms || rooms.length === 0)) ||
+    (statsLoading && !stats);
 
   return (
     <>
@@ -69,47 +76,54 @@ export default function Dashboard() {
         >
           + New Booking
         </button>
-        <button className="cursor-pointer rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
+        <button
+          onClick={() => navigate("/reports")}
+          className="cursor-pointer rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        >
           Export Report
         </button>
       </Header>
-      <div className="space-y-6 p-6">
-        <StatCards
-          rooms={rooms}
-          serviceRequests={serviceRequests}
-          foodOrders={foodOrders}
-        />
-
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <RoomGrid rooms={rooms} onSelectRoom={setSelectedRoom} />
-
-          <div className="space-y-4">
-            <ServiceRequestsList
-              serviceRequests={serviceRequests}
-              rooms={rooms}
-              guests={guests}
-              acknowledgeRequest={acknowledgeRequest}
-              completeRequest={completeRequest}
-            />
-            <FoodOrdersList foodOrders={foodOrders} />
-            <RecentActivity
-              recentActivity={recentActivity}
-              statsError={statsError}
-            />
-          </div>
-        </div>
-
-        {selectedRoom && (
-          <RoomModal
-            room={selectedRoom}
-            onClose={() => setSelectedRoom(null)}
-            updateRoomStatus={updateRoomStatus}
-            checkOutRoom={checkOutRoom}
-            updateRoom={updateRoom}
-            guests={guests}
+      {isInitialLoading ? (
+        <DashboardSkeleton />
+      ) : (
+        <div className="space-y-6 p-6">
+          <StatCards
+            rooms={rooms}
+            serviceRequests={serviceRequests}
+            foodOrders={foodOrders}
           />
-        )}
-      </div>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <RoomGrid rooms={rooms} onSelectRoom={setSelectedRoom} />
+
+            <div className="space-y-4">
+              <ServiceRequestsList
+                serviceRequests={serviceRequests}
+                rooms={rooms}
+                guests={guests}
+                acknowledgeRequest={acknowledgeRequest}
+                completeRequest={completeRequest}
+              />
+              <FoodOrdersList foodOrders={foodOrders} />
+              <RecentActivity
+                recentActivity={recentActivity}
+                statsError={statsError}
+              />
+            </div>
+          </div>
+
+          {selectedRoom && (
+            <RoomModal
+              room={selectedRoom}
+              onClose={() => setSelectedRoom(null)}
+              updateRoomStatus={updateRoomStatus}
+              checkOutRoom={checkOutRoom}
+              updateRoom={updateRoom}
+              guests={guests}
+            />
+          )}
+        </div>
+      )}
     </>
   );
 }

@@ -329,10 +329,13 @@ export default function ReservationsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {isLoading ? (
-                    Array.from({ length: 5 }, (rowIdx) => (
-                      <tr key={rowIdx}>
-                        {Array.from({ length: 12 }, (cellIdx) => (
-                          <td key={cellIdx} className="px-4 py-3">
+                    Array.from({ length: 5 }, (_row, rowIdx) => (
+                      <tr key={`res-skel-row-${rowIdx}`}>
+                        {Array.from({ length: 12 }, (_cell, cellIdx) => (
+                          <td
+                            key={`res-skel-cell-${rowIdx}-${cellIdx}`}
+                            className="px-4 py-3"
+                          >
                             <div className="h-4 animate-pulse rounded bg-gray-100" />
                           </td>
                         ))}
@@ -357,8 +360,8 @@ export default function ReservationsPage() {
                       </td>
                     </tr>
                   ) : (
-                    reservations.map((r) => {
-                      const rId = r.id || r._id;
+                    reservations.map((r, idx) => {
+                      const rId = r.id || r._id || `res-row-${idx}`;
                       const isSelected = selectedId === rId;
                       return (
                         <tr

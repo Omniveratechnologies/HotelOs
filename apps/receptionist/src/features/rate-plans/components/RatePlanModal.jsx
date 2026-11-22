@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Input } from "@hotelos/ui/components";
-import { deriveRatePlanCode } from "@hotelos/utils";
+import { deriveRatePlanCode, toLocalDateString } from "@hotelos/utils";
 import { useAiosellRoomTypes } from "../../settings/hooks/useHotelSettings.js";
 
 const OCCUPANCIES = ["single", "double", "triple", "quad"];
@@ -16,12 +16,13 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
   const [occupancy, setOccupancy] = useState(ratePlan?.occupancy || "single");
   const [mealPlan, setMealPlan] = useState(ratePlan?.mealPlan || "EP");
   const [startDate, setStartDate] = useState(() =>
-    new Date().toISOString().slice(0, 10),
+    toLocalDateString(ratePlan?.startDate || new Date()),
   );
   const [endDate, setEndDate] = useState(() => {
+    if (ratePlan?.endDate) return toLocalDateString(ratePlan.endDate);
     const d = new Date();
     d.setDate(d.getDate() + 30);
-    return d.toISOString().slice(0, 10);
+    return toLocalDateString(d);
   });
   const {
     aiosellRoomTypes: roomTypes,
@@ -287,15 +288,17 @@ export default function RatePlanModal({ ratePlan, onClose, onSaved }) {
               <Input
                 type="date"
                 label="Start Date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                value={toLocalDateString(startDate)}
+                onChange={(e) =>
+                  setStartDate(toLocalDateString(e.target.value))
+                }
                 disabled={saving}
               />
               <Input
                 type="date"
                 label="End Date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                value={toLocalDateString(endDate)}
+                onChange={(e) => setEndDate(toLocalDateString(e.target.value))}
                 disabled={saving}
               />
             </div>

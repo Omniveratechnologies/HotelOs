@@ -23,7 +23,7 @@ import {
   InlineBanner,
   Input,
 } from "@hotelos/ui/components";
-import { formatDate, formatTime } from "@hotelos/utils";
+import { formatDate, formatTime, toLocalDateString } from "@hotelos/utils";
 import { useCheckInSessions } from "../hooks/useCheckInSessions.js";
 import { useAiosellRoomTypes } from "../../settings/hooks/useHotelSettings.js";
 import {
@@ -87,7 +87,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function DigitalCheckInDashboardPage() {
-  const [todayFormatted] = useState(() => formatDate(new Date()));
+  const [todayFormatted] = useState(() => toLocalDateString(new Date()));
   const [filters, setFilters] = useState({
     dateRange: "today",
     source: "all",
@@ -524,10 +524,13 @@ export default function DigitalCheckInDashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {loading ? (
-                    Array.from({ length: 5 }, (rowIdx) => (
-                      <tr key={rowIdx}>
-                        {Array.from({ length: 7 }, (cellIdx) => (
-                          <td key={cellIdx} className="px-6 py-4">
+                    Array.from({ length: 5 }, (_row, rowIdx) => (
+                      <tr key={`chk-skel-row-${rowIdx}`}>
+                        {Array.from({ length: 7 }, (_cell, cellIdx) => (
+                          <td
+                            key={`chk-skel-cell-${rowIdx}-${cellIdx}`}
+                            className="px-6 py-4"
+                          >
                             <div className="h-4 animate-pulse rounded bg-gray-100" />
                           </td>
                         ))}
@@ -547,8 +550,11 @@ export default function DigitalCheckInDashboardPage() {
                       </td>
                     </tr>
                   ) : (
-                    filteredSessions.map((session) => (
-                      <tr key={session.id} className="hover:bg-gray-50">
+                    filteredSessions.map((session, idx) => (
+                      <tr
+                        key={session.id || session._id || `chk-row-${idx}`}
+                        className="hover:bg-gray-50"
+                      >
                         <td className="flex items-center space-x-3 px-6 py-4">
                           {session.guest?.avatar ? (
                             <img
