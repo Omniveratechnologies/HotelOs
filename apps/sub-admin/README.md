@@ -1,9 +1,10 @@
 # Sub Admin Dashboard
 
-The hotel-level administration app for **HotelOS**. It combines a marketing
-site with the `SUB_ADMIN` dashboard used to run a single hotel. A Sub Admin
-is tied to exactly one hotel — hotel ownership is always derived from the
-authenticated user's JWT, never from the frontend.
+The hotel-level administration app for **HotelOS**. It provides the `SUB_ADMIN`
+dashboard used to run a single hotel (marketing pages are hosted separately in
+the standalone `apps/marketing` Next.js application). A Sub Admin is tied to
+exactly one hotel — hotel ownership is always derived from the authenticated
+user's JWT, never from the frontend.
 
 - Port: `5174`
 - Package name: `sub-admin`
@@ -36,24 +37,26 @@ A **Sub Admin** manages one hotel. Capabilities exercised in this app:
 
 ### Public / auth
 
-| Route                                   | Page             | Notes                                                  |
-| --------------------------------------- | ---------------- | ------------------------------------------------------ |
-| `/`                                     | Landing          | Marketing page (hero, features, pricing, testimonials) |
-| `/login`                                | Login            | Sub Admin sign-in; rejects non-`SUB_ADMIN` roles       |
-| `/accept-invitation`                    | AcceptInvitation | Accept an emailed invitation, set credentials          |
-| `/reset-password`                       | ResetPassword    | Reset password via emailed token                       |
-| `/forgot-username` / `/forgot-password` | Recovery         | Request username reminder / password reset             |
+| Route                                   | Page             | Notes                                            |
+| --------------------------------------- | ---------------- | ------------------------------------------------ |
+| `/login`                                | Login            | Sub Admin sign-in; rejects non-`SUB_ADMIN` roles |
+| `/accept-invitation`                    | AcceptInvitation | Accept an emailed invitation, set credentials    |
+| `/reset-password`                       | ResetPassword    | Reset password via emailed token                 |
+| `/forgot-username` / `/forgot-password` | Recovery         | Request username reminder / password reset       |
 
 ### Authenticated dashboard
 
-| Route                   | Page       | Notes                                                              |
-| ----------------------- | ---------- | ------------------------------------------------------------------ |
-| `/dashboard`            | Dashboard  | Stat cards + recent activity feed (from `/dashboard/stats`)        |
-| `/dashboard/members`    | Members    | List / delete hotel staff (e.g. Receptionists), send invitations   |
-| `/dashboard/rooms`      | Rooms      | Room list, CRUD modals with `roomCode` & channel status indicators |
-| `/dashboard/room-types` | Room Types | Room types CRUD & Aiosell mapping (`under_review` badges)          |
-| `/dashboard/rate-plans` | Rate Plans | Rate plans CRUD, code generator & Aiosell live rates matrix        |
-| `/dashboard/settings`   | Settings   | Hotel profile, check-in/out policies, Aiosell property setup       |
+| Route           | Page       | Notes                                                              |
+| --------------- | ---------- | ------------------------------------------------------------------ |
+| `/`             | Dashboard  | Root dashboard: stat cards + recent activity feed                  |
+| `/dashboard`    | Redirect   | Redirects to `/`                                                   |
+| `/reservations` | Bookings   | Hotel reservations and guest stay management                       |
+| `/guests`       | Guests     | Guest directory and CRM records                                    |
+| `/staff`        | Staff      | List / delete hotel staff (e.g. Receptionists), send invitations   |
+| `/rooms`        | Rooms      | Room list, CRUD modals with `roomCode` & channel status indicators |
+| `/room-types`   | Room Types | Room types CRUD & Aiosell mapping (`under_review` badges)          |
+| `/rate-plans`   | Rate Plans | Rate plans CRUD, code generator & Aiosell live rates matrix        |
+| `/settings`     | Settings   | Hotel profile, check-in/out policies, Aiosell property setup       |
 
 ---
 

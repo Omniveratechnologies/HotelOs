@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 
 import AuthLayout from "../AuthLayout.jsx";
 import HotelLayout from "../layouts/HotelLayout.jsx";
@@ -20,58 +20,6 @@ export const router = createBrowserRouter([
     errorElement: <ErrorScreen />,
     HydrateFallback: LoadingScreen,
     children: [
-      {
-        // Public marketing pages share one layout (header + footer).
-        lazy: lazyPage(
-          () =>
-            import("../../features/marketing/components/MarketingLayout.jsx"),
-        ),
-        children: [
-          {
-            path: "/",
-            lazy: lazyPage(
-              () => import("../../features/landing/pages/LandingPage.jsx"),
-            ),
-          },
-          {
-            path: "/solutions/pos",
-            lazy: lazyPage(
-              () => import("../../features/marketing/pages/PosPage.jsx"),
-            ),
-          },
-          {
-            path: "/solutions/pms",
-            lazy: lazyPage(
-              () => import("../../features/marketing/pages/PmsPage.jsx"),
-            ),
-          },
-          {
-            path: "/pricing",
-            lazy: lazyPage(
-              () => import("../../features/marketing/pages/PricingPage.jsx"),
-            ),
-          },
-          {
-            path: "/management-suite",
-            lazy: lazyPage(
-              () =>
-                import("../../features/marketing/pages/ManagementSuitePage.jsx"),
-            ),
-          },
-          {
-            path: "/x-factor",
-            lazy: lazyPage(
-              () => import("../../features/marketing/pages/XFactorPage.jsx"),
-            ),
-          },
-          {
-            path: "/x-factor/nexus-pms",
-            lazy: lazyPage(
-              () => import("../../features/marketing/pages/NexusPmsPage.jsx"),
-            ),
-          },
-        ],
-      },
       {
         path: "/login",
         lazy: lazyPage(() => import("../../features/auth/pages/LoginPage.jsx")),
@@ -95,11 +43,15 @@ export const router = createBrowserRouter([
             element: <HotelLayout />,
             children: [
               {
-                path: "/dashboard",
+                path: "/",
                 lazy: lazyPage(
                   () =>
                     import("../../features/dashboard/pages/DashboardPage.jsx"),
                 ),
+              },
+              {
+                path: "/dashboard",
+                element: <Navigate to="/" replace />,
               },
               {
                 path: "/reservations",

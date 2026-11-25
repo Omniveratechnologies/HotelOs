@@ -34,7 +34,7 @@ const icon = (paths) => (
 const items = [
   {
     label: "Dashboard",
-    path: "/dashboard",
+    path: "/",
     icon: icon(
       <path d="M4 13h6V4H4v9zM14 20h6v-9h-6v9zM14 4v5h6V4h-6zM4 20h6v-5H4v5z" />,
     ),

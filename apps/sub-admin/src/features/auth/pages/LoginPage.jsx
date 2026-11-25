@@ -44,7 +44,7 @@ export default function LoginPage() {
 
       setSuccess("Login successful. Redirecting...");
 
-      const from = location.state?.from?.pathname || "/dashboard";
+      const from = location.state?.from?.pathname || "/";
 
       setTimeout(() => {
         navigate(from, { replace: true });
@@ -74,7 +74,7 @@ export default function LoginPage() {
           username={challenge.username}
           expectedRole="SUB_ADMIN"
           onSuccess={() => {
-            const from = location.state?.from?.pathname || "/dashboard";
+            const from = location.state?.from?.pathname || "/";
             navigate(from, { replace: true });
           }}
           onCancel={() => setChallenge(null)}

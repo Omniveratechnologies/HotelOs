@@ -96,7 +96,7 @@ export default function CreateAccount({ token, invitation }) {
       setSuccess("Your account has been created successfully.");
 
       setTimeout(() => {
-        navigate("/dashboard", {
+        navigate("/", {
           replace: true,
         });
       }, 1500);
