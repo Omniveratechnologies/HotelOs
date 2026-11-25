@@ -1,0 +1,93 @@
+"use client";
+
+import { useState } from "react";
+import type { FaqItem } from "../_types/pricingTypes";
+
+export type { FaqItem };
+
+export interface FaqAccordionProps {
+  title: string;
+  items?: FaqItem[];
+}
+
+export default function FaqAccordion({ title, items = [] }: FaqAccordionProps) {
+  const [openIds, setOpenIds] = useState<number[]>([]);
+
+  const toggle = (id: number) =>
+    setOpenIds((current) =>
+      current.includes(id)
+        ? current.filter((value) => value !== id)
+        : [...current, id],
+    );
+
+  const columns = [
+    {
+      id: "faq-left-column",
+      entries: items
+        .map((item, index) => ({ item, index }))
+        .filter((entry) => entry.index % 2 === 0),
+    },
+    {
+      id: "faq-right-column",
+      entries: items
+        .map((item, index) => ({ item, index }))
+        .filter((entry) => entry.index % 2 === 1),
+    },
+  ];
+
+  return (
+    <section className="mx-auto max-w-[1400px] px-6 py-12 lg:px-10">
+      <h2 className="text-brand-900 text-2xl font-bold tracking-tight sm:text-3xl">
+        {title}
+      </h2>
+
+      <div className="mt-6 grid items-start gap-4 sm:grid-cols-2">
+        {columns.map(({ id, entries }) => (
+          <div key={id} className="space-y-4">
+            {entries.map(({ item, index }) => {
+              const open = openIds.includes(index);
+              const buttonId = `faq-question-${index}`;
+              const panelId = `faq-answer-${index}`;
+
+              return (
+                <div
+                  key={item.question}
+                  className="border-surface-200 rounded-lg border bg-white"
+                >
+                  <h3>
+                    <button
+                      type="button"
+                      id={buttonId}
+                      aria-expanded={open}
+                      aria-controls={panelId}
+                      onClick={() => toggle(index)}
+                      className="text-brand-900 flex w-full cursor-pointer items-center justify-between gap-4 px-4 py-3.5 text-left text-sm font-medium"
+                    >
+                      {item.question}
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-xl leading-none font-light"
+                      >
+                        {open ? "−" : "+"}
+                      </span>
+                    </button>
+                  </h3>
+                  {open && (
+                    <div
+                      id={panelId}
+                      role="region"
+                      aria-labelledby={buttonId}
+                      className="text-brand-700/80 px-4 pb-4 text-sm leading-relaxed"
+                    >
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}

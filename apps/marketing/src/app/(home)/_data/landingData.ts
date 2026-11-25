@@ -1,0 +1,20 @@
+export const DEFAULT_IMAGES = {
+  hero: { background: "", mockup: "" },
+  aggregatorLogos: [
+    { name: "MakeMyTrip", src: "" },
+    { name: "Goibibo", src: "" },
+    { name: "Booking.com", src: "" },
+    { name: "Agoda", src: "" },
+    { name: "Expedia", src: "" },
+    { name: "Airbnb", src: "" },
+    { name: "Zomato", src: "" },
+    { name: "Swiggy", src: "" },
+    { name: "Google", src: "" },
+    { name: "Tripadvisor", src: "" },
+  ],
+  solutions: { pms: "", pos: "", xFactor: "" },
+  why: { hotels: "", restaurants: "", xFactor: "" },
+  growthBackground: "",
+  testimonialAvatars: ["", "", ""],
+  ctaBackground: "",
+};
